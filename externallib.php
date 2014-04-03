@@ -180,6 +180,42 @@ class local_intelliboard_external extends external_api {
 				LEFT JOIN (SELECT l.userid, count(l.id) attendances FROM {$CFG->prefix}log l WHERE l.module = 'attendance' AND l.action = 'add' GROUP BY l.userid) as l5 ON l5.userid = u.id
 				WHERE (a.roleid = 3 OR a.roleid = 4) GROUP BY u.id");
 	}
+	function report6($timestart=0, $timefinish =0)
+	{
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("SELECT ue.id, ccc.gradepass, cmc.cmcnums, ci.id as compl_enabled, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
+						FROM {$CFG->prefix}user_enrolments as ue
+							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
+							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
+							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
+							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
+							LEFT JOIN {$CFG->prefix}course_completion_criteria as ccc ON ccc.course = e.courseid AND ccc.criteriatype = 6
+							LEFT JOIN (SELECT * FROM {$CFG->prefix}course_completion_criteria WHERE id > 0 GROUP BY course) as ci ON ci.course = e.courseid
+							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnums FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = u.id
+							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
+								WHERE u.id > 0 AND ue.timecreated BETWEEN $timestart AND $timefinish GROUP BY ue.userid, e.courseid");
+	}
+	function report7($timestart=0, $timefinish =0)
+	{
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("SELECT ue.id, ci.id as compl_enabled, ((cmca.cmcnuma / cma.cmnuma)*100 ) as assigments, ((cmc.cmcnums / cmx.cmnumx)*100 ) as completed, ((lcm.viewed / cm.cmnums)*100 ) as visited, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
+						FROM {$CFG->prefix}user_enrolments as ue
+							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
+							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
+							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
+							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
+							LEFT JOIN (SELECT * FROM {$CFG->prefix}course_completion_criteria WHERE id > 0 GROUP BY course) as ci ON ci.course = e.courseid
+							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnums FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = u.id
+							LEFT JOIN (SELECT cv.course, count(cv.id) as cmnums FROM {$CFG->prefix}course_modules cv WHERE cv.visible  =  1 GROUP BY cv.course) as cm ON cm.course = c.id
+							LEFT JOIN (SELECT cv.course, count(cv.id) as cmnumx FROM {$CFG->prefix}course_modules cv WHERE cv.completion  =  1 GROUP BY cv.course) as cmx ON cmx.course = c.id
+							LEFT JOIN (SELECT cv.course, count(cv.id) as cmnuma FROM {$CFG->prefix}course_modules cv WHERE cv.module  =  1 GROUP BY cv.course) as cma ON cma.course = c.id
+							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnuma FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.module = 1 AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmca ON cmca.course = c.id AND cmca.userid = u.id
+							LEFT JOIN (SELECT l.userid, l.course, count(DISTINCT(l.cmid)) as viewed FROM {$CFG->prefix}log l WHERE l.cmid > 0 GROUP BY l.course, l.userid) as lcm ON lcm.course = c.id AND lcm.userid = u.id
+							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
+								WHERE u.id > 0 AND ue.timecreated BETWEEN $timestart AND $timefinish GROUP BY ue.userid, e.courseid");
+	}
 	function get_users_moodle($timestart=0, $timefinish =0)
 	{
 		global $USER, $CFG, $DB;
@@ -199,6 +235,9 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
+		$timestart = strtotime('-30 days');
+		$timefinish = time();
+		
 		return $DB->get_records_sql("SELECT ue.id, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, ue.timecreated, cx.id as context, c.id as cid, c.fullname
 					FROM {$CFG->prefix}user_enrolments ue
 						LEFT JOIN {$CFG->prefix}user u ON u.id = ue.userid
@@ -211,6 +250,9 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
+		$timestart = strtotime('-30 days');
+		$timefinish = time();
+		
 		return $DB->get_records_sql("SELECT u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.timecreated, cx.id as context
 					FROM {$CFG->prefix}user u
 						LEFT JOIN {$CFG->prefix}context cx ON cx.instanceid = u.id AND contextlevel = 30
@@ -276,7 +318,7 @@ class local_intelliboard_external extends external_api {
 		return $DB->get_records_sql("SELECT c.id, c.fullname, count(l.id) as nums , gc.grade
 				FROM {$CFG->prefix}log l 
 				LEFT JOIN {$CFG->prefix}course c ON c.id = course 
-				LEFT JOIN (SELECT gi.courseid, g.userid, AVG( g.finalgrade ) AS grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
+				LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
 					WHERE l.course > 1 AND l.time BETWEEN $timestart AND $timefinish 
 						GROUP BY l.course 
 							ORDER BY nums DESC 
@@ -540,5 +582,11 @@ class local_intelliboard_external extends external_api {
 		global $USER, $CFG, $DB;
 
 		return $DB->get_records_sql("SELECT id, name FROM {$CFG->prefix}cohort ORDER BY name");
+	}
+	function get_courses($timestart=0, $timefinish =0)
+	{
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("SELECT id, fullname FROM {$CFG->prefix}course ORDER BY fullname");
 	}
 }
