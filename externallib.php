@@ -170,7 +170,7 @@ class local_intelliboard_external extends external_api {
 		return $DB->get_records_sql("SELECT u.id, u.firstname, u.lastname, a.roleid, ue.courses, ff.videos, l1.urls, l0.evideos, l2.assignments, l3.quizes, l4.forums, l5.attendances
 			FROM {$CFG->prefix}user u
 				LEFT JOIN {$CFG->prefix}role_assignments a ON a.userid = u.id
-				LEFT JOIN (SELECT ra.userid, count(distinct(cxt.instanceid)) courses FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}context cxt WHERE ra.contextid = cxt.id AND cxt.contextlevel =50 GROUP BY ra.userid) as ue ON ue.userid = u.id
+				LEFT JOIN (SELECT ue.userid, count(e.courseid) as courses FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e, {$CFG->prefix}context cxt WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4) GROUP BY ue.userid) as ue ON ue.userid = u.id
 				LEFT JOIN (SELECT f.userid, count(distinct(f.filename)) videos FROM {$CFG->prefix}files f WHERE f.mimetype LIKE '%video%' GROUP BY f.userid) as ff ON ff.userid = u.id
 				LEFT JOIN (SELECT l.userid, count(l.id) urls FROM {$CFG->prefix}log l WHERE l.module = 'url' AND l.action = 'add' GROUP BY l.userid) as l1 ON l1.userid = u.id
 				LEFT JOIN (SELECT l.userid, count(l.id) evideos FROM {$CFG->prefix}log l WHERE l.module = 'page' AND l.action = 'add' GROUP BY l.userid) as l0 ON l0.userid = u.id
@@ -215,6 +215,64 @@ class local_intelliboard_external extends external_api {
 							LEFT JOIN (SELECT l.userid, l.course, count(DISTINCT(l.cmid)) as viewed FROM {$CFG->prefix}log l WHERE l.cmid > 0 GROUP BY l.course, l.userid) as lcm ON lcm.course = c.id AND lcm.userid = u.id
 							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
 								WHERE u.id > 0 AND ue.timecreated BETWEEN $timestart AND $timefinish GROUP BY ue.userid, e.courseid");
+	}
+	function report8($timestart=0, $timefinish =0)
+	{
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("
+		SELECT u.id, CONCAT(u.firstname, ' ', u.lastname) name, a.roleid, ue.courses, ue.leaners, ui.activeleanres, ux.compleatedleanres, uz.grade
+			FROM mdl_role_assignments a, mdl_user u
+				LEFT JOIN (
+					SELECT ue.userid, count(e.courseid) as courses, SUM(sx.users) as leaners
+						FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
+							LEFT JOIN (
+								SELECT e.courseid, count(ue.userid) as users
+									FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
+										WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
+											GROUP BY e.courseid)  sx
+							ON sx.courseid = e.courseid
+						WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
+							GROUP BY ue.userid) as ue
+					ON ue.userid = u.id
+				LEFT JOIN (
+					SELECT ue.userid, SUM(sx.users) as activeleanres 
+						FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
+							LEFT JOIN (
+								SELECT e.courseid, count(ue.userid) as users 
+									FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_user u, mdl_enrol e
+										WHERE u.id = ra.userid AND u.lastaccess > ".strtotime('-30 days')." AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
+											GROUP BY e.courseid)  sx 
+							ON sx.courseid = e.courseid
+						WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
+							GROUP BY ue.userid) as ui 
+					ON ui.userid = u.id
+				LEFT JOIN (
+					SELECT ue.userid, SUM(sx.users) as compleatedleanres 
+						FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
+							LEFT JOIN (
+								SELECT e.courseid, count(ue.userid) as users 
+									FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_course_completions cc, mdl_enrol e
+										WHERE cc.userid = ra.userid AND cc.course = e.courseid AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
+											GROUP BY e.courseid)  sx 
+							ON sx.courseid = e.courseid
+						WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
+							GROUP BY ue.userid) as ux
+					ON ux.userid = u.id
+				LEFT JOIN (
+					SELECT ue.userid, AVG( sx.avarage ) AS grade 
+						FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
+							LEFT JOIN (
+								SELECT e.courseid, AVG( (gg.finalgrade/gg.rawgrademax)*100 ) AS avarage 
+									FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_grade_grades gg, mdl_enrol e, mdl_grade_items gi
+										WHERE gg.userid = ue.userid AND gi.iteminstance = e.courseid AND gi.itemname != '' AND gg.itemid = gi.id AND gg.finalgrade IS NOT NULL AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
+											GROUP BY e.courseid)  sx 
+							ON sx.courseid = e.courseid
+						WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
+							GROUP BY ue.userid) as uz 
+					ON uz.userid = u.id
+			WHERE a.userid = u.id AND (a.roleid = 3 OR a.roleid = 4)
+				GROUP BY u.id");
 	}
 	function get_users_moodle($timestart=0, $timefinish =0)
 	{
@@ -582,6 +640,13 @@ class local_intelliboard_external extends external_api {
 		global $USER, $CFG, $DB;
 
 		return $DB->get_records_sql("SELECT id, name FROM {$CFG->prefix}cohort ORDER BY name");
+	}
+	function get_info($timestart=0, $timefinish =0){
+		global $USER, $CFG, $DB;
+		
+		require_once($CFG->libdir.'/adminlib.php');
+		
+		return array('version' => get_component_version('local_intelliboard'));
 	}
 	function get_courses($timestart=0, $timefinish =0)
 	{
