@@ -222,58 +222,119 @@ class local_intelliboard_external extends external_api {
 
 		return $DB->get_records_sql("
 		SELECT u.id, CONCAT(u.firstname, ' ', u.lastname) name, a.roleid, ue.courses, ue.leaners, ui.activeleanres, ux.compleatedleanres, uz.grade
-			FROM mdl_role_assignments a, mdl_user u
+			FROM {$CFG->prefix}role_assignments a, {$CFG->prefix}user u
 				LEFT JOIN (
 					SELECT ue.userid, count(e.courseid) as courses, SUM(sx.users) as leaners
-						FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
+						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
 							LEFT JOIN (
 								SELECT e.courseid, count(ue.userid) as users
-									FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
-										WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
+									FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
+										WHERE ue.timecreated BETWEEN $timestart AND $timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
 											GROUP BY e.courseid)  sx
 							ON sx.courseid = e.courseid
-						WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
+						WHERE ue.timecreated BETWEEN $timestart AND $timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
 							GROUP BY ue.userid) as ue
 					ON ue.userid = u.id
 				LEFT JOIN (
 					SELECT ue.userid, SUM(sx.users) as activeleanres 
-						FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
+						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
 							LEFT JOIN (
 								SELECT e.courseid, count(ue.userid) as users 
-									FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_user u, mdl_enrol e
-										WHERE u.id = ra.userid AND u.lastaccess > ".strtotime('-30 days')." AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
+									FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}user u, {$CFG->prefix}enrol e
+										WHERE ue.timecreated BETWEEN $timestart AND $timefinish AND u.id = ra.userid AND u.lastaccess > ".strtotime('-30 days')." AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
 											GROUP BY e.courseid)  sx 
 							ON sx.courseid = e.courseid
-						WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
+						WHERE ue.timecreated BETWEEN $timestart AND $timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
 							GROUP BY ue.userid) as ui 
 					ON ui.userid = u.id
 				LEFT JOIN (
 					SELECT ue.userid, SUM(sx.users) as compleatedleanres 
-						FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
+						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
 							LEFT JOIN (
 								SELECT e.courseid, count(ue.userid) as users 
-									FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_course_completions cc, mdl_enrol e
-										WHERE cc.userid = ra.userid AND cc.course = e.courseid AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
+									FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}course_completions cc, {$CFG->prefix}enrol e
+										WHERE ue.timecreated BETWEEN $timestart AND $timefinish AND cc.userid = ra.userid AND cc.course = e.courseid AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
 											GROUP BY e.courseid)  sx 
 							ON sx.courseid = e.courseid
-						WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
+						WHERE ue.timecreated BETWEEN $timestart AND $timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
 							GROUP BY ue.userid) as ux
 					ON ux.userid = u.id
 				LEFT JOIN (
 					SELECT ue.userid, AVG( sx.avarage ) AS grade 
-						FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_enrol e
+						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
 							LEFT JOIN (
 								SELECT e.courseid, AVG( (gg.finalgrade/gg.rawgrademax)*100 ) AS avarage 
-									FROM mdl_role_assignments ra, mdl_user_enrolments ue, mdl_context cxt, mdl_grade_grades gg, mdl_enrol e, mdl_grade_items gi
-										WHERE gg.userid = ue.userid AND gi.iteminstance = e.courseid AND gi.itemname != '' AND gg.itemid = gi.id AND gg.finalgrade IS NOT NULL AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
+									FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}grade_grades gg, {$CFG->prefix}enrol e, {$CFG->prefix}grade_items gi
+										WHERE ue.timecreated BETWEEN $timestart AND $timefinish AND gg.userid = ue.userid AND gi.iteminstance = e.courseid AND gi.itemname != '' AND gg.itemid = gi.id AND gg.finalgrade IS NOT NULL AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
 											GROUP BY e.courseid)  sx 
 							ON sx.courseid = e.courseid
-						WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
+						WHERE ue.timecreated BETWEEN $timestart AND $timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
 							GROUP BY ue.userid) as uz 
 					ON uz.userid = u.id
 			WHERE a.userid = u.id AND (a.roleid = 3 OR a.roleid = 4)
 				GROUP BY u.id");
 	}
+	function report9($timestart=0, $timefinish =0)
+	{
+		global $USER, $CFG, $DB;
+			
+		return $DB->get_records_sql("SELECT q.id, q.name, q.questions, q.timemodified, q.timeopen, q.timeclose, q.course, qa.attempts, qs.duration, qg.avgrade
+			FROM {$CFG->prefix}quiz q
+				LEFT JOIN (SELECT qa.quiz, count(qa.id) attempts FROM {$CFG->prefix}quiz_attempts qa  GROUP BY qa.quiz) qa ON qa.quiz = q.id
+				LEFT JOIN (SELECT qa.quiz, sum(qa.timefinish - qa.timestart) duration FROM {$CFG->prefix}quiz_attempts qa  GROUP BY qa.quiz) qs ON qs.quiz = q.id
+				LEFT JOIN (SELECT qg.quiz, avg( (qg.grade/q.grade)*100 ) avgrade FROM  {$CFG->prefix}quiz q, {$CFG->prefix}quiz_grades qg WHERE q.id = qg.quiz GROUP BY qg.quiz) qg ON qg.quiz = q.id
+			WHERE q.id > 0 and q.timemodified BETWEEN $timestart AND $timefinish");
+	}
+	function report10($timestart=0, $timefinish =0)
+	{
+		global $USER, $CFG, $DB;
+			
+		return $DB->get_records_sql("SELECT qa.id, q.name, q.course, qa.timestart, qa.timefinish, qa.state, CONCAT(u.firstname, ' ', u.lastname) username, u.email, (qa.sumgrades/q.sumgrades*100) as grade
+			FROM {$CFG->prefix}quiz_attempts qa
+                LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
+				LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
+			WHERE qa.id > 0 and qa.timestart BETWEEN $timestart AND $timefinish");
+	}
+	function report11($timestart=0, $timefinish =0)
+	{
+		global $USER, $CFG, $DB;
+			
+		return $DB->get_records_sql("SELECT ue.id, ci.id as compl_enabled, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, u.firstname, u.lastname, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
+						FROM {$CFG->prefix}user_enrolments as ue
+							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
+							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
+							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
+							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
+							LEFT JOIN (SELECT * FROM {$CFG->prefix}course_completion_criteria WHERE id > 0 GROUP BY course) as ci ON ci.course = e.courseid
+							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
+								WHERE u.id > 0 AND ue.timecreated BETWEEN $timestart AND $timefinish GROUP BY ue.userid, e.courseid");
+	}
+
+function get_questions($timestart=0, $timefinish =0, $keyword = 0)
+	{
+		global $USER, $CFG, $DB;
+			
+		return $DB->get_records_sql("SELECT qa.id, ROUND(((qa.maxmark * qas.fraction) * q.grade / q.sumgrades),2) as grade, qa.slot, qu.id as attempt, q.name as quiz, que.name as question, que.questiontext, qas.userid, qas.state, qas.timecreated FROM 
+					{$CFG->prefix}question_attempts qa,
+					{$CFG->prefix}question_attempt_steps qas,
+					{$CFG->prefix}question_usages qu,
+					{$CFG->prefix}question que,
+					{$CFG->prefix}quiz q,
+					{$CFG->prefix}context cx,
+					{$CFG->prefix}course_modules cm
+					WHERE
+					qu.id = $keyword AND
+					cm.instance = q.id AND
+					cx.instanceid = cm.id AND
+					qu.contextid = cx.id AND
+					qa.questionusageid = qu.id AND
+					qas.questionattemptid = qa.id AND
+					que.id = qa.questionid AND
+					qas.state != 'todo' AND qas.state != 'complete'
+					GROUP BY qa.id");
+	}
+
+	
 	function get_users_moodle($timestart=0, $timefinish =0)
 	{
 		global $USER, $CFG, $DB;
@@ -652,6 +713,6 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		return $DB->get_records_sql("SELECT id, fullname FROM {$CFG->prefix}course ORDER BY fullname");
+		return $DB->get_records_sql("SELECT id, fullname FROM {$CFG->prefix}course WHERE category > 0 ORDER BY fullname");
 	}
 }
