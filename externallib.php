@@ -289,11 +289,19 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 			
-		return $DB->get_records_sql("SELECT qa.id, q.name, q.course, qa.timestart, qa.timefinish, qa.state, CONCAT(u.firstname, ' ', u.lastname) username, u.email, (qa.sumgrades/q.sumgrades*100) as grade
-			FROM {$CFG->prefix}quiz_attempts qa
-                LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
-				LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
-			WHERE qa.id > 0 and qa.timestart BETWEEN $timestart AND $timefinish");
+		if($CFG->version < 2012120301){
+			return $DB->get_records_sql("SELECT qa.*, q.name, q.course, CONCAT(u.firstname, ' ', u.lastname) username, u.email, (qa.sumgrades/q.sumgrades*100) as grade
+				FROM {$CFG->prefix}quiz_attempts qa
+					LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
+					LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
+				WHERE qa.id > 0 and qa.timestart BETWEEN $timestart AND $timefinish");
+		}else{
+			return $DB->get_records_sql("SELECT qa.id, q.name, q.course, qa.timestart, qa.timefinish, qa.state, CONCAT(u.firstname, ' ', u.lastname) username, u.email, (qa.sumgrades/q.sumgrades*100) as grade
+				FROM {$CFG->prefix}quiz_attempts qa
+					LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
+					LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
+				WHERE qa.id > 0 and qa.timestart BETWEEN $timestart AND $timefinish");
+		}
 	}
 	function report11($timestart=0, $timefinish =0)
 	{
