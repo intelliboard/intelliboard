@@ -288,7 +288,7 @@ class local_intelliboard_external extends external_api {
 	function report10($timestart=0, $timefinish =0)
 	{
 		global $USER, $CFG, $DB;
-			
+		
 		if($CFG->version < 2012120301){
 			return $DB->get_records_sql("SELECT qa.*, q.name, q.course, CONCAT(u.firstname, ' ', u.lastname) username, u.email, (qa.sumgrades/q.sumgrades*100) as grade
 				FROM {$CFG->prefix}quiz_attempts qa
@@ -462,7 +462,7 @@ function get_questions($timestart=0, $timefinish =0, $keyword = 0)
 		global $USER, $CFG, $DB;
 		
 		return $DB->get_records_sql("
-					SELECT u.id, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.email, ue.courses, l.visits
+					SELECT u.id, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.lastaccess, u.email, ue.courses, l.visits
 						FROM {$CFG->prefix}user u
 							LEFT JOIN (SELECT userid, COUNT(id) as courses FROM {$CFG->prefix}user_enrolments WHERE timecreated BETWEEN $timestart AND $timefinish GROUP BY userid) ue ON ue.userid = u.id
 							LEFT JOIN (SELECT userid, COUNT(id) as visits FROM  {$CFG->prefix}log l WHERE time BETWEEN $timestart AND $timefinish GROUP BY userid) l ON l.userid = u.id
