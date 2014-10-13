@@ -29,6 +29,10 @@ set_time_limit(0);
 
 class local_intelliboard_external extends external_api {
 
+	var $users = 0;
+	
+	var $courses = 0;
+	
     /**
      * Returns description of method parameters
      * @return external_function_parameters
@@ -46,6 +50,7 @@ class local_intelliboard_external extends external_api {
                             'order_column' => new external_value(PARAM_INT, 'Moodle param', VALUE_OPTIONAL),
                             'order_dir' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
                             'filter' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
+                            'userid' => new external_value(PARAM_INT, 'Moodle param', VALUE_OPTIONAL),
                         )
                     )
 				)
@@ -117,39 +122,57 @@ class local_intelliboard_external extends external_api {
 			return "";
 		}
 	}
+	function get_userinfo($params){
+		global $USER, $CFG, $DB;
+		
+		return $DB->get_record_sql("SELECT id, firstname, lastname, email, city, country
+			FROM {$CFG->prefix}user WHERE id = ".$params->filter);
+	}
+	function get_tutors($params){
+		global $USER, $CFG, $DB;
+		
+		return $DB->get_records_sql("SELECT u.id,  CONCAT(u.firstname, ' ', u.lastname) as name, u.email 
+			FROM {$CFG->prefix}user u
+				LEFT JOIN {$CFG->prefix}role_assignments a ON a.userid = u.id  
+				WHERE (a.roleid = 3 OR a.roleid = 4) AND u.deleted = 0 AND u.confirmed = 1 GROUP BY u.id");
+	}
 	function report1($params)
 	{
 		global $USER, $CFG, $DB;
 		
-		return $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS ue.id, ccc.cohorts, ci.id as compl_enabled, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT(u.firstname, ' ', u.lastname) as name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		
+		return $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS ue.id, ccc.cohorts, c.enablecompletion, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT(u.firstname, ' ', u.lastname) as name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
 						FROM {$CFG->prefix}user_enrolments as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
 							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
 							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
-							LEFT JOIN (SELECT * FROM {$CFG->prefix}course_completion_criteria WHERE id > 0 GROUP BY course) as ci ON ci.course = e.courseid
 							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
 							LEFT JOIN (SELECT userid, GROUP_CONCAT( CAST( cc.cohortid AS CHAR )) AS cohorts FROM {$CFG->prefix}cohort_members cc GROUP BY cc.userid) ccc ON ccc.userid = u.id
-								WHERE u.id > 0 AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
+								WHERE u.id > 0 $sql AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
 	}
 	
 	function report2($params)
 	{
 		global $USER, $CFG, $DB;
 		
-		return $DB->get_records_sql("SELECT c.id, ci.id as compl_enabled, c.timecreated as created, c.fullname as course_name, e.leaners, cc.aleaners, gc.agrade, cm.modules
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		
+		return $DB->get_records_sql("SELECT c.id, c.enablecompletion, c.timecreated as created, c.fullname as course_name, e.leaners, cc.aleaners, gc.agrade, cm.modules
 						FROM {$CFG->prefix}course as c
 							LEFT JOIN (SELECT course, count( id ) AS modules FROM {$CFG->prefix}course_modules WHERE visible = 1 GROUP BY course) cm ON cm.course = c.id
 							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS agrade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
 							LEFT JOIN (SELECT e.courseid, count( ue.enrolid ) AS leaners FROM {$CFG->prefix}user_enrolments ue,{$CFG->prefix}enrol e WHERE ue.enrolid = e.id AND ue.timemodified BETWEEN $params->timestart AND $params->timefinish  GROUP BY e.courseid) e ON e.courseid = c.id
 							LEFT JOIN (SELECT course, count(id) as aleaners FROM {$CFG->prefix}course_completions WHERE timecompleted BETWEEN $params->timestart AND $params->timefinish  GROUP BY course) as cc ON cc.course = c.id	
-							LEFT JOIN (SELECT * FROM {$CFG->prefix}course_completion_criteria WHERE id > 0 GROUP BY course) as ci ON ci.course = c.id
-								WHERE c.visible=1 AND c.category > 0");
+								WHERE c.visible=1 $sql AND c.category > 0");
 	}
 	function report3($params)
 	{
 		global $USER, $CFG, $DB;
 
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		
 		$report3 = $DB->get_records_sql("SELECT gg.id, ccc.cohorts, cmc.completionstate, iq.name as iqname, isc.name as isname, gg.timemodified as completion_date, cm.id as cmid, cm.instance, cm.completion, c.id as cid, c.fullname, u.id AS uid, CONCAT(u.firstname, ' ', u.lastname) as learner, u.email, m.name AS module_name, gg.finalgrade, gg.timecreated as start_time
 						FROM {$CFG->prefix}course_modules cm
 							LEFT JOIN {$CFG->prefix}grade_items gi ON gi.iteminstance = cm.instance
@@ -161,7 +184,7 @@ class local_intelliboard_external extends external_api {
 							LEFT JOIN {$CFG->prefix}scorm as isc ON isc.id = cm.instance
 							LEFT JOIN {$CFG->prefix}course_modules_completion as cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
 							LEFT JOIN (SELECT userid, GROUP_CONCAT( CAST( cc.cohortid AS CHAR )) AS cohorts FROM {$CFG->prefix}cohort_members cc GROUP BY cc.userid) ccc ON ccc.userid = u.id
-								WHERE (m.name = 'quiz' OR m.name = 'scorm') AND gg.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY gg.id");
+								WHERE (m.name = 'quiz' OR m.name = 'scorm') $sql AND gg.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY gg.id");
 
 		if(!empty($report3)){
 			foreach($report3 as &$wrow){
@@ -180,16 +203,18 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
+		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		
 		return $DB->get_records_sql("SELECT u.id, ccc.cohorts, com.compl, cmcn.not_activities, u.firstaccess as registered, ue.courses, gc.avarage, cm.completed_courses, cmc.completed_activities,  CONCAT(u.firstname, ' ', u.lastname) as learner, u.email 
 						FROM {$CFG->prefix}user as u
 							LEFT JOIN (SELECT ue.userid, count(distinct(e.courseid)) AS courses FROM {$CFG->prefix}user_enrolments AS ue, {$CFG->prefix}enrol AS e WHERE e.id = enrolid GROUP BY ue.userid) as ue ON ue.userid = u.id
-							LEFT JOIN (SELECT ue.userid, count(distinct(e.courseid)) AS compl FROM {$CFG->prefix}user_enrolments AS ue, {$CFG->prefix}enrol AS e, {$CFG->prefix}course_completion_criteria cc WHERE e.id = enrolid AND e.courseid = cc.course GROUP BY ue.userid) as com ON com.userid = u.id
+							LEFT JOIN (SELECT ue.userid, count(distinct(e.courseid)) AS compl FROM {$CFG->prefix}user_enrolments AS ue, {$CFG->prefix}enrol AS e, {$CFG->prefix}course c WHERE e.id = enrolid AND e.courseid = c.id AND c.enablecompletion = 1 GROUP BY ue.userid) as com ON com.userid = u.id
 							LEFT JOIN (SELECT userid, count(id) as completed_courses FROM {$CFG->prefix}course_completions WHERE timecompleted > 0 GROUP BY userid) as cm ON cm.userid = u.id
 							LEFT JOIN (SELECT cmc.userid, count(cmc.id) as completed_activities FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.completion > 0 GROUP BY cmc.userid) as cmc ON cmc.userid = u.id
 							LEFT JOIN (SELECT cmc.userid, count(cmc.id) as not_activities FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.completion = 0 GROUP BY cmc.userid) as cmcn ON cmcn.userid = u.id
 							LEFT JOIN (SELECT g.userid, AVG( (g.finalgrade/g.rawgrademax)*100) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY g.userid) as gc ON gc.userid = u.id
 							LEFT JOIN (SELECT userid, GROUP_CONCAT( CAST( cc.cohortid AS CHAR )) AS cohorts FROM {$CFG->prefix}cohort_members cc GROUP BY cc.userid) ccc ON ccc.userid = u.id							
-							WHERE u.id > 0 AND u.firstaccess BETWEEN $params->timestart AND $params->timefinish");
+							WHERE u.id > 0 $sql AND u.firstaccess BETWEEN $params->timestart AND $params->timefinish");
 	}
 	function report5($params)
 	{
@@ -212,30 +237,32 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		return $DB->get_records_sql("SELECT ue.id, ccc.gradepass, cmc.cmcnums, l.views, ci.id as compl_enabled, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		
+		return $DB->get_records_sql("SELECT ue.id, ccc.gradepass, cmc.cmcnums, l.views, c.enablecompletion, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
 						FROM {$CFG->prefix}user_enrolments as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
 							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
 							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
 							LEFT JOIN {$CFG->prefix}course_completion_criteria as ccc ON ccc.course = e.courseid AND ccc.criteriatype = 6
-							LEFT JOIN (SELECT * FROM {$CFG->prefix}course_completion_criteria WHERE id > 0 GROUP BY course) as ci ON ci.course = e.courseid
 							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnums FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = u.id
 							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
 							LEFT JOIN (SELECT l.userid, l.course, count(id) as views FROM {$CFG->prefix}log l WHERE l.course > 1 and l.time BETWEEN $params->timestart AND $params->timefinish GROUP BY l.course, l.userid) as l ON l.course = c.id AND l.userid = u.id
-								WHERE u.id > 0 AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
+								WHERE u.id > 0 $sql AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
 	}
 	function report7($params)
 	{
 		global $USER, $CFG, $DB;
 
-		return $DB->get_records_sql("SELECT ue.id, ci.id as compl_enabled, ((cmca.cmcnuma / cma.cmnuma)*100 ) as assigments, ((cmc.cmcnums / cmx.cmnumx)*100 ) as completed, ((lcm.viewed / cm.cmnums)*100 ) as visited, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		
+		return $DB->get_records_sql("SELECT ue.id, c.enablecompletion, ((cmca.cmcnuma / cma.cmnuma)*100 ) as assigments, ((cmc.cmcnums / cmx.cmnumx)*100 ) as completed, ((lcm.viewed / cm.cmnums)*100 ) as visited, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
 						FROM {$CFG->prefix}user_enrolments as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
 							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
 							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
-							LEFT JOIN (SELECT * FROM {$CFG->prefix}course_completion_criteria WHERE id > 0 GROUP BY course) as ci ON ci.course = e.courseid
 							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnums FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = u.id
 							LEFT JOIN (SELECT cv.course, count(cv.id) as cmnums FROM {$CFG->prefix}course_modules cv WHERE cv.visible  =  1 GROUP BY cv.course) as cm ON cm.course = c.id
 							LEFT JOIN (SELECT cv.course, count(cv.id) as cmnumx FROM {$CFG->prefix}course_modules cv WHERE cv.completion  =  1 GROUP BY cv.course) as cmx ON cmx.course = c.id
@@ -243,7 +270,7 @@ class local_intelliboard_external extends external_api {
 							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnuma FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.module = 1 AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmca ON cmca.course = c.id AND cmca.userid = u.id
 							LEFT JOIN (SELECT l.userid, l.course, count(DISTINCT(l.cmid)) as viewed FROM {$CFG->prefix}log l WHERE l.cmid > 0 GROUP BY l.course, l.userid) as lcm ON lcm.course = c.id AND lcm.userid = u.id
 							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
-								WHERE u.id > 0 AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
+								WHERE u.id > 0 $sql AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
 	}
 	function report8($params)
 	{
@@ -306,13 +333,15 @@ class local_intelliboard_external extends external_api {
 	function report9($params)
 	{
 		global $USER, $CFG, $DB;
-			
+
+		$sql = $this->get_teacher_sql($params, "q.course", "courses");
+		
 		return $DB->get_records_sql("SELECT q.id, q.name, q.questions, q.timemodified, q.timeopen, q.timeclose, q.course, qa.attempts, qs.duration, qg.avgrade
 			FROM {$CFG->prefix}quiz q
-				LEFT JOIN (SELECT qa.quiz, count(qa.id) attempts FROM {$CFG->prefix}quiz_attempts qa  GROUP BY qa.quiz) qa ON qa.quiz = q.id
+				LEFT JOIN (SELECT qa.quiz, count(qa.id) attempts FROM {$CFG->prefix}quiz_attempts qa GROUP BY qa.quiz) qa ON qa.quiz = q.id
 				LEFT JOIN (SELECT qa.quiz, sum(qa.timefinish - qa.timestart) duration FROM {$CFG->prefix}quiz_attempts qa  GROUP BY qa.quiz) qs ON qs.quiz = q.id
 				LEFT JOIN (SELECT qg.quiz, avg( (qg.grade/q.grade)*100 ) avgrade FROM  {$CFG->prefix}quiz q, {$CFG->prefix}quiz_grades qg WHERE q.id = qg.quiz GROUP BY qg.quiz) qg ON qg.quiz = q.id
-			WHERE q.id > 0 and q.timemodified BETWEEN $params->timestart AND $params->timefinish");
+			WHERE q.id > 0 $sql and q.timemodified BETWEEN $params->timestart AND $params->timefinish");
 	}
 	function report10($params)
 	{
@@ -336,13 +365,12 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 			
-		return $DB->get_records_sql("SELECT ue.id, ci.id as compl_enabled, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT(u.firstname, ' ', u.lastname) username, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
+		return $DB->get_records_sql("SELECT ue.id, c.enablecompletion, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT(u.firstname, ' ', u.lastname) username, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
 						FROM {$CFG->prefix}user_enrolments as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
 							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
-							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
-							LEFT JOIN (SELECT * FROM {$CFG->prefix}course_completion_criteria WHERE id > 0 GROUP BY course) as ci ON ci.course = e.courseid
+							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid AND cc.userid = u.id
 							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
 								WHERE u.id > 0 AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
 	}
@@ -392,21 +420,25 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
+		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		
 		return $DB->get_records_sql("SELECT u.id, CONCAT(u.firstname, ' ', u.lastname) name, ue.courses, gc.avarage, ccc.visits
 						FROM {$CFG->prefix}user as u
 							LEFT JOIN (SELECT ue.userid, count(distinct(e.courseid)) AS courses FROM {$CFG->prefix}user_enrolments AS ue, {$CFG->prefix}enrol AS e WHERE e.id = enrolid AND ue.timemodified BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid) as ue ON ue.userid = u.id
 							LEFT JOIN (SELECT g.userid, AVG( (g.finalgrade/g.rawgrademax)*100) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN $params->timestart AND $params->timefinish GROUP BY g.userid) as gc ON gc.userid = u.id
 							LEFT JOIN (SELECT l.userid, count(l.id) as visits FROM {$CFG->prefix}log l WHERE l.time BETWEEN $params->timestart AND $params->timefinish GROUP BY l.userid) ccc ON ccc.userid = u.id							
-							WHERE u.id > 0");
+							WHERE u.id > 0 $sql");
 	}
 	function report15($params)
 	{
 		global $USER, $CFG, $DB;
 
+		$sql = $this->get_teacher_sql($params, "e.courseid", "courses");
+		
 		return $DB->get_records_sql("SELECT e.id, e.enrol, count(e.courseid) as courses, ue.users 
 										FROM {$CFG->prefix}enrol e 
 											LEFT JOIN (SELECT e.enrol, count(ue.userid) as users FROM {$CFG->prefix}enrol e,{$CFG->prefix}user_enrolments ue 
-										WHERE ue.enrolid = e.id GROUP BY e.enrol) ue ON ue.enrol = e.enrol WHERE e.id > 0 GROUP BY e.enrol");
+										WHERE ue.enrolid = e.id $sql GROUP BY e.enrol) ue ON ue.enrol = e.enrol WHERE e.id > 0 GROUP BY e.enrol");
 	}
 	
 	
@@ -447,13 +479,17 @@ class local_intelliboard_external extends external_api {
 		$params->timestart = strtotime('-1 day');
 		$params->timefinish = time();
 
+		$sql1 = $this->get_teacher_sql($params, "id", "courses");
+		$sql2 = $this->get_teacher_sql($params, "id", "users");
+		$sql3 = $this->get_teacher_sql($params, "userid", "users");
+		
 		return $DB->get_record_sql("SELECT 
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE timemodified BETWEEN $params->timestart AND $params->timefinish) as registered,
-			(SELECT count(*) FROM {$CFG->prefix}course WHERE timemodified BETWEEN $params->timestart AND $params->timefinish) as courses,
-			(SELECT count(*) FROM {$CFG->prefix}log WHERE time BETWEEN $params->timestart AND $params->timefinish) as logs,
-			(SELECT count(*) FROM {$CFG->prefix}log WHERE action = 'view' AND module = 'course' AND time BETWEEN $params->timestart AND $params->timefinish) as hours,
-			(SELECT count(*) FROM {$CFG->prefix}course_completions WHERE timecompleted BETWEEN $params->timestart AND $params->timefinish) as completed,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE suspended = 1 AND timemodified BETWEEN $params->timestart AND $params->timefinish) as suspended");
+			(SELECT count(*) FROM {$CFG->prefix}user WHERE timemodified BETWEEN $params->timestart AND $params->timefinish $sql2) as registered,
+			(SELECT count(*) FROM {$CFG->prefix}course WHERE timemodified BETWEEN $params->timestart AND $params->timefinish $sql1) as courses,
+			(SELECT count(*) FROM {$CFG->prefix}log WHERE time BETWEEN $params->timestart AND $params->timefinish $sql3) as logs,
+			(SELECT count(*) FROM {$CFG->prefix}log WHERE action = 'view' AND module = 'course' AND time BETWEEN $params->timestart AND $params->timefinish $sql3) as hours,
+			(SELECT count(*) FROM {$CFG->prefix}course_completions WHERE timecompleted BETWEEN $params->timestart AND $params->timefinish $sql3) as completed,
+			(SELECT count(*) FROM {$CFG->prefix}user WHERE suspended = 1 AND timemodified BETWEEN $params->timestart AND $params->timefinish $sql2) as suspended");
 	}
 	function get_activity_users($params)
 	{
@@ -462,13 +498,15 @@ class local_intelliboard_external extends external_api {
 		$params->timestart = strtotime('-30 days');
 		$params->timefinish = time();
 		
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		
 		return $DB->get_records_sql("SELECT ue.id, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, ue.timecreated, cx.id as context, c.id as cid, c.fullname
 					FROM {$CFG->prefix}user_enrolments ue
 						LEFT JOIN {$CFG->prefix}user u ON u.id = ue.userid
 						LEFT JOIN {$CFG->prefix}enrol e ON e.id = ue.enrolid
 						LEFT JOIN {$CFG->prefix}course c ON c.id = e.courseid
 						LEFT JOIN {$CFG->prefix}context cx ON cx.instanceid = u.id AND contextlevel = 30
-							WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.id ORDER BY ue.timecreated DESC LIMIT 10");
+							WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish $sql GROUP BY ue.id ORDER BY ue.timecreated DESC LIMIT 10");
 	}	
 	function get_activity_registrants($params)
 	{
@@ -477,63 +515,79 @@ class local_intelliboard_external extends external_api {
 		$params->timestart = strtotime('-30 days');
 		$params->timefinish = time();
 		
+		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		
 		return $DB->get_records_sql("SELECT u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.timecreated, cx.id as context
 					FROM {$CFG->prefix}user u
 						LEFT JOIN {$CFG->prefix}context cx ON cx.instanceid = u.id AND contextlevel = 30
-							WHERE u.timecreated BETWEEN $params->timestart AND $params->timefinish ORDER BY u.timecreated DESC LIMIT 10");
+							WHERE u.timecreated BETWEEN $params->timestart AND $params->timefinish $sql ORDER BY u.timecreated DESC LIMIT 10");
 	}	
-	function get_total_info()
+	function get_total_info($params)
 	{
 		global $USER, $CFG, $DB;
 
+		$sql = $this->get_teacher_sql($params, "userid", "users");
+		$sql2 = $this->get_teacher_sql($params, "id", "users");
+		$sql3 = $this->get_teacher_sql($params, "id", "courses");
+		
 		return $DB->get_record_sql("SELECT 
-			(SELECT count(*) FROM {$CFG->prefix}user) as users,
-			(SELECT count(*) FROM {$CFG->prefix}course) as courses,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE lastaccess > 0) as active,
-			(SELECT SUM(filesize) FROM {$CFG->prefix}files) as space,
-			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE component='user') as userspace,
-			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE filearea='content') as coursespace");
+			(SELECT count(*) FROM {$CFG->prefix}user WHERE id > 0 $sql2) as users,
+			(SELECT count(*) FROM {$CFG->prefix}course WHERE id > 0 $sql3) as courses,
+			(SELECT count(*) FROM {$CFG->prefix}user WHERE lastaccess > 0 $sql2) as active,
+			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE id > 0 $sql) as space,
+			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE component='user' $sql) as userspace,
+			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE filearea='content' $sql) as coursespace");
 	}	
-	function get_system_users()
+	function get_system_users($params)
 	{
 		global $USER, $CFG, $DB;
+		
+		$sql = $this->get_teacher_sql($params, "u.id", "users");
 
 		return $DB->get_record_sql("SELECT 
-			(SELECT count(*) FROM {$CFG->prefix}user) as users,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE lastaccess > 0) as active,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE confirmed = 0 OR deleted = 1) as deactive,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE lastlogin > 0) as returned,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE suspended = 1) as suspended,
-			(SELECT count(DISTINCT (c.userid)) FROM {$CFG->prefix}course_completions c) as graduated,
-			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.id = e.enrolid AND e.userid=u.id) as enrolled,
-			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.enrol = 'cohort' AND e.enrolid = ee.id AND e.userid=u.id) as enrol_cohort,
-			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.enrol = 'manual' AND e.enrolid = ee.id AND e.userid=u.id) as enrol_manual,
-			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.enrol = 'self' AND e.enrolid = ee.id AND e.userid=u.id) as enrol_self");
+			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.deleted = 0 $sql) as users,
+			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.lastaccess > 0 $sql) as active,
+			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.confirmed = 0 OR u.deleted = 1 $sql) as deactive,
+			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.lastlogin > 0 $sql) as returned,
+			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.suspended = 1 $sql) as suspended,
+			(SELECT count(DISTINCT (c.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}course_completions c WHERE u.id = c.id $sql) as graduated,
+			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.id = e.enrolid AND e.userid=u.id $sql) as enrolled,
+			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.enrol = 'cohort' AND e.enrolid = ee.id AND e.userid=u.id $sql) as enrol_cohort,
+			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.enrol = 'manual' AND e.enrolid = ee.id AND e.userid=u.id $sql) as enrol_manual,
+			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.enrol = 'self' AND e.enrolid = ee.id AND e.userid=u.id $sql) as enrol_self");
 	}
-	function get_system_courses()
+	function get_system_courses($params)
 	{
 		global $USER, $CFG, $DB;
-		 		
+
+		$sql1 = $this->get_teacher_sql($params, "course", "courses");
+		$sql2 = $this->get_teacher_sql($params, "id", "courses");
+		$sql3 = $this->get_teacher_sql($params, "cm.course", "courses");
+		$sql4 = $this->get_teacher_sql($params, "userid", "users");
+		
 		return $DB->get_record_sql("SELECT
-			(SELECT count(*) FROM {$CFG->prefix}course_completions) as graduates,
-			(SELECT count(*) FROM {$CFG->prefix}course_modules) as modules,
-			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 1 AND category > 0) as visible,
-			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 0 AND category > 0  ) as hidden,
-			(SELECT count(*) FROM {$CFG->prefix}role_assignments WHERE roleid = 5) as students,
-			(SELECT count(*) FROM {$CFG->prefix}role_assignments WHERE roleid = 3 ) as tutors,
-			(SELECT count(*) FROM {$CFG->prefix}course_modules_completion) as completed,
-			(SELECT COUNT(DISTINCT (userid)) FROM {$CFG->prefix}log WHERE cmid > 0) as reviewed,
-			(SELECT count(cm.id) FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE m.name = 'certificate' AND cm.module = m.id) as certificates");
+			(SELECT count(*) FROM {$CFG->prefix}course_completions WHERE timecompleted > 0 $sql1) as graduates,
+			(SELECT count(*) FROM {$CFG->prefix}course_modules WHERE visible = 1 $sql1) as modules,
+			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 1 AND category > 0 $sql2) as visible,
+			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 0 AND category > 0 $sql2) as hidden,
+			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}user_enrolments WHERE status = 1 $sql4) as expired,
+			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid = 5 $sql4 GROUP BY roleid) as students,
+			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid = 3 $sql4 GROUP BY roleid) as tutors,
+			(SELECT count(*) FROM {$CFG->prefix}course_modules_completion WHERE completionstate > 0 $sql4) as completed,
+			(SELECT COUNT(DISTINCT (userid)) FROM {$CFG->prefix}log WHERE cmid > 0 $sql1) as reviewed,
+			(SELECT count(cm.id) FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE m.name = 'certificate' AND cm.module = m.id $sql3) as certificates");
 	}
 
-	function get_system_load()
+	function get_system_load($params)
 	{
 		global $USER, $CFG, $DB;
-		 
+		
+		$sql = $this->get_teacher_sql($params, "userid", "users");
+		
 		return $DB->get_record_sql("SELECT 
-			(SELECT count(*) FROM {$CFG->prefix}log) as site,
-			(SELECT count(*) FROM {$CFG->prefix}log WHERE module = 'course') as course,
-            (SELECT count(*) FROM {$CFG->prefix}log WHERE cmid > 0) as activity");
+			(SELECT count(*) FROM {$CFG->prefix}log WHERE id > 0 $sql) as site,
+			(SELECT count(*) FROM {$CFG->prefix}log WHERE module = 'course' $sql) as course,
+            (SELECT count(*) FROM {$CFG->prefix}log WHERE cmid > 0 $sql) as activity");
 	}
 
 	function get_module_visits($params)
@@ -546,7 +600,7 @@ class local_intelliboard_external extends external_api {
 	function get_users_count($params)
 	{
 		global $USER, $CFG, $DB;
-
+		
 		return $DB->get_record_sql("SELECT 
 			(SELECT count(*) FROM {$CFG->prefix}user WHERE timecreated BETWEEN $params->timestart AND $params->timefinish) as registered,
 			(SELECT count(*) FROM {$CFG->prefix}user WHERE lastaccess BETWEEN $params->timestart AND $params->timefinish) as active,
@@ -559,11 +613,13 @@ class local_intelliboard_external extends external_api {
 	{
 		 global $USER, $CFG, $DB;
 		 
+		$sql = $this->get_teacher_sql($params, "l.course", "courses");
+		
 		return $DB->get_records_sql("SELECT c.id, c.fullname, count(l.id) as nums , gc.grade
 				FROM {$CFG->prefix}log l 
-				LEFT JOIN {$CFG->prefix}course c ON c.id = course 
-				LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
-					WHERE l.course > 1 AND l.time BETWEEN $params->timestart AND $params->timefinish 
+				LEFT JOIN {$CFG->prefix}course c ON c.id = l.course 
+				LEFT JOIN (SELECT gi.courseid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
+					WHERE l.course > 1 $sql AND l.time BETWEEN $params->timestart AND $params->timefinish 
 						GROUP BY l.course 
 							ORDER BY nums DESC 
 								LIMIT 10");
@@ -572,18 +628,22 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 		
-		return $DB->get_records_sql("SELECT c.id, c.fullname, l.nums FROM {$CFG->prefix}course c LEFT JOIN (SELECT l.course, count( l.course ) AS nums FROM {$CFG->prefix}log l WHERE l.course >0 AND l.time BETWEEN $params->timestart AND $params->timefinish GROUP BY l.course)l ON l.course = c.id WHERE l.nums < 3 LIMIT 10");
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		
+		return $DB->get_records_sql("SELECT c.id, c.fullname, l.nums, c.timecreated FROM {$CFG->prefix}course c LEFT JOIN (SELECT l.course, count( l.course ) AS nums FROM {$CFG->prefix}log l WHERE l.course >0 $sql AND l.time BETWEEN $params->timestart AND $params->timefinish GROUP BY l.course)l ON l.course = c.id WHERE l.nums < 3 LIMIT 10");
 	}
 	function get_active_users($params)
 	{
 		global $USER, $CFG, $DB;
 		
+		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		
 		return $DB->get_records_sql("
 					SELECT u.id, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.lastaccess, u.email, ue.courses, l.visits
 						FROM {$CFG->prefix}user u
-							LEFT JOIN (SELECT userid, COUNT(id) as courses FROM {$CFG->prefix}user_enrolments WHERE timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY userid) ue ON ue.userid = u.id
-							LEFT JOIN (SELECT userid, COUNT(id) as visits FROM  {$CFG->prefix}log l WHERE time BETWEEN $params->timestart AND $params->timefinish GROUP BY userid) l ON l.userid = u.id
-								WHERE l.visits > 0
+							LEFT JOIN (SELECT userid, COUNT(id) as courses FROM {$CFG->prefix}user_enrolments WHERE id > 0 GROUP BY userid) ue ON ue.userid = u.id
+							LEFT JOIN (SELECT userid, COUNT(id) as visits FROM  {$CFG->prefix}log l WHERE id > 0 GROUP BY userid) l ON l.userid = u.id
+								WHERE u.lastaccess BETWEEN $params->timestart AND $params->timefinish AND l.visits > 0 $sql
 									ORDER BY l.visits DESC
 										LIMIT 10");
 	}
@@ -592,17 +652,21 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 		
-		return $DB->get_records_sql("SELECT c.id, c.fullname, count( ue.id ) AS nums FROM {$CFG->prefix}course c, {$CFG->prefix}enrol e, {$CFG->prefix}user_enrolments ue WHERE e.courseid = c.id AND ue.enrolid =e.id AND ue.timemodified BETWEEN $params->timestart AND $params->timefinish GROUP BY c.id");
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		
+		return $DB->get_records_sql("SELECT c.id, c.fullname, count( ue.id ) AS nums FROM {$CFG->prefix}course c, {$CFG->prefix}enrol e, {$CFG->prefix}user_enrolments ue WHERE e.courseid = c.id AND ue.enrolid =e.id $sql AND ue.timemodified BETWEEN $params->timestart AND $params->timefinish GROUP BY c.id");
 	}	
 	function get_size_courses($params)
 	{
 		global $USER, $CFG, $DB;
 		
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		
 		return $DB->get_records_sql("SELECT c.id, c.timecreated, c.fullname, fs.coursesize, l.visits
 				FROM {$CFG->prefix}course c
 					LEFT JOIN (SELECT c.instanceid AS course, sum( f.filesize ) as coursesize FROM {$CFG->prefix}files f, {$CFG->prefix}context c WHERE c.id = f.contextid AND f.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY c.instanceid) fs ON fs.course = c.id
 					LEFT JOIN (SELECT course, count(id) AS visits FROM {$CFG->prefix}log WHERE time BETWEEN $params->timestart AND $params->timefinish GROUP BY course) l ON l.course = c.id
-						WHERE c.category > 0 LIMIT 20");
+						WHERE c.category > 0 $sql LIMIT 20");
 		
 	}
 	function get_active_ip_users($params, $limit = 10)
@@ -636,9 +700,11 @@ class local_intelliboard_external extends external_api {
 			$ext = 31556926; //by year
 		}
 		
+		$sql = $this->get_teacher_sql($params, "course", "courses");
+		
 		$data = $DB->get_records_sql("(SELECT floor(time / $ext) * $ext as time, COUNT(DISTINCT (course)) as courses
 				FROM {$CFG->prefix}log
-					WHERE module='course' and action='view' AND time BETWEEN $params->timestart AND $params->timefinish 
+					WHERE module='course' and action='view' $sql AND time BETWEEN $params->timestart AND $params->timefinish 
 						GROUP BY floor(time / $ext) * $ext
 							ORDER BY time DESC)");	
 						
@@ -741,17 +807,21 @@ class local_intelliboard_external extends external_api {
 		}else{
 			$ext = 31556926; //by year
 		}
+		$sql = $this->get_teacher_sql($params, "id", "users");
 		
 		$data = $DB->get_records_sql("(SELECT floor(timecreated / $ext) * $ext as time, COUNT(id) as users
 				FROM {$CFG->prefix}user
-					WHERE timecreated BETWEEN $params->timestart AND $params->timefinish 
+					WHERE timecreated BETWEEN $params->timestart AND $params->timefinish $sql 
 						GROUP BY floor(timecreated / $ext) * $ext
 							ORDER BY timecreated DESC)");
 						
 		$response = array();
+		$response[] = ($params->timefinish+86400).'.0';
 		foreach($data as $item){
 			$response[] = $item->time.'.'.$item->users;
 		}
+		$response[] = ($params->timestart-86400).'.0';
+		
 		
 		$obj = new stdClass();
 		$obj->id = 0;
@@ -776,17 +846,20 @@ class local_intelliboard_external extends external_api {
 		}else{
 			$ext = 31556926; //by year
 		}
-
+		$sql = $this->get_teacher_sql($params, "userid", "users");
+		
 		$data = $DB->get_records_sql("
 			(SELECT floor(time / $ext) * $ext as time, COUNT(DISTINCT (userid)) as users
 				FROM {$CFG->prefix}log
-					WHERE userid>0 AND time BETWEEN $params->timestart AND $params->timefinish
+					WHERE userid>0 AND time BETWEEN $params->timestart AND $params->timefinish $sql
 						GROUP BY floor(time / $ext) * $ext
 							ORDER BY time DESC)");
 		$response = array();
+		$response[] = ($params->timefinish+86400).'.0';
 		foreach($data as $item){
 			$response[] = $item->time.'.'.$item->users;
 		}
+		$response[] = ($params->timestart-86400).'.0';
 		$obj = new stdClass();
 		$obj->id = 0;
 		$obj->data = implode(',', $response);
@@ -797,14 +870,18 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 		
+		$sql = $this->get_teacher_sql($params, "l.userid", "users");
+		
 		return $DB->get_record_sql("SELECT
-				(SELECT count(*) as logs FROM {$CFG->prefix}log l WHERE l.time BETWEEN $params->timestart AND $params->timefinish) as site,
-				(SELECT count(*) as logs FROM {$CFG->prefix}log l WHERE l.time AND l.module = 'course' AND l.time BETWEEN $params->timestart AND $params->timefinish) as course,
-				(SELECT count(*) as logs FROM {$CFG->prefix}log l WHERE l.time AND l.cmid > 0 AND l.time BETWEEN $params->timestart AND $params->timefinish) as activity");
+				(SELECT count(*) as logs FROM {$CFG->prefix}log l WHERE l.time BETWEEN $params->timestart AND $params->timefinish $sql) as site,
+				(SELECT count(*) as logs FROM {$CFG->prefix}log l WHERE l.time $sql AND l.module = 'course' AND l.time BETWEEN $params->timestart AND $params->timefinish) as course,
+				(SELECT count(*) as logs FROM {$CFG->prefix}log l WHERE l.time $sql AND l.cmid > 0 AND l.time BETWEEN $params->timestart AND $params->timefinish) as activity");
 	}
 	function db_search_users($params)
 	{
 		global $USER, $CFG, $DB;
+		
+		$sql = $this->get_teacher_sql($params, "id", "users");
 		
 		$sql_u = "firstname LIKE '%$params->filter%' OR lastname LIKE '%$params->filter%' OR email LIKE '%$params->filter%'";
 		$array = explode(" ", $params->filter);
@@ -814,7 +891,7 @@ class local_intelliboard_external extends external_api {
 			}
 		}
 		
-		return $DB->get_records_sql("SELECT id, firstname, lastname, email, lastaccess FROM {user} WHERE id > 1 AND ($sql_u) LIMIT 0, 10");
+		return $DB->get_records_sql("SELECT id, firstname, lastname, email, lastaccess FROM {user} WHERE id > 1 AND ($sql_u) $sql LIMIT 0, 10");
 	}
 	function db_search_courses($params)
 	{
@@ -827,20 +904,23 @@ class local_intelliboard_external extends external_api {
 				$sql_c .= " OR fullname LIKE '%$s%' OR summary LIKE '%$s%'";
 			}
 		}
+		$sql = $this->get_teacher_sql($params, "c.id", "courses");
 		
 		return $DB->get_records_sql("SELECT c.id, c.fullname, c.timemodified, l.size
 							FROM {course} c
 								LEFT JOIN (SELECT l.course, count( l.course ) AS size
-									FROM {log} l WHERE l.course >0 GROUP BY l.course)l ON l.course = c.id WHERE $sql_c LIMIT 0, 10");
+									FROM {log} l WHERE l.course >0 GROUP BY l.course)l ON l.course = c.id WHERE $sql_c $sql LIMIT 0, 10");
 	}
 	function get_markers($params)
 	{
 		global $USER, $CFG, $DB;
 
+		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		
 		return $DB->get_records_sql("SELECT l.userid, l.ip, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.email
 				FROM {$CFG->prefix}user u
 					LEFT JOIN {$CFG->prefix}log l ON l.userid = u.id AND l.ip != '0:0:0:0:0:0:0:1'
-						WHERE u.confirmed = 1 AND u.deleted = 0 AND l.ip != '' 
+						WHERE u.confirmed = 1 AND u.deleted = 0 AND l.ip != '' $sql
 							GROUP BY u.id
 								ORDER BY u.id DESC LIMIT 50");
 	}
@@ -861,6 +941,71 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		return $DB->get_records_sql("SELECT id, fullname FROM {$CFG->prefix}course WHERE category > 0 ORDER BY fullname");
+		$sql = $this->get_teacher_sql($params, "id", "courses");
+		
+		return $DB->get_records_sql("SELECT id, fullname FROM {$CFG->prefix}course WHERE category > 0 $sql ORDER BY fullname");
+	}
+	
+	
+	function get_teacher_sql($params, $column, $type)
+	{
+		$sql = '';
+		if($params->userid){
+			if($type == "users"){
+				$courses = $this->get_teacher_courses($params, true);
+				$users = $this->get_teacher_leaners($params, true, $courses);
+				$sql = "AND $column IN($users)";
+			}elseif($type == "courses"){
+				$courses = $this->get_teacher_courses($params, true);
+				$sql = "AND $column IN($courses)";
+			}
+		}
+		return $sql;
+	}
+	function get_teacher_leaners($params, $format = false, $courses)
+	{
+		global $USER, $CFG, $DB;
+
+		if($this->users){
+			$users = $this->users;
+		}else{
+			$users = $this->users = $DB->get_records_sql("SELECT u.id FROM mdl_user AS u
+							JOIN {$CFG->prefix}role_assignments AS ra ON u.id = ra.userid
+							JOIN {$CFG->prefix}context AS ctx ON ra.contextid = ctx.id
+							JOIN {$CFG->prefix}course AS c ON c.id = ctx.instanceid
+								WHERE ra.roleid =5 AND ctx.instanceid = c.id AND c.visible=1 AND c.id IN($courses)
+									GROUP BY u.id");
+		}
+		if($format){
+			$ids = array();
+			foreach($users as $users){
+				$ids[] = $users->id;
+			}
+			return ($ids) ? implode(",", $ids) : 0;
+		}else{
+			return $users;
+		}
+	}
+	function get_teacher_courses($params, $format = false)
+	{
+		global $USER, $CFG, $DB;
+		
+		if($this->courses){
+			$courses = $this->courses;
+		}else{		
+			$courses = $this->courses = $DB->get_records_sql("SELECT c.id, c.fullname FROM {$CFG->prefix}course AS c, {$CFG->prefix}role_assignments AS ra
+				JOIN {$CFG->prefix}context AS ctx ON ra.contextid = ctx.id
+				WHERE c.visible=1 and ctx.instanceid = c.id AND ra.userid = $params->userid AND (ra.roleid = 3 OR ra.roleid = 4)");
+		}
+		if($format){	
+			$ids = array();
+			foreach($courses as $course){
+				$ids[] = $course->id;
+			}
+			return ($ids) ? implode(",", $ids) : 0;
+		}else{
+			return $courses;
+		}
+		
 	}
 }
