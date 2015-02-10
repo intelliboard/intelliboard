@@ -122,22 +122,36 @@ class local_intelliboard_external extends external_api {
 			return "";
 		}
 	}
-	
-	
+	function get_userinfo($params){
+		global $USER, $CFG, $DB;
+		
+		return $DB->get_record_sql("SELECT id, firstname, lastname, email, city, country
+			FROM {$CFG->prefix}user WHERE id = ".$params->filter);
+	}
+	function get_roles($params){
+		global $USER, $CFG, $DB;
+		
+		return $DB->get_records_sql("SELECT id, name, shortname
+			FROM {$CFG->prefix}role
+				WHERE archetype NOT IN ('student', 'guest', 'user', 'frontpage')
+					ORDER BY sortorder");
+	}
+	function get_tutors($params){
+		global $USER, $CFG, $DB;
+		
+		$filter = ($params->filter) ? "a.roleid = $params->filter" : "(a.roleid = 3 OR a.roleid = 4)";
+		return $DB->get_records_sql("SELECT u.id,  CONCAT(u.firstname, ' ', u.lastname) as name, u.email 
+			FROM {$CFG->prefix}user u
+				LEFT JOIN {$CFG->prefix}role_assignments a ON a.userid = u.id  
+				WHERE $filter AND u.deleted = 0 AND u.confirmed = 1 GROUP BY u.id");
+	}
 	function report1($params)
 	{
 		global $USER, $CFG, $DB;
 		
 		$sql = $this->get_teacher_sql($params, "c.id", "courses");
 		
-		$columns = array("u.firstname", "u.email", "c.fullname", "ue.timecreated", "gc.avarage", "cc.timecompleted"); 
-		
-		$sql_filter = $this->get_filter_sql($params->filter, $columns);
-		$sql_orger = $this->get_order_sql($params, $columns);
-		$sql_limit = $this->get_limit_sql($params);
-		
-		
-		$data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS ue.id, ccc.cohorts, c.enablecompletion, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT(u.firstname, ' ', u.lastname) as name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
+		return $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS ue.id, ccc.cohorts, c.enablecompletion, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT(u.firstname, ' ', u.lastname) as name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
 						FROM {$CFG->prefix}user_enrolments as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
@@ -145,13 +159,7 @@ class local_intelliboard_external extends external_api {
 							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
 							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
 							LEFT JOIN (SELECT userid, GROUP_CONCAT( CAST( cc.cohortid AS CHAR )) AS cohorts FROM {$CFG->prefix}cohort_members cc GROUP BY cc.userid) ccc ON ccc.userid = u.id
-								WHERE u.id > 0 $sql AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish $sql_filter GROUP BY ue.userid, e.courseid $sql_orger $sql_limit");
-		
-		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
-		return array(
-					"recordsTotal"    => key($size),
-					"recordsFiltered" => key($size),
-					"data"            => $data);
+								WHERE u.id > 0 $sql AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
 	}
 	
 	function report2($params)
@@ -1203,29 +1211,8 @@ class local_intelliboard_external extends external_api {
 		
 		return $DB->get_records_sql("SELECT id, fullname FROM {$CFG->prefix}course WHERE category > 0 $sql $sql_filter ORDER BY fullname $sql_limit");
 	}
-	function get_userinfo($params){
-		global $USER, $CFG, $DB;
-		
-		return $DB->get_record_sql("SELECT id, firstname, lastname, email, city, country
-			FROM {$CFG->prefix}user WHERE id = ".$params->filter);
-	}
-	function get_roles($params){
-		global $USER, $CFG, $DB;
-		
-		return $DB->get_records_sql("SELECT id, name, shortname
-			FROM {$CFG->prefix}role
-				WHERE archetype NOT IN ('student', 'guest', 'user', 'frontpage')
-					ORDER BY sortorder");
-	}
-	function get_tutors($params){
-		global $USER, $CFG, $DB;
-		
-		$filter = ($params->filter) ? "a.roleid = $params->filter" : "(a.roleid = 3 OR a.roleid = 4)";
-		return $DB->get_records_sql("SELECT u.id,  CONCAT(u.firstname, ' ', u.lastname) as name, u.email 
-			FROM {$CFG->prefix}user u
-				LEFT JOIN {$CFG->prefix}role_assignments a ON a.userid = u.id  
-				WHERE $filter AND u.deleted = 0 AND u.confirmed = 1 GROUP BY u.id");
-	}
+	
+	
 	function get_teacher_sql($params, $column, $type)
 	{
 		$sql = '';

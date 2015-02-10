@@ -23,7 +23,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'IntelliBoard Web service';
+$string['pluginname'] = 'IntelliBoard.net Plugin';
+$string['tracking_title'] = 'Time Tracking';
 $string['tracking'] = 'Session Tracking';
 $string['settings'] = 'Settings';
 $string['report'] = 'Report';
@@ -32,6 +33,6 @@ $string['inactivity_desc'] = 'User inactivity time (in seconds)';
 $string['ajax'] = 'Frequency';
 $string['ajax_desc'] = 'Session storing frequency via AJAX. 0 - AJAX disabled (in seconds)';
 $string['enabled'] = 'Enabled Tracking';
-$string['enabled_desc'] = 'Enable idle for Moodle';
+$string['enabled_desc'] = 'Enable Tracking';
 $string['trackadmin'] = 'Tracking Admins';
 $string['trackadmin_desc'] = 'Enable tracking for admin users (not recommended)';

@@ -24,8 +24,8 @@
  */
 
  
-$plugin->version  = 2015020900;
+$plugin->version  = 2015021000;
 $plugin->requires = 2011120500;
-$plugin->release = '1.0 (Build: 2014022100)';
+$plugin->release = '1.7';
 $plugin->maturity = MATURITY_STABLE;
 $plugin->component = 'local_intelliboard';

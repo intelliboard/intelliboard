@@ -31,6 +31,7 @@ if (!$ADMIN->locate('intelliboard')){
 	$ADMIN->add('localplugins', new admin_category('intelliboard', get_string('pluginname', 'local_intelliboard')));
 	$ADMIN->add('intelliboard', $settings);
 }
+$settings->add(new admin_setting_heading('local_intelliboard/tracking_title', get_string('tracking_title', 'local_intelliboard'), ''));
 
 $name = 'local_intelliboard/enabled';
 $title = get_string('enabled', 'local_intelliboard');
