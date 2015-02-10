@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+  <XMLDB PATH="local/intelliboard/db" VERSION="20141018" COMMENT="XMLDB file for Moodle local/intelliboard"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+  >
+    <TABLES>
+      <TABLE NAME="local_intelliboard_tracking" COMMENT="intelliboard log">
+        <FIELDS>
+          <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="userid"/>
+          <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="courseid" PREVIOUS="id"/>
+          <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="page" PREVIOUS="userid"/>
+		  <FIELD NAME="page" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" NEXT="param" PREVIOUS="courseid"/>
+		  <FIELD NAME="param" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="visits" PREVIOUS="page"/>
+		  <FIELD NAME="visits" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="timespend" PREVIOUS="param"/>
+		  <FIELD NAME="timespend" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="firstaccess" PREVIOUS="visits"/>
+		  <FIELD NAME="firstaccess" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="lastaccess" PREVIOUS="timespend"/>
+		  <FIELD NAME="lastaccess" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="useragent" PREVIOUS="firstaccess"/>
+		  <FIELD NAME="useragent" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" NEXT="useros" PREVIOUS="lastaccess"/>
+		  <FIELD NAME="useros" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" NEXT="userlang" PREVIOUS="useragent"/>
+		  <FIELD NAME="userlang" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" NEXT="userip" PREVIOUS="useros"/>
+		  <FIELD NAME="userip" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" PREVIOUS="userlang"/>
+        </FIELDS>
+        <KEYS>
+          <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        </KEYS>
+      </TABLE>
+    </TABLES>
+  </XMLDB>

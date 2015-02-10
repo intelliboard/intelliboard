@@ -22,10 +22,6 @@
  * @copyright  2014 SEBALE LLC
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
- 
-$plugin->version  = 2015020900;
-$plugin->requires = 2011120500;
-$plugin->release = '1.0 (Build: 2014022100)';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
+$ajaxRequest = true;
+require_once(dirname(__FILE__).'/lib.php');
