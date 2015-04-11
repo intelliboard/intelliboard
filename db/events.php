@@ -25,6 +25,26 @@
  * @created by	SEBALE LLC
  * @website		www.intelliboard.net
  */
-require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
-$ajaxRequest = true;
-require_once(dirname(__FILE__).'/lib.php');
+
+$handlers = array(
+    'user_created' => array (
+        'handlerfile'     => '/local/intelliboard/locallib.php',
+        'handlerfunction' => array('intelliboard_handler', 'notify_leaner_created'),
+        'schedule'        => 'instant',
+		'internal'        => 1,
+    ),    
+	'user_enrolled' => array (
+        'handlerfile'     => '/local/intelliboard/locallib.php',
+        'handlerfunction' => array('intelliboard_handler', 'notify_leaner_enrolled'),
+        'schedule'        => 'instant',
+		'internal'        => 1,
+    ),	
+	'user_enrol_modified' => array (
+        'handlerfile'     => '/local/intelliboard/locallib.php',
+        'handlerfunction' => array('intelliboard_handler', 'notify_leaner_enrolled'),
+        'schedule'        => 'instant',
+		'internal'        => 1,
+    ),
+);
+
+?>

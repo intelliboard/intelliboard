@@ -1,26 +1,29 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// IntelliBoard.net
 //
-// Moodle is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// IntelliBoard.net is built to work with any LMS designed in Moodle 
+// with the goal to deliver educational data analytics to single dashboard instantly. 
+// With power to turn this analytical data into simple and easy to read reports, 
+// IntelliBoard.net will become your primary reporting tool.
 //
+// Moodle
+// 
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// IntelliBoard.net is built as a plugin for Moodle.
 
 /**
  * IntelliBoard.net
  *
  *
- * @package    local_intelliboard
- * @copyright  2014 SEBALE LLC
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    	local_intelliboard
+ * @copyright  	2014-2015 SEBALE LLC
+ * @license    	http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @created by	SEBALE LLC
+ * @website		www.intelliboard.net
  */
 
 function getUserDetails()
@@ -66,7 +69,7 @@ function getUserDetails()
                             '/netscape/i'   =>  'Netscape',
                             '/maxthon/i'    =>  'Maxthon',
                             '/konqueror/i'  =>  'Konqueror',
-                            '/mobile/i'     =>  'Handheld Browser'
+                            '/mobile/i'     =>  'Mobile browser'
                         );
     foreach ($browser_array as $regex => $value) { 
         if (preg_match($regex, $user_agent)) {
@@ -105,7 +108,8 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		$intelliboardParam = clean_param($_COOKIE['intelliboardParam'], 0, PARAM_INT);
 		$intelliboardTime = clean_param($_COOKIE['intelliboardTime'], 0, PARAM_INT);
 		
-		if(!empty($intelliboardPage) and $intelliboardTime){
+		//die("$intelliboardPage - $intelliboardParam - $intelliboardTime");
+		if(!empty($intelliboardPage)){
 			$userDetails = (object)getUserDetails();
 			if($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')){
 				if(!$ajaxRequest){
@@ -173,5 +177,5 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		$PAGE->requires->js_function_call('intelliboardInit', array($params), false);
 	}
 }
-$ajaxRequest = $ajaxRequest || false;
+$ajaxRequest = (isset($ajaxRequest)) ? $ajaxRequest : false;
 insert_intelliboard_tracking($ajaxRequest);

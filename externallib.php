@@ -1,26 +1,29 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// IntelliBoard.net
 //
-// Moodle is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// IntelliBoard.net is built to work with any LMS designed in Moodle 
+// with the goal to deliver educational data analytics to single dashboard instantly. 
+// With power to turn this analytical data into simple and easy to read reports, 
+// IntelliBoard.net will become your primary reporting tool.
 //
+// Moodle
+// 
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// IntelliBoard.net is built as a plugin for Moodle.
 
 /**
  * IntelliBoard.net
  *
  *
- * @package    local_intelliboard
- * @copyright  2014 SEBALE LLC
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    	local_intelliboard
+ * @copyright  	2014-2015 SEBALE LLC
+ * @license    	http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @created by	SEBALE LLC
+ * @website		www.intelliboard.net
  */
 
 require_once($CFG->libdir . "/externallib.php");
@@ -50,7 +53,15 @@ class local_intelliboard_external extends external_api {
                             'order_column' => new external_value(PARAM_INT, 'Moodle param', VALUE_OPTIONAL),
                             'order_dir' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
                             'filter' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
+                            'columns' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
+                            'notification_enrol' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
+                            'notification_auth' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
+                            'notification_email' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
+                            'notification_subject' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
+                            'notification_message' => new external_value(PARAM_RAW, 'Moodle param', VALUE_OPTIONAL),
                             'userid' => new external_value(PARAM_INT, 'Moodle param', VALUE_OPTIONAL),
+                            'courseid' => new external_value(PARAM_INT, 'Moodle param', VALUE_OPTIONAL),
+                            'cohortid' => new external_value(PARAM_INT, 'Moodle param', VALUE_OPTIONAL)
                         )
                     )
 				)
@@ -117,327 +128,879 @@ class local_intelliboard_external extends external_api {
 			foreach($columns as $column){
 				$sql_arr[] = "$column LIKE '%$filter%'";
 			}
-			return "AND (" . implode(" OR ", $sql_arr) . ")";
+			return " HAVING " . implode(" OR ", $sql_arr);
+		}
+		return "";
+	}
+	function get_filter_columns($params)
+	{
+		if(!empty($params->columns)){
+			$data = array();
+			$columns = explode(",", $params->columns);
+			foreach($columns as $column){
+				$data[] = "field$column";
+			}
+			return $data;
+		}else{
+			return array();
+		}
+	}
+	function get_columns($params, $field = "u.id")
+	{
+		if(!empty($params->columns)){
+			$data = "";
+			$columns = explode(",", $params->columns);
+			foreach($columns as $column){
+				$data .= ", (SELECT d.data FROM {user_info_data} d, {user_info_field} f WHERE f.id = $column AND d.fieldid = f.id AND d.userid = $field) AS field$column";
+			}
+			return $data;
 		}else{
 			return "";
 		}
 	}
-	function get_userinfo($params){
-		global $USER, $CFG, $DB;
+	function getQuizAttemptsSql($type = "attempts")
+	{
+		global $CFG;
 		
-		return $DB->get_record_sql("SELECT id, firstname, lastname, email, city, country
-			FROM {$CFG->prefix}user WHERE id = ".$params->filter);
-	}
-	function get_roles($params){
-		global $USER, $CFG, $DB;
+		if($type == "grade"){
+			$sql = "avg((qa.sumgrades/q.sumgrades)*100) as $type";
+		}elseif($type == "duration"){
+			$sql = "sum(qa.timefinish - qa.timestart) $type";
+		}else{
+			$sql = "count(distinct(qa.id)) $type";
+		}
 		
-		return $DB->get_records_sql("SELECT id, name, shortname
-			FROM {$CFG->prefix}role
-				WHERE archetype NOT IN ('student', 'guest', 'user', 'frontpage')
-					ORDER BY sortorder");
+		return "SELECT qa.quiz, $sql 
+						FROM
+							{$CFG->prefix}quiz q,
+							{$CFG->prefix}quiz_attempts qa,
+							{$CFG->prefix}role_assignments ra,
+							{$CFG->prefix}context ctx 
+						WHERE
+							qa.quiz = q.id AND
+							ctx.instanceid = q.course AND
+							ra.contextid = ctx.id AND
+							ra.roleid= 5 AND
+							ra.itemid= 0 AND
+							qa.userid = ra.userid AND
+							qa.timefinish > 0 AND
+							qa.timestart > 0
+						GROUP BY qa.quiz";
 	}
-	function get_tutors($params){
-		global $USER, $CFG, $DB;
+	function getModGradeSql($grage = 'grade')
+	{
+		global $CFG;
 		
-		$filter = ($params->filter) ? "a.roleid = $params->filter" : "(a.roleid = 3 OR a.roleid = 4)";
-		return $DB->get_records_sql("SELECT u.id,  CONCAT(u.firstname, ' ', u.lastname) as name, u.email 
-			FROM {$CFG->prefix}user u
-				LEFT JOIN {$CFG->prefix}role_assignments a ON a.userid = u.id  
-				WHERE $filter AND u.deleted = 0 AND u.confirmed = 1 GROUP BY u.id");
+		return "SELECT gi.iteminstance, gi.itemmodule, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS $grage 
+								FROM 
+									{$CFG->prefix}grade_items gi, 
+									{$CFG->prefix}grade_grades g,
+									{$CFG->prefix}role_assignments ra,
+									{$CFG->prefix}context ctx 
+								WHERE 
+									ra.roleid= 5 AND 
+									ra.itemid= 0 AND
+									g.userid = ra.userid AND 
+									ra.contextid = ctx.id AND 
+									gi.courseid = ctx.instanceid AND gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL 
+								GROUP BY gi.iteminstance, gi.itemmodule";
 	}
+	function getCourseUserGradeSql($grage = 'grade', $round = 0){
+	
+		global $CFG;
+		
+		return "SELECT gi.courseid, g.userid, round(((g.finalgrade/g.rawgrademax)*100), $round) AS $grage 
+				FROM 
+					{$CFG->prefix}grade_items gi, 
+					{$CFG->prefix}grade_grades g 
+				WHERE 
+					gi.itemtype = 'course' AND 
+					g.itemid = gi.id 
+				GROUP BY gi.courseid, g.userid";
+	}
+	function getCourseGradeSql($grage = 'grade', $round = 0)
+	{
+		global $CFG;
+		
+		return "SELECT gi.courseid, round(avg((g.finalgrade/g.rawgrademax)*100), $round) AS $grage 
+					FROM 
+						{$CFG->prefix}grade_items gi, 
+						{$CFG->prefix}grade_grades g, 
+						{$CFG->prefix}role_assignments ra,
+						{$CFG->prefix}context ctx 
+					WHERE 
+						gi.itemtype = 'course' AND 
+						g.itemid = gi.id AND 
+						ra.roleid= 5 AND 
+						ra.itemid= 0 AND
+						g.userid = ra.userid AND 
+						ra.contextid = ctx.id AND 
+						gi.courseid = ctx.instanceid 
+					GROUP BY gi.courseid";
+	}
+	function getLearnerCoursesSql($courses  = 'courses')
+	{
+		global $CFG;
+		
+		return "SELECT ue.userid, COUNT(DISTINCT(e.courseid)) AS $courses 
+					FROM 
+						{$CFG->prefix}user_enrolments ue,
+						{$CFG->prefix}enrol e,
+						{$CFG->prefix}role_assignments ra,
+						{$CFG->prefix}context ctx 
+					WHERE 
+						e.id = ue.enrolid AND
+						ctx.instanceid = e.courseid AND
+						ra.contextid = ctx.id AND
+						ra.roleid= 5 AND
+						ra.itemid= 0 AND
+						ue.userid = ra.userid
+					GROUP BY ue.userid";
+	}
+	function getUsersCoursesListSql($course  = 'courseid', $user  = 'userid', $role = "learners")
+	{
+		global $CFG;
+		
+		if($role == "teachers"){
+			$sql_role = "(ra.roleid = 3 OR ra.roleid = 4)";
+		}else{
+			$sql_role = "ra.roleid= 5";
+		}
+		
+		return "SELECT ue.id, e.courseid as $course, ue.userid as $user, ue.timecreated
+					FROM 
+						{$CFG->prefix}user_enrolments ue, 
+						{$CFG->prefix}enrol e, 
+						{$CFG->prefix}role_assignments ra, 
+						{$CFG->prefix}context ctx 
+					WHERE 
+						e.id = ue.enrolid AND 
+						ctx.instanceid = e.courseid AND 
+						ra.contextid = ctx.id AND 
+						$sql_role AND
+						ra.itemid= 0 AND						
+						ue.userid = ra.userid 
+					GROUP BY e.courseid, ue.userid";
+	}
+	function getCourseLearnersSql($learners  = 'learners', $timestart = 0, $timefinish = 0)
+	{
+		global $CFG;
+		
+		$sql = ($timestart and $timefinish) ? "u.lastaccess BETWEEN $timestart AND $timefinish AND " : "";
+		
+		return "SELECT e.courseid, COUNT(DISTINCT(ue.userid)) AS $learners 
+					FROM 
+						{$CFG->prefix}user_enrolments ue,
+						{$CFG->prefix}user u,
+						{$CFG->prefix}enrol e,
+						{$CFG->prefix}role_assignments ra,
+						{$CFG->prefix}context ctx 
+					WHERE $sql 
+						e.id = ue.enrolid AND
+						ctx.instanceid = e.courseid AND
+						ra.contextid = ctx.id AND
+						ra.roleid= 5 AND
+						ra.itemid= 0 AND
+						ue.userid = ra.userid AND
+						u.id = ue.userid
+					GROUP BY e.courseid";
+	}
+	function getModCompletedSql($completed  = 'completed')
+	{
+		global $CFG;
+
+		return "SELECT cm.id, count(DISTINCT(cmc.userid)) AS $completed 
+					FROM 
+						{$CFG->prefix}course_modules cm,
+						{$CFG->prefix}course_modules_completion cmc,
+						{$CFG->prefix}role_assignments ra,
+						{$CFG->prefix}context ctx 
+					WHERE 
+
+						ctx.instanceid = cm.course AND
+						ra.contextid = ctx.id AND
+						ra.roleid= 5 AND
+						ra.itemid= 0 AND
+						cmc.completionstate = 1 AND
+						cmc.coursemoduleid = cm.id AND
+						cmc.userid = ra.userid
+					GROUP BY cmc.coursemoduleid";
+	}
+	function getCourseCompletedSql($completed  = 'completed')
+	{
+		global $CFG;
+
+		return "SELECT c.course, count(DISTINCT(c.userid)) AS $completed 
+					FROM 
+						{$CFG->prefix}course_completions c,
+						{$CFG->prefix}role_assignments ra,
+						{$CFG->prefix}context ctx 
+					WHERE 
+						c.timecompleted > 0 AND
+						ctx.instanceid = c.course AND
+						ra.contextid = ctx.id AND
+						ra.roleid= 5 AND
+						ra.itemid= 0 AND
+						c.userid = ra.userid
+					GROUP BY c.course";
+	}
+	function getCourseTimeSql($timespend  = 'timespend', $visits  = 'visits')
+	{
+		global $CFG;
+		
+		return "SELECT lit.courseid, sum(lit.timespend) as $timespend, sum(lit.visits) as $visits 
+			FROM 
+				{$CFG->prefix}local_intelliboard_tracking lit,
+				(SELECT 
+					e.courseid, 
+					ue.userid 
+				FROM 
+					{$CFG->prefix}user_enrolments ue, 
+					{$CFG->prefix}enrol e, 
+					{$CFG->prefix}role_assignments ra, 
+					{$CFG->prefix}context ctx 
+				WHERE 
+					e.id = ue.enrolid AND 
+					ctx.instanceid = e.courseid AND 
+					ra.contextid = ctx.id AND 
+					ra.roleid= 5 AND
+					ra.itemid= 0 AND					
+					ue.userid = ra.userid 
+				GROUP BY e.courseid, ue.userid ) l
+			WHERE
+				lit.courseid = l.courseid AND
+				lit.userid = l.userid
+			GROUP BY lit.courseid";
+	}
+	
+	function getModTimeSql($timespend  = 'timespend', $visits  = 'visits')
+	{
+		global $CFG;
+
+		return "SELECT lit.param, sum(lit.timespend) as $timespend, sum(lit.visits) as $visits 
+			FROM 
+				{$CFG->prefix}local_intelliboard_tracking lit,
+				(SELECT 
+					e.courseid, 
+					ue.userid 
+				FROM 
+					{$CFG->prefix}user_enrolments ue, 
+					{$CFG->prefix}enrol e, 
+					{$CFG->prefix}role_assignments ra, 
+					{$CFG->prefix}context ctx 
+				WHERE 
+					e.id = ue.enrolid AND 
+					ctx.instanceid = e.courseid AND 
+					ra.contextid = ctx.id AND 
+					ra.roleid= 5 AND
+					ra.itemid= 0 AND					
+					ue.userid = ra.userid 
+				GROUP BY e.courseid, ue.userid ) l
+			WHERE
+				lit.page = 'module' AND
+				lit.courseid = l.courseid AND
+				lit.userid = l.userid
+			GROUP BY lit.param";
+	}
+	function getCurseUserTimeSql($timespend  = 'timespend', $visits  = 'visits')
+	{
+		global $CFG;
+
+		return "SELECT lit.userid, lit.courseid, sum(lit.timespend) as $timespend, sum(lit.visits) as $visits 
+					FROM
+						{$CFG->prefix}local_intelliboard_tracking lit 
+					GROUP BY lit.courseid, lit.userid";
+	}
+	
 	function report1($params)
 	{
 		global $USER, $CFG, $DB;
 		
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$columns = array_merge(array("name", "u.email", "c.fullname", "l.visits", "l.timespend", "gc.grade", "cc.timecompleted", "ue.timecreated"), $this->get_filter_columns($params)); 
 		
-		return $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS ue.id, ccc.cohorts, c.enablecompletion, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT(u.firstname, ' ', u.lastname) as name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
-						FROM {$CFG->prefix}user_enrolments as ue
+		$sql_join = "";
+		
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
+
+		if($params->cohortid){
+			$sql_join = "LEFT JOIN {$CFG->prefix}cohort_members cm ON cm.userid = u.id";
+			$sql_filter .= " AND cm.cohortid = $params->cohortid";
+		}
+		
+		$data = $DB->get_records_sql("SELECT 
+			SQL_CALC_FOUND_ROWS ue.id, 
+			ue.timecreated as enrolled, 
+			gc.grade, 
+			c.enablecompletion, 
+			cc.timecompleted as complete, 
+			u.id as uid, 
+			CONCAT(u.firstname, ' ', u.lastname) as name, 
+			u.email, 
+			l.timespend, 
+			l.visits, 
+			c.id as cid, 
+			c.fullname as course, 
+			c.timemodified as start_date
+			$sql_columns
+						FROM (".$this->getUsersCoursesListSql().") as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
-							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
-							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
-							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
-							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
-							LEFT JOIN (SELECT userid, GROUP_CONCAT( CAST( cc.cohortid AS CHAR )) AS cohorts FROM {$CFG->prefix}cohort_members cc GROUP BY cc.userid) ccc ON ccc.userid = u.id
-								WHERE u.id > 0 $sql AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
+							LEFT JOIN {$CFG->prefix}course as c ON c.id = ue.courseid
+							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = ue.courseid AND cc.userid = ue.userid
+							LEFT JOIN (".$this->getCourseUserGradeSql().") as gc ON gc.courseid = c.id AND gc.userid = u.id
+							LEFT JOIN (".$this->getCurseUserTimeSql().") l ON l.courseid = c.id AND l.userid = u.id
+							$sql_join	
+								WHERE u.deleted = 0 AND u.suspended = 0 AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish $sql_filter $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	
 	function report2($params)
 	{
 		global $USER, $CFG, $DB;
 		
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$columns = array_merge(array("course", "e.learners", "cm.modules", "cc.completed", "lit.visits", "lit.timespend", "gc.grade", "c.timecreated"), $this->get_filter_columns($params)); 
 		
-		return $DB->get_records_sql("SELECT c.id, c.enablecompletion, c.timecreated as created, c.fullname as course_name, e.leaners, cc.aleaners, gc.agrade, cm.modules
-						FROM {$CFG->prefix}course as c
-							LEFT JOIN (SELECT course, count( id ) AS modules FROM {$CFG->prefix}course_modules WHERE visible = 1 GROUP BY course) cm ON cm.course = c.id
-							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS agrade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
-							LEFT JOIN (SELECT e.courseid, count( ue.enrolid ) AS leaners FROM {$CFG->prefix}user_enrolments ue,{$CFG->prefix}enrol e WHERE ue.enrolid = e.id GROUP BY e.courseid) e ON e.courseid = c.id
-							LEFT JOIN (SELECT course, count(id) as aleaners FROM {$CFG->prefix}course_completions GROUP BY course) as cc ON cc.course = c.id	
-								WHERE c.visible=1 $sql AND c.category > 0");
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
+		
+		$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS c.id,
+				c.fullname as course,
+				c.timecreated as created,
+				c.enablecompletion,
+				e.learners, 
+				cc.completed, 
+				gc.grade, 
+				cm.modules,
+				lit.timespend, 
+				lit.visits
+				$sql_columns
+					FROM {$CFG->prefix}course as c
+						LEFT JOIN (SELECT course, count( id ) AS modules FROM {$CFG->prefix}course_modules WHERE visible = 1 GROUP BY course) cm ON cm.course = c.id
+						LEFT JOIN (".$this->getCourseGradeSql().") as gc ON gc.courseid = c.id
+						LEFT JOIN (".$this->getCourseLearnersSql().") e ON e.courseid = c.id
+						LEFT JOIN (".$this->getCourseCompletedSql().") as cc ON cc.course = c.id	
+						LEFT JOIN (".$this->getCourseTimeSql().") as lit ON lit.courseid = c.id	
+							WHERE c.visible=1 AND c.category > 0 $sql_filter $sql_having $sql_orger $sql_limit");
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report3($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$columns = array_merge(array("m.name", "cmc.completed", "l.visits", "l.timespend", "gc.grade", "cm.added"), $this->get_filter_columns($params)); 
 		
-		$report3 = $DB->get_records_sql("SELECT gg.id, ccc.cohorts, cmc.completionstate, iq.name as iqname, isc.name as isname, gg.timemodified as completion_date, cm.id as cmid, cm.instance, cm.completion, c.id as cid, c.fullname, u.id AS uid, CONCAT(u.firstname, ' ', u.lastname) as learner, u.email, m.name AS module_name, gg.finalgrade, gg.timecreated as start_time
-						FROM {$CFG->prefix}course_modules cm
-							LEFT JOIN {$CFG->prefix}grade_items gi ON gi.iteminstance = cm.instance
-							LEFT JOIN {$CFG->prefix}grade_grades gg ON gg.itemid = gi.id
-							LEFT JOIN {$CFG->prefix}user as u ON u.id = gg.userid
-							LEFT JOIN {$CFG->prefix}modules m ON m.id = cm.module
-							LEFT JOIN {$CFG->prefix}course as c ON c.id=cm.course
-							LEFT JOIN {$CFG->prefix}quiz as iq ON iq.id = cm.instance
-							LEFT JOIN {$CFG->prefix}scorm as isc ON isc.id = cm.instance
-							LEFT JOIN {$CFG->prefix}course_modules_completion as cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
-							LEFT JOIN (SELECT userid, GROUP_CONCAT( CAST( cc.cohortid AS CHAR )) AS cohorts FROM {$CFG->prefix}cohort_members cc GROUP BY cc.userid) ccc ON ccc.userid = u.id
-								WHERE (m.name = 'quiz' OR m.name = 'scorm') $sql AND gg.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY gg.id");
-
-		if(!empty($report3)){
-			foreach($report3 as &$wrow){
-				if($wrow->module_name == 'quiz'){
-					$wrow->iname = $wrow->iqname;
-				}elseif($wrow->module_name == 'scorm'){
-					$wrow->iname = $wrow->isname;
-				}else{
-					$wrow->iname = 'Undefined';
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND cm.course = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_limit = $this->get_limit_sql($params);
+		$sql_select = "";
+		$sql_join = "";
+		
+		if($modules = $this->get_mudules()){
+			foreach($modules as $module){
+				$sql_join .= " LEFT JOIN {$CFG->prefix}{$module->name} as mod_{$module->name} ON mod_{$module->name}.id = cm.instance";
+				$sql_select .= ", mod_{$module->name}.name as {$module->name}";
+			}
+		}
+		$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS cm.id,
+				m.name AS module,
+				cm.added,
+				cm.completion,
+				cmc.completed,
+				gc.grade,
+				l.timespend,
+				l.visits
+				$sql_select
+					FROM {$CFG->prefix}course_modules cm
+						LEFT JOIN {$CFG->prefix}modules m ON m.id = cm.module
+						LEFT JOIN (".$this->getModCompletedSql().") cmc ON cmc.id = cm.id
+						LEFT JOIN (".$this->getModTimeSql().") l ON l.param = cm.id
+						LEFT JOIN (".$this->getModGradeSql().") as gc ON gc.itemmodule = m.name AND gc.iteminstance = cm.instance
+						$sql_join
+							WHERE cm.visible = 1 AND cm.added BETWEEN $params->timestart AND $params->timefinish $sql_filter GROUP BY cm.id $sql_having $sql_orger $sql_limit");
+		if($modules){
+			foreach($data as $item){
+				foreach($modules as $module){
+					if(isset($item->{$module->name}) and $item->module == $module->name){						
+						$item->module = $item->{$module->name};
+						unset($item->{$module->name});
+					}else{
+						unset($item->{$module->name});
+					}
 				}
 			}
 		}
-		return $report3;
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report4($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		$columns = array_merge(array("learner","u.email","registered","ue.courses","cmc.completed_activities","cm.completed_courses","lit.visits","lit.timespend","gc.grade"), $this->get_filter_columns($params)); 
 		
-		return $DB->get_records_sql("SELECT u.id, ccc.cohorts, com.compl, cmcn.not_activities, u.firstaccess as registered, ue.courses, gc.avarage, cm.completed_courses, cmc.completed_activities,  CONCAT(u.firstname, ' ', u.lastname) as learner, u.email 
-						FROM {$CFG->prefix}user as u
-							LEFT JOIN (SELECT ue.userid, count(distinct(e.courseid)) AS courses FROM {$CFG->prefix}user_enrolments AS ue, {$CFG->prefix}enrol AS e WHERE e.id = enrolid GROUP BY ue.userid) as ue ON ue.userid = u.id
-							LEFT JOIN (SELECT ue.userid, count(distinct(e.courseid)) AS compl FROM {$CFG->prefix}user_enrolments AS ue, {$CFG->prefix}enrol AS e, {$CFG->prefix}course c WHERE e.id = enrolid AND e.courseid = c.id AND c.enablecompletion = 1 GROUP BY ue.userid) as com ON com.userid = u.id
-							LEFT JOIN (SELECT userid, count(id) as completed_courses FROM {$CFG->prefix}course_completions WHERE timecompleted > 0 GROUP BY userid) as cm ON cm.userid = u.id
-							LEFT JOIN (SELECT cmc.userid, count(cmc.id) as completed_activities FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.completion > 0 GROUP BY cmc.userid) as cmc ON cmc.userid = u.id
-							LEFT JOIN (SELECT cmc.userid, count(cmc.id) as not_activities FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.completion = 0 GROUP BY cmc.userid) as cmcn ON cmcn.userid = u.id
-							LEFT JOIN (SELECT g.userid, AVG( (g.finalgrade/g.rawgrademax)*100) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY g.userid) as gc ON gc.userid = u.id
-							LEFT JOIN (SELECT userid, GROUP_CONCAT( CAST( cc.cohortid AS CHAR )) AS cohorts FROM {$CFG->prefix}cohort_members cc GROUP BY cc.userid) ccc ON ccc.userid = u.id							
-							WHERE u.id > 0 $sql AND u.firstaccess BETWEEN $params->timestart AND $params->timefinish");
+		$sql_filter = $this->get_teacher_sql($params, "u.id", "users");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
+		$sql_join = "";
+		if($params->cohortid){
+			$sql_join = "LEFT JOIN {$CFG->prefix}cohort_members chm ON chm.userid = u.id";
+			$sql_filter .= " AND chm.cohortid = $params->cohortid";
+		}
+		
+		$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS u.id,
+				CONCAT(u.firstname, ' ', u.lastname) as learner, 
+				u.email, 
+				u.timecreated as registered, 
+				ue.courses, 
+				gc.grade, 
+				cm.completed_courses, 
+				cmc.completed_activities,
+				lit.timespend,
+				lit.visits
+				$sql_columns
+						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user as u
+							$sql_join
+							LEFT JOIN (".$this->getLearnerCoursesSql().") as ue ON ue.userid = u.id
+							LEFT JOIN (SELECT cc.userid, count(cc.id) as completed_courses FROM {$CFG->prefix}course_completions cc, (".$this->getUsersCoursesListSql().") as lc WHERE cc.course = lc.courseid AND cc.userid = lc.userid AND cc.timecompleted > 0 GROUP BY cc.userid) as cm ON cm.userid = u.id
+							LEFT JOIN (SELECT cmc.userid, count(cmc.id) as completed_activities FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc, (".$this->getUsersCoursesListSql().") as lc WHERE cm.course = lc.courseid AND cmc.userid = lc.userid AND cmc.coursemoduleid = cm.id AND cm.visible = 1 AND cmc.completionstate = 1 GROUP BY cmc.userid) as cmc ON cmc.userid = u.id
+							LEFT JOIN (SELECT g.userid, AVG( (g.finalgrade/g.rawgrademax)*100) AS grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g, (".$this->getUsersCoursesListSql().") as lc WHERE gi.courseid = lc.courseid AND g.userid = lc.userid AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY g.userid) as gc ON gc.userid = u.id							
+							LEFT JOIN (SELECT l.userid, sum(l.timespend) as timespend, sum(l.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking l, (".$this->getUsersCoursesListSql().") as lc WHERE l.courseid = lc.courseid AND l.userid = lc.userid GROUP BY l.userid) as lit ON lit.userid = u.id							
+							WHERE ra.roleid= 5 AND ra.itemid = 0 AND u.id = ra.userid AND u.deleted = 0 AND u.suspended = 0 $sql_filter AND u.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY u.id $sql_having $sql_orger $sql_limit");
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
+	
+
 	function report5($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		$columns = array_merge(array("u.firstname","courses","ff.videos","l1.urls","l0.evideos","l2.assignments","l3.quizes","l4.forums","l5.attendances"), $this->get_filter_columns($params)); 
+		
+		$sql_filter = $this->get_teacher_sql($params, "u.id", "users");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
 		
 		if($CFG->version < 2014051200){
 			$table = "log";
+			$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS u.id,
+					CONCAT(u.firstname, ' ', u.lastname) as teacher,
+					count(ue.courseid) as courses,
+					ff.videos,
+					l1.urls,
+					l0.evideos,
+					l2.assignments,
+					l3.quizes,
+					l4.forums,
+					l5.attendances
+					$sql_columns
+					FROM (".$this->getUsersCoursesListSql('courseid', 'userid', 'teachers').") as ue
+						LEFT JOIN {$CFG->prefix}user u ON u.id = ue.userid
+						LEFT JOIN (SELECT f.userid, count(distinct(f.filename)) videos FROM {$CFG->prefix}files f WHERE f.mimetype LIKE '%video%' GROUP BY f.userid) as ff ON ff.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) urls FROM {$CFG->prefix}$table l WHERE l.module = 'url' AND l.action = 'add' GROUP BY l.userid) as l1 ON l1.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) evideos FROM {$CFG->prefix}$table l WHERE l.module = 'page' AND l.action = 'add' GROUP BY l.userid) as l0 ON l0.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) assignments FROM {$CFG->prefix}$table l WHERE l.module = 'assignment' AND l.action = 'add' GROUP BY l.userid) as l2 ON l2.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) quizes FROM {$CFG->prefix}$table l WHERE l.module = 'quiz' AND l.action = 'add' GROUP BY l.userid) as l3 ON l3.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) forums FROM {$CFG->prefix}$table l WHERE l.module = 'forum' AND l.action = 'add' GROUP BY l.userid) as l4 ON l4.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) attendances FROM {$CFG->prefix}$table l WHERE l.module = 'attendance' AND l.action = 'add' GROUP BY l.userid) as l5 ON l5.userid = u.id
+						WHERE u.deleted = 0 AND u.suspended = 0 $sql_filter GROUP BY ue.userid $sql_having $sql_orger $sql_limit");
 		}else{
 			$table = "logstore_standard_log";
+					$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS u.id,
+					CONCAT(u.firstname, ' ', u.lastname) as teacher, 
+					count(ue.courseid) as courses, 
+					f1.files, 
+					ff.videos, 
+					l1.urls, 
+					l0.evideos, 
+					l2.assignments, 
+					l3.quizes, 
+					l4.forums, 
+					l5.attendances
+					$sql_columns
+					FROM 
+						(".$this->getUsersCoursesListSql('courseid', 'userid', 'teachers').") as ue
+						LEFT JOIN {$CFG->prefix}user u ON u.id = ue.userid
+						LEFT JOIN (SELECT f.userid, count(distinct(f.filename)) files FROM {$CFG->prefix}files f WHERE filearea = 'content' GROUP BY f.userid) as f1 ON f1.userid = u.id
+						LEFT JOIN (SELECT f.userid, count(distinct(f.filename)) videos FROM {$CFG->prefix}files f WHERE f.mimetype LIKE '%video%' GROUP BY f.userid) as ff ON ff.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) urls FROM {$CFG->prefix}$table l,{$CFG->prefix}course_modules cm, {$CFG->prefix}modules m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'url' AND l.action = 'created' GROUP BY l.userid) as l1 ON l1.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) evideos FROM {$CFG->prefix}$table l,{$CFG->prefix}course_modules cm, {$CFG->prefix}modules m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'page' AND l.action = 'created'GROUP BY l.userid) as l0 ON l0.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) assignments FROM {$CFG->prefix}$table l,{$CFG->prefix}course_modules cm, {$CFG->prefix}modules m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'assignment' AND l.action = 'created'GROUP BY l.userid) as l2 ON l2.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) quizes FROM {$CFG->prefix}$table l,{$CFG->prefix}course_modules cm, {$CFG->prefix}modules m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'quiz' AND l.action = 'created'GROUP BY l.userid) as l3 ON l3.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) forums FROM {$CFG->prefix}$table l,{$CFG->prefix}course_modules cm, {$CFG->prefix}modules m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'forum' AND l.action = 'created'GROUP BY l.userid) as l4 ON l4.userid = u.id
+						LEFT JOIN (SELECT l.userid, count(l.id) attendances FROM {$CFG->prefix}$table l,{$CFG->prefix}course_modules cm, {$CFG->prefix}modules m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'attendance' AND l.action = 'created'GROUP BY l.userid) as l5 ON l5.userid = u.id
+						WHERE u.deleted = 0 AND u.suspended = 0 $sql_filter GROUP BY ue.userid $sql_having $sql_orger $sql_limit");
 		}
-		return $DB->get_records_sql("SELECT u.id,  CONCAT(u.firstname, ' ', u.lastname) as teacher, a.roleid, ue.courses, ff.videos, l1.urls, l0.evideos, l2.assignments, l3.quizes, l4.forums, l5.attendances
-			FROM {$CFG->prefix}user u
-				LEFT JOIN {$CFG->prefix}role_assignments a ON a.userid = u.id
-				LEFT JOIN (SELECT ue.userid, count(e.courseid) as courses FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e, {$CFG->prefix}context cxt WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4) GROUP BY ue.userid) as ue ON ue.userid = u.id
-				LEFT JOIN (SELECT f.userid, count(distinct(f.filename)) videos FROM {$CFG->prefix}files f WHERE f.mimetype LIKE '%video%' GROUP BY f.userid) as ff ON ff.userid = u.id
-				LEFT JOIN (SELECT l.userid, count(l.id) urls FROM {$CFG->prefix}$table l WHERE l.module = 'url' AND l.action = 'add' GROUP BY l.userid) as l1 ON l1.userid = u.id
-				LEFT JOIN (SELECT l.userid, count(l.id) evideos FROM {$CFG->prefix}$table l WHERE l.module = 'page' AND l.action = 'add' GROUP BY l.userid) as l0 ON l0.userid = u.id
-				LEFT JOIN (SELECT l.userid, count(l.id) assignments FROM {$CFG->prefix}$table l WHERE l.module = 'assignment' AND l.action = 'add' GROUP BY l.userid) as l2 ON l2.userid = u.id
-				LEFT JOIN (SELECT l.userid, count(l.id) quizes FROM {$CFG->prefix}$table l WHERE l.module = 'quiz' AND l.action = 'add' GROUP BY l.userid) as l3 ON l3.userid = u.id
-				LEFT JOIN (SELECT l.userid, count(l.id) forums FROM {$CFG->prefix}$table l WHERE l.module = 'forum' AND l.action = 'add' GROUP BY l.userid) as l4 ON l4.userid = u.id
-				LEFT JOIN (SELECT l.userid, count(l.id) attendances FROM {$CFG->prefix}$table l WHERE l.module = 'attendance' AND l.action = 'add' GROUP BY l.userid) as l5 ON l5.userid = u.id
-				WHERE (a.roleid = 3 OR a.roleid = 4) $sql GROUP BY u.id");
+		
+
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report6($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$columns = array_merge(array("student", "c.fullname", "started", "grade", "grade", "cmc.completed", "grade", "lit.visits", "lit.timespend"), $this->get_filter_columns($params)); 
 		
-		return $DB->get_records_sql("SELECT ue.id, ccc.gradepass, cmc.cmcnums, l.visits, l.timespend, gc.avarage, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, c.id as cid, c.fullname as course
-						FROM {$CFG->prefix}user_enrolments as ue
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_filter .= ($params->courseid) ? " AND ue.courseid = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
+		
+		$data = $DB->get_records_sql("SELECT 
+			SQL_CALC_FOUND_ROWS ue.id, 
+			cri.gradepass,
+			ue.userid,
+			ue.timecreated as started,
+			c.id as cid, 
+			c.fullname,
+			git.average,
+			AVG((g.finalgrade/g.rawgrademax)*100) AS grade, 
+			cmc.completed,
+			CONCAT(u.firstname, ' ', u.lastname) AS student,
+			lit.timespend,
+			lit.visits
+			$sql_columns
+						FROM (".$this->getUsersCoursesListSql().") as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
-							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
-							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
-							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
-							LEFT JOIN {$CFG->prefix}course_completion_criteria as ccc ON ccc.course = e.courseid AND ccc.criteriatype = 6
-							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnums FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = u.id
-							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
-							LEFT JOIN (SELECT lit.userid, lit.courseid, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.courseid > 0 GROUP BY lit.courseid, lit.userid) as l ON l.courseid = c.id AND l.userid = u.id
-								WHERE u.id > 0 $sql AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
+							LEFT JOIN {$CFG->prefix}course as c ON c.id = ue.courseid
+							LEFT JOIN {$CFG->prefix}course_completion_criteria as cri ON cri.course = ue.courseid AND cri.criteriatype = 6
+							LEFT JOIN {$CFG->prefix}grade_items gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+							LEFT JOIN {$CFG->prefix}grade_grades g ON g.itemid = gi.id AND g.userid =u.id
+							LEFT JOIN (".$this->getCurseUserTimeSql().") lit ON lit.courseid = c.id AND lit.userid = u.id
+							LEFT JOIN (".$this->getCourseGradeSql('average').") git ON git.courseid=c.id
+							LEFT JOIN (SELECT cmc.userid, cm.course, COUNT(cmc.id) as completed FROM {$CFG->prefix}course_modules_completion cmc, {$CFG->prefix}course_modules cm WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id  AND cmc.completionstate = 1 GROUP BY cm.course, cmc.userid) cmc ON cmc.course = c.id AND cmc.userid = u.id
+								WHERE u.deleted = 0 AND u.suspended = 0 $sql_filter AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, ue.courseid $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report7($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$columns = array_merge(array("learner", "course", "visits", "participations", "assignments", "grade"), $this->get_filter_columns($params)); 
 		
-		return $DB->get_records_sql("SELECT ue.id, c.enablecompletion, ((cmca.cmcnuma / cma.cmnuma)*100 ) as assigments, ((cmc.cmcnums / cmx.cmnumx)*100 ) as completed, ((lcm.viewed / cm.cmnums)*100 ) as visited, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
-						FROM {$CFG->prefix}user_enrolments as ue
-							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
-							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
-							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
-							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
-							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnums FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = u.id
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_filter .= ($params->courseid) ? " AND ue.courseid = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
+		
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS ue.id, ue.userid, 
+					((cmca.cmcnuma / cma.cmnuma)*100 ) as assignments, 
+					((cmc.cmcnums / cmx.cmnumx)*100 ) as participations, 
+					((count(lit.id) / cm.cmnums)*100 ) as visits,
+					cma.cmnuma as assigns,
+					gc.grade, 
+					c.fullname as course, 
+					CONCAT( u.firstname, ' ', u.lastname ) AS learner 
+					$sql_columns
+						FROM (".$this->getUsersCoursesListSql().") as ue
+							LEFT JOIN {$CFG->prefix}user u ON u.id = ue.userid
+							LEFT JOIN {$CFG->prefix}course c ON c.id = ue.courseid
+							LEFT JOIN {$CFG->prefix}local_intelliboard_tracking lit ON lit.courseid = c.id AND lit.page = 'module' AND lit.userid = u.id
 							LEFT JOIN (SELECT cv.course, count(cv.id) as cmnums FROM {$CFG->prefix}course_modules cv WHERE cv.visible  =  1 GROUP BY cv.course) as cm ON cm.course = c.id
 							LEFT JOIN (SELECT cv.course, count(cv.id) as cmnumx FROM {$CFG->prefix}course_modules cv WHERE cv.completion  =  1 GROUP BY cv.course) as cmx ON cmx.course = c.id
 							LEFT JOIN (SELECT cv.course, count(cv.id) as cmnuma FROM {$CFG->prefix}course_modules cv WHERE cv.module  =  1 GROUP BY cv.course) as cma ON cma.course = c.id
-							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnuma FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.module = 1 AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmca ON cmca.course = c.id AND cmca.userid = u.id
-							LEFT JOIN (SELECT lit.userid, lit.courseid, count(lit.id) as viewed FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.page = 'module' GROUP BY lit.courseid, lit.userid) as lcm ON lcm.courseid = c.id AND lcm.userid = u.id
-							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
-								WHERE u.id > 0 $sql AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
+							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnums FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 AND cmc.completionstate = 1 GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = u.id
+							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnuma FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.module = 1 AND cm.visible  =  1 AND cmc.completionstate = 1 GROUP BY cm.course, cmc.userid) as cmca ON cmca.course = c.id AND cmca.userid = u.id
+							LEFT JOIN (".$this->getCourseUserGradeSql().") as gc ON gc.courseid = c.id AND gc.userid = u.id
+								WHERE u.deleted = 0 AND u.suspended = 0 $sql_filter AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, ue.courseid $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report8($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		$columns = array_merge(array("teacher","courses","learners","activelearners","completedlearners","grade"), $this->get_filter_columns($params)); 
 		
-		return $DB->get_records_sql("
-		SELECT u.id, CONCAT(u.firstname, ' ', u.lastname) name, a.roleid, ue.courses, ue.leaners, ui.activeleanres, ux.compleatedleanres, uz.grade
-			FROM {$CFG->prefix}role_assignments a, {$CFG->prefix}user u
-				LEFT JOIN (
-					SELECT ue.userid, count(e.courseid) as courses, SUM(sx.users) as leaners
-						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
-							LEFT JOIN (
-								SELECT e.courseid, count(ue.userid) as users
-									FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
-										WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
-											GROUP BY e.courseid)  sx
-							ON sx.courseid = e.courseid
-						WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
-							GROUP BY ue.userid) as ue
-					ON ue.userid = u.id
-				LEFT JOIN (
-					SELECT ue.userid, SUM(sx.users) as activeleanres 
-						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
-							LEFT JOIN (
-								SELECT e.courseid, count(ue.userid) as users 
-									FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}user u, {$CFG->prefix}enrol e
-										WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish AND u.id = ra.userid AND u.lastaccess > ".strtotime('-30 days')." AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
-											GROUP BY e.courseid)  sx 
-							ON sx.courseid = e.courseid
-						WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
-							GROUP BY ue.userid) as ui 
-					ON ui.userid = u.id
-				LEFT JOIN (
-					SELECT ue.userid, SUM(sx.users) as compleatedleanres 
-						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
-							LEFT JOIN (
-								SELECT e.courseid, count(ue.userid) as users 
-									FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}course_completions cc, {$CFG->prefix}enrol e
-										WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish AND cc.userid = ra.userid AND cc.course = e.courseid AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
-											GROUP BY e.courseid)  sx 
-							ON sx.courseid = e.courseid
-						WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
-							GROUP BY ue.userid) as ux
-					ON ux.userid = u.id
-				LEFT JOIN (
-					SELECT ue.userid, AVG( sx.avarage ) AS grade 
-						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
-							LEFT JOIN (
-								SELECT e.courseid, AVG( (gg.finalgrade/gg.rawgrademax)*100 ) AS avarage 
-									FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}grade_grades gg, {$CFG->prefix}enrol e, {$CFG->prefix}grade_items gi
-										WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish AND gg.userid = ue.userid AND gi.iteminstance = e.courseid AND gi.itemname != '' AND gg.itemid = gi.id AND gg.finalgrade IS NOT NULL AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
-											GROUP BY e.courseid)  sx 
-							ON sx.courseid = e.courseid
-						WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish AND e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
-							GROUP BY ue.userid) as uz 
-					ON uz.userid = u.id
-			WHERE a.userid = u.id AND (a.roleid = 3 OR a.roleid = 4) $sql
-				GROUP BY u.id");
+		$sql_filter = $this->get_teacher_sql($params, "u.id", "users");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
+		
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS u.id, 
+					CONCAT(u.firstname, ' ', u.lastname) teacher, 
+					count(ue.courseid) as courses, 
+					sum(l.learners) as learners,
+					sum(ls.learners) as activelearners,
+					sum(c.completed) as completedlearners,
+					AVG( g.grade ) AS grade
+					$sql_columns
+				FROM 
+					(".$this->getUsersCoursesListSql('courseid', 'userid', 'teachers').") as ue
+					LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
+					LEFT JOIN (".$this->getCourseLearnersSql().") l ON l.courseid = ue.courseid
+					LEFT JOIN (".$this->getCourseLearnersSql('learners', strtotime('-30 days'), time()).") ls ON ls.courseid = ue.courseid
+					LEFT JOIN (".$this->getCourseCompletedSql().") c ON c.course = ue.courseid
+					LEFT JOIN (".$this->getCourseGradeSql().") g ON g.courseid = ue.courseid
+				WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish $sql_filter GROUP BY u.id $sql_having $sql_orger $sql_limit");
+							
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report9($params)
 	{
 		global $USER, $CFG, $DB;
-
-		$sql = $this->get_teacher_sql($params, "q.course", "courses");
 		
-		return $DB->get_records_sql("SELECT q.id, q.name, q.questions, q.timemodified, q.timeopen, q.timeclose, q.course, qa.attempts, qs.duration, qg.avgrade
+		$columns = array_merge(array("q.name", "c.fullname", "q.questions", "q.timeopen", "qa.attempts", "qs.duration", "qg.grade", "q.timemodified"), $this->get_filter_columns($params)); 
+		
+		$sql_filter = $this->get_teacher_sql($params, "q.course", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_filter .= ($params->courseid) ? " AND q.course = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
+		
+		if($CFG->version < 2014051200){
+			$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS q.id,
+				q.name,
+				q.course,
+				c.fullname,
+				q.questions,
+				q.timemodified,
+				q.timeopen,
+				q.timeclose,
+				qa.attempts,
+				qs.duration,
+				qg.grade
 			FROM {$CFG->prefix}quiz q
-				LEFT JOIN (SELECT qa.quiz, count(qa.id) attempts FROM {$CFG->prefix}quiz_attempts qa GROUP BY qa.quiz) qa ON qa.quiz = q.id
-				LEFT JOIN (SELECT qa.quiz, sum(qa.timefinish - qa.timestart) duration FROM {$CFG->prefix}quiz_attempts qa  GROUP BY qa.quiz) qs ON qs.quiz = q.id
-				LEFT JOIN (SELECT qg.quiz, avg( (qg.grade/q.grade)*100 ) avgrade FROM  {$CFG->prefix}quiz q, {$CFG->prefix}quiz_grades qg WHERE q.id = qg.quiz GROUP BY qg.quiz) qg ON qg.quiz = q.id
-			WHERE q.id > 0 $sql and q.timemodified BETWEEN $params->timestart AND $params->timefinish");
+				LEFT JOIN {$CFG->prefix}course c ON c.id = q.course
+				LEFT JOIN (".$this->getQuizAttemptsSql().") qa ON qa.quiz = q.id
+				LEFT JOIN (".$this->getQuizAttemptsSql("duration").") qs ON qs.quiz = q.id
+				LEFT JOIN (".$this->getQuizAttemptsSql("grade").") qg ON qg.quiz = q.id
+			WHERE q.course > 0 $sql_filter GROUP BY q.id $sql_having $sql_orger $sql_limit");
+			foreach($data as &$item){
+				$item->questions = count(array_diff(explode(',', $item->questions), array(0)));
+			}
+		}else{
+			$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS q.id,
+				q.name,
+				q.course,
+				c.fullname,
+				ql.questions,
+				q.timemodified,
+				q.timeopen,
+				q.timeclose,
+				qa.attempts,
+				qs.duration,
+				qg.grade
+			FROM {$CFG->prefix}quiz q
+				LEFT JOIN {$CFG->prefix}course c ON c.id = q.course
+				LEFT JOIN (SELECT quizid, count(*) questions FROM {$CFG->prefix}quiz_slots GROUP BY quizid) ql ON ql.quizid = q.id
+				LEFT JOIN (".$this->getQuizAttemptsSql().") qa ON qa.quiz = q.id
+				LEFT JOIN (".$this->getQuizAttemptsSql("duration").") qs ON qs.quiz = q.id
+				LEFT JOIN (".$this->getQuizAttemptsSql("grade").") qg ON qg.quiz = q.id
+			WHERE q.course > 0 $sql_filter GROUP BY q.id $sql_having $sql_orger $sql_limit");			
+		}
+		
+
+			
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report10($params)
 	{
 		global $USER, $CFG, $DB;
 		
-		$sql = $this->get_teacher_sql($params, "q.course", "courses");
+		$columns = array_merge(array("q.name","learner", "c.fullname", "qa.state", "qa.timestart", "qa.timefinish", "duration", "grade"), $this->get_filter_columns($params)); 
 		
-		if($CFG->version < 2012120301){
-			return $DB->get_records_sql("SELECT qa.*, q.name, q.course, CONCAT(u.firstname, ' ', u.lastname) username, u.email, (qa.sumgrades/q.sumgrades*100) as grade
+		$sql_filter = $this->get_teacher_sql($params, "q.course", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_filter .= ($params->courseid) ? " AND q.course = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
+		
+		$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS qa.id,
+				q.name, 
+				q.course,
+				c.fullname,
+				qa.timestart, 
+				qa.timefinish,
+				qa.state,
+				(qa.timefinish - qa.timestart) as duration,
+				(qa.sumgrades/q.sumgrades*100) as grade,
+				CONCAT(u.firstname, ' ', u.lastname) learner
+				$sql_columns 
 				FROM {$CFG->prefix}quiz_attempts qa
 					LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
 					LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
-				WHERE qa.id > 0 $sql and qa.timestart BETWEEN $params->timestart AND $params->timefinish");
-		}else{
-			return $DB->get_records_sql("SELECT qa.id, q.name, q.course, qa.timestart, qa.timefinish, qa.state, CONCAT(u.firstname, ' ', u.lastname) username, u.email, (qa.sumgrades/q.sumgrades*100) as grade
-				FROM {$CFG->prefix}quiz_attempts qa
-					LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
-					LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
-				WHERE qa.id > 0 $sql and qa.timestart BETWEEN $params->timestart AND $params->timefinish");
-		}
+					LEFT JOIN {$CFG->prefix}course c ON c.id = q.course
+					LEFT JOIN {$CFG->prefix}context ctx ON ctx.instanceid = c.id
+					LEFT JOIN {$CFG->prefix}role_assignments ra ON ra.contextid = ctx.id AND ra.userid = u.id
+				WHERE ra.roleid= 5 AND ra.itemid = 0 $sql_filter and qa.timestart BETWEEN $params->timestart AND $params->timefinish $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report11($params)
 	{
 		global $USER, $CFG, $DB;
 		
-		$sql = $this->get_teacher_sql($params, "e.courseid", "courses");		
+		$columns = array_merge(array("learner", "course", "u.email", "enrolled", "complete", "grade", "complete"), $this->get_filter_columns($params)); 
+		
+		$sql_filter = $this->get_teacher_sql($params, "ue.courseid", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_filter .= ($params->courseid) ? " AND ue.courseid = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);		
 			
-		return $DB->get_records_sql("SELECT ue.id, c.enablecompletion, ue.timecreated as enrolled, gc.avarage, cc.timecompleted as complete, u.id as uid, CONCAT(u.firstname, ' ', u.lastname) username, u.email, c.id as cid, c.fullname as course, c.timemodified as start_date 
-						FROM {$CFG->prefix}user_enrolments as ue
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS ue.id,
+					ue.timecreated as enrolled,
+					cc.timecompleted as complete,
+					(g.finalgrade/g.rawgrademax)*100 AS grade,
+					u.id as uid,
+					u.email,
+					CONCAT(u.firstname, ' ', u.lastname) learner,
+					c.id as cid,
+					c.enablecompletion,
+					c.fullname as course
+					$sql_columns 
+						FROM (".$this->getUsersCoursesListSql().") as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
-							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
-							LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
-							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid AND cc.userid = u.id
-							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
-								WHERE u.id > 0 $sql AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid, e.courseid");
+							LEFT JOIN {$CFG->prefix}course as c ON c.id = ue.courseid
+							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = ue.courseid AND cc.userid = u.id
+							LEFT JOIN {$CFG->prefix}grade_items gi ON gi.courseid = ue.courseid AND gi.itemtype = 'course'
+							LEFT JOIN {$CFG->prefix}grade_grades g ON g.itemid = gi.id AND g.userid = u.id
+								WHERE u.deleted = 0 AND u.suspended = 0 $sql_filter AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish $sql_having $sql_orger $sql_limit");
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 
 	function report12($params)
 	{
 		global $USER, $CFG, $DB;
 		
-		$sql = $this->get_teacher_sql($params, "e.courseid", "courses");		
+		$columns = array_merge(array("c.fullname", "e.leaners", "v.visits", "v.timespend", "gc.grade"), $this->get_filter_columns($params)); 
+		
+		$sql_filter = $this->get_teacher_sql($params, "e.courseid", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);			
 			
-		return $DB->get_records_sql("SELECT c.id, c.fullname, e.leaners, gc.grade, v.visits, v.timespend
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS c.id, 
+					c.fullname, 
+					e.learners, 
+					gc.grade, 
+					v.visits, 
+					v.timespend
 						FROM {$CFG->prefix}course as c
-							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
-							LEFT JOIN (SELECT e.courseid, count( ue.enrolid ) AS leaners FROM {$CFG->prefix}user_enrolments ue,{$CFG->prefix}enrol e WHERE ue.enrolid = e.id GROUP BY e.courseid) e ON e.courseid = c.id
-							LEFT JOIN (SELECT lit.courseid, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.courseid > 0 GROUP BY lit.courseid) v ON v.courseid = c.id	
-								WHERE c.visible=1 AND c.category > 0 $sql");
+							LEFT JOIN (".$this->getCourseGradeSql().") as gc ON gc.courseid = c.id
+							LEFT JOIN (".$this->getCourseLearnersSql().") e ON e.courseid = c.id
+							LEFT JOIN (".$this->getCourseTimeSql().") v ON v.courseid = c.id	
+								WHERE c.visible=1 AND c.category > 0 $sql_filter $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	
 	
 	function report13($params)
 	{
 		global $USER, $CFG, $DB;
+
+		$columns = array_merge(array("name", "visits", "timespend", "courses", "learners"), $this->get_filter_columns($params)); 
 		
-		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		$sql_filter = $this->get_teacher_sql($params, "u.id", "users");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT u.id, CONCAT(u.firstname, ' ', u.lastname) name, a.roleid, ue.courses, ue.leaners, ui.visits, ui.timespend
-			FROM {$CFG->prefix}role_assignments a, {$CFG->prefix}user u
-				LEFT JOIN (
-					SELECT ue.userid, count(e.courseid) as courses, SUM(sx.users) as leaners
-						FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
-							LEFT JOIN (
-								SELECT e.courseid, count(ue.userid) as users
-									FROM {$CFG->prefix}role_assignments ra, {$CFG->prefix}user_enrolments ue, {$CFG->prefix}context cxt, {$CFG->prefix}enrol e
-										WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 5)
-											GROUP BY e.courseid)  sx
-							ON sx.courseid = e.courseid
-						WHERE e.id = ue.enrolid AND cxt.instanceid = e.courseid AND ra.contextid = cxt.id AND ra.userid = ue.userid AND (ra.roleid = 3 OR ra.roleid = 4)  
-							GROUP BY ue.userid) as ue
-					ON ue.userid = u.id
-				LEFT JOIN (
-					SELECT lit.userid, sum(lit.timespend) as timespend, sum(lit.visits) as visits 
-					FROM {$CFG->prefix}local_intelliboard_tracking lit 
-					GROUP BY lit.userid) as ui ON ui.userid = u.id
-			WHERE a.userid = u.id AND (a.roleid = 3 OR a.roleid = 4) $sql
-				GROUP BY u.id");
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS u.id, 
+					CONCAT(u.firstname, ' ', u.lastname) name, 
+					count(ue.courseid) as courses, 
+					sum(l.learners) as learners,
+					sum(lit.timespend) as timespend,
+					sum(lit.visits) as visits
+					$sql_columns
+				FROM 
+					(".$this->getUsersCoursesListSql('courseid', 'userid', 'teachers').") as ue
+					LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
+					LEFT JOIN (".$this->getCourseLearnersSql().") l ON l.courseid = ue.courseid
+					LEFT JOIN (".$this->getCurseUserTimeSql().") lit ON lit.courseid = ue.courseid AND lit.userid = u.id
+				WHERE u.deleted = 0 AND u.suspended = 0 $sql_filter GROUP BY u.id $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	
 	
@@ -445,52 +1008,116 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "u.id", "users");
+		$columns = array_merge(array("name", "visits", "timespend", "courses", "grade"), $this->get_filter_columns($params)); 
 		
-		return $DB->get_records_sql("SELECT u.id, CONCAT(u.firstname, ' ', u.lastname) name, ue.courses, gc.avarage, ccc.visits
-						FROM {$CFG->prefix}user as u
-							LEFT JOIN (SELECT ue.userid, count(distinct(e.courseid)) AS courses FROM {$CFG->prefix}user_enrolments AS ue, {$CFG->prefix}enrol AS e WHERE e.id = enrolid AND ue.timemodified BETWEEN $params->timestart AND $params->timefinish GROUP BY ue.userid) as ue ON ue.userid = u.id
-							LEFT JOIN (SELECT g.userid, AVG( (g.finalgrade/g.rawgrademax)*100) AS avarage FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN $params->timestart AND $params->timefinish GROUP BY g.userid) as gc ON gc.userid = u.id
-							LEFT JOIN (SELECT lit.userid, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit GROUP BY lit.userid) ccc ON ccc.userid = u.id							
-							WHERE u.id > 0 $sql ORDER BY ccc.visits DESC");
+		$sql_filter = $this->get_teacher_sql($params, "u.id", "users");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
+		
+		
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS u.id, 
+					CONCAT(u.firstname, ' ', u.lastname) name, 
+					count(ue.courseid) as courses, 
+					avg(l.grade) as grade,
+					sum(lit.timespend) as timespend,
+					sum(lit.visits) as visits
+					$sql_columns
+				FROM 
+					(".$this->getUsersCoursesListSql().") as ue
+					LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
+					LEFT JOIN (".$this->getCourseUserGradeSql().") l ON l.courseid = ue.courseid AND l.userid = u.id
+					LEFT JOIN (".$this->getCurseUserTimeSql().") lit ON lit.courseid = ue.courseid AND lit.userid = u.id
+				WHERE u.deleted = 0 AND u.suspended = 0 $sql_filter GROUP BY u.id $sql_having $sql_orger $sql_limit");
+				
+
+			$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report15($params)
 	{
 		global $USER, $CFG, $DB;
-
-		$sql = $this->get_teacher_sql($params, "e.courseid", "courses");
+		$columns = array_merge(array("enrol", "courses", "ue.users"), $this->get_filter_columns($params));
 		
-		return $DB->get_records_sql("SELECT e.id, e.enrol, count(e.courseid) as courses, ue.users 
-										FROM {$CFG->prefix}enrol e 
-											LEFT JOIN (SELECT e.enrol, count(ue.userid) as users FROM {$CFG->prefix}enrol e,{$CFG->prefix}user_enrolments ue 
-										WHERE ue.enrolid = e.id $sql GROUP BY e.enrol) ue ON ue.enrol = e.enrol WHERE e.id > 0 GROUP BY e.enrol");
+		$sql_filter = $this->get_teacher_sql($params, "e.courseid", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
+		
+		$data = $DB->get_records_sql("SELECT 
+						SQL_CALC_FOUND_ROWS e.id, 
+						e.enrol, 
+						count(e.courseid) as courses, 
+						ue.users 
+							FROM {$CFG->prefix}enrol e 
+								LEFT JOIN (SELECT e.enrol, count(ue.userid) as users FROM {$CFG->prefix}enrol e,{$CFG->prefix}user_enrolments ue 
+							WHERE ue.enrolid = e.id $sql_filter GROUP BY e.enrol) ue ON ue.enrol = e.enrol $sql_filter WHERE e.id > 0 GROUP BY e.enrol $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	
 	function report16($params)
 	{
 		global $USER, $CFG, $DB;
+		$columns = array_merge(array("c.fullname", "teacher", "total", "v.visits", "v.timespend", "p.posts", "d.discussions"), $this->get_filter_columns($params));
 
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT c.id, c.fullname, v.visits, v.timespend, d.discussions, p.posts, COUNT(*) AS total, (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
-									  FROM {$CFG->prefix}role_assignments AS ra
-									  JOIN {$CFG->prefix}user AS u ON ra.userid = u.id
-									  JOIN {$CFG->prefix}context AS ctx ON ctx.id = ra.contextid
-									  WHERE ra.roleid = 3 AND ctx.instanceid = c.id AND ctx.contextlevel = 50 LIMIT 1) AS teacher
-											FROM {$CFG->prefix}course c
-												LEFT JOIN {$CFG->prefix}forum f ON f.course = c.id
-												LEFT JOIN (SELECT lit.courseid, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='forum' GROUP BY lit.courseid) v ON v.courseid = c.id
-												LEFT JOIN (SELECT course, count(*) discussions FROM {$CFG->prefix}forum_discussions group by course) d ON d.course = c.id
-												LEFT JOIN (SELECT fd.course, count(*) posts FROM {$CFG->prefix}forum_discussions fd, {$CFG->prefix}forum_posts fp WHERE fp.discussion = fd.id group by fd.course) p ON p.course = c.id
-												WHERE c.visible = 1 $sql GROUP BY f.course ORDER BY c.fullname ASC");
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS c.id, 
+					c.fullname, 
+					v.visits, 
+					v.timespend, 
+					d.discussions, 
+					p.posts, 
+					COUNT(*) AS total, 
+					(SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
+					  FROM {$CFG->prefix}role_assignments AS ra
+					  JOIN {$CFG->prefix}user AS u ON ra.userid = u.id
+					  JOIN {$CFG->prefix}context AS ctx ON ctx.id = ra.contextid
+					  WHERE ra.roleid = 3 AND ra.itemid = 0 AND ctx.instanceid = c.id AND ctx.contextlevel = 50 LIMIT 1) AS teacher 
+						FROM {$CFG->prefix}course c
+							LEFT JOIN {$CFG->prefix}forum f ON f.course = c.id
+							LEFT JOIN (SELECT lit.courseid, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='forum' GROUP BY lit.courseid) v ON v.courseid = c.id
+							LEFT JOIN (SELECT course, count(*) discussions FROM {$CFG->prefix}forum_discussions group by course) d ON d.course = c.id
+							LEFT JOIN (SELECT fd.course, count(*) posts FROM {$CFG->prefix}forum_discussions fd, {$CFG->prefix}forum_posts fp WHERE fp.discussion = fd.id group by fd.course) p ON p.course = c.id
+							WHERE c.visible = 1 $sql_filter GROUP BY f.course $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report17($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$columns = array_merge(array("c.fullname", "f.name ", "f.type ", "Discussions", "UniqueUsersDiscussions", "Posts", "UniqueUsersPosts", "Students", "Teachers", "UserCount", "StudentDissUsage", "StudentPostUsage"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT f.id as forum, c.id, c.fullname,f.name, f.type 
+		$data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS f.id as forum, c.id, c.fullname,f.name, f.type 
 						,(SELECT COUNT(id) FROM {$CFG->prefix}forum_discussions AS fd WHERE f.id = fd.forum) AS Discussions
 						,(SELECT COUNT(DISTINCT fd.userid) FROM {$CFG->prefix}forum_discussions AS fd WHERE fd.forum = f.id) AS UniqueUsersDiscussions
 						,(SELECT COUNT(fp.id) FROM {$CFG->prefix}forum_discussions fd JOIN {$CFG->prefix}forum_posts AS fp ON fd.id = fp.discussion WHERE f.id = fd.forum) AS Posts
@@ -498,27 +1125,32 @@ class local_intelliboard_external extends external_api {
 						,(SELECT COUNT( ra.userid ) AS Students
 						FROM {$CFG->prefix}role_assignments AS ra
 						JOIN {$CFG->prefix}context AS ctx ON ra.contextid = ctx.id
-						WHERE ra.roleid =5
+						WHERE ra.roleid =5 AND ra.itemid = 0
 						AND ctx.instanceid = c.id
 						) AS StudentsCount
 						,(SELECT COUNT( ra.userid ) AS Teachers
 						FROM {$CFG->prefix}role_assignments AS ra
 						JOIN {$CFG->prefix}context AS ctx ON ra.contextid = ctx.id
-						WHERE ra.roleid =3
+						WHERE ra.roleid =3 AND ra.itemid = 0
 						AND ctx.instanceid = c.id
 						) AS teacherscount
 						,(SELECT COUNT( ra.userid ) AS Users
 						FROM {$CFG->prefix}role_assignments AS ra
 						JOIN {$CFG->prefix}context AS ctx ON ra.contextid = ctx.id
-						WHERE ra.roleid IN (3,5)
+						WHERE ra.roleid IN (3,5)  AND ra.itemid = 0
 						AND ctx.instanceid = c.id
 						) AS UserCount
 						, (SELECT (UniqueUsersDiscussions / StudentsCount )) AS StudentDissUsage
 						, (SELECT (UniqueUsersPosts /StudentsCount)) AS StudentPostUsage
 						FROM {$CFG->prefix}forum AS f 
 						JOIN {$CFG->prefix}course AS c ON f.course = c.id
-						WHERE c.id > 0 $sql
-						ORDER BY StudentPostUsage DESC");
+						WHERE c.id > 0 $sql_filter $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	
 	
@@ -526,165 +1158,553 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "fd.course", "courses");
+		$columns = array_merge(array("f.name", "user","course", "fpl.created", "posts"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT u.id+f.id, fd.course, CONCAT(u.firstname,' ',u.lastname) as user, f.name, count(fp.id) as posts, fpl.created FROM
-					{$CFG->prefix}forum_discussions fd
-					LEFT JOIN {$CFG->prefix}forum f ON f.id = fd.forum
-					LEFT JOIN {$CFG->prefix}forum_posts fp ON fp.discussion = fd.id
-					LEFT JOIN {$CFG->prefix}user u ON u.id = fp.userid
-					LEFT JOIN {$CFG->prefix}forum_posts as fpl ON fpl.id = 
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS u.id+f.id, 
+					c.fullname as course, 
+					CONCAT(u.firstname,' ',u.lastname) as user,
+					f.name, 
+					count(fp.id) as posts, 
+					fpl.created 
+					FROM
+						{$CFG->prefix}forum_discussions fd
+						LEFT JOIN {$CFG->prefix}course c ON c.id = fd.course
+						LEFT JOIN {$CFG->prefix}forum f ON f.id = fd.forum
+						LEFT JOIN {$CFG->prefix}forum_posts fp ON fp.discussion = fd.id
+						LEFT JOIN {$CFG->prefix}user u ON u.id = fp.userid
+						LEFT JOIN {$CFG->prefix}forum_posts as fpl ON fpl.id = 
 							(
 							   SELECT MAX(fdx.id) 
 							   FROM {$CFG->prefix}forum_posts fpx, {$CFG->prefix}forum_discussions fdx
 							   WHERE fpx.discussion = fdx.id AND fdx.forum = fd.forum AND fpx.userid = fpl.userid
 							)
-					WHERE f.id > 0 $sql
-					GROUP BY u.id, f.id");
+					WHERE f.id > 0 $sql_filter
+					GROUP BY u.id, f.id  $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	
 	function report19($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$columns = array_merge(array("c.fullname", "teacher", "scorms"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT c.id, c.fullname, count(s.id) as scorms, (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
+		$data = $DB->get_records_sql("SELECT 
+			SQL_CALC_FOUND_ROWS c.id, 
+			c.fullname, count(s.id) as scorms, 
+			(SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
 									  FROM {$CFG->prefix}role_assignments AS ra
 									  JOIN {$CFG->prefix}user AS u ON ra.userid = u.id
 									  JOIN {$CFG->prefix}context AS ctx ON ctx.id = ra.contextid
-									  WHERE ra.roleid = 3 AND ctx.instanceid = c.id AND ctx.contextlevel = 50 LIMIT 1) AS teacher FROM
+									  WHERE ra.roleid = 3 AND ra.itemid = 0 AND ctx.instanceid = c.id AND ctx.contextlevel = 50 LIMIT 1) AS teacher FROM
 										{$CFG->prefix}course c
 										LEFT JOIN {$CFG->prefix}scorm s ON s.course = c.id
-										WHERE c.visible = 1 $sql GROUP BY c.id ORDER BY c.fullname asc");
+										WHERE c.visible = 1 AND c.category > 0 $sql_filter GROUP BY c.id $sql_having $sql_orger $sql_limit");
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report20($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "s.course", "courses");
+		$columns = array_merge(array("s.name", "c.fullname", "sl.visits", "sm.duration", "s.timemodified"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT s.id, s.course, s.name, s.timemodified, count(sst.id) as attempts, sl.visits, sm.duration
-										FROM {$CFG->prefix}scorm s 
-										LEFT JOIN {$CFG->prefix}scorm_scoes_track sst ON sst.scormid = s.id AND sst.element = 'x.start.time' 
-										LEFT JOIN (SELECT cm.instance, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='scorm' GROUP BY cm.instance) sl ON sl.instance = s.id
-										LEFT JOIN (SELECT scormid, SEC_TO_TIME(SUM(TIME_TO_SEC(value))) AS duration FROM {$CFG->prefix}scorm_scoes_track where element = 'cmi.core.total_time' GROUP BY scormid) AS sm ON sm.scormid =s.id
-										WHERE s.id > 0 AND s.timemodified BETWEEN $params->timestart AND $params->timefinish $sql
-										GROUP BY s.id");
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS s.id, 
+					c.fullname, 
+					s.name, 
+					s.timemodified, 
+					count(sst.id) as attempts, 
+					sl.visits, 
+					sm.duration
+						FROM {$CFG->prefix}scorm s 
+						LEFT JOIN {$CFG->prefix}scorm_scoes_track sst ON sst.scormid = s.id AND sst.element = 'x.start.time' 
+						LEFT JOIN {$CFG->prefix}course c ON c.id = s.course 
+						LEFT JOIN (SELECT cm.instance, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='scorm' GROUP BY cm.instance) sl ON sl.instance = s.id
+						LEFT JOIN (SELECT scormid, SEC_TO_TIME(SUM(TIME_TO_SEC(value))) AS duration FROM {$CFG->prefix}scorm_scoes_track where element = 'cmi.core.total_time' GROUP BY scormid) AS sm ON sm.scormid =s.id
+						WHERE s.id > 0 AND s.timemodified BETWEEN $params->timestart AND $params->timefinish $sql_filter
+						GROUP BY s.id $sql_having $sql_orger $sql_limit");
+			$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report21($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "sc.course", "courses");
+		$columns = array_merge(array("user", "sc.name", "c.fullname", "attempts", "sv.visits", "sm.duration", "score"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT u.id+st.scormid+st.timemodified as id, CONCAT(u.firstname,' ',u.lastname) as user, st.userid, st.scormid, sc.name, sc.course, count(DISTINCT(st.attempt)) as attempts,sm.duration, sv.visits, round(sg.score, 0) as score
+		$data = $DB->get_records_sql("SELECT 
+			SQL_CALC_FOUND_ROWS u.id+st.scormid+st.timemodified as id, 
+			CONCAT(u.firstname,' ',u.lastname) as user, 
+			st.userid, 
+			st.scormid, 
+			sc.name, 
+			c.fullname, 
+			count(DISTINCT(st.attempt)) as attempts,
+			sm.duration, 
+			sv.visits, 
+			round(sg.score, 0) as score
+			$sql_columns 
 					FROM {$CFG->prefix}scorm_scoes_track AS st 
 					LEFT JOIN {$CFG->prefix}user AS u ON st.userid=u.id 
-					LEFT JOIN {$CFG->prefix}scorm AS sc ON sc.id=st.scormid 
+					LEFT JOIN {$CFG->prefix}scorm AS sc ON sc.id=st.scormid
+					LEFT JOIN {$CFG->prefix}course c ON c.id = sc.course 
 					LEFT JOIN (SELECT userid, scormid, SEC_TO_TIME( SUM( TIME_TO_SEC( value ) ) ) AS duration FROM {$CFG->prefix}scorm_scoes_track where element = 'cmi.core.total_time' GROUP BY userid, scormid) AS sm ON sm.scormid =st.scormid and sm.userid=st.userid 
 					LEFT JOIN (SELECT lit.userid, cm.instance, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='scorm' GROUP BY cm.instance, lit.userid) AS sv ON sv.instance =st.scormid and sv.userid=st.userid
-					LEFT JOIN (SELECT gi.iteminstance, AVG( (gg.finalgrade/gg.rawgrademax)*100) AS score, gg.userid FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades gg WHERE gi.itemmodule='scorm' and gg.itemid=gi.id ) AS sg ON sg.iteminstance =st.scormid and sg.userid=st.userid 
-					WHERE sc.id > 0 $sql
-					GROUP BY st.userid, st.scormid");
+					LEFT JOIN (SELECT gi.iteminstance, AVG( (gg.finalgrade/gg.rawgrademax)*100) AS score, gg.userid FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades gg WHERE gi.itemmodule='scorm' and gg.itemid=gi.id  GROUP BY gi.iteminstance, gg.userid) AS sg ON sg.iteminstance =st.scormid and sg.userid=st.userid 
+					WHERE sc.id > 0 $sql_filter
+					GROUP BY st.userid, st.scormid $sql_having $sql_orger $sql_limit");
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report22($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$columns = array_merge(array("c.fullname", "teacher", "quizzes", "qa.attempts", "qv.visits", "qv.timespend", "qg.grade"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT c.id, c.fullname, count(q.id) as quizzes, qa.attempts, qg.grade, qv.visits, qv.timespend, (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
+		$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS c.id, 
+				c.fullname, 
+				count(q.id) as quizzes, 
+				sum(qs.duration) as duration, 
+				sum(qa.attempts) as attempts, 
+				avg(qg.grade) as grade,
+				(SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
 									  FROM {$CFG->prefix}role_assignments AS ra
 									  JOIN {$CFG->prefix}user AS u ON ra.userid = u.id
 									  JOIN {$CFG->prefix}context AS ctx ON ctx.id = ra.contextid
-									  WHERE ra.roleid = 3 AND ctx.instanceid = c.id AND ctx.contextlevel = 50 LIMIT 1) AS teacher FROM 
-						{$CFG->prefix}course c
-						LEFT JOIN {$CFG->prefix}quiz q ON q.course = c.id
-						LEFT JOIN (SELECT quiz, count(id) as attempts FROM {$CFG->prefix}quiz_attempts GROUP BY quiz) qa ON qa.quiz = q.id
-						LEFT JOIN (SELECT gi.iteminstance, gg.finalgrade as grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades gg WHERE gi.itemmodule='quiz' and gg.itemid=gi.id) qg ON qg.iteminstance = q.id
-						LEFT JOIN (SELECT cm.instance, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='quiz' GROUP BY cm.instance) qv ON qv.instance = q.id 
-						GROUP BY c.id");
+									  WHERE ra.roleid = 3  AND ra.itemid = 0 AND ctx.instanceid = c.id AND ctx.contextlevel = 50 LIMIT 1) AS teacher FROM 
+						{$CFG->prefix}quiz q
+						LEFT JOIN {$CFG->prefix}course c ON c.id = q.course
+						LEFT JOIN (".$this->getQuizAttemptsSql("duration").") qs ON qs.quiz = q.id
+						LEFT JOIN (".$this->getQuizAttemptsSql().") qa ON qa.quiz = q.id
+						LEFT JOIN (".$this->getQuizAttemptsSql("grade").") qg ON qg.quiz = q.id
+						WHERE  c.visible = 1 AND c.category > 0 $sql_filter
+						GROUP BY c.id $sql_having $sql_orger $sql_limit");
+			$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report23($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "c.id", "courses");
+		$columns = array_merge(array("c.fullname", "resources", "teacher"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT c.id, c.fullname, count(r.id) as resources, (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
+		$data = $DB->get_records_sql("SELECT 
+			SQL_CALC_FOUND_ROWS c.id, 
+			c.fullname, 
+			count(r.id) as resources, 
+			(SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
 									  FROM {$CFG->prefix}role_assignments AS ra
 									  JOIN {$CFG->prefix}user AS u ON ra.userid = u.id
 									  JOIN {$CFG->prefix}context AS ctx ON ctx.id = ra.contextid
-									  WHERE ra.roleid = 3 AND ctx.instanceid = c.id AND ctx.contextlevel = 50 LIMIT 1) AS teacher FROM
+									  WHERE ra.roleid = 3  AND ra.itemid = 0 AND ctx.instanceid = c.id AND ctx.contextlevel = 50 LIMIT 1) AS teacher FROM
 										{$CFG->prefix}course c
 										LEFT JOIN {$CFG->prefix}resource r ON r.course = c.id
-										WHERE c.visible = 1 $sql GROUP BY c.id ORDER BY c.fullname asc");
+										WHERE c.visible = 1 $sql_filter GROUP BY c.id $sql_having $sql_orger $sql_limit");
+			$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report24($params)
 	{
 		global $USER, $CFG, $DB;
 
-		$sql = $this->get_teacher_sql($params, "r.course", "courses");
+		$columns = array_merge(array("r.name", "c.fullname", "sl.visits", "sl.timespend", "r.timemodified"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 		
-		return $DB->get_records_sql("SELECT r.id, r.course, r.name, r.timemodified, sl.visits, sl.timespend
-										FROM {$CFG->prefix}resource r 
-										LEFT JOIN (SELECT cm.instance, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='resource' GROUP BY cm.instance
-											) sl ON sl.instance = r.id
-										WHERE r.id > 0 AND r.timemodified BETWEEN $params->timestart AND $params->timefinish $sql
-										GROUP BY r.id ");
+		$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS r.id, 
+				c.fullname, 
+				r.name, 
+				r.timemodified, 
+				sl.visits, 
+				sl.timespend FROM {$CFG->prefix}resource r 
+										LEFT JOIN {$CFG->prefix}course c ON c.id = r.course 
+										LEFT JOIN (SELECT cm.instance, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='resource' GROUP BY cm.instance) sl ON sl.instance = r.id
+										WHERE r.id > 0 AND r.timemodified BETWEEN $params->timestart AND $params->timefinish $sql_filter
+										GROUP BY r.id  $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report25($params)
 	{
 		global $USER, $CFG, $DB;
-		return $DB->get_records_sql("SELECT id, component, count(id) as files, sum(filesize) as filesize FROM {$CFG->prefix}files group by component");
+		
+		$columns = array_merge(array("component", "files", "filesize"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
+		
+		$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS id, 
+				component, 
+				count(id) as files, 
+				sum(filesize) as filesize 
+				FROM {$CFG->prefix}files WHERE id > 0 $sql_filter GROUP BY component $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	
 	function report26($params)
 	{
 		global $USER, $CFG, $DB;
 		
-		return $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS ue.id, u.id as uid, cmc.completed, cmm.modules, CONCAT(u.firstname, ' ', u.lastname) as user, u.email, c.id as cid, c.fullname as course, uind.data as agentid, ch.name as cohort, ch.id as chid, c.enablecompletion, ue.timecreated as enrolled, round(gc.score, 2) as score, l.timespend, l.visits, cc.timecompleted 
+		$columns = array_merge(array("course", "user", "enrolled", "cc.timecompleted", "score", "completed", "l.visits", "l.timespend"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
+		
+		$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS ue.id, 
+				u.id as uid, 
+				cmc.completed,
+				cmm.modules,
+				CONCAT(u.firstname, ' ', u.lastname) as user,
+				c.id as cid, 
+				c.fullname as course,
+				ue.timecreated as enrolled, 
+				round(gc.score, 2) as score,
+				l.timespend, l.visits, 
+				cc.timecompleted $sql_columns
 						FROM {$CFG->prefix}user_enrolments as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
 							LEFT JOIN {$CFG->prefix}cohort as ch ON ch.id IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).")
                             LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
 							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid
-							LEFT JOIN {$CFG->prefix}user_info_field as uinf ON uinf.shortname = 'AgentID'
-							LEFT JOIN {$CFG->prefix}user_info_data as uind ON uind.fieldid = uinf.id AND uind.userid = u.id
-							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS score FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
+							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS score FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemtype = 'course' AND g.itemid = gi.id GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
 							LEFT JOIN (SELECT lit.userid, lit.courseid, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.courseid > 0 GROUP BY lit.courseid, lit.userid) as l ON l.courseid = c.id AND l.userid = u.id
 							LEFT JOIN (SELECT cm.course, count(cm.id) as modules FROM {$CFG->prefix}course_modules cm WHERE cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course) as cmm ON cmm.course = c.id
-							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completed FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = u.id
-						WHERE ue.userid IN (SELECT com.userid as id FROM {$CFG->prefix}cohort_members com WHERE cohortid IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).") and userid != ".intval($params->filter)." ) GROUP BY ue.userid, e.courseid");
+							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completed FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 AND cmc.completionstate = 1 GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = u.id
+						WHERE ue.userid IN (SELECT com.userid as id FROM {$CFG->prefix}cohort_members com WHERE cohortid IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).") and userid != ".intval($params->filter)." ) $sql_filter GROUP BY ue.userid, e.courseid  $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
 	function report27($params)
 	{
 		global $USER, $CFG, $DB;
+		
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
 			
 		if($CFG->version < 2012120301){
-			return $DB->get_records_sql("SELECT qa.id, qa.*, q.name, uind.data as agentid, ch.name as cohort, ch.id as chid, q.course, CONCAT(u.firstname, ' ', u.lastname) username, u.email, (qa.sumgrades/q.sumgrades*100) as grade
-				FROM {$CFG->prefix}quiz_attempts qa
-					LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
-					LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
-					LEFT JOIN {$CFG->prefix}user_info_field as uinf ON uinf.shortname = 'AgentID'
-					LEFT JOIN {$CFG->prefix}user_info_data as uind ON uind.fieldid = uinf.id AND uind.userid = u.id
-					LEFT JOIN {$CFG->prefix}cohort as ch ON ch.id IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).")
-				WHERE qa.id > 0 and qa.userid IN (SELECT com.userid as id FROM {$CFG->prefix}cohort_members com WHERE cohortid IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).") and userid != ".intval($params->filter)." )  and qa.timestart BETWEEN $params->timestart AND $params->timefinish
-					 GROUP BY qa.id");
+			$columns = array_merge(array("course", "username", "email", "q.name", "qa.id", "qa.id", "qa.id", "qa.id", "grade"), $this->get_filter_columns($params));
+			
+			$sql_having = $this->get_filter_sql($params->filter, $columns);
+			$sql_orger = $this->get_order_sql($params, $columns);
+			
+			$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS qa.id, 
+				qa.*,
+				q.name,
+				ch.name as cohort,
+				ch.id as chid,
+				c.fullname as course,
+				CONCAT(u.firstname, ' ', u.lastname) username,
+				u.email,
+				(qa.sumgrades/q.sumgrades*100) as grade
+				$sql_columns
+					FROM {$CFG->prefix}quiz_attempts qa
+						LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
+						LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
+						LEFT JOIN {$CFG->prefix}course as c ON c.id = q.course
+						LEFT JOIN {$CFG->prefix}cohort as ch ON ch.id IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).")
+					WHERE qa.id > 0 and qa.userid IN (SELECT com.userid as id FROM {$CFG->prefix}cohort_members com WHERE cohortid IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).") and userid != ".intval($params->filter)." )  and qa.timestart BETWEEN $params->timestart AND $params->timefinish $sql_filter
+						GROUP BY qa.id $sql_having $sql_orger $sql_limit");
 		}else{
-			return $DB->get_records_sql("SELECT qa.id, q.name, uind.data as agentid, ch.name as cohort, ch.id as chid, q.course, qa.timestart, qa.timefinish, qa.state, CONCAT(u.firstname, ' ', u.lastname) username, u.email, (qa.sumgrades/q.sumgrades*100) as grade
-				FROM {$CFG->prefix}quiz_attempts qa
-					LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
-					LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
-					LEFT JOIN {$CFG->prefix}user_info_field as uinf ON uinf.shortname = 'AgentID'
-					LEFT JOIN {$CFG->prefix}user_info_data as uind ON uind.fieldid = uinf.id AND uind.userid = u.id
-					LEFT JOIN {$CFG->prefix}cohort as ch ON ch.id IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).")
-				WHERE qa.id > 0 and qa.userid IN (SELECT com.userid as id FROM {$CFG->prefix}cohort_members com WHERE cohortid IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).") and userid != ".intval($params->filter)." )  and qa.timestart BETWEEN $params->timestart AND $params->timefinish
-					 GROUP BY qa.id");
+			$columns = array_merge(array("course", "username", "email", "q.name", "qa.state", "qa.timestart", "qa.timefinish", "qa.timefinish", "grade"), $this->get_filter_columns($params));
+			
+			$sql_having = $this->get_filter_sql($params->filter, $columns);
+			$sql_orger = $this->get_order_sql($params, $columns);
+			
+			$data = $DB->get_records_sql("SELECT
+				SQL_CALC_FOUND_ROWS qa.id,
+				q.name,
+				ch.name as cohort,
+				ch.id as chid,
+				c.fullname as course,
+				qa.timestart,
+				qa.timefinish,
+				qa.state,
+				CONCAT(u.firstname, ' ', u.lastname) username,
+				u.email,
+				(qa.sumgrades/q.sumgrades*100) as grade
+				$sql_columns
+					FROM {$CFG->prefix}quiz_attempts qa
+						LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
+						LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
+						LEFT JOIN {$CFG->prefix}course as c ON c.id = q.course
+						LEFT JOIN {$CFG->prefix}cohort as ch ON ch.id IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).")
+					WHERE qa.id > 0 and qa.userid IN (SELECT com.userid as id FROM {$CFG->prefix}cohort_members com WHERE cohortid IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->filter).") and userid != ".intval($params->filter)." )   and qa.timestart BETWEEN $params->timestart AND $params->timefinish $sql_filter
+							GROUP BY qa.id $sql_having $sql_orger $sql_limit");
 		}
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
 	}
+	
+	function report28($params)
+	{
+		global $USER, $CFG, $DB;
+
+		$columns = array_merge(array("gi.itemname", "learner", "graduated", "grade", "completionstate", "timespend", "visits"), $this->get_filter_columns($params)); 
+		
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_filter .= ($params->courseid) ? " AND cm.course = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);
+		
+		$data = $DB->get_records_sql("SELECT 
+					SQL_CALC_FOUND_ROWS gg.id,
+					gi.itemname,
+					gg.userid,
+					CONCAT(u.firstname, ' ', u.lastname) as learner,
+					gg.timemodified as graduated,
+					gg.finalgrade as grade,
+					cm.completion,
+					cmc.completionstate,
+					sum(lit.timespend) as timespend, 
+					sum(lit.visits) as visits
+					$sql_columns
+						FROM {$CFG->prefix}grade_grades gg
+							LEFT JOIN {$CFG->prefix}grade_items gi ON gi.id=gg.itemid
+							LEFT JOIN {$CFG->prefix}user as u ON u.id = gg.userid
+							LEFT JOIN {$CFG->prefix}modules m ON m.name = gi.itemmodule
+							LEFT JOIN {$CFG->prefix}course_modules cm ON cm.instance = gi.iteminstance AND cm.module = m.id
+							LEFT JOIN {$CFG->prefix}course as c ON c.id=cm.course
+							LEFT JOIN {$CFG->prefix}course_modules_completion as cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
+							LEFT JOIN {$CFG->prefix}local_intelliboard_tracking lit ON lit.page = 'module' AND lit.param = cm.id AND lit.userid = u.id
+								WHERE itemtype = 'mod' $sql_filter AND gg.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY gg.id $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
+	}
+	
+	function report29($params)
+	{
+		global $USER, $CFG, $DB;
+		
+		$columns = array_merge(array("user", "course", "g.grade"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
+		
+		if($params->filter){
+			$sql_courses = array();
+			$courses = explode(",", $params->filter);
+			foreach($courses as $c){
+				$data = explode("_", $c);
+				$sql_courses[] = "(e.courseid = ".$data[1]." AND g.grade < ".intval($data[0]).")";
+			}
+			$sql_courses = "(" . implode(" OR ", $sql_courses) . ")";
+		}else{
+			$sql_courses = "e.courseid > 0";
+		}
+		
+		$data = $DB->get_records_sql("SELECT 
+				SQL_CALC_FOUND_ROWS ue.id, 
+				CONCAT(u.firstname, ' ', u.lastname) as user,
+				c.fullname as course,
+				g.grade,
+				gm.graded,
+				cm.modules
+						FROM {$CFG->prefix}user_enrolments as ue
+							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
+							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
+                            LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
+							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid AND cc.userid = ue.userid
+							LEFT JOIN (SELECT gi.courseid, gg.userid, (gg.finalgrade/gg.rawgrademax)*100 AS grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades gg WHERE gi.itemtype = 'course' AND gg.itemid = gi.id GROUP BY  gi.courseid, gg.userid) as g ON g.courseid = c.id AND g.userid = u.id
+							LEFT JOIN (SELECT gi.courseid, gg.userid, count(gg.id) graded FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades gg WHERE gi.itemtype = 'mod' AND gg.itemid = gi.id GROUP BY  gi.courseid, gg.userid) as gm ON gm.courseid = c.id AND gm.userid = u.id
+							LEFT JOIN (SELECT courseid, count(id) as modules FROM {$CFG->prefix}grade_items WHERE itemtype = 'mod' GROUP BY courseid) as cm ON cm.courseid = c.id
+						WHERE (cc.timecompleted IS NULL OR cc.timecompleted = 0) AND gm.graded >= cm.modules AND $sql_courses $sql_filter GROUP BY ue.userid, e.courseid  $sql_having $sql_orger $sql_limit");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
+	}
+	
+	function report30($params)
+	{
+		global $USER, $CFG, $DB;
+		
+		$columns = array_merge(array("user", "course", "enrolled", "cc.timecompleted"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
+		
+		if($params->filter){
+			$sql_courses = array();
+			$courses = explode(",", $params->filter);
+			foreach($courses as $c){
+				$data = explode("_", $c);
+				$sql_courses[] = "(cc.course = ".$data[1]." AND cc.timecompleted > ".($data[0]/1000).")";
+			}
+			$sql_courses = "(" . implode(" OR ", $sql_courses) . ")";
+		}else{
+			$sql_courses = "cc.course > 0";
+		}
+		
+		$data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS cc.id, CONCAT(u.firstname, ' ', u.lastname) as user, c.fullname as course, cc.timecompleted 
+					FROM 
+						{$CFG->prefix}course_completions cc, 
+						{$CFG->prefix}course c, 
+						{$CFG->prefix}user u
+					WHERE u.id= cc.userid and c.id = cc.course and $sql_courses");
+		
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
+	}
+
+	function report31($params)
+	{
+		global $USER, $CFG, $DB;
+		
+		$columns = array_merge(array("user", "course", "lit.lastaccess"), $this->get_filter_columns($params));
+
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_limit = $this->get_limit_sql($params);	
+		
+		if($params->filter){
+			$sql_courses = array();
+			$courses = explode(",", $params->filter);
+			foreach($courses as $c){
+				$data = explode("_", $c);
+				$sql_courses[] = "(lit.courseid = ".$data[1]." AND lit.lastaccess < ".(time()-($data[0]*86400)).")";
+			}
+			$sql_courses = "(" . implode(" OR ", $sql_courses) . ")";
+		}else{
+			$sql_courses = "lit.courseid > 0";
+		}
+		
+		$data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS u.id, CONCAT(u.firstname, ' ', u.lastname) as user, c.fullname as course, lit.lastaccess
+					FROM {$CFG->prefix}user u 
+						LEFT JOIN {$CFG->prefix}local_intelliboard_tracking lit on lit.userid = u.id AND lit.lastaccess = (
+							SELECT MAX(lastaccess) 
+								FROM {$CFG->prefix}local_intelliboard_tracking 
+								WHERE userid = lit.userid and courseid = lit.courseid 
+							)
+						LEFT JOIN {$CFG->prefix}course c ON c.id = lit.courseid
+					WHERE $sql_courses GROUP BY lit.userid, lit.courseid");
+					
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
+	}
+	
 	
 	
 	function get_scormattempts($params)
@@ -702,9 +1722,14 @@ class local_intelliboard_external extends external_api {
 	function get_questions($params)
 	{
 		global $USER, $CFG, $DB;
-			
-		return $DB->get_records_sql("SELECT qa.id, ROUND(((qa.maxmark * qas.fraction) * q.grade / q.sumgrades),2) as grade, qa.slot, qu.id as attempt, q.name as quiz, que.name as question, que.questiontext, qas.userid, qas.state, qas.timecreated, FORMAT(((LENGTH(q.questions) - LENGTH(REPLACE(q.questions, ',', '')) + 1)/2), 0) as questions
-		FROM 
+		
+		if($CFG->version < 2012120301){
+			$sql_extra = "q.questions";
+		}else{
+			$sql_extra = "qat.layout";
+		}
+		return $DB->get_records_sql("SELECT qa.id, ROUND(((qa.maxmark * qas.fraction) * q.grade / q.sumgrades),2) as grade, qa.slot, qu.id as attempt, q.name as quiz, que.name as question, que.questiontext, qas.userid, qas.state, qas.timecreated, FORMAT(((LENGTH($sql_extra) - LENGTH(REPLACE($sql_extra, ',', '')) + 1)/2), 0) as questions
+					FROM 
 					{$CFG->prefix}question_attempts qa,
 					{$CFG->prefix}question_attempt_steps qas,
 					{$CFG->prefix}question_usages qu,
@@ -768,9 +1793,9 @@ class local_intelliboard_external extends external_api {
 		$sql3 = $this->get_teacher_sql($params, "id", "courses");
 		
 		return $DB->get_record_sql("SELECT 
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE id > 0 $sql2) as users,
-			(SELECT count(*) FROM {$CFG->prefix}course WHERE id > 0 $sql3) as courses,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE lastaccess > 0 $sql2) as active,
+			(SELECT count(*) FROM {$CFG->prefix}user WHERE username != 'guest' $sql2) as users,
+			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 1 and category > 0 $sql3) as courses,
+			(SELECT count(*) FROM {$CFG->prefix}user WHERE username != 'guest' and lastaccess > 0 $sql) as learners,
 			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE id > 0 $sql) as space,
 			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE component='user' $sql) as userspace,
 			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE filearea='content' $sql) as coursespace");
@@ -782,16 +1807,16 @@ class local_intelliboard_external extends external_api {
 		$sql = $this->get_teacher_sql($params, "u.id", "users");
 
 		return $DB->get_record_sql("SELECT 
-			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.deleted = 0 $sql) as users,
-			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.lastaccess > 0 $sql) as active,
-			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.confirmed = 0 OR u.deleted = 1 $sql) as deactive,
-			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.lastlogin > 0 $sql) as returned,
-			(SELECT count(*) FROM {$CFG->prefix}user u WHERE u.suspended = 1 $sql) as suspended,
-			(SELECT count(DISTINCT (c.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}course_completions c WHERE u.id = c.id $sql) as graduated,
-			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.id = e.enrolid AND e.userid=u.id $sql) as enrolled,
-			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.enrol = 'cohort' AND e.enrolid = ee.id AND e.userid=u.id $sql) as enrol_cohort,
-			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.enrol = 'manual' AND e.enrolid = ee.id AND e.userid=u.id $sql) as enrol_manual,
-			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.enrol = 'self' AND e.enrolid = ee.id AND e.userid=u.id $sql) as enrol_self");
+			(SELECT count(DISTINCT (u.id)) FROM {$CFG->prefix}user u, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and u.username != 'guest' and u.deleted = 0 $sql) as users,
+			(SELECT count(DISTINCT (u.id)) FROM {$CFG->prefix}user u, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and u.username != 'guest' and u.deleted = 0 and u.lastaccess > 0 $sql) as active,
+			(SELECT count(DISTINCT (u.id)) FROM {$CFG->prefix}user u, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and u.username != 'guest' and (u.confirmed = 0 OR u.deleted = 1) $sql) as deactive,
+			(SELECT count(DISTINCT (u.id)) FROM {$CFG->prefix}user u, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and u.username != 'guest' and u.deleted = 0 and u.lastlogin > 0 $sql) as returned,
+			(SELECT count(DISTINCT (u.id)) FROM {$CFG->prefix}user u, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and u.username != 'guest' and u.suspended = 1 $sql) as suspended,
+			(SELECT count(DISTINCT (c.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}course_completions c, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and u.id = c.id $sql) as graduated,
+			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and ee.id = e.enrolid AND e.userid=u.id $sql) as enrolled,
+			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and ee.enrol = 'cohort' AND e.enrolid = ee.id AND e.userid=u.id $sql) as enrol_cohort,
+			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and ee.enrol = 'manual' AND e.enrolid = ee.id AND e.userid=u.id $sql) as enrol_manual,
+			(SELECT count(DISTINCT (e.userid)) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e, {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0 and u.id = ra.userid and ee.enrol = 'self' AND e.enrolid = ee.id AND e.userid=u.id $sql) as enrol_self");
 	}
 	function get_system_courses($params)
 	{
@@ -808,8 +1833,8 @@ class local_intelliboard_external extends external_api {
 			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 1 AND category > 0 $sql2) as visible,
 			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 0 AND category > 0 $sql2) as hidden,
 			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}user_enrolments WHERE status = 1 $sql4) as expired,
-			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid = 5 $sql4 GROUP BY roleid) as students,
-			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid = 3 $sql4 GROUP BY roleid) as tutors,
+			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid = 5 AND itemid = 0 $sql4 GROUP BY roleid) as students,
+			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid = 3  AND itemid = 0 $sql4 GROUP BY roleid) as tutors,
 			(SELECT count(*) FROM {$CFG->prefix}course_modules_completion WHERE completionstate > 0 $sql4) as completed,
 			(SELECT COUNT(*) FROM {$CFG->prefix}local_intelliboard_tracking WHERE page = 'module' $sql4) as reviewed,
 			(SELECT count(cm.id) FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE m.name = 'certificate' AND cm.module = m.id $sql3) as certificates");
@@ -836,26 +1861,45 @@ class local_intelliboard_external extends external_api {
 		 
 		return $DB->get_records_sql("SELECT m.id, m.name, (sum(lit.visits) / (SELECT sum(visits) FROM {$CFG->prefix}local_intelliboard_tracking WHERE page = 'module')*100) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module GROUP BY m.id");
 	}
+	function get_useragents($params)
+	{
+		global $USER, $CFG, $DB;
+		 
+		return $DB->get_records_sql("SELECT lit.id, lit.useragent as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit GROUP BY lit.useragent");
+	}
+	function get_useros($params)
+	{
+		global $USER, $CFG, $DB;
+		 
+		return $DB->get_records_sql("SELECT lit.id, lit.useros as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit GROUP BY lit.useros");
+	}
+	function get_userlang($params)
+	{
+		global $USER, $CFG, $DB;
+		 
+		return $DB->get_records_sql("SELECT lit.id, lit.userlang as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit GROUP BY lit.userlang");
+	}
+	
+	
 	//update
 	function get_module_timespend($params)
 	{
 		global $USER, $CFG, $DB;
 		 
-		return $DB->get_records_sql("SELECT m.id, m.name, (sum(lit.timespend) / (SELECT sum(timespend) FROM mdl_local_intelliboard_tracking WHERE page = 'module')*100) as timeval, sum(lit.timespend) as timespend FROM mdl_local_intelliboard_tracking lit, mdl_course_modules cm, mdl_modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module GROUP BY m.id");
+		return $DB->get_records_sql("SELECT m.id, m.name, (sum(lit.timespend) / (SELECT sum(timespend) FROM {$CFG->prefix}local_intelliboard_tracking WHERE page = 'module')*100) as timeval, sum(lit.timespend) as timespend FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module GROUP BY m.id");
 	}
 	
 	function get_users_count($params)
 	{
 		global $USER, $CFG, $DB;
 		
-		return $DB->get_record_sql("SELECT 
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE timecreated BETWEEN $params->timestart AND $params->timefinish) as registered,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE lastaccess BETWEEN $params->timestart AND $params->timefinish) as active,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE lastlogin BETWEEN $params->timestart AND $params->timefinish) as returned,
-			(SELECT count(u.id) FROM {$CFG->prefix}user u, {$CFG->prefix}enrol ee, {$CFG->prefix}user_enrolments e WHERE ee.id = e.enrolid AND e.userid=u.id AND e.timemodified BETWEEN $params->timestart AND $params->timefinish) as enrolled");
+		return $DB->get_records_sql("SELECT auth, count(*) as users, 
+					(SELECT count(*) FROM {$CFG->prefix}user where username != 'guest' and deleted = 0) as amount 
+				FROM {$CFG->prefix}user WHERE username != 'guest' and deleted = 0 GROUP BY auth");
 	}
 	
 
+	
 	function get_most_visited_courses($params)
 	{
 		 global $USER, $CFG, $DB;
@@ -865,8 +1909,8 @@ class local_intelliboard_external extends external_api {
 		return $DB->get_records_sql("SELECT c.id, c.fullname, sum(l.visits) as visits, sum(l.timespend) as timespend, gc.grade
 				FROM {$CFG->prefix}local_intelliboard_tracking l 
 				LEFT JOIN {$CFG->prefix}course c ON c.id = l.courseid 
-				LEFT JOIN (SELECT gi.courseid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemname != '' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
-					WHERE l.courseid > 0 $sql AND l.lastaccess BETWEEN $params->timestart AND $params->timefinish 
+				LEFT JOIN (".$this->getCourseGradeSql().") as gc ON gc.courseid = c.id
+					WHERE c.category > 0 AND c.visible = 1 AND l.courseid > 0 $sql AND l.lastaccess BETWEEN $params->timestart AND $params->timefinish 
 						GROUP BY l.courseid
 							ORDER BY visits DESC 
 								LIMIT 10");
@@ -878,9 +1922,7 @@ class local_intelliboard_external extends external_api {
 		$sql = $this->get_teacher_sql($params, "c.id", "courses");
 		
 		return $DB->get_records_sql("SELECT c.id, c.fullname, c.timecreated 
-					FROM 
-					{$CFG->prefix}course c 
-					WHERE c.id NOT IN (SELECT courseid FROM {$CFG->prefix}local_intelliboard_tracking WHERE lastaccess BETWEEN $params->timestart AND $params->timefinish GROUP BY courseid) LIMIT 10");
+					FROM  {$CFG->prefix}course c  WHERE c.category > 0 AND c.visible = 1 AND c.id NOT IN (SELECT courseid FROM {$CFG->prefix}local_intelliboard_tracking WHERE lastaccess BETWEEN $params->timestart AND $params->timefinish GROUP BY courseid) LIMIT 10");
 	}
 	function get_active_users($params)
 	{
@@ -889,11 +1931,11 @@ class local_intelliboard_external extends external_api {
 		$sql = $this->get_teacher_sql($params, "u.id", "users");
 		
 		return $DB->get_records_sql("
-					SELECT u.id, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.lastaccess, u.email, ue.courses, l.visits, l.timespend
-						FROM {$CFG->prefix}user u
-							LEFT JOIN (SELECT userid, COUNT(id) as courses FROM {$CFG->prefix}user_enrolments WHERE id > 0 GROUP BY userid) ue ON ue.userid = u.id
+					SELECT u.id, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.lastaccess, ue.courses, l.visits, l.timespend
+						FROM (SELECT DISTINCT(ra.userid) FROM {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5 AND ra.itemid = 0) r, {$CFG->prefix}user u
+							LEFT JOIN (SELECT ue.userid, COUNT(DISTINCT (e.courseid)) as courses FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e WHERE e.id = ue.enrolid and ue.id > 0 GROUP BY ue.userid) ue ON ue.userid = u.id
 							LEFT JOIN (SELECT userid, sum(timespend) as timespend, sum(visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking GROUP BY userid) l ON l.userid = u.id
-								WHERE u.lastaccess BETWEEN $params->timestart AND $params->timefinish AND l.visits > 0 $sql
+								WHERE r.userid = u.id and u.lastaccess BETWEEN $params->timestart AND $params->timefinish AND l.visits > 0 $sql
 									ORDER BY l.visits DESC
 										LIMIT 10");
 	}
@@ -912,10 +1954,9 @@ class local_intelliboard_external extends external_api {
 		
 		$sql = $this->get_teacher_sql($params, "c.id", "courses");
 		
-		return $DB->get_records_sql("SELECT c.id, c.timecreated, c.fullname, fs.coursesize, l.visits
+		return $DB->get_records_sql("SELECT c.id, c.timecreated, c.fullname, fs.coursesize
 				FROM {$CFG->prefix}course c
-					LEFT JOIN (SELECT c.instanceid AS course, sum( f.filesize ) as coursesize FROM {$CFG->prefix}files f, {$CFG->prefix}context c WHERE c.id = f.contextid AND f.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY c.instanceid) fs ON fs.course = c.id
-					LEFT JOIN (SELECT courseid, sum(visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking WHERE courseid > 0 GROUP BY courseid) l ON l.courseid = c.id
+					LEFT JOIN (SELECT c.instanceid AS course, sum( f.filesize ) as coursesize FROM {$CFG->prefix}files f, {$CFG->prefix}context c WHERE c.id = f.contextid GROUP BY c.instanceid) fs ON fs.course = c.id
 						WHERE c.category > 0 $sql LIMIT 20");
 		
 	}
@@ -955,13 +1996,15 @@ class local_intelliboard_external extends external_api {
 		if($CFG->version < 2014051200){
 			$table = "log";
 			$table_time = "time";
+			$table_course = "course";
 		}else{
 			$table = "logstore_standard_log";
 			$table_time = "timecreated";
+			$table_course = "courseid";
 		}
-		$data = $DB->get_records_sql("(SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (course)) as courses
+		$data = $DB->get_records_sql("(SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT ($table_course)) as courses
 				FROM {$CFG->prefix}$table
-					WHERE module='course' and action='view' $sql AND $table_time BETWEEN $params->timestart AND $params->timefinish 
+					WHERE $table_course IN (SELECT id FROM {$CFG->prefix}course WHERE visible = 1 and category > 0) $sql AND $table_time BETWEEN $params->timestart AND $params->timefinish 
 						GROUP BY floor($table_time / $ext) * $ext
 							ORDER BY $table_time DESC)");	
 						
@@ -996,7 +2039,7 @@ class local_intelliboard_external extends external_api {
 		
 		$data = $DB->get_records_sql("(SELECT floor(lastaccess / $ext) * $ext as time, COUNT(id) as users
 				FROM {$CFG->prefix}user
-					WHERE lastaccess BETWEEN $params->timestart AND $params->timefinish 
+					WHERE id IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid = 5 AND itemid = 0) AND lastaccess BETWEEN $params->timestart AND $params->timefinish 
 						GROUP BY floor(lastaccess / $ext) * $ext
 							ORDER BY lastaccess DESC)");	
 						
@@ -1115,7 +2158,7 @@ class local_intelliboard_external extends external_api {
 		$data = $DB->get_records_sql("
 			(SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (userid)) as users
 				FROM {$CFG->prefix}$table
-					WHERE userid>0 AND $table_time BETWEEN $params->timestart AND $params->timefinish $sql
+					WHERE userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid = 5 AND itemid = 0) AND $table_time BETWEEN $params->timestart AND $params->timefinish $sql
 						GROUP BY floor($table_time / $ext) * $ext
 							ORDER BY $table_time DESC)");
 		$response = array();
@@ -1193,6 +2236,12 @@ class local_intelliboard_external extends external_api {
 
 		return $DB->get_records_sql("SELECT id, name FROM {$CFG->prefix}cohort ORDER BY name");
 	}
+	function get_user_info_fields($params)
+	{
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("SELECT uif.id, uif.name, uic.name as category FROM {$CFG->prefix}user_info_field uif, {$CFG->prefix}user_info_category uic WHERE uif.categoryid = uic.id ORDER BY uif.name");
+	}
 	function get_info($params){
 		global $USER, $CFG, $DB;
 		
@@ -1211,7 +2260,45 @@ class local_intelliboard_external extends external_api {
 		
 		return $DB->get_records_sql("SELECT id, fullname FROM {$CFG->prefix}course WHERE category > 0 $sql $sql_filter ORDER BY fullname $sql_limit");
 	}
+	function get_userinfo($params){
+		global $USER, $CFG, $DB;
+		
+		return $DB->get_record_sql("SELECT id, firstname, lastname, email, city, country
+			FROM {$CFG->prefix}user WHERE id = ".$params->filter);
+	}
+	function get_mudules($params){
+		global $USER, $CFG, $DB;
+		
+		return $DB->get_records_sql("SELECT id, name FROM {$CFG->prefix}modules WHERE visible = 1");
+	}
+	function get_roles($params){
+		global $USER, $CFG, $DB;
+		
+		return $DB->get_records_sql("SELECT id, name, shortname
+			FROM {$CFG->prefix}role
+				WHERE archetype NOT IN ('student', 'guest', 'user', 'frontpage')
+					ORDER BY sortorder");
+	}
+	function get_tutors($params){
+		global $USER, $CFG, $DB;
+		
+		$filter = ($params->filter) ? "a.roleid = $params->filter" : "(a.roleid = 3 OR a.roleid = 4)";
+		return $DB->get_records_sql("SELECT u.id,  CONCAT(u.firstname, ' ', u.lastname) as name, u.email 
+			FROM {$CFG->prefix}user u
+				LEFT JOIN {$CFG->prefix}role_assignments a ON a.userid = u.id  
+				WHERE $filter AND a.itemid = 0 AND u.deleted = 0 AND u.confirmed = 1 GROUP BY u.id");
+	}
 	
+	
+
+	
+	
+	
+	function get_enrols($params){
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("SELECT e.id, e.enrol FROM {$CFG->prefix}enrol e GROUP BY e.enrol");
+	}
 	
 	function get_teacher_sql($params, $column, $type)
 	{
@@ -1239,7 +2326,7 @@ class local_intelliboard_external extends external_api {
 							JOIN {$CFG->prefix}role_assignments AS ra ON u.id = ra.userid
 							JOIN {$CFG->prefix}context AS ctx ON ra.contextid = ctx.id
 							JOIN {$CFG->prefix}course AS c ON c.id = ctx.instanceid
-								WHERE ra.roleid =5 AND ctx.instanceid = c.id AND c.visible=1 AND c.id IN($courses)
+								WHERE ra.roleid =5 AND ra.itemid = 0 AND ctx.instanceid = c.id AND c.visible=1 AND c.id IN($courses)
 									GROUP BY u.id");
 		}
 		if($format){
@@ -1261,7 +2348,7 @@ class local_intelliboard_external extends external_api {
 		}else{		
 			$courses = $this->courses = $DB->get_records_sql("SELECT c.id, c.fullname FROM {$CFG->prefix}course AS c, {$CFG->prefix}role_assignments AS ra
 				JOIN {$CFG->prefix}context AS ctx ON ra.contextid = ctx.id
-				WHERE c.visible=1 and ctx.instanceid = c.id AND ra.userid = $params->userid AND (ra.roleid = 3 OR ra.roleid = 4)");
+				WHERE c.visible=1 and ctx.instanceid = c.id AND ra.userid = $params->userid AND (ra.roleid = 3 OR ra.roleid = 4) AND ra.itemid = 0");
 		}
 		if($format){	
 			$ids = array();
@@ -1272,6 +2359,22 @@ class local_intelliboard_external extends external_api {
 		}else{
 			return $courses;
 		}
-		
+	}
+	
+	function set_notification_enrol($params)
+	{
+		set_config("enrol", $params->notification_enrol, "local_intelliboard");
+		set_config("enrol_email", $params->notification_email, "local_intelliboard");
+		set_config("enrol_subject", $params->notification_subject, "local_intelliboard");
+		set_config("enrol_message", $params->notification_message, "local_intelliboard");
+		return true;
+	}
+	function set_notification_auth($params)
+	{
+		set_config("auth", $params->notification_auth, "local_intelliboard");
+		set_config("auth_email", $params->notification_email, "local_intelliboard");
+		set_config("auth_subject", $params->notification_subject, "local_intelliboard");
+		set_config("auth_message", $params->notification_message, "local_intelliboard");
+		return true;
 	}
 }
