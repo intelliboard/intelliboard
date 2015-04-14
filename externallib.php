@@ -1763,7 +1763,7 @@ class local_intelliboard_external extends external_api {
 		return $DB->get_record_sql("SELECT 
 			(SELECT count(*) FROM {$CFG->prefix}user WHERE username != 'guest' $sql2) as users,
 			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 1 and category > 0 $sql3) as courses,
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE username != 'guest' and u.deleted = 0 AND u.suspended = 0 and lastaccess > 0 $sql) as learners,
+			(SELECT count(*) FROM {$CFG->prefix}user WHERE username != 'guest' and deleted = 0 AND suspended = 0 and lastaccess > 0 $sql) as learners,
 			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE id > 0 $sql) as space,
 			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE component='user' $sql) as userspace,
 			(SELECT SUM(filesize) FROM {$CFG->prefix}files WHERE filearea='content' $sql) as coursespace");
@@ -1900,13 +1900,20 @@ class local_intelliboard_external extends external_api {
 		$sql = $this->get_teacher_sql($params, "u.id", "users");
 		
 		return $DB->get_records_sql("
-					SELECT u.id, CONCAT( u.firstname, ' ', u.lastname ) AS name, u.lastaccess, ue.courses, l.visits, l.timespend
-						FROM (SELECT DISTINCT(ra.userid) FROM {$CFG->prefix}role_assignments ra WHERE ra.roleid = 5) r, {$CFG->prefix}user u
-							LEFT JOIN (SELECT ue.userid, COUNT(DISTINCT (e.courseid)) as courses FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e WHERE e.id = ue.enrolid and ue.id > 0 GROUP BY ue.userid) ue ON ue.userid = u.id
-							LEFT JOIN (SELECT userid, sum(timespend) as timespend, sum(visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking GROUP BY userid) l ON l.userid = u.id
-								WHERE r.userid = u.id and u.lastaccess BETWEEN $params->timestart AND $params->timefinish AND l.visits > 0 $sql
-									ORDER BY l.visits DESC
-										LIMIT 10");
+					SELECT 
+					SQL_CALC_FOUND_ROWS u.id, 
+					CONCAT(u.firstname, ' ', u.lastname) name, 
+					u.lastaccess,
+					count(ue.courseid) as courses, 
+					avg(l.grade) as grade,
+					sum(lit.visits) as visits,
+					sum(lit.timespend) as timespend
+				FROM 
+					(".$this->getUsersEnrolsSql().") as ue
+					LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
+					LEFT JOIN (".$this->getCourseUserGradeSql().") l ON l.courseid = ue.courseid AND l.userid = u.id
+					LEFT JOIN (".$this->getCurseUserTimeSql().") lit ON lit.courseid = ue.courseid AND lit.userid = u.id
+				WHERE u.deleted = 0 AND u.suspended = 0 $sql GROUP BY u.id ORDER BY lit.visits DESC LIMIT 10");
 	}
 
 	function get_enrollments_per_course($params)
