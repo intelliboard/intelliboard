@@ -104,11 +104,11 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		if(is_siteadmin() and !$trackadmin){
 			return;
 		}
-		$intelliboardPage = clean_param($_COOKIE['intelliboardPage'], PARAM_ALPHANUMEXT);
-		$intelliboardParam = clean_param($_COOKIE['intelliboardParam'], 0, PARAM_INT);
-		$intelliboardTime = clean_param($_COOKIE['intelliboardTime'], 0, PARAM_INT);
 		
-		//die("$intelliboardPage - $intelliboardParam - $intelliboardTime");
+		$intelliboardPage = (isset($_COOKIE['intelliboardPage'])) ? clean_param($_COOKIE['intelliboardPage'], PARAM_ALPHANUMEXT) : '';
+		$intelliboardParam = (isset($_COOKIE['intelliboardParam'])) ? clean_param($_COOKIE['intelliboardParam'], 0, PARAM_INT) : 0;
+		$intelliboardTime = (isset($_COOKIE['intelliboardTime'])) ? clean_param($_COOKIE['intelliboardTime'], 0, PARAM_INT) : 0;
+		
 		if(!empty($intelliboardPage)){
 			$userDetails = (object)getUserDetails();
 			if($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')){
