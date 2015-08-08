@@ -30,10 +30,11 @@ defined('MOODLE_INTERNAL') || die;
 
 $settings = new admin_settingpage('local_intelliboard', get_string('settings', 'local_intelliboard'));
 
-if (!$ADMIN->locate('intelliboard')){
+if (!$ADMIN->locate('intelliboard') and $ADMIN->locate('localplugins')){
 	$ADMIN->add('localplugins', new admin_category('intelliboard', get_string('pluginname', 'local_intelliboard')));
 	$ADMIN->add('intelliboard', $settings);
 }
+
 $settings->add(new admin_setting_heading('local_intelliboard/tracking_title', get_string('tracking_title', 'local_intelliboard'), ''));
 
 $name = 'local_intelliboard/enabled';

@@ -91,7 +91,7 @@ function getUserDetails()
         'userlang'     => substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2)
     );
 }
-function insert_intelliboard_tracking($ajaxRequest = false){
+function insert_intelliboard_tracking($ajaxRequest = false){ 
     global $CFG, $PAGE, $SITE, $DB, $USER;
 
 	$intelliboard = optional_param('intelliboard', 0, PARAM_INT);
@@ -99,6 +99,11 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 	$ajax = (int) get_config('local_intelliboard', 'ajax');
 	$inactivity = (int) get_config('local_intelliboard', 'inactivity');
 	$trackadmin = get_config('local_intelliboard', 'trackadmin');
+	$path = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
+	
+	if(strpos($path,'cron.php') !== false){
+		return;
+	}
 	
 	if ($enabled and isloggedin() and !isguestuser()){
 		if(is_siteadmin() and !$trackadmin){
@@ -155,7 +160,7 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		}elseif(isset($PAGE->course->id) and $SITE->id != $PAGE->course->id){
 			$intelliboardPage = 'course';
 			$intelliboardParam = $PAGE->course->id;
-		}elseif(preg_match('/profile/', $PAGE->url)){
+		}elseif(strpos($PAGE->url, '/profile/') !== false){
 			$intelliboardPage = 'user';
 			$intelliboardParam = $USER->id;
 		}else{

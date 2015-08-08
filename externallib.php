@@ -1385,8 +1385,7 @@ class local_intelliboard_external extends external_api {
 		
 		$columns = array_merge(array("course", "user", "enrolled", "cc.timecompleted", "score", "completed", "l.visits", "l.timespend"), $this->get_filter_columns($params));
 
-		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
-		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+		$sql_filter = ($params->courseid) ? " AND c.id = $params->courseid " : "";
 		$sql_having = $this->get_filter_sql($params->filter, $columns);
 		$sql_orger = $this->get_order_sql($params, $columns);
 		$sql_columns = $this->get_columns($params, "u.id");
@@ -1407,7 +1406,6 @@ class local_intelliboard_external extends external_api {
 						FROM {$CFG->prefix}user_enrolments as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}enrol as e ON e.id = ue.enrolid
-							LEFT JOIN {$CFG->prefix}cohort as ch ON ch.id IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->userid).")
                             LEFT JOIN {$CFG->prefix}course as c ON c.id = e.courseid
 							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = e.courseid and cc.userid = ue.userid 
 							LEFT JOIN (SELECT gi.courseid, g.userid, AVG( (g.finalgrade/g.rawgrademax)*100 ) AS score FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemtype = 'course' AND g.itemid = gi.id GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
@@ -1426,8 +1424,8 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 		
-		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
-		$sql_filter .= ($params->courseid) ? " AND c.id = $params->courseid " : "";
+
+		$sql_filter = ($params->courseid) ? " AND c.id = $params->courseid " : "";
 		$sql_columns = $this->get_columns($params, "u.id");
 		$sql_limit = $this->get_limit_sql($params);	
 			
@@ -1441,8 +1439,6 @@ class local_intelliboard_external extends external_api {
 				SQL_CALC_FOUND_ROWS qa.id, 
 				qa.*,
 				q.name,
-				ch.name as cohort,
-				ch.id as chid,
 				c.fullname as course,
 				CONCAT(u.firstname, ' ', u.lastname) username,
 				u.email,
@@ -1452,7 +1448,6 @@ class local_intelliboard_external extends external_api {
 						LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
 						LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
 						LEFT JOIN {$CFG->prefix}course as c ON c.id = q.course
-						LEFT JOIN {$CFG->prefix}cohort as ch ON ch.id IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->userid).")
 					WHERE qa.id > 0 and qa.userid IN (SELECT com.userid as id FROM {$CFG->prefix}cohort_members com WHERE cohortid IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->userid).") and userid != ".intval($params->userid)." )  and qa.timestart BETWEEN $params->timestart AND $params->timefinish $sql_filter
 						GROUP BY qa.id $sql_having $sql_orger $sql_limit");
 		}else{
@@ -1464,8 +1459,6 @@ class local_intelliboard_external extends external_api {
 			$data = $DB->get_records_sql("SELECT
 				SQL_CALC_FOUND_ROWS qa.id,
 				q.name,
-				ch.name as cohort,
-				ch.id as chid,
 				c.fullname as course,
 				qa.timestart,
 				qa.timefinish,
@@ -1478,7 +1471,6 @@ class local_intelliboard_external extends external_api {
 						LEFT JOIN {$CFG->prefix}quiz q ON q.id = qa.quiz
 						LEFT JOIN {$CFG->prefix}user u ON u.id = qa.userid
 						LEFT JOIN {$CFG->prefix}course as c ON c.id = q.course
-						LEFT JOIN {$CFG->prefix}cohort as ch ON ch.id IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->userid).")
 					WHERE qa.id > 0 and qa.userid IN (SELECT com.userid as id FROM {$CFG->prefix}cohort_members com WHERE cohortid IN (SELECT com.cohortid as id FROM {$CFG->prefix}cohort_members com WHERE userid = ".intval($params->userid).") and userid != ".intval($params->userid)." )   and qa.timestart BETWEEN $params->timestart AND $params->timefinish $sql_filter
 							GROUP BY qa.id $sql_having $sql_orger $sql_limit");
 		}
@@ -2048,7 +2040,7 @@ class local_intelliboard_external extends external_api {
 		
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 		
-		return $DB->get_records_sql("SELECT lit.id, lit.useragent as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid > $sql GROUP BY lit.useragent");
+		return $DB->get_records_sql("SELECT lit.id, lit.useragent as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.useragent");
 	}
 	function get_useros($params)
 	{
@@ -2056,7 +2048,7 @@ class local_intelliboard_external extends external_api {
 		
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 		
-		return $DB->get_records_sql("SELECT lit.id, lit.useros as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid > $sql GROUP BY lit.useros");
+		return $DB->get_records_sql("SELECT lit.id, lit.useros as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.useros");
 	}
 	function get_userlang($params)
 	{
@@ -2064,7 +2056,7 @@ class local_intelliboard_external extends external_api {
 		
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 		
-		return $DB->get_records_sql("SELECT lit.id, lit.userlang as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid > $sql GROUP BY lit.userlang");
+		return $DB->get_records_sql("SELECT lit.id, lit.userlang as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.userlang");
 	}
 	
 	
