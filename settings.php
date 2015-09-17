@@ -58,14 +58,6 @@ $default = '60';
 $setting = new admin_setting_configtext($name, $title, $description, $default);
 $settings->add($setting);
 
-
-$name = 'local_intelliboard/sqlsize';
-$title = get_string('sqlsize', 'local_intelliboard');
-$description = get_string('sqlsize_desc', 'local_intelliboard');
-$default = false;
-$setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
-$settings->add($setting);
-
 $name = 'local_intelliboard/trackadmin';
 $title = get_string('trackadmin', 'local_intelliboard');
 $description = get_string('trackadmin_desc', 'local_intelliboard');

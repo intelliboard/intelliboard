@@ -79,11 +79,6 @@ class local_intelliboard_external extends external_api {
         $params = self::validate_parameters(self::database_query_parameters(), array('params' => $params));
 		$transaction = $DB->start_delegated_transaction();
 		$obj = new local_intelliboard_external();
-		$sqlsize = get_config('local_intelliboard', 'sqlsize');
-		
-		if($sqlsize){
-			$DB->execute("SET OPTION SQL_BIG_SELECTS = 1");
-		}
 		
 		if(count($params['params']) > 1){
 			$data = array();

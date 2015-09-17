@@ -39,5 +39,3 @@ $string['enabled'] = 'Enabled Tracking';
 $string['enabled_desc'] = 'Enable Tracking';
 $string['trackadmin'] = 'Tracking Admins';
 $string['trackadmin_desc'] = 'Enable tracking for admin users (not recommended)';
-$string['sqlsize'] = 'Shared hosting';
-$string['sqlsize_desc'] = 'To avoid MAX_JOIN_SIZE error. This is used for safety protocol commonly used at shared hosting servers.';
