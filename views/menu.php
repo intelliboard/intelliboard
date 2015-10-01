@@ -20,6 +20,6 @@
 	<li class="sso">
 		<?php if($intelliboard->token): ?>
 			<a target="_blank" href="http://intelliboard.net/dashboard/api?do=signin&view=<?php echo $PAGE->pagetype; ?>&param=<?php echo $id; ?>&token=<?php echo $intelliboard->token; ?>" class="ion-log-in"> IntelliBoard.net</a>
-		<? endif; ?>
+		<?php endif; ?>
 	</li>
 </ul>
