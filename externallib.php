@@ -2159,8 +2159,8 @@ class local_intelliboard_external extends external_api {
 			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 1 AND category > 0 $sql2) as visible,
 			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 0 AND category > 0 $sql2) as hidden,
 			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}user_enrolments WHERE status = 1 $sql4) as expired,
-			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles) $sql4 GROUP BY roleid) as students,
-			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid IN ($this->teacher_roles) $sql4 GROUP BY roleid) as tutors,
+			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles) $sql4) as students,
+			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid IN ($this->teacher_roles) $sql4) as tutors,
 			(SELECT count(*) FROM {$CFG->prefix}course_modules_completion WHERE completionstate > 0 $sql4) as completed,
 			(SELECT COUNT(*) FROM {$CFG->prefix}local_intelliboard_tracking WHERE page = 'module' $sql4) as reviewed,
 			(SELECT count(cm.id) FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE m.name = 'certificate' AND cm.module = m.id $sql3) as certificates");
