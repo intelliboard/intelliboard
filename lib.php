@@ -13,16 +13,16 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// IntelliBoard.net is built as a plugin for Moodle.
+// IntelliBoard.net is built as a local plugin for Moodle.
 
 /**
  * IntelliBoard.net
  *
  *
- * @package    	local_intelliboard
- * @copyright  	2014-2015 SEBALE LLC
+ * @package    	intelliboard
+ * @copyright  	2015 IntelliBoard, Inc
  * @license    	http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @created by	SEBALE LLC
+ * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
 
@@ -178,7 +178,7 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		$params->intelliboardInactivity = $inactivity;
 		$params->intelliboardPeriod = 1000;	
 
-		$PAGE->requires->js('/local/intelliboard/module.js', false);
+		$PAGE->requires->js('/local/intelliboard/assets/js/module.js', false);
 		$PAGE->requires->js_function_call('intelliboardInit', array($params), false);
 	}
 }

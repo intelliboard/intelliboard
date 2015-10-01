@@ -13,22 +13,41 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// IntelliBoard.net is built as a plugin for Moodle.
+// IntelliBoard.net is built as a local plugin for Moodle.
 
 /**
  * IntelliBoard.net
  *
  *
- * @package    	local_intelliboard
- * @copyright  	2014-2015 SEBALE LLC
+ * @package    	intelliboard
+ * @copyright  	2015 IntelliBoard, Inc
  * @license    	http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @created by	SEBALE LLC
+ * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
 
 defined('MOODLE_INTERNAL') || die;
 
 $settings = new admin_settingpage('local_intelliboard', get_string('settings', 'local_intelliboard'));
+
+if ($hassiteconfig){
+    $ADMIN->add('root', new admin_category('intelliboardroot', get_string('intelliboardroot', 'local_intelliboard')));
+				
+    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcontrolpanel', get_string('dashboard', 'local_intelliboard'),
+            $CFG->wwwroot.'/local/intelliboard/index.php', 'local/intelliboard:manage'));
+			
+    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardlearners', get_string('learners', 'local_intelliboard'),
+            $CFG->wwwroot.'/local/intelliboard/learners.php', 'local/intelliboard:manage'));		
+    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcourses', get_string('courses', 'local_intelliboard'),
+            $CFG->wwwroot.'/local/intelliboard/courses.php', 'local/intelliboard:manage'));		
+    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardload', get_string('load', 'local_intelliboard'),
+            $CFG->wwwroot.'/local/intelliboard/load.php', 'local/intelliboard:manage'));		
+    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardreports', get_string('reports', 'local_intelliboard'),
+            $CFG->wwwroot.'/local/intelliboard/reports.php', 'local/intelliboard:manage'));
+			
+    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardsettings', get_string('settings'),
+            $CFG->wwwroot.'/local/intelliboard/config.php', 'local/intelliboard:manage'));
+}
 
 if (!$ADMIN->locate('intelliboard') and $ADMIN->locate('localplugins')){
 	$ADMIN->add('localplugins', new admin_category('intelliboard', get_string('pluginname', 'local_intelliboard')));

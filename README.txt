@@ -1,4 +1,4 @@
-moodle-local_intelliboard
+intelliboard
 ==================
 Local Moodle plugin
 
@@ -11,7 +11,7 @@ to read reports, IntelliBoard.net will become your primary reporting tool.
 
 INSTALLATION
 ===============================
-1. Download the plugin from https://github.com/sebale/moodle-local_intelliboard
+1. Download the plugin from https://github.com/intelliboard/intelliboard
 2. Install the plugin as local plugin
 3. Enable web services in your Moodle
 4. Enable REST protocol in your Moodle

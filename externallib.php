@@ -13,16 +13,16 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// IntelliBoard.net is built as a plugin for Moodle.
+// IntelliBoard.net is built as a local plugin for Moodle.
 
 /**
  * IntelliBoard.net
  *
  *
- * @package    	local_intelliboard
- * @copyright  	2014-2015 SEBALE LLC
+ * @package    	intelliboard
+ * @copyright  	2015 IntelliBoard, Inc
  * @license    	http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @created by	SEBALE LLC
+ * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
 
@@ -373,6 +373,11 @@ class local_intelliboard_external extends external_api {
 		$sql_columns = $this->get_columns($params, "u.id");
 		$sql_limit = $this->get_limit_sql($params);
 
+		if(isset($params->custom) and $params->custom == 1){
+			$filterColumn = 'cc.timecompleted';
+		}else{
+			$filterColumn = 'ue.timecreated';
+		}
 		if($params->cohortid){
 			$sql_join = "LEFT JOIN {$CFG->prefix}cohort_members cm ON cm.userid = u.id";
 			$sql_filter .= " AND cm.cohortid  IN ($params->cohortid)";
@@ -400,7 +405,7 @@ class local_intelliboard_external extends external_api {
 							LEFT JOIN (".$this->getCourseUserGradeSql().") as gc ON gc.courseid = c.id AND gc.userid = u.id
 							LEFT JOIN (".$this->getCurseUserTimeSql().") l ON l.courseid = c.id AND l.userid = u.id
 							$sql_join	
-								WHERE ue.timecreated BETWEEN $params->timestart AND $params->timefinish $sql_filter $sql_having $sql_orger $sql_limit");
+								WHERE $filterColumn BETWEEN $params->timestart AND $params->timefinish $sql_filter $sql_having $sql_orger $sql_limit");
 		
 		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
 		return array(
@@ -1786,10 +1791,10 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$columns = array("gi.itemname", "learner", "graduated", "grade", "completionstate", "timespend", "visits"); 
+		$columns = array("gi.itemname", "graduated", "grade", "completionstate", "timespend", "visits"); 
 
 		$sql_having = $this->get_filter_sql($params->filter, $columns);
-		$sql_filter .= ($params->courseid) ? " AND gi.courseid  IN ($params->courseid) " : "";
+		$sql_filter = ($params->courseid) ? " AND gi.courseid  IN ($params->courseid) " : "";
 		$sql_filter .= ($params->userid) ? " AND gg.userid = $params->userid " : "";
 		$sql_orger = $this->get_order_sql($params, $columns);
 		$sql_limit = $this->get_limit_sql($params);
@@ -1798,7 +1803,6 @@ class local_intelliboard_external extends external_api {
 					SQL_CALC_FOUND_ROWS gg.id,
 					gi.itemname,
 					gg.userid,
-					CONCAT(u.firstname, ' ', u.lastname) as learner,
 					gg.timemodified as graduated,
 					gg.finalgrade as grade,
 					cm.completion,
@@ -2184,7 +2188,7 @@ class local_intelliboard_external extends external_api {
 		$sql0 = $this->get_teacher_sql($params, "userid", "users");
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 		
-		return $DB->get_records_sql("SELECT m.id, m.name, (sum(lit.visits) / (SELECT sum(visits) FROM {$CFG->prefix}local_intelliboard_tracking WHERE page = 'module' $sql0)*100) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module $sql GROUP BY m.id");
+		return $DB->get_records_sql("SELECT m.id, m.name, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit, {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module $sql GROUP BY m.id");
 	}
 	function get_useragents($params)
 	{
@@ -2192,7 +2196,7 @@ class local_intelliboard_external extends external_api {
 		
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 		
-		return $DB->get_records_sql("SELECT lit.id, lit.useragent as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.useragent");
+		return $DB->get_records_sql("SELECT lit.id, lit.useragent as name, count(lit.id) AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.useragent");
 	}
 	function get_useros($params)
 	{
@@ -2200,7 +2204,7 @@ class local_intelliboard_external extends external_api {
 		
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 		
-		return $DB->get_records_sql("SELECT lit.id, lit.useros as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.useros");
+		return $DB->get_records_sql("SELECT lit.id, lit.useros as name, count(lit.id) AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.useros");
 	}
 	function get_userlang($params)
 	{
@@ -2208,7 +2212,7 @@ class local_intelliboard_external extends external_api {
 		
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 		
-		return $DB->get_records_sql("SELECT lit.id, lit.userlang as name, (count(lit.id)/(SELECT count(*) FROM {$CFG->prefix}local_intelliboard_tracking))*100 AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.userlang");
+		return $DB->get_records_sql("SELECT lit.id, lit.userlang as name, count(lit.id) AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.userlang");
 	}
 	
 	
@@ -2356,8 +2360,16 @@ class local_intelliboard_external extends external_api {
 						
 						
 		$response = array();
+		$k = 1;
 		foreach($data as $item){
+			if(count($data) <= 1 and $k == 1){
+				$response[] = ($item->$table_time - 86400).'.0';	
+			}
 			$response[] = $item->$table_time.'.'.$item->courses;
+			if(count($data) <= 1 and $k == count($data)){
+				$response[] = ($item->$table_time + 86400).'.0';
+			}
+			$k++;
 		}
 		$obj = new stdClass();
 		$obj->id = 0;
@@ -2391,8 +2403,16 @@ class local_intelliboard_external extends external_api {
 						
 						
 		$response = array();
+		$k = 1;
 		foreach($data as $item){
+			if(count($data) <= 1 and $k == 1){
+				$response[] = ($item->time - 86400).'.0';	
+			}
 			$response[] = $item->time.'.'.$item->users;
+			if(count($data) <= 1 and $k == count($data)){
+				$response[] = ($item->time + 86400).'.0';
+			}
+			$k++;
 		}
 		$obj = new stdClass();
 		$obj->id = 0;
@@ -2426,8 +2446,16 @@ class local_intelliboard_external extends external_api {
 						
 						
 		$response = array();
+		$k = 1;
 		foreach($data as $item){
+			if(count($data) <= 1 and $k == 1){
+				$response[] = ($item->time - 86400).'.0';	
+			}
 			$response[] = $item->time.'.'.$item->courses;
+			if(count($data) <= 1 and $k == count($data)){
+				$response[] = ($item->time + 86400).'.0';
+			}
+			$k++;
 		}
 		$obj = new stdClass();
 		$obj->id = 0;
@@ -2460,15 +2488,19 @@ class local_intelliboard_external extends external_api {
 					WHERE timecreated BETWEEN $params->timestart AND $params->timefinish $sql 
 						GROUP BY floor(timecreated / $ext) * $ext
 							ORDER BY timecreated DESC)");
-						
+				
 		$response = array();
-		$response[] = ($params->timefinish+86400).'.0';
+		$k = 1;
 		foreach($data as $item){
+			if(count($data) <= 1 and $k == 1){
+				$response[] = ($item->time - 86400).'.0';	
+			}
 			$response[] = $item->time.'.'.$item->users;
+			if(count($data) <= 1 and $k == count($data)){
+				$response[] = ($item->time + 86400).'.0';
+			}
+			$k++;
 		}
-		$response[] = ($params->timestart-86400).'.0';
-		
-		
 		$obj = new stdClass();
 		$obj->id = 0;
 		$obj->data = implode(',', $response);
@@ -2508,11 +2540,18 @@ class local_intelliboard_external extends external_api {
 						GROUP BY floor($table_time / $ext) * $ext
 							ORDER BY $table_time DESC)");
 		$response = array();
-		$response[] = ($params->timefinish+86400).'.0';
+		$k = 1;
 		foreach($data as $item){
+			if(count($data) <= 1 and $k == 1){
+				$response[] = ($item->$table_time - 86400).'.0';	
+			}
 			$response[] = $item->$table_time.'.'.$item->users;
+			if(count($data) <= 1 and $k == count($data)){
+				$response[] = ($item->$table_time + 86400).'.0';
+			}
+			$k++;
 		}
-		$response[] = ($params->timestart-86400).'.0';
+		
 		$obj = new stdClass();
 		$obj->id = 0;
 		$obj->data = implode(',', $response);
@@ -2929,8 +2968,16 @@ class local_intelliboard_external extends external_api {
 						
 						
 		$response = array();
+		$k = 1;
 		foreach($data as $item){
+			if(count($data) <= 1 and $k == 1){
+				$response[] = ($item->$table_time - 86400).'.0';	
+			}
 			$response[] = $item->$table_time.'.'.$item->visits;
+			if(count($data) <= 1 and $k == count($data)){
+				$response[] = ($item->$table_time + 86400).'.0';
+			}
+			$k++;
 		}
 		$obj = new stdClass();
 		$obj->id = 0;
@@ -2962,8 +3009,16 @@ class local_intelliboard_external extends external_api {
 						
 						
 		$response = array();
+		$k = 1;
 		foreach($data as $item){
+			if(count($data) <= 1 and $k == 1){
+				$response[] = ($item->$table_time - 86400).'.0';	
+			}
 			$response[] = $item->$table_time.'.'.$item->visits;
+			if(count($data) <= 1 and $k == count($data)){
+				$response[] = ($item->$table_time + 86400).'.0';
+			}
+			$k++;
 		}
 		$obj = new stdClass();
 		$obj->id = 0;

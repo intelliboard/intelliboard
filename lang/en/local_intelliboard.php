@@ -13,24 +13,31 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// IntelliBoard.net is built as a plugin for Moodle.
+// IntelliBoard.net is built as a local plugin for Moodle.
 
 /**
  * IntelliBoard.net
  *
  *
- * @package    	local_intelliboard
- * @copyright  	2014-2015 SEBALE LLC
+ * @package    	intelliboard
+ * @copyright  	2015 IntelliBoard, Inc
  * @license    	http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @created by	SEBALE LLC
+ * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
 
 $string['pluginname'] = 'IntelliBoard.net Plugin';
 $string['tracking_title'] = 'Time Tracking';
 $string['tracking'] = 'Session Tracking';
+$string['dashboard'] = 'Dashboard';
 $string['settings'] = 'Settings';
+$string['adv_settings'] = 'Advanced Setting';
+$string['intelliboardroot'] = 'IntelliBoard';
 $string['report'] = 'Report';
+$string['reports'] = 'Reports';
+$string['learners'] = 'Learners';
+$string['courses'] = 'Courses';
+$string['load'] = 'Load';
 $string['inactivity'] = 'Inactivity';
 $string['inactivity_desc'] = 'User inactivity time (in seconds)';
 $string['ajax'] = 'Frequency';

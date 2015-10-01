@@ -25,9 +25,22 @@
  * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
- 
-$plugin->version  = 2015093000;
-$plugin->requires = 2011120500;
-$plugin->release = '3.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+
+defined('MOODLE_INTERNAL') || die();
+
+$capabilities = array(
+    'local/intelliboard:view' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW
+        )
+    ),
+    'local/intelliboard:manage' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW
+        )
+    )
+);
