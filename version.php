@@ -1,13 +1,13 @@
 <?php
 // IntelliBoard.net
 //
-// IntelliBoard.net is built to work with any LMS designed in Moodle 
-// with the goal to deliver educational data analytics to single dashboard instantly. 
-// With power to turn this analytical data into simple and easy to read reports, 
+// IntelliBoard.net is built to work with any LMS designed in Moodle
+// with the goal to deliver educational data analytics to single dashboard instantly.
+// With power to turn this analytical data into simple and easy to read reports,
 // IntelliBoard.net will become your primary reporting tool.
 //
 // Moodle
-// 
+//
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -25,9 +25,9 @@
  * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
- 
-$plugin->version  = 2015093000;
+
+$plugin->version  = 2015110900;
 $plugin->requires = 2011120500;
-$plugin->release = '3.0';
+$plugin->release = '3.1';
 $plugin->maturity = MATURITY_STABLE;
 $plugin->component = 'local_intelliboard';
