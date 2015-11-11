@@ -1,13 +1,13 @@
 <?php
 // IntelliBoard.net
 //
-// IntelliBoard.net is built to work with any LMS designed in Moodle 
-// with the goal to deliver educational data analytics to single dashboard instantly. 
-// With power to turn this analytical data into simple and easy to read reports, 
+// IntelliBoard.net is built to work with any LMS designed in Moodle
+// with the goal to deliver educational data analytics to single dashboard instantly.
+// With power to turn this analytical data into simple and easy to read reports,
 // IntelliBoard.net will become your primary reporting tool.
 //
 // Moodle
-// 
+//
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -30,24 +30,19 @@ defined('MOODLE_INTERNAL') || die;
 
 $settings = new admin_settingpage('local_intelliboard', get_string('settings', 'local_intelliboard'));
 
-if ($hassiteconfig){
-    $ADMIN->add('root', new admin_category('intelliboardroot', get_string('intelliboardroot', 'local_intelliboard')));
-				
-    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcontrolpanel', get_string('dashboard', 'local_intelliboard'),
-            $CFG->wwwroot.'/local/intelliboard/index.php', 'local/intelliboard:manage'));
-			
-    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardlearners', get_string('learners', 'local_intelliboard'),
-            $CFG->wwwroot.'/local/intelliboard/learners.php', 'local/intelliboard:manage'));		
-    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcourses', get_string('courses', 'local_intelliboard'),
-            $CFG->wwwroot.'/local/intelliboard/courses.php', 'local/intelliboard:manage'));		
-    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardload', get_string('load', 'local_intelliboard'),
-            $CFG->wwwroot.'/local/intelliboard/load.php', 'local/intelliboard:manage'));		
-    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardreports', get_string('reports', 'local_intelliboard'),
-            $CFG->wwwroot.'/local/intelliboard/reports.php', 'local/intelliboard:manage'));
-			
-    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardsettings', get_string('settings'),
-            $CFG->wwwroot.'/local/intelliboard/config.php', 'local/intelliboard:manage'));
-}
+$ADMIN->add('root', new admin_category('intelliboardroot', get_string('intelliboardroot', 'local_intelliboard')));
+$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcontrolpanel', get_string('dashboard', 'local_intelliboard'),
+        $CFG->wwwroot.'/local/intelliboard/index.php', 'local/intelliboard:manage'));
+$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardlearners', get_string('learners', 'local_intelliboard'),
+        $CFG->wwwroot.'/local/intelliboard/learners.php', 'local/intelliboard:manage'));
+$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcourses', get_string('courses', 'local_intelliboard'),
+        $CFG->wwwroot.'/local/intelliboard/courses.php', 'local/intelliboard:manage'));
+$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardload', get_string('load', 'local_intelliboard'),
+        $CFG->wwwroot.'/local/intelliboard/load.php', 'local/intelliboard:manage'));
+$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardreports', get_string('reports', 'local_intelliboard'),
+        $CFG->wwwroot.'/local/intelliboard/reports.php', 'local/intelliboard:manage'));
+$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardsettings', get_string('settings'),
+        $CFG->wwwroot.'/local/intelliboard/config.php', 'local/intelliboard:manage'));
 
 if (!$ADMIN->locate('intelliboard') and $ADMIN->locate('localplugins')){
 	$ADMIN->add('localplugins', new admin_category('intelliboard', get_string('pluginname', 'local_intelliboard')));

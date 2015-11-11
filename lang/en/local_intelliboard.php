@@ -1,13 +1,13 @@
 <?php
 // IntelliBoard.net
 //
-// IntelliBoard.net is built to work with any LMS designed in Moodle 
-// with the goal to deliver educational data analytics to single dashboard instantly. 
-// With power to turn this analytical data into simple and easy to read reports, 
+// IntelliBoard.net is built to work with any LMS designed in Moodle
+// with the goal to deliver educational data analytics to single dashboard instantly.
+// With power to turn this analytical data into simple and easy to read reports,
 // IntelliBoard.net will become your primary reporting tool.
 //
 // Moodle
-// 
+//
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -46,3 +46,5 @@ $string['enabled'] = 'Enabled Tracking';
 $string['enabled_desc'] = 'Enable Tracking';
 $string['trackadmin'] = 'Tracking Admins';
 $string['trackadmin_desc'] = 'Enable tracking for admin users (not recommended)';
+$string['intelliboard:view'] = 'Intelliboard view';
+$string['intelliboard:manage'] = 'Intelliboard manage'; 
