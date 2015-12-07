@@ -21,7 +21,7 @@
 .intelliboard-menu li a i.arr{color: #ccc; font-size: 14px;  margin-left: 3px;}
 .intelliboard-menu .sso{float:right;padding:0;}
 .intelliboard-menu .sso a:hover{border:0;font-weight:600}
-.intelliboard-menu ul{width:250px;position:absolute;top:37px;left:-25px;background:#fff;box-shadow:0 1px 6px #ddd;display:none;margin:0;z-index:9999}
+.intelliboard-menu ul{max-height: 400px; overflow-y: auto;width:250px;position:absolute;top:37px;left:-25px;background:#fff;box-shadow:0 1px 6px #ddd;display:none;margin:0;z-index:9999}
 .intelliboard-menu ul li{padding:3px 20px;display:block;border-bottom:1px solid #eee;}
 .intelliboard-menu ul li a{padding:0;text-transform:capitalize;}
 .intelliboard-menu ul li a:hover{border:0;}
@@ -39,7 +39,7 @@
 .intelliboard-content .submit-btn{margin:20px 0;}
 
 .intelliboard-content:after{clear: both;content: ".";display: block;height: 0;visibility: hidden;}
-.intelliboard-content{margin:20px 0;}
+.intelliboard-content{margin:20px 0; font-family: open sans;}
 .intelliboard-content h3{font-size:21px;font-weight: 400;margin:0 0 20px;}
 .intelliboard-content .grid h3 i.help{cursor:help; margin-left: 5px; color: rgba(0, 0, 0, 0); font-size: 19px; transition: all 0.5s ease;}
 .intelliboard-content .grid:hover h3 i.help{color: rgba(0, 0, 0, 0.2);}
