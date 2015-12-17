@@ -1993,9 +1993,11 @@ class local_intelliboard_external extends external_api {
 
 		if($CFG->version < 2014051200){
 			$table = "log";
+			$table_time = "time";
 			$table_course = "course";
 		}else{
 			$table = "logstore_standard_log";
+			$table_time = "timecreated";
 			$table_course = "courseid";
 		}
 		$data = $DB->get_records_sql("SELECT
@@ -2013,9 +2015,9 @@ class local_intelliboard_external extends external_api {
 							LEFT JOIN {$CFG->prefix}course as c ON c.id = ue.courseid
 							LEFT JOIN (SELECT id, {$table_course}, userid
 								FROM {$CFG->prefix}{$table}
-								WHERE {$table_course} > 1 and action = 'viewed'
+								WHERE {$table_course} > 1 and action = 'viewed' AND $table_time BETWEEN $params->timestart AND $params->timefinish
 								GROUP BY {$table_course}, userid) as l ON l.{$table_course} = ue.courseid AND l.userid = ue.userid
-							WHERE l.id IS NULL AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish $sql_filter $sql_having $sql_orger $sql_limit");
+							WHERE l.id IS NULL $sql_filter $sql_having $sql_orger $sql_limit");
 
 		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
 		return array(
@@ -3311,11 +3313,10 @@ class local_intelliboard_external extends external_api {
 			$table_time = "timecreated";
 			$table_course = "courseid";
 		}
-		$data = $DB->get_records_sql("(SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT ($table_course)) as courses
+		$data = $DB->get_records_sql("SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT ($table_course)) as courses
 				FROM {$CFG->prefix}$table
 					WHERE $table_course IN (SELECT id FROM {$CFG->prefix}course WHERE visible = 1 and category > 0) $sql AND $table_time BETWEEN $params->timestart AND $params->timefinish
-						GROUP BY floor($table_time / $ext) * $ext
-							ORDER BY $table_time DESC)");
+						GROUP BY floor($table_time / $ext) * $ext");
 
 
 		$response = array();
@@ -3354,11 +3355,10 @@ class local_intelliboard_external extends external_api {
 			$ext = 31556926; //by year
 		}
 
-		$data = $DB->get_records_sql("(SELECT floor(lastaccess / $ext) * $ext as time, COUNT(id) as users
+		$data = $DB->get_records_sql("SELECT floor(lastaccess / $ext) * $ext as time, COUNT(id) as users
 				FROM {$CFG->prefix}user
 					WHERE id IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) AND lastaccess BETWEEN $params->timestart AND $params->timefinish
-						GROUP BY floor(lastaccess / $ext) * $ext
-							ORDER BY lastaccess DESC)");
+						GROUP BY floor(lastaccess / $ext) * $ext");
 
 
 		$response = array();
@@ -3397,11 +3397,10 @@ class local_intelliboard_external extends external_api {
 			$ext = 31556926; //by year
 		}
 
-		$data = $DB->get_records_sql("(SELECT floor(timecreated / $ext) * $ext as time, COUNT(id) as courses
+		$data = $DB->get_records_sql("SELECT floor(timecreated / $ext) * $ext as time, COUNT(id) as courses
 				FROM {$CFG->prefix}course
 					WHERE category > 0 AND  timecreated BETWEEN $params->timestart AND $params->timefinish
-						GROUP BY floor(timecreated / $ext) * $ext
-							ORDER BY timecreated DESC)");
+						GROUP BY floor(timecreated / $ext) * $ext");
 
 
 		$response = array();
@@ -3442,11 +3441,10 @@ class local_intelliboard_external extends external_api {
 		}
 		$sql = $this->get_teacher_sql($params, "id", "users");
 
-		$data = $DB->get_records_sql("(SELECT floor(timecreated / $ext) * $ext as time, COUNT(id) as users
+		$data = $DB->get_records_sql("SELECT floor(timecreated / $ext) * $ext as time, COUNT(id) as users
 				FROM {$CFG->prefix}user
 					WHERE timecreated BETWEEN $params->timestart AND $params->timefinish $sql
-						GROUP BY floor(timecreated / $ext) * $ext
-							ORDER BY timecreated DESC)");
+						GROUP BY floor(timecreated / $ext) * $ext");
 
 		$response = array();
 		$k = 1;
@@ -3493,11 +3491,10 @@ class local_intelliboard_external extends external_api {
 			$table_time = "timecreated";
 		}
 		$data = $DB->get_records_sql("
-			(SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (userid)) as users
+			SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (userid)) as users
 				FROM {$CFG->prefix}$table
 					WHERE userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) AND $table_time BETWEEN $params->timestart AND $params->timefinish $sql
-						GROUP BY floor($table_time / $ext) * $ext
-							ORDER BY $table_time DESC)");
+						GROUP BY floor($table_time / $ext) * $ext");
 		$response = array();
 		$k = 1;
 		foreach($data as $item){
@@ -3919,11 +3916,10 @@ class local_intelliboard_external extends external_api {
 		if($params->courseid){
 			$sql_filter = "$table_course  IN ($params->courseid) AND ";
 		}
-		$data = $DB->get_records_sql("(SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (id)) as visits
+		$data = $DB->get_records_sql("SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (id)) as visits
 				FROM {$CFG->prefix}$table
 					WHERE $sql_filter userid IN ($params->filter) AND $table_time BETWEEN $params->timestart AND $params->timefinish
-						GROUP BY floor($table_time / $ext) * $ext
-							ORDER BY $table_time DESC)");
+						GROUP BY floor($table_time / $ext) * $ext");
 
 
 		$response = array();
@@ -3960,11 +3956,10 @@ class local_intelliboard_external extends external_api {
 			$table_course = "courseid";
 		}
 
-		$data = $DB->get_records_sql("(SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (id)) as visits
+		$data = $DB->get_records_sql("SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (id)) as visits
 				FROM {$CFG->prefix}$table
 					WHERE $table_course  IN ($params->courseid) AND $table_time BETWEEN $params->timestart AND $params->timefinish
-						GROUP BY floor($table_time / $ext) * $ext
-							ORDER BY $table_time DESC)");
+						GROUP BY floor($table_time / $ext) * $ext");
 
 
 		$response = array();
@@ -4091,25 +4086,22 @@ class local_intelliboard_external extends external_api {
 		$sql = $this->get_teacher_sql($params, "userid", "users");
 
 		$data[] = $DB->get_records_sql("
-			(SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (userid)) as visits
+			SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (userid)) as visits
 				FROM {$CFG->prefix}$table
 					WHERE $table_time BETWEEN $timestart AND $timefinish $sql
-						GROUP BY floor($table_time / $ext) * $ext
-							ORDER BY $table_time ASC)");
+						GROUP BY floor($table_time / $ext) * $ext");
 
 		$data[] = $DB->get_records_sql("
-			(SELECT floor(timecreated / $ext) * $ext as timecreated, COUNT(DISTINCT (userid)) as users
+			SELECT floor(timecreated / $ext) * $ext as timecreated, COUNT(DISTINCT (userid)) as users
 				FROM {user_enrolments}
 					WHERE timecreated BETWEEN $timestart AND $timefinish $sql
-						GROUP BY floor(timecreated / $ext) * $ext
-							ORDER BY timecreated ASC)");
+						GROUP BY floor(timecreated / $ext) * $ext");
 
 		$data[] = $DB->get_records_sql("
-			(SELECT floor(timecompleted / $ext) * $ext as timecreated, COUNT(DISTINCT (userid)) as users
+			SELECT floor(timecompleted / $ext) * $ext as timecreated, COUNT(DISTINCT (userid)) as users
 				FROM {course_completions}
 					WHERE timecompleted BETWEEN $timestart AND $timefinish $sql
-						GROUP BY floor(timecompleted / $ext) * $ext
-							ORDER BY timecompleted ASC)");
+						GROUP BY floor(timecompleted / $ext) * $ext");
 
 		return $data;
 	}
