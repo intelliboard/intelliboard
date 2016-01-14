@@ -1,13 +1,13 @@
 <?php
 // IntelliBoard.net
 //
-// IntelliBoard.net is built to work with any LMS designed in Moodle 
-// with the goal to deliver educational data analytics to single dashboard instantly. 
-// With power to turn this analytical data into simple and easy to read reports, 
+// IntelliBoard.net is built to work with any LMS designed in Moodle
+// with the goal to deliver educational data analytics to single dashboard instantly.
+// With power to turn this analytical data into simple and easy to read reports,
 // IntelliBoard.net will become your primary reporting tool.
 //
 // Moodle
-// 
+//
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -25,7 +25,7 @@
  * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
- 
+
 class intelliboard_handler {
     public static function notify_leaner_created($user)
 	{
@@ -51,9 +51,9 @@ class intelliboard_handler {
 			email_to_user($manager,$sender,$subject,$message,$message);
 		}
 	}
-	
 
-	
+
+
 	public static function notify_leaner_enrolled($enroll) {
         global $CFG, $SITE, $DB;
 
@@ -70,7 +70,7 @@ class intelliboard_handler {
 			if(!in_array($enroll->enrol, $enrol)){
 				return;
 			}
-			
+
 			$sender = get_admin();
 			$manager = get_admin();
 			$manager->email = $enrol_email;

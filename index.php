@@ -25,6 +25,7 @@
  * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
+
 require('../../config.php');
 require_once($CFG->libdir . '/filelib.php');
 require_once($CFG->libdir.'/adminlib.php');
@@ -90,8 +91,6 @@ $params->timestart = 0;
 $report43 = $plugin->report43($params);
 $report44 = $plugin->report44($params);
 
-//print_r($report44); exit;
-
 $json_countries = array();
 foreach($countries as $country){
 	$json_countries[] = "['".ucfirst($country->country)."', $country->users]";
@@ -103,13 +102,13 @@ foreach($enrols as $enrol){
 
 $json_data = array();
 foreach($LineChart[2] as $item){
-	$d = date("j", $item->{$LineChart[1]});
-	$m = date("n", $item->{$LineChart[1]}) - 1;
-	$y = date("Y", $item->{$LineChart[1]});
+	$d = date("j", $item->timepoint);
+	$m = date("n", $item->timepoint) - 1;
+	$y = date("Y", $item->timepoint);
 
 	$l = $item->visits;
-	$v = (isset($LineChart[3][$item->timecreated])) ? $LineChart[3][$item->timecreated]->users : 0;
-	$t = (isset($LineChart[4][$item->timecreated])) ? $LineChart[4][$item->timecreated]->users : 0;
+	$v = (isset($LineChart[3][$item->timepoint])) ? $LineChart[3][$item->timepoint]->users : 0;
+	$t = (isset($LineChart[4][$item->timepoint])) ? $LineChart[4][$item->timepoint]->users : 0;
 	$json_data[] = "[new Date($y, $m, $d), $l, $t, $v]";
 }
 

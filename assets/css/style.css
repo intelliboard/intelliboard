@@ -11,6 +11,7 @@
 .intelliboard-page{}
 .intelliboard-page h2,
 .intelliboard-page h3{font-family:'Open Sans';font-weight:400;}
+.intelliboard-page .log{font-family: monospace; font-size: 9px; margin: 0;}
 
 .intelliboard-menu{margin:0;padding:0;list-style:none;border-bottom: 1px solid #e8e8e8;}
 .intelliboard-menu li{margin:0;padding:0 20px 0 0;display:inline-block;position:relative}

@@ -1,13 +1,13 @@
 <?php
 // IntelliBoard.net
 //
-// IntelliBoard.net is built to work with any LMS designed in Moodle 
-// with the goal to deliver educational data analytics to single dashboard instantly. 
-// With power to turn this analytical data into simple and easy to read reports, 
+// IntelliBoard.net is built to work with any LMS designed in Moodle
+// with the goal to deliver educational data analytics to single dashboard instantly.
+// With power to turn this analytical data into simple and easy to read reports,
 // IntelliBoard.net will become your primary reporting tool.
 //
 // Moodle
-// 
+//
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -32,13 +32,13 @@ $handlers = array(
         'handlerfunction' => array('intelliboard_handler', 'notify_leaner_created'),
         'schedule'        => 'instant',
 		'internal'        => 1,
-    ),    
+    ),
 	'user_enrolled' => array (
         'handlerfile'     => '/local/intelliboard/locallib.php',
         'handlerfunction' => array('intelliboard_handler', 'notify_leaner_enrolled'),
         'schedule'        => 'instant',
 		'internal'        => 1,
-    ),	
+    ),
 	'user_enrol_modified' => array (
         'handlerfile'     => '/local/intelliboard/locallib.php',
         'handlerfunction' => array('intelliboard_handler', 'notify_leaner_enrolled'),

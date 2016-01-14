@@ -1991,15 +1991,7 @@ class local_intelliboard_external extends external_api {
 		$sql_columns = $this->get_columns($params, "u.id");
 		$sql_limit = $this->get_limit_sql($params);
 
-		if($CFG->version < 2014051200){
-			$table = "log";
-			$table_time = "time";
-			$table_course = "course";
-		}else{
-			$table = "logstore_standard_log";
-			$table_time = "timecreated";
-			$table_course = "courseid";
-		}
+
 		$data = $DB->get_records_sql("SELECT
 			SQL_CALC_FOUND_ROWS ue.id,
 			CONCAT(u.firstname, ' ', u.lastname) as learner,
@@ -2013,10 +2005,11 @@ class local_intelliboard_external extends external_api {
 						FROM (".$this->getUsersEnrolsSql().") as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}course as c ON c.id = ue.courseid
-							LEFT JOIN (SELECT id, {$table_course}, userid
-								FROM {$CFG->prefix}{$table}
-								WHERE {$table_course} > 1 and action = 'viewed' AND $table_time BETWEEN $params->timestart AND $params->timefinish
-								GROUP BY {$table_course}, userid) as l ON l.{$table_course} = ue.courseid AND l.userid = ue.userid
+							LEFT JOIN (SELECT t.id,t.userid,t.courseid FROM
+								{local_intelliboard_tracking} t,
+								{local_intelliboard_logs} l
+							WHERE l.trackid = t.id AND t.page = 'course' AND
+								l.timepoint BETWEEN $params->timestart AND $params->timefinish GROUP BY t.courseid, t.userid) as l ON l.courseid = ue.courseid AND l.userid = ue.userid
 							WHERE l.id IS NULL $sql_filter $sql_having $sql_orger $sql_limit");
 
 		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
@@ -2263,7 +2256,18 @@ class local_intelliboard_external extends external_api {
 	}
 	function report47($params)
 	{
-		global $DB;
+		global $DB, $CFG;
+
+		if($CFG->version < 2014051200){
+		   $table = "log";
+		   $table_time = "time";
+		   $table_course = "course";
+		  }else{
+		   $table = "logstore_standard_log";
+		   $table_time = "timecreated";
+		   $table_course = "courseid";
+		  }
+
 		$columns = array("user_related", "u_related.email", "course_name", "git.score", "ue.role", "lsl.all_count", "user_action", "action_role", "action", "timecreated");
 
 		$sql_having = $this->get_filter_sql($params->filter, $columns);
@@ -2283,7 +2287,7 @@ class local_intelliboard_external extends external_api {
 										lsl.all_count,
 										IF(lsl.all_count>1,r.shortname,'-') as action_role,
 										IF(lsl.all_count>1,log.action,'-') as action,
-										IF(lsl.all_count>1,log.timecreated,'-') as timecreated,
+										IF(lsl.all_count>1,log.$table_time,'-') as timecreated,
 										IF(lsl.all_count>1,CONCAT(u_action.firstname, ' ', u_action.lastname),'-') AS user_action,
 										u_action.id as user_action_id,
 										CONCAT(u_related.firstname, ' ', u_related.lastname) AS user_related,
@@ -2306,14 +2310,14 @@ class local_intelliboard_external extends external_api {
 															ra.roleid = r.id
 														GROUP BY e.courseid, ue.userid) as ue
 											LEFT JOIN ( SELECT
-														lsl.courseid,
+														lsl.$table_course,
 														lsl.relateduserid,
 														MAX(lsl.id) as last_change,
 														COUNT(lsl.id) as all_count
-													   FROM {logstore_standard_log} as lsl
-													   WHERE (lsl.action='assigned' OR lsl.action='unassigned') AND lsl.target='role' AND lsl.contextlevel=50 GROUP BY lsl.courseid,lsl.relateduserid
-													  ) as lsl ON lsl.courseid=ue.courseid AND lsl.relateduserid=ue.userid
-											LEFT JOIN {logstore_standard_log} log ON log.id=lsl.last_change
+													   FROM {".$table."} as lsl
+													   WHERE (lsl.action='assigned' OR lsl.action='unassigned') AND lsl.target='role' AND lsl.contextlevel=50 GROUP BY lsl.$table_course,lsl.relateduserid
+													  ) as lsl ON lsl.$table_course=ue.courseid AND lsl.relateduserid=ue.userid
+											LEFT JOIN {".$table."} log ON log.id=lsl.last_change
 											LEFT JOIN {role} r ON r.id=log.objectid
 											LEFT JOIN {user} u_action ON u_action.id=log.userid
 											LEFT JOIN {user} u_related ON u_related.id=log.relateduserid
@@ -2327,28 +2331,99 @@ class local_intelliboard_external extends external_api {
 					"recordsFiltered" => key($size),
 					"data"            => $data);
 	}
+
+	function report58($params)
+	{
+		global $USER, $CFG, $DB;
+
+		$sql_limit = $this->get_limit_sql($params);
+		$sql_id = (int) $params->custom;
+
+		$data = $DB->get_records_sql("SELECT
+				SQL_CALC_FOUND_ROWS
+					a.id,
+					a.name as assigment,
+					a.intro,
+					a.duedate,
+					c.fullname as course
+						FROM {assign} a
+							LEFT JOIN {assign_submission} s ON s.assignment = a.id and s.userid = $sql_id and s.status = 'submitted'
+							LEFT JOIN {course} c ON c.id=a.course
+						WHERE s.id IS NULL and c.id IN (SELECT distinct e.courseid
+								FROM {user_enrolments} ue, {enrol} e
+							WHERE e.id = ue.enrolid AND ue.userid = $sql_id) ORDER BY duedate DESC $sql_limit");
+
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
+	}
+	function report56($params)
+	{
+		global $USER, $CFG, $DB;
+
+ 		$columns = array("username", "c.fullname", "ue.enrols", "l.visits", "l.timespend", "progress", "gc.grade", "cc.timecompleted", "ue.timecreated");
+
+		$sql_having = $this->get_filter_sql($params->filter, $columns);
+		$sql_orger = $this->get_order_sql($params, $columns);
+		$sql_limit = $this->get_limit_sql($params);
+
+  		$data = $DB->get_records_sql("SELECT
+			SQL_CALC_FOUND_ROWS ue.id,
+			CONCAT(u.firstname, ' ', u.lastname) as username,
+			u.id as userid,
+			ue.timecreated as enrolled,
+			gc.grade,
+			c.enablecompletion,
+			cc.timecompleted as complete,
+			ue.enrols,
+			l.timespend,
+			l.visits,
+			c.id as cid,
+			c.fullname as course,
+			c.timemodified as start_date,
+			round(((cmc.completed/cmm.modules)*100), 0) as progress
+						FROM (".$this->getUsersEnrolsSql(0).") as ue
+							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
+							LEFT JOIN {$CFG->prefix}course as c ON c.id = ue.courseid
+							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = ue.courseid AND cc.userid = ue.userid
+							LEFT JOIN (".$this->getCourseUserGradeSql().") as gc ON gc.courseid = c.id AND gc.userid = ue.userid
+							LEFT JOIN (".$this->getCurseUserTimeSql().") l ON l.courseid = c.id AND l.userid = ue.userid
+							LEFT JOIN (SELECT cm.course, count(cm.id) as modules FROM {$CFG->prefix}course_modules cm WHERE cm.visible = 1 AND cm.completion > 0 GROUP BY cm.course) as cmm ON cmm.course = c.id
+							LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completed FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible = 1 AND cmc.completionstate = 1 AND cmc.userid=$params->userid GROUP BY cm.course) as cmc ON cmc.course = c.id AND cmc.userid = ue.userid
+						WHERE ue.userid IN($params->custom) $sql_having $sql_orger $sql_limit");
+
+		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
+		return array(
+					"recordsTotal"    => key($size),
+					"recordsFiltered" => key($size),
+					"data"            => $data);
+	}
 	function analytic1($params)
 	{
 		global $USER, $CFG, $DB;
 
 		if($CFG->version < 2014051200){
-			$table = "log";
-			$table_course = "course";
-		}else{
-			$table = "logstore_standard_log";
-			$table_course = "courseid";
-		}
+		   $table = "log";
+		   $table_time = "time";
+		   $table_course = "course";
+		  }else{
+		   $table = "logstore_standard_log";
+		   $table_time = "timecreated";
+		   $table_course = "courseid";
+		  }
 
 		$data = $DB->get_records_sql("SELECT
 									  SQL_CALC_FOUND_ROWS id,
 									  COUNT(id) AS count,
-									   WEEKDAY(FROM_UNIXTIME(timecreated,'%Y-%m-%d %T')) as day,
-									   IF(FROM_UNIXTIME(timecreated,'%H')>=6 && FROM_UNIXTIME(timecreated,'%H')<12,'1',
-										 IF(FROM_UNIXTIME(timecreated,'%H')>=12 && FROM_UNIXTIME(timecreated,'%H')<17,'2',
-										 IF(FROM_UNIXTIME(timecreated,'%H')>=17 && FROM_UNIXTIME(timecreated,'%H')<=23,'3',
-										 IF(FROM_UNIXTIME(timecreated,'%H')>=0 && FROM_UNIXTIME(timecreated,'%H')<6,'4','undef')))) as time_of_day
+									   WEEKDAY(FROM_UNIXTIME($table_time,'%Y-%m-%d %T')) as day,
+									   IF(FROM_UNIXTIME($table_time,'%H')>=6 && FROM_UNIXTIME($table_time,'%H')<12,'1',
+										 IF(FROM_UNIXTIME($table_time,'%H')>=12 && FROM_UNIXTIME($table_time,'%H')<17,'2',
+										 IF(FROM_UNIXTIME($table_time,'%H')>=17 && FROM_UNIXTIME($table_time,'%H')<=23,'3',
+										 IF(FROM_UNIXTIME($table_time,'%H')>=0 && FROM_UNIXTIME($table_time,'%H')<6,'4','undef')))) as time_of_day
 									 FROM {$CFG->prefix}{$table}
-									 WHERE `courseid` > 1 AND timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY day,time_of_day ORDER BY time_of_day, day");
+									 WHERE `$table_course` > 1 AND $table_time BETWEEN $params->timestart AND $params->timefinish GROUP BY day,time_of_day ORDER BY time_of_day, day");
 
 		return array("data" => $data);
 	}
@@ -2648,28 +2723,38 @@ class local_intelliboard_external extends external_api {
 	}
 
 	function analytic6($params){
-		global $DB;
+		global $DB,$CFG;
+
+		if($CFG->version < 2014051200){
+		   $table = "log";
+		   $table_time = "time";
+		   $table_course = "course";
+		  }else{
+		   $table = "logstore_standard_log";
+		   $table_time = "timecreated";
+		   $table_course = "courseid";
+		  }
 
 		$interactions = $DB->get_records_sql("SELECT
 											SQL_CALC_FOUND_ROWS log.id,
 											COUNT(log.id) AS `all`,
 											SUM(IF(log.userid=$params->custom ,1,0)) as user,
-											FROM_UNIXTIME(log.timecreated,'%m/%d/%Y') as `day`
+											FROM_UNIXTIME(log.$table_time,'%m/%d/%Y') as `day`
 										FROM {context} c
 											LEFT JOIN {role_assignments} ra ON ra.contextid=c.id AND ra.roleid IN ($params->learner_roles)
-											LEFT JOIN {logstore_standard_log} log ON c.instanceid=log.courseid AND ra.userid=log.userid
-										WHERE c.instanceid=$params->courseid AND c.contextlevel=50 AND log.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY `day`
+											LEFT JOIN {".$table."} log ON c.instanceid=log.$table_course AND ra.userid=log.userid
+										WHERE c.instanceid=$params->courseid AND c.contextlevel=50 AND log.$table_time BETWEEN $params->timestart AND $params->timefinish GROUP BY `day`
 										ORDER BY day DESC");
 
 		$access = $DB->get_records_sql("SELECT
 											SQL_CALC_FOUND_ROWS log.id,
 											COUNT(log.id) AS `all`,
 											SUM(IF(log.userid=$params->custom ,1,0)) as user,
-											FROM_UNIXTIME(log.timecreated,'%m/%d/%Y') as `day`
+											FROM_UNIXTIME(log.$table_time,'%m/%d/%Y') as `day`
 										FROM {context} c
 											LEFT JOIN {role_assignments} ra ON ra.contextid=c.id AND ra.roleid IN ($params->learner_roles)
-											LEFT JOIN {logstore_standard_log} log ON c.instanceid=log.courseid AND ra.userid=log.userid
-										WHERE c.instanceid=$params->courseid AND c.contextlevel=50 AND log.target='course' AND log.action='viewed' AND log.timecreated BETWEEN $params->timestart AND $params->timefinish GROUP BY `day`
+											LEFT JOIN {".$table."} log ON c.instanceid=log.$table_course AND ra.userid=log.userid
+										WHERE c.instanceid=$params->courseid AND c.contextlevel=50 AND log.target='course' AND log.action='viewed' AND log.$table_time BETWEEN $params->timestart AND $params->timefinish GROUP BY `day`
 										ORDER BY day DESC");
 
 		$timespend = $DB->get_record_sql("SELECT
@@ -3290,9 +3375,7 @@ class local_intelliboard_external extends external_api {
 		$datediff = $params->timefinish - $params->timestart;
 		$days = floor($datediff/(60*60*24)) + 1;
 
-		if($days <= 3){
-			$ext = 3600; //by hour
-		}elseif($days <= 30){
+		if($days <= 30){
 			$ext = 86400; //by day
 		}elseif($days <= 90){
 			$ext = 604800; //by week
@@ -3302,32 +3385,22 @@ class local_intelliboard_external extends external_api {
 			$ext = 31556926; //by year
 		}
 
-		$sql = $this->get_teacher_sql($params, "course", "courses");
 
-		if($CFG->version < 2014051200){
-			$table = "log";
-			$table_time = "time";
-			$table_course = "course";
-		}else{
-			$table = "logstore_standard_log";
-			$table_time = "timecreated";
-			$table_course = "courseid";
-		}
-		$data = $DB->get_records_sql("SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT ($table_course)) as courses
-				FROM {$CFG->prefix}$table
-					WHERE $table_course IN (SELECT id FROM {$CFG->prefix}course WHERE visible = 1 and category > 0) $sql AND $table_time BETWEEN $params->timestart AND $params->timefinish
-						GROUP BY floor($table_time / $ext) * $ext");
+		$data = $DB->get_records_sql("SELECT floor(timepoint / $ext) * $ext as timepoint, SUM(courses) as courses
+				FROM {local_intelliboard_totals}
+					WHERE timepoint BETWEEN $params->timestart AND $params->timefinish
+						GROUP BY floor(timepoint / $ext) * $ext");
 
 
 		$response = array();
 		$k = 1;
 		foreach($data as $item){
 			if(count($data) <= 1 and $k == 1){
-				$response[] = ($item->$table_time - 86400).'.0';
+				$response[] = ($item->timepoint - 86400).'.0';
 			}
-			$response[] = $item->$table_time.'.'.$item->courses;
+			$response[] = $item->timepoint.'.'.$item->courses;
 			if(count($data) <= 1 and $k == count($data)){
-				$response[] = ($item->$table_time + 86400).'.0';
+				$response[] = ($item->timepoint + 86400).'.0';
 			}
 			$k++;
 		}
@@ -3481,29 +3554,21 @@ class local_intelliboard_external extends external_api {
 		}else{
 			$ext = 31556926; //by year
 		}
-		$sql = $this->get_teacher_sql($params, "userid", "users");
 
-		if($CFG->version < 2014051200){
-			$table = "log";
-			$table_time = "time";
-		}else{
-			$table = "logstore_standard_log";
-			$table_time = "timecreated";
-		}
 		$data = $DB->get_records_sql("
-			SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (userid)) as users
-				FROM {$CFG->prefix}$table
-					WHERE userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) AND $table_time BETWEEN $params->timestart AND $params->timefinish $sql
-						GROUP BY floor($table_time / $ext) * $ext");
+			SELECT floor(timepoint / $ext) * $ext as timepoint, SUM(sessions) as users
+				FROM {local_intelliboard_totals}
+					WHERE timepoint BETWEEN $params->timestart AND $params->timefinish
+						GROUP BY floor(timepoint / $ext) * $ext");
 		$response = array();
 		$k = 1;
 		foreach($data as $item){
 			if(count($data) <= 1 and $k == 1){
-				$response[] = ($item->$table_time - 86400).'.0';
+				$response[] = ($item->timepoint - 86400).'.0';
 			}
-			$response[] = $item->$table_time.'.'.$item->users;
+			$response[] = $item->timepoint.'.'.$item->users;
 			if(count($data) <= 1 and $k == count($data)){
-				$response[] = ($item->$table_time + 86400).'.0';
+				$response[] = ($item->timepoint + 86400).'.0';
 			}
 			$k++;
 		}
@@ -3903,34 +3968,26 @@ class local_intelliboard_external extends external_api {
 
 		$ext = 86400;
 
-		if($CFG->version < 2014051200){
-			$table = "log";
-			$table_time = "time";
-			$table_course = "course";
-		}else{
-			$table = "logstore_standard_log";
-			$table_time = "timecreated";
-			$table_course = "courseid";
-		}
+
 		$sql_filter = "";
 		if($params->courseid){
-			$sql_filter = "$table_course  IN ($params->courseid) AND ";
+			$sql_filter = "t.courseid  IN ($params->courseid) AND ";
 		}
-		$data = $DB->get_records_sql("SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (id)) as visits
-				FROM {$CFG->prefix}$table
-					WHERE $sql_filter userid IN ($params->filter) AND $table_time BETWEEN $params->timestart AND $params->timefinish
-						GROUP BY floor($table_time / $ext) * $ext");
+		$data = $DB->get_records_sql("SELECT floor(l.timepoint / $ext) * $ext as timepoint, sum(l.visits) as visits
+				FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
+					WHERE l.trackid = t.id AND $sql_filter t.userid IN ($params->filter) AND l.timepoint BETWEEN $params->timestart AND $params->timefinish
+						GROUP BY floor(l.timepoint / $ext) * $ext");
 
 
 		$response = array();
 		$k = 1;
 		foreach($data as $item){
 			if(count($data) <= 1 and $k == 1){
-				$response[] = ($item->$table_time - 86400).'.0';
+				$response[] = ($item->timepoint - 86400).'.0';
 			}
-			$response[] = $item->$table_time.'.'.$item->visits;
+			$response[] = $item->timepoint.'.'.$item->visits;
 			if(count($data) <= 1 and $k == count($data)){
-				$response[] = ($item->$table_time + 86400).'.0';
+				$response[] = ($item->timepoint + 86400).'.0';
 			}
 			$k++;
 		}
@@ -3943,34 +4000,24 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-
+		$sql_user = ($params->userid) ? " AND t.userid=$params->userid":"";
 		$ext = 86400;
 
-		if($CFG->version < 2014051200){
-			$table = "log";
-			$table_time = "time";
-			$table_course = "course";
-		}else{
-			$table = "logstore_standard_log";
-			$table_time = "timecreated";
-			$table_course = "courseid";
-		}
-
-		$data = $DB->get_records_sql("SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (id)) as visits
-				FROM {$CFG->prefix}$table
-					WHERE $table_course  IN ($params->courseid) AND $table_time BETWEEN $params->timestart AND $params->timefinish
-						GROUP BY floor($table_time / $ext) * $ext");
+		$data = $DB->get_records_sql("SELECT floor(l.timepoint / $ext) * $ext as timepoint, SUM(l.visits) as visits
+				FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
+					WHERE l.trackid = t.id $sql_user AND t.courseid  IN ($params->courseid) AND l.timepoint BETWEEN $params->timestart AND $params->timefinish
+						GROUP BY floor(l.timepoint / $ext) * $ext");
 
 
 		$response = array();
 		$k = 1;
 		foreach($data as $item){
 			if(count($data) <= 1 and $k == 1){
-				$response[] = ($item->$table_time - 86400).'.0';
+				$response[] = ($item->timepoint - 86400).'.0';
 			}
-			$response[] = $item->$table_time.'.'.$item->visits;
+			$response[] = $item->timepoint.'.'.$item->visits;
 			if(count($data) <= 1 and $k == count($data)){
-				$response[] = ($item->$table_time + 86400).'.0';
+				$response[] = ($item->timepoint + 86400).'.0';
 			}
 			$k++;
 		}
@@ -3995,6 +4042,37 @@ class local_intelliboard_external extends external_api {
 
 		return $DB->get_records_sql("SELECT uif.id, uif.name, uic.name as category FROM {$CFG->prefix}user_info_field uif, {$CFG->prefix}user_info_category uic WHERE uif.categoryid = uic.id ORDER BY uif.name");
 	}
+	function get_reportcard($params)
+	{
+		global $USER, $CFG, $DB;
+
+		$data = array();
+		$data['stats'] = $DB->get_record_sql("SELECT
+			(SELECT count(distinct e.courseid) FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e WHERE e.id = ue.enrolid and ue.userid = $params->userid) as courses,
+			(SELECT count(distinct course) FROM {$CFG->prefix}course_completions WHERE userid = $params->userid) as completed,
+			(SELECT count(id) FROM {$CFG->prefix}assign WHERE course in (SELECT distinct e.courseid FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e WHERE e.id = ue.enrolid and ue.userid = $params->userid) and id NOT IN (SELECT assignment FROM {$CFG->prefix}assign_submission WHERE userid = $params->userid AND status = 'submited') AND duedate < ".time().") as missed,
+			(SELECT count(id) FROM {$CFG->prefix}assign WHERE course in (SELECT distinct e.courseid FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e WHERE e.id = ue.enrolid and ue.userid = $params->userid) and id NOT IN (SELECT assignment FROM {$CFG->prefix}assign_submission WHERE userid = $params->userid AND status = 'submited') AND duedate > ".time().") as current,
+			(SELECT count(id) FROM {$CFG->prefix}quiz WHERE course in (SELECT distinct e.courseid FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e WHERE e.id = ue.enrolid and ue.userid = $params->userid) and id NOT IN (SELECT quiz FROM {$CFG->prefix}quiz_grades WHERE userid = $params->userid AND grade > 0)) as quizes,
+			(SELECT AVG((g.finalgrade/g.rawgrademax)*100) FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND g.userid = $params->userid) as grade,
+			(SELECT AVG((g.finalgrade/g.rawgrademax)*100) FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND g.userid = $params->userid AND g.timemodified < ".strtotime('-7 days').") as grade_week
+		");
+
+		$timestart = strtotime('today');
+		$timefinish = $timestart + 86400;
+
+		$data['courses'] = $DB->get_records_sql("SELECT c.id, c.fullname, a.assignments, t.quizes, cc.timecompleted, g.grade
+				FROM {user_enrolments} ue
+				LEFT JOIN {enrol} e ON e.id = ue.enrolid
+				LEFT JOIN {course} c ON c.id = e.courseid
+				LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = $params->userid
+				LEFT JOIN (SELECT gi.courseid, (g.finalgrade/g.rawgrademax)*100 as grade FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND g.userid = $params->userid GROUP BY gi.courseid) g ON g.courseid = c.id
+				LEFT JOIN (SELECT course, count(id) as assignments FROM {$CFG->prefix}assign WHERE id NOT IN (SELECT assignment FROM {$CFG->prefix}assign_submission WHERE userid = $params->userid AND status = 'submited') AND duedate BETWEEN $timestart AND $timefinish GROUP BY course) a ON a.course = c.id
+				LEFT JOIN (SELECT course, count(id) as quizes FROM {$CFG->prefix}quiz WHERE id NOT IN (SELECT quiz FROM {$CFG->prefix}quiz_grades WHERE userid = $params->userid AND grade > 0) GROUP BY course) t ON t.course = c.id
+				WHERE ue.status = 0 and e.status = 0 AND ue.userid = $params->userid ORDER BY c.fullname ASC");
+
+		return $data;
+	}
+
 	function get_dashboard_totals($params)
 	{
 		global $USER, $CFG, $DB;
@@ -4050,13 +4128,6 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		if($CFG->version < 2014051200){
-			$table = "log";
-			$table_time = "time";
-		}else{
-			$table = "logstore_standard_log";
-			$table_time = "timecreated";
-		}
 		if($params->custom == 'daily'){
 			$timefinish = time();
 			$timestart = strtotime('last week');
@@ -4081,15 +4152,15 @@ class local_intelliboard_external extends external_api {
 
 		$data = array();
 		$data[] = $format;
-		$data[] = $table_time;
+		$data[] = 'timepoint';
 
 		$sql = $this->get_teacher_sql($params, "userid", "users");
 
 		$data[] = $DB->get_records_sql("
-			SELECT floor($table_time / $ext) * $ext as $table_time, COUNT(DISTINCT (userid)) as visits
-				FROM {$CFG->prefix}$table
-					WHERE $table_time BETWEEN $timestart AND $timefinish $sql
-						GROUP BY floor($table_time / $ext) * $ext");
+			SELECT floor(timepoint / $ext) * $ext as timepoint, SUM(sessions) as visits
+				FROM {local_intelliboard_totals}
+					WHERE timepoint BETWEEN $timestart AND $timefinish $sql
+						GROUP BY floor(timepoint / $ext) * $ext");
 
 		$data[] = $DB->get_records_sql("
 			SELECT floor(timecreated / $ext) * $ext as timecreated, COUNT(DISTINCT (userid)) as users
@@ -4109,13 +4180,6 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		if($CFG->version < 2014051200){
-			$table = "log";
-			$table_time = "time";
-		}else{
-			$table = "logstore_standard_log";
-			$table_time = "timecreated";
-		}
 		$sql = $this->get_teacher_sql($params, "userid", "users");
 		$timeyesterday = strtotime('yesterday');
 		$timelastweek = strtotime('last week');
@@ -4125,16 +4189,16 @@ class local_intelliboard_external extends external_api {
 
 		$data = array();
 		$data[] = $DB->get_record_sql("SELECT
-			(SELECT COUNT(DISTINCT (userid)) FROM {$CFG->prefix}$table WHERE $table_time BETWEEN $timeyesterday AND $timetoday $sql) as sessions_today,
-			(SELECT COUNT(DISTINCT (userid)) FROM {$CFG->prefix}$table WHERE $table_time BETWEEN $timelastweek AND $timeweek $sql) as sessions_week,
+			(SELECT SUM(sessions) FROM {local_intelliboard_totals} WHERE timepoint BETWEEN $timeyesterday AND $timetoday $sql) as sessions_today,
+			(SELECT SUM(sessions) FROM {local_intelliboard_totals} WHERE timepoint BETWEEN $timelastweek AND $timeweek $sql) as sessions_week,
 			(SELECT COUNT(DISTINCT (userid)) FROM {user_enrolments} WHERE timecreated BETWEEN $timeyesterday AND $timetoday $sql) as enrolments_today,
 			(SELECT COUNT(DISTINCT (userid)) FROM {user_enrolments} WHERE timecreated BETWEEN $timelastweek AND $timeweek $sql) as enrolments_week,
 			(SELECT COUNT(DISTINCT (userid)) FROM {course_completions} WHERE timecompleted BETWEEN $timeyesterday AND $timetoday $sql) as compl_today,
 			(SELECT COUNT(DISTINCT (userid)) FROM {course_completions} WHERE timecompleted BETWEEN $timelastweek AND $timeweek $sql) as compl_week");
 
 		$data[] = $DB->get_record_sql("SELECT
-			(SELECT COUNT(DISTINCT (userid)) FROM {$CFG->prefix}$table WHERE $table_time BETWEEN $timetoday AND $timefinish $sql) as sessions_today,
-			(SELECT COUNT(DISTINCT (userid)) FROM {$CFG->prefix}$table WHERE $table_time BETWEEN $timeweek AND $timefinish $sql) as sessions_week,
+			(SELECT SUM(sessions) FROM {local_intelliboard_totals} WHERE timepoint BETWEEN $timetoday AND $timefinish $sql) as sessions_today,
+			(SELECT SUM(sessions) FROM {local_intelliboard_totals} WHERE timepoint BETWEEN $timeweek AND $timefinish $sql) as sessions_week,
 			(SELECT COUNT(userid) FROM {user_enrolments} WHERE timecreated BETWEEN $timetoday AND $timefinish $sql) as enrolments_today,
 			(SELECT COUNT(userid) FROM {user_enrolments} WHERE timecreated BETWEEN $timeweek AND $timefinish $sql) as enrolments_week,
 			(SELECT COUNT(userid) FROM {course_completions} WHERE timecompleted BETWEEN $timetoday AND $timefinish $sql) as compl_today,

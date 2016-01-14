@@ -47,6 +47,10 @@ $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardsettings', g
 if (!$ADMIN->locate('intelliboard') and $ADMIN->locate('localplugins')){
 	$ADMIN->add('localplugins', new admin_category('intelliboard', get_string('pluginname', 'local_intelliboard')));
 	$ADMIN->add('intelliboard', $settings);
+
+
+	$ADMIN->add('intelliboard', new admin_externalpage('intelliboardlogs', get_string('logs', 'local_intelliboard'),
+        $CFG->wwwroot.'/local/intelliboard/logs.php'));
 }
 
 $settings->add(new admin_setting_heading('local_intelliboard/tracking_title', get_string('tracking_title', 'local_intelliboard'), ''));
