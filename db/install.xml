@@ -15,10 +15,10 @@
           <FIELD NAME="timespend" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="firstaccess" PREVIOUS="visits"/>
           <FIELD NAME="firstaccess" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="lastaccess" PREVIOUS="timespend"/>
           <FIELD NAME="lastaccess" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" NEXT="useragent" PREVIOUS="firstaccess"/>
-          <FIELD NAME="useragent" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" NEXT="useros" PREVIOUS="lastaccess"/>
-          <FIELD NAME="useros" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" NEXT="userlang" PREVIOUS="useragent"/>
-          <FIELD NAME="userlang" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" NEXT="userip" PREVIOUS="useros"/>
-          <FIELD NAME="userip" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" PREVIOUS="userlang"/>
+          <FIELD NAME="useragent" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" NEXT="useros" PREVIOUS="lastaccess"/>
+          <FIELD NAME="useros" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" NEXT="userlang" PREVIOUS="useragent"/>
+          <FIELD NAME="userlang" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" NEXT="userip" PREVIOUS="useros"/>
+          <FIELD NAME="userip" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" PREVIOUS="userlang"/>
         </FIELDS>
         <KEYS>
           <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
