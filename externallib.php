@@ -2024,7 +2024,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$columns = array("course", "learner", "email", "ue.enrols", "ue.timecreated");
+		$columns = array("course", "learner", "email", "ue.enrols", "ue.timecreated", "la.lastaccess", "gc.grade");
 
 		$sql_having = $this->get_filter_sql($params->filter, $columns);
 		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
@@ -2041,12 +2041,16 @@ class local_intelliboard_external extends external_api {
 			ue.timecreated as enrolled,
 			ue.userid,
 			ue.enrols,
+			la.lastaccess,
+			gc.grade,
 			c.id as cid,
 			c.fullname as course
 			$sql_columns
 						FROM (".$this->getUsersEnrolsSql().") as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}course as c ON c.id = ue.courseid
+							LEFT JOIN (".$this->getCourseUserGradeSql().") as gc ON gc.courseid = c.id AND gc.userid = ue.userid
+							LEFT JOIN {local_intelliboard_tracking} la ON la.courseid = c.id AND la.userid = ue.userid AND la.page = 'course'
 							LEFT JOIN (SELECT t.id,t.userid,t.courseid FROM
 								{local_intelliboard_tracking} t,
 								{local_intelliboard_logs} l
@@ -3208,7 +3212,7 @@ class local_intelliboard_external extends external_api {
 		$sql4 = $this->get_teacher_sql($params, "course", "courses");
 
 		return $DB->get_record_sql("SELECT
-			(SELECT count(*) FROM {$CFG->prefix}user WHERE username != 'guest' $sql2) as users,
+			(SELECT count(*) FROM {$CFG->prefix}user WHERE deleted = 0 AND username != 'guest' $sql2) as users,
 			(SELECT count(*) FROM {$CFG->prefix}course WHERE visible = 1 and category > 0 $sql3) as courses,
 			(SELECT count(*) FROM {$CFG->prefix}course_modules WHERE visible = 1  $sql4) as modules,
 			(SELECT count(*) FROM {$CFG->prefix}course_categories WHERE visible = 1) as categories,
