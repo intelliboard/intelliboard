@@ -377,7 +377,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$columns = array_merge(array("name", "u.email", "c.fullname", "ue.enrols", "l.visits", "l.timespend", "gc.grade", "cc.timecompleted", "ue.timecreated"), $this->get_filter_columns($params));
+		$columns = array_merge(array("name", "u.email", "c.fullname", "ue.enrols", "l.visits", "l.timespend", "gc.grade", "cc.timecompleted", "ue.timecreated", "cc.timecompleted"), $this->get_filter_columns($params));
 
 		$sql_filter = "";
 		$sql_join = "";
@@ -1249,7 +1249,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$columns = array_merge(array("user", "sc.name", "c.fullname", "attempts", "sm.duration", "score"), $this->get_filter_columns($params));
+		$columns = array_merge(array("user", "sc.name", "c.fullname", "attempts", "sm.duration","sv.starttime","cmc.timemodified", "score"), $this->get_filter_columns($params));
 
 		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
 		$sql_filter .= ($params->courseid) ? " AND c.id IN ($params->courseid) " : "";
@@ -1266,15 +1266,24 @@ class local_intelliboard_external extends external_api {
 			sc.name,
 			c.fullname,
 			count(DISTINCT(st.attempt)) as attempts,
+			cmc.completionstate,
+			cmc.timemodified as completiondate,
+			sv.starttime,
 			sm.duration,
+			sm.timemodified as lastaccess,
 			round(sg.score, 0) as score
 			$sql_columns
 					FROM {$CFG->prefix}scorm_scoes_track AS st
 					LEFT JOIN {$CFG->prefix}user AS u ON st.userid=u.id
 					LEFT JOIN {$CFG->prefix}scorm AS sc ON sc.id=st.scormid
 					LEFT JOIN {$CFG->prefix}course c ON c.id = sc.course
-					LEFT JOIN (SELECT userid, scormid, SEC_TO_TIME( SUM( TIME_TO_SEC( value ) ) ) AS duration FROM {$CFG->prefix}scorm_scoes_track where element = 'cmi.core.total_time' GROUP BY userid, scormid) AS sm ON sm.scormid =st.scormid and sm.userid=st.userid
-					LEFT JOIN (SELECT gi.iteminstance, AVG( (gg.finalgrade/gg.rawgrademax)*100) AS score, gg.userid FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades gg WHERE gi.itemmodule='scorm' and gg.itemid=gi.id  GROUP BY gi.iteminstance, gg.userid) AS sg ON sg.iteminstance =st.scormid and sg.userid=st.userid
+					LEFT JOIN {$CFG->prefix}modules m ON m.name = 'scorm'
+					LEFT JOIN {$CFG->prefix}course_modules cm ON cm.module = m.id AND cm.instance = sc.id
+					LEFT JOIN {$CFG->prefix}course_modules_completion cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
+
+					LEFT JOIN (SELECT userid, timemodified, scormid, SEC_TO_TIME( SUM( TIME_TO_SEC( value ) ) ) AS duration FROM {$CFG->prefix}scorm_scoes_track where element = 'cmi.core.total_time' GROUP BY userid, scormid) AS sm ON sm.scormid =st.scormid and sm.userid=st.userid
+					LEFT JOIN (SELECT userid, MIN(value) as starttime, scormid FROM {$CFG->prefix}scorm_scoes_track where element = 'x.start.time' GROUP BY userid, scormid) AS sv ON sv.scormid =st.scormid and sv.userid=st.userid
+					LEFT JOIN (SELECT gi.iteminstance, (gg.finalgrade/gg.rawgrademax)*100 AS score, gg.userid FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades gg WHERE gi.itemmodule='scorm' and gg.itemid=gi.id  GROUP BY gi.iteminstance, gg.userid) AS sg ON sg.iteminstance =st.scormid and sg.userid=st.userid
 					WHERE sc.id > 0 $sql_filter
 					GROUP BY st.userid, st.scormid $sql_having $sql_orger $sql_limit");
 		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
@@ -1515,7 +1524,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$columns = array_merge(array("gi.itemname", "learner", "graduated", "grade", "completionstate", "timespend", "visits"), $this->get_filter_columns($params));
+		$columns = array_merge(array("gi.itemname", "learner", "u.email", "graduated", "grade", "completionstate", "timespend", "visits"), $this->get_filter_columns($params));
 
 		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
 		$sql_having = $this->get_filter_sql($params->filter, $columns);
@@ -1528,9 +1537,10 @@ class local_intelliboard_external extends external_api {
 					SQL_CALC_FOUND_ROWS gg.id,
 					gi.itemname,
 					gg.userid,
+					u.email,
 					CONCAT(u.firstname, ' ', u.lastname) as learner,
 					gg.timemodified as graduated,
-					gg.finalgrade as grade,
+					(gg.finalgrade/gg.rawgrademax)*100 as grade,
 					cm.completion,
 					cmc.completionstate,
 					sum(lit.timespend) as timespend,
@@ -1720,12 +1730,14 @@ class local_intelliboard_external extends external_api {
 		global $USER, $CFG, $DB;
 
 		return $DB->get_records_sql("SELECT sst.attempt,
-				(SELECT s.value as starttime FROM {$CFG->prefix}scorm_scoes_track s WHERE element = 'x.start.time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as starttime,
-				(SELECT s.value as starttime FROM {$CFG->prefix}scorm_scoes_track s WHERE element = 'cmi.core.score.raw' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as score,
-				(SELECT s.value as starttime FROM {$CFG->prefix}scorm_scoes_track s WHERE element = 'cmi.core.lesson_status' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as status
+				(SELECT s.value FROM {$CFG->prefix}scorm_scoes_track s WHERE element = 'x.start.time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as starttime,
+				(SELECT s.value FROM {$CFG->prefix}scorm_scoes_track s WHERE element = 'cmi.core.score.raw' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as score,
+				(SELECT s.value FROM {$CFG->prefix}scorm_scoes_track s WHERE element = 'cmi.core.lesson_status' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as status,
+				(SELECT s.value FROM {$CFG->prefix}scorm_scoes_track s WHERE element = 'cmi.core.total_time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as totaltime,
+				(SELECT s.timemodified FROM {$CFG->prefix}scorm_scoes_track s WHERE element = 'cmi.core.total_time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as timemodified
 			FROM {$CFG->prefix}scorm_scoes_track sst
 			WHERE sst.userid = " . intval($params->userid) . "  and sst.scormid = " . intval($params->filter) . "
-			GROUP BY attempt");
+			GROUP BY sst.attempt");
 	}
 
 	function report33($params)
@@ -3293,7 +3305,7 @@ class local_intelliboard_external extends external_api {
 
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 
-		return $DB->get_records_sql("SELECT lit.id, lit.useragent as name, count(lit.id) AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.useragent");
+		return $DB->get_records_sql("SELECT lit.id, lit.useragent as name, count(lit.id) AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.useragent != '' $sql GROUP BY lit.useragent");
 	}
 	function get_useros($params)
 	{
@@ -3301,7 +3313,7 @@ class local_intelliboard_external extends external_api {
 
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 
-		return $DB->get_records_sql("SELECT lit.id, lit.useros as name, count(lit.id) AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.useros");
+		return $DB->get_records_sql("SELECT lit.id, lit.useros as name, count(lit.id) AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.useros != '' $sql GROUP BY lit.useros");
 	}
 	function get_userlang($params)
 	{
@@ -3309,7 +3321,7 @@ class local_intelliboard_external extends external_api {
 
 		$sql = $this->get_teacher_sql($params, "lit.userid", "users");
 
-		return $DB->get_records_sql("SELECT lit.id, lit.userlang as name, count(lit.id) AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userid IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) $sql GROUP BY lit.userlang");
+		return $DB->get_records_sql("SELECT lit.id, lit.userlang as name, count(lit.id) AS amount FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.userlang != '' $sql GROUP BY lit.userlang");
 	}
 
 
@@ -3331,9 +3343,7 @@ class local_intelliboard_external extends external_api {
 
 		$sql = $this->get_teacher_sql($params, "id", "users");
 
-		return $DB->get_records_sql("SELECT auth, count(*) as users,
-					(SELECT count(*) FROM {$CFG->prefix}user where username != 'guest' and deleted = 0 $sql) as amount
-				FROM {$CFG->prefix}user WHERE username != 'guest' and deleted = 0 $sql GROUP BY auth");
+		return $DB->get_records_sql("SELECT auth, count(*) as users FROM {$CFG->prefix}user WHERE username != 'guest' and deleted = 0 $sql GROUP BY auth");
 	}
 
 
