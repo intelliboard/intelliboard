@@ -3726,7 +3726,7 @@ class local_intelliboard_external extends external_api {
 				ca.id as cid,
 				ca.name as category
 			FROM {$CFG->prefix}course c, {$CFG->prefix}course_categories ca
-			WHERE c.category = ca.id $sql $sql_filter ORDER BY c.fullname $sql_limit");
+			WHERE c.visible = 1 AND c.category = ca.id $sql $sql_filter ORDER BY c.fullname $sql_limit");
 	}
 
 
