@@ -1151,7 +1151,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$columns = array_merge(array("f.name", "user","course", "fpl.created", "posts"), $this->get_filter_columns($params));
+		$columns = array_merge(array("f.name", "user","course", "discussions", "posts"), $this->get_filter_columns($params));
 
 		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
 		$sql_filter .= ($params->courseid) ? " AND c.id IN ($params->courseid) " : "";
@@ -1161,24 +1161,18 @@ class local_intelliboard_external extends external_api {
 		$sql_limit = $this->get_limit_sql($params);
 
 		$data = $DB->get_records_sql("SELECT
-					SQL_CALC_FOUND_ROWS u.id+f.id,
+					SQL_CALC_FOUND_ROWS fd.id,
 					c.fullname as course,
 					CONCAT(u.firstname,' ',u.lastname) as user,
 					f.name,
-					count(fp.id) as posts,
-					fpl.created
+					count(distinct fp.id) as posts,
+					count(distinct fd.id) as discussions
 					FROM
 						{$CFG->prefix}forum_discussions fd
+						LEFT JOIN {$CFG->prefix}user u ON u.id = fd.userid
 						LEFT JOIN {$CFG->prefix}course c ON c.id = fd.course
 						LEFT JOIN {$CFG->prefix}forum f ON f.id = fd.forum
-						LEFT JOIN {$CFG->prefix}forum_posts fp ON fp.discussion = fd.id
-						LEFT JOIN {$CFG->prefix}user u ON u.id = fp.userid
-						LEFT JOIN {$CFG->prefix}forum_posts as fpl ON fpl.id =
-							(
-							   SELECT MAX(fdx.id)
-							   FROM {$CFG->prefix}forum_posts fpx, {$CFG->prefix}forum_discussions fdx
-							   WHERE fpx.discussion = fdx.id AND fdx.forum = fd.forum AND fpx.userid = fpl.userid
-							)
+						LEFT JOIN {$CFG->prefix}forum_posts fp ON fp.discussion = fd.id AND fp.userid = u.id
 					WHERE f.id > 0 $sql_filter
 					GROUP BY u.id, f.id  $sql_having $sql_orger $sql_limit");
 
