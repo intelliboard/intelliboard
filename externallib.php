@@ -1873,7 +1873,7 @@ class local_intelliboard_external extends external_api {
 							LEFT JOIN {$CFG->prefix}course as c ON c.id=cm.course
 							LEFT JOIN {$CFG->prefix}course_modules_completion as cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
 							LEFT JOIN (SELECT lit.userid, lit.param, sum(lit.timespend) as timespend, sum(lit.visits) as visits FROM {$CFG->prefix}local_intelliboard_tracking lit WHERE lit.page = 'module' GROUP BY lit.userid, lit.param) l ON l.param = cm.id AND l.userid = u.id
-								WHERE gi.itemtype = 'mod' $sql_filter $sql_having $sql_orger $sql_limit");
+								WHERE u.deleted = 0 AND u.suspended = 0 AND c.visible = 1 AND cm.visible = 1 AND gi.itemtype = 'mod' $sql_filter $sql_having $sql_orger $sql_limit");
 
 		if($data and intval($params->custom) == 1){
 			require_once($CFG->libdir . "/gradelib.php");
