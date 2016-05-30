@@ -377,7 +377,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$columns = array_merge(array("name", "u.email", "c.fullname", "ue.enrols", "l.visits", "l.timespend", "gc.grade", "cc.timecompleted", "ue.timecreated", "cc.timecompleted"), $this->get_filter_columns($params));
+		$columns = array_merge(array("name", "u.email", "c.fullname", "ue.enrols", "l.visits", "l.timespend", "gc.grade", "cc.timecompleted", "ue.timecreated", "ul.timeaccess", "ue.timeend", "cc.timecompleted"), $this->get_filter_columns($params));
 
 		$sql_filter = "";
 		$sql_join = "";
@@ -401,14 +401,16 @@ class local_intelliboard_external extends external_api {
 		$sql_orger = $this->get_order_sql($params, $columns);
 		$sql_columns = $this->get_columns($params, "u.id");
 		$sql_limit = $this->get_limit_sql($params);
-
+		$sql_join_filter = "";
 		if(isset($params->custom) and  strrpos($params->custom, ',') !== false){
 			$sql_filter .= " AND u.id IN($params->custom)";
-			$filterColumn = 'ue.timecreated';
+			$sql_filter .= " AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish";
+		}elseif(isset($params->custom) and $params->custom == 2){
+			$sql_join_filter .= " AND l.timepoint BETWEEN $params->timestart AND $params->timefinish";
 		}elseif(isset($params->custom) and $params->custom == 1){
-			$filterColumn = 'cc.timecompleted';
+			$sql_filter .= " AND cc.timecompleted BETWEEN $params->timestart AND $params->timefinish";
 		}else{
-			$filterColumn = 'ue.timecreated';
+			$sql_filter .= " AND ue.timecreated BETWEEN $params->timestart AND $params->timefinish";
 		}
 		if($params->cohortid){
 			$sql_join = "LEFT JOIN {$CFG->prefix}cohort_members cm ON cm.userid = u.id";
@@ -418,6 +420,8 @@ class local_intelliboard_external extends external_api {
 		$data = $DB->get_records_sql("SELECT
 			SQL_CALC_FOUND_ROWS ue.id,
 			ue.timecreated as enrolled,
+			ue.timeend,
+			ul.timeaccess,
 			gc.grade,
 			c.enablecompletion,
 			cc.timecompleted as complete,
@@ -433,11 +437,15 @@ class local_intelliboard_external extends external_api {
 						FROM (".$this->getUsersEnrolsSql().") as ue
 							LEFT JOIN {$CFG->prefix}user as u ON u.id = ue.userid
 							LEFT JOIN {$CFG->prefix}course as c ON c.id = ue.courseid
+							LEFT JOIN {$CFG->prefix}user_lastaccess as ul ON ul.courseid = c.id AND ul.userid = u.id
 							LEFT JOIN {$CFG->prefix}course_completions as cc ON cc.course = ue.courseid AND cc.userid = ue.userid
 							LEFT JOIN (".$this->getCourseUserGradeSql().") as gc ON gc.courseid = c.id AND gc.userid = u.id
-							LEFT JOIN (".$this->getCurseUserTimeSql().") l ON l.courseid = c.id AND l.userid = u.id
+							LEFT JOIN (SELECT t.id,t.userid,t.courseid, sum(l.timespend) as timespend, sum(l.visits) as visits FROM
+								{local_intelliboard_tracking} t,
+								{local_intelliboard_logs} l
+							WHERE l.trackid = t.id $sql_join_filter GROUP BY t.courseid, t.userid) l ON l.courseid = c.id AND l.userid = u.id
 							$sql_join
-								WHERE $filterColumn BETWEEN $params->timestart AND $params->timefinish $sql_filter $sql_having $sql_orger $sql_limit");
+								WHERE u.deleted = 0 AND u.suspended = 0 $sql_filter $sql_having $sql_orger $sql_limit");
 
 		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
 		return array(
@@ -562,6 +570,12 @@ class local_intelliboard_external extends external_api {
 			$sql_filter .= " AND chm.cohortid  IN ($params->cohortid)";
 		}
 
+		$sql_join_filter = "";
+		if(isset($params->custom) and $params->custom == 1){
+			$sql_join_filter .= " AND l.timepoint BETWEEN $params->timestart AND $params->timefinish";
+		}else{
+			$sql_filter .= " AND u.timecreated BETWEEN $params->timestart AND $params->timefinish";
+		}
 
 		$data = $DB->get_records_sql("SELECT
 				SQL_CALC_FOUND_ROWS DISTINCT u.id,
@@ -579,10 +593,13 @@ class local_intelliboard_external extends external_api {
 					LEFT JOIN (SELECT ue.userid, count(DISTINCT e.courseid) as courses FROM {user_enrolments} ue, {enrol} e WHERE e.id = ue.enrolid AND ue.status = 0 and e.status = 0 GROUP BY ue.userid) as ue ON ue.userid = u.id
 					LEFT JOIN (SELECT userid, count(id) as completed_courses FROM {course_completions} cc WHERE timecompleted > 0 GROUP BY userid) as cm ON cm.userid = u.id
 					LEFT JOIN (SELECT g.userid, AVG( (g.finalgrade/g.rawgrademax)*100) AS grade FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY g.userid) as gc ON gc.userid = u.id
-					LEFT JOIN (SELECT l.userid, sum(l.timespend) as timespend, sum(l.visits) as visits FROM {local_intelliboard_tracking} l GROUP BY l.userid) as lit ON lit.userid = u.id
+					LEFT JOIN (SELECT t.id,t.userid, sum(l.timespend) as timespend, sum(l.visits) as visits FROM
+								{local_intelliboard_tracking} t,
+								{local_intelliboard_logs} l
+							WHERE l.trackid = t.id AND t.courseid > 0 $sql_join_filter GROUP BY t.userid) as lit ON lit.userid = u.id
 					LEFT JOIN (SELECT cmc.userid, count(cmc.id) as completed_activities FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible = 1 AND cmc.completionstate = 1 GROUP BY cmc.userid) as cmc ON cmc.userid = u.id
 					$sql_join
-					WHERE ra.roleid IN ($this->learner_roles) AND u.id = ra.userid AND u.deleted = 0 AND u.suspended = 0 AND u.timecreated BETWEEN $params->timestart AND $params->timefinish $sql_filter $sql_having $sql_orger $sql_limit");
+					WHERE ra.roleid IN ($this->learner_roles) AND u.id = ra.userid AND u.deleted = 0 AND u.suspended = 0 $sql_filter $sql_having $sql_orger $sql_limit");
 
 		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
 		return array(
@@ -1710,6 +1727,12 @@ class local_intelliboard_external extends external_api {
 		$sql_columns = $this->get_columns($params, "u.id");
 		$sql_limit = $this->get_limit_sql($params);
 
+		$sql_join_filter = "";
+		if(isset($params->custom) and $params->custom == 1){
+			$sql_join_filter .= " AND l.timepoint BETWEEN $params->timestart AND $params->timefinish";
+		}else{
+			$sql_filter .= " AND u.timecreated BETWEEN $params->timestart AND $params->timefinish";
+		}
 
 		$data = $DB->get_records_sql("SELECT
 				SQL_CALC_FOUND_ROWS u.id,
@@ -1723,10 +1746,19 @@ class local_intelliboard_external extends external_api {
 				$sql_columns
 						FROM (".$this->getUsersEnrolsSql().") ue
 							LEFT JOIN {$CFG->prefix}user u ON u.id = ue.userid
-							LEFT JOIN (SELECT userid, sum(timespend) as timesite FROM {$CFG->prefix}local_intelliboard_tracking GROUP BY userid) as lit1 ON lit1.userid = u.id
-							LEFT JOIN (SELECT userid, sum(timespend) as timecourses FROM {$CFG->prefix}local_intelliboard_tracking WHERE courseid > 0 GROUP BY userid) as lit2 ON lit2.userid = u.id
-							LEFT JOIN (SELECT userid, sum(timespend) as timeactivities FROM {$CFG->prefix}local_intelliboard_tracking WHERE page = 'module' GROUP BY userid) as lit3 ON lit3.userid = u.id
-							WHERE u.timecreated BETWEEN $params->timestart AND $params->timefinish $sql_filter GROUP BY u.id $sql_having $sql_orger $sql_limit");
+							LEFT JOIN (SELECT t.userid, sum(l.timespend) as timesite FROM
+								{local_intelliboard_tracking} t,
+								{local_intelliboard_logs} l
+							WHERE l.trackid = t.id $sql_join_filter GROUP BY t.userid) as lit1 ON lit1.userid = u.id
+							LEFT JOIN (SELECT t.userid, sum(l.timespend) as timecourses FROM
+								{local_intelliboard_tracking} t,
+								{local_intelliboard_logs} l
+							WHERE l.trackid = t.id AND t.courseid > 0 $sql_join_filter GROUP BY t.userid) as lit2 ON lit2.userid = u.id
+							LEFT JOIN (SELECT t.userid, sum(l.timespend) as timeactivities FROM
+								{local_intelliboard_tracking} t,
+								{local_intelliboard_logs} l
+							WHERE l.trackid = t.id AND t.page = 'module' $sql_join_filter GROUP BY t.userid) as lit3 ON lit3.userid = u.id
+							WHERE u.deleted = 0 AND u.suspended = 0 $sql_filter GROUP BY u.id $sql_having $sql_orger $sql_limit");
 		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
 		return array(
 					"recordsTotal"    => key($size),
