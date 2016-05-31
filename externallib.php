@@ -64,6 +64,7 @@ class local_intelliboard_external extends external_api {
                             'teacher_roles' => new external_value(PARAM_RAW, 'Teacher roles', VALUE_OPTIONAL),
                             'learner_roles' => new external_value(PARAM_RAW, 'Learner roles', VALUE_OPTIONAL),
                             'userid' => new external_value(PARAM_INT, 'User ID', VALUE_OPTIONAL),
+                            'users' => new external_value(PARAM_RAW, 'Users', VALUE_OPTIONAL),
                             'courseid' => new external_value(PARAM_RAW, 'Course ID', VALUE_OPTIONAL),
                             'cohortid' => new external_value(PARAM_RAW, 'Cohort ID', VALUE_OPTIONAL)
                         )
@@ -359,7 +360,7 @@ class local_intelliboard_external extends external_api {
 			$sql_filter .= " AND (".implode(" OR ", $sql_enrols).")";
 		}
 
-		return "SELECT ue.id, ra.roleid, e.courseid, ue.userid, ue.timecreated, GROUP_CONCAT( DISTINCT e.enrol) AS enrols
+		return "SELECT ue.id, ra.roleid, e.courseid, ue.userid, ue.timecreated, ue.timeend, GROUP_CONCAT( DISTINCT e.enrol) AS enrols
 					FROM
 						{$CFG->prefix}user_enrolments ue,
 						{$CFG->prefix}enrol e,
