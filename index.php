@@ -168,7 +168,7 @@ echo $OUTPUT->header();
 				<?php foreach($report43['data'] as $row): ?>
 				<tr>
 					<td><a href="<?php echo $CFG->wwwroot; ?>/user/profile.php?id=<?php echo $row->id; ?>"><?php echo $row->user; ?></a></td>
-					<td align="center" class="intelliboard-tooltip" title="<?php echo "Enrolled: ".intval($row->courses).", Competed: ".intval($row->completed_courses); ?>">
+					<td align="center" class="intelliboard-tooltip" title="<?php echo "Enrolled: ".intval($row->courses).", Completed: ".intval($row->completed_courses); ?>">
 						<div class="intelliboard-progress xl"><span style="width:<?php echo ($row->completed_courses) ? (($row->completed_courses / $row->courses) * 100) : 0; ?>%"></span></div>
 					</td>
 					<td align="center" class="intelliboard-tooltip" title="<?php echo "$row->user grade: ".intval($row->grade).", Average grade: ".intval($avg->grade_site); ?>"><span class='<?php echo ($avg->grade_site > $row->grade) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left"; ?>'> <?php echo (int)$row->grade; ?></span></td>
@@ -202,7 +202,7 @@ echo $OUTPUT->header();
 		<h3>Participation</h3>
 		<ul class="intelliboard-list">
 			<?php foreach($report44['data'] as $row):  ?>
-			<li class="intelliboard-tooltip" title="<?php echo "Enrolled users: $row->users, Competed: $row->completed"; ?>">
+			<li class="intelliboard-tooltip" title="<?php echo "Enrolled users: $row->users, Completed: $row->completed"; ?>">
 				<?php echo $row->fullname; ?>
 				<span class="pull-right"><?php echo (int) $row->completed; ?>/<?php echo (int) $row->users; ?></span>
 				<div class="intelliboard-progress"><span style="width:<?php echo ($row->completed) ? (($row->completed / $row->users) * 100) : 0; ?>%"></span></div>
