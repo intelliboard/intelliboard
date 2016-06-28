@@ -2625,7 +2625,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
- 		$columns = array("l.timecreated", "user", "u.email", "course", "l.objecttable", "activity", "l.origin", "l.ip");
+ 		$columns = array_merge(array("l.timecreated", "user", "u.email", "course", "l.objecttable", "activity", "l.origin", "l.ip"), $this->get_filter_columns($params));
 
 		$sql_columns = $this->get_columns($params, "u.id");
 		$sql_having = $this->get_filter_sql($params->filter, $columns);
