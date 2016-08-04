@@ -1,13 +1,13 @@
 <?php
 // IntelliBoard.net
 //
-// IntelliBoard.net is built to work with any LMS designed in Moodle 
-// with the goal to deliver educational data analytics to single dashboard instantly. 
-// With power to turn this analytical data into simple and easy to read reports, 
+// IntelliBoard.net is built to work with any LMS designed in Moodle
+// with the goal to deliver educational data analytics to single dashboard instantly.
+// With power to turn this analytical data into simple and easy to read reports,
 // IntelliBoard.net will become your primary reporting tool.
 //
 // Moodle
-// 
+//
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -37,7 +37,7 @@ admin_externalpage_setup('intelliboardsettings');
 $reports = optional_param_array('report', array(), PARAM_INT);
 
 if($reports){
-	set_config("reports", implode(",", $reports), "local_intelliboard");	
+	set_config("reports", implode(",", $reports), "local_intelliboard");
 }
 
 $params = array(
@@ -50,7 +50,7 @@ $params = array(
 	'do'=>'reportslist'
 );
 $c = new curl;
-$intelliboard = json_decode($c->post('http://intelliboard.net/dashboard/api', $params));
+$intelliboard = json_decode($c->post('https://intelliboard.net/dashboard/api', $params));
 $PAGE->set_url(new moodle_url("/local/intelliboard/settings.php"));
 $PAGE->set_pagelayout('report');
 $PAGE->set_pagetype('settings');

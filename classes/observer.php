@@ -26,15 +26,20 @@
  * @website		www.intelliboard.net
  */
 
-class intelliboard_handler {
-    public static function notify_leaner_created($user)
-	{
+defined('MOODLE_INTERNAL') || die();
+
+class local_intelliboard_observer
+{
+    public static function user_created(\core\event\user_created $event)
+    {
         global $CFG, $SITE, $DB;
 
 		$auth = get_config('local_intelliboard','auth');
 		$auth_email = get_config('local_intelliboard','auth_email');
 		$auth_subject = get_config('local_intelliboard','auth_subject');
 		$auth_message = get_config('local_intelliboard','auth_message');
+
+		$user = $DB->get_record('user', array('id'=>$event->objectid));
 
 		if($auth and $auth_email and $auth_subject and $auth_message) {
 			$auth = explode(",", $auth);
@@ -50,15 +55,13 @@ class intelliboard_handler {
 
 			email_to_user($manager,$sender,$subject,$message,$message);
 		}
-	}
-
-
-
-	public static function notify_leaner_enrolled($enroll) {
+    }
+    public static function user_enrolment_created(\core\event\user_enrolment_created $event)
+    {
         global $CFG, $SITE, $DB;
 
-		$user = $DB->get_record('user', array('id'=> $enroll->userid));
-		$course = $DB->get_record('course', array('id'=> $enroll->courseid));
+		$user = $DB->get_record('user', array('id'=>$event->relateduserid));
+		$course = $DB->get_record('course', array('id'=>$event->contextinstanceid));
 
 		$enrol = get_config('local_intelliboard','enrol');
 		$enrol_email = get_config('local_intelliboard','enrol_email');
@@ -67,10 +70,9 @@ class intelliboard_handler {
 
 		if($enrol and $enrol_email and $enrol_subject and $enrol_message) {
 			$enrol = explode(",", $enrol);
-			if(!in_array($enroll->enrol, $enrol)){
+			if(!in_array($event->other['enrol'], $enrol)){
 				return;
 			}
-
 			$sender = get_admin();
 			$manager = get_admin();
 			$manager->email = $enrol_email;
@@ -81,5 +83,5 @@ class intelliboard_handler {
 			email_to_user($manager,$sender,$subject,$message,$message);
 		}
 		return true;
-	}
+    }
 }

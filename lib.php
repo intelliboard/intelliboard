@@ -25,6 +25,14 @@
  * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
+function local_intelliboard_extend_navigation(global_navigation $nav){
+	global $USER, $CFG;
+
+	$context = context_system::instance();
+	if(isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)){
+		$nav->add(get_string('intelliboardstudent', 'local_intelliboard'), new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+	}
+}
 
 function getUserDetails()
 {
@@ -113,14 +121,10 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		return;
 	}
 
-	//die('guest');
-
 	if ($enabled and isloggedin() and !isguestuser()){
 		if(is_siteadmin() and !$trackadmin){
 			return;
 		}
-
-
 		$intelliboardPage = (isset($_COOKIE['intelliboardPage'])) ? clean_param($_COOKIE['intelliboardPage'], PARAM_ALPHANUMEXT) : '';
 		$intelliboardParam = (isset($_COOKIE['intelliboardParam'])) ? clean_param($_COOKIE['intelliboardParam'], 0, PARAM_INT) : 0;
 		$intelliboardTime = (isset($_COOKIE['intelliboardTime'])) ? clean_param($_COOKIE['intelliboardTime'], 0, PARAM_INT) : 0;
@@ -160,7 +164,6 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 				$data->userip = $userDetails->userip;
 				$data->id = $DB->insert_record('local_intelliboard_tracking', $data);
 			}
-
 			if($version >= 2016011300){
 				$currentstamp  = strtotime('today');
 				if($data->id){
@@ -207,7 +210,6 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 					$sessions = true;
 					set_config("trackusers", $USER->id, "local_intelliboard");
 				}
-
 				if($data = $DB->get_record('local_intelliboard_totals', array('timepoint' => $currentstamp))){
 					if(!$ajaxRequest){
 						$data->visits = $data->visits + 1;
@@ -234,7 +236,6 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		if($ajaxRequest){
 			die("time ".$intelliboardTime);
 		}
-
 		if(isset($PAGE->cm->id)){
 			$intelliboardPage = 'module';
 			$intelliboardParam = $PAGE->cm->id;
@@ -248,7 +249,6 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 			$intelliboardPage = 'site';
 			$intelliboardParam = 0;
 		}
-
 		SetCookie('intelliboardPage', $intelliboardPage, time()+3600, "/");
 		SetCookie('intelliboardParam', $intelliboardParam, time()+3600, "/");
 		SetCookie('intelliboardTime', 0, time()+3600, "/");
@@ -259,7 +259,7 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		$params->intelliboardInactivity = $inactivity;
 		$params->intelliboardPeriod = 1000;
 
-		$PAGE->requires->js('/local/intelliboard/assets/js/module.js', false);
+		$PAGE->requires->js('/local/intelliboard/module.js', false);
 		$PAGE->requires->js_function_call('intelliboardInit', array($params), false);
 	}
 }

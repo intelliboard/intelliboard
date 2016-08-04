@@ -62,7 +62,7 @@ if($action == 'noalert'){
 	$params['agreement'] = true;
 }
 $c = new curl;
-$intelliboard = json_decode($c->post('http://intelliboard.net/dashboard/api', $params));
+$intelliboard = json_decode($c->post('https://intelliboard.net/dashboard/api', $params));
 
 $params = (object) array(
 	'start'=>0,

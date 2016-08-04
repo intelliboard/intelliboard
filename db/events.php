@@ -26,25 +26,16 @@
  * @website		www.intelliboard.net
  */
 
-$handlers = array(
-    'user_created' => array (
-        'handlerfile'     => '/local/intelliboard/locallib.php',
-        'handlerfunction' => array('intelliboard_handler', 'notify_leaner_created'),
-        'schedule'        => 'instant',
-		'internal'        => 1,
+
+$observers = array (
+    array (
+        'eventname' => '\core\event\user_created',
+        'callback'  => 'local_intelliboard_observer::user_created',
     ),
-	'user_enrolled' => array (
-        'handlerfile'     => '/local/intelliboard/locallib.php',
-        'handlerfunction' => array('intelliboard_handler', 'notify_leaner_enrolled'),
-        'schedule'        => 'instant',
-		'internal'        => 1,
-    ),
-	'user_enrol_modified' => array (
-        'handlerfile'     => '/local/intelliboard/locallib.php',
-        'handlerfunction' => array('intelliboard_handler', 'notify_leaner_enrolled'),
-        'schedule'        => 'instant',
-		'internal'        => 1,
-    ),
+    array (
+        'eventname' => '\core\event\user_enrolment_created',
+        'callback'  => 'local_intelliboard_observer::user_enrolment_created',
+    )
 );
 
 ?>

@@ -1,13 +1,13 @@
 <?php
 // IntelliBoard.net
 //
-// IntelliBoard.net is built to work with any LMS designed in Moodle 
-// with the goal to deliver educational data analytics to single dashboard instantly. 
-// With power to turn this analytical data into simple and easy to read reports, 
+// IntelliBoard.net is built to work with any LMS designed in Moodle
+// with the goal to deliver educational data analytics to single dashboard instantly.
+// With power to turn this analytical data into simple and easy to read reports,
 // IntelliBoard.net will become your primary reporting tool.
 //
 // Moodle
-// 
+//
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -51,12 +51,12 @@ if($id){
 	}
 
 	$params = (object) array(
-		'length'=>$length, 
-		'start'=>$page, 
-		'userid'=>0, 
-		'courseid'=>0, 
-		'cohortid'=>0, 
-		'filter'=>$filter, 
+		'length'=>$length,
+		'start'=>$page,
+		'userid'=>0,
+		'courseid'=>0,
+		'cohortid'=>0,
+		'filter'=>$filter,
 		'timestart'=> $timestart,
 		'timefinish'=>$timefinish
 	);
@@ -65,7 +65,7 @@ if($id){
 	$class = 'local_intelliboard_external';
 	$plugin = new $class();
 	$plugin->teacher_roles = '3,4';
-	$plugin->learner_roles = '5'; 
+	$plugin->learner_roles = '5';
 
 	$data = json_encode($plugin->{$function}($params));
 }else{
@@ -78,17 +78,17 @@ $params = array(
 	'firstname'=>$USER->firstname,
 	'lastname'=>$USER->lastname,
 	'reports'=>get_config('local_intelliboard', 'reports'),
-	'filter'=>$filter, 
-	'daterange'=>$daterange, 
+	'filter'=>$filter,
+	'daterange'=>$daterange,
 	'data'=>$data,
 	'id'=> $id,
-	'length'=>$length, 
+	'length'=>$length,
 	'page'=>$page,
 	'type'=>'reports',
 	'do'=>'reports'
 );
 $c = new curl;
-$intelliboard = json_decode($c->post('http://intelliboard.net/dashboard/api', $params));
+$intelliboard = json_decode($c->post('https://intelliboard.net/dashboard/api', $params));
 $PAGE->set_url(new moodle_url("/local/intelliboard/reports.php", array('id'=>$id)));
 $PAGE->set_pagelayout('report');
 $PAGE->set_pagetype('reports');

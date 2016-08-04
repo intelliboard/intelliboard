@@ -147,14 +147,9 @@ if($action == 'totals'){
 					$collector[$item->key] = $obj;
 				}
 			}
-			//print("<pre>"); print_r($size); exit;
 
 			foreach($collector as $item){
 				if($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $item->userid, 'page' => $item->page, 'param' => $item->param), '*')){
-
-					//$data->visits = $data->visits + $item->visits;
-					//$data->timespend = $data->timespend + $item->timespend;
-					//$DB->update_record('local_intelliboard_tracking', $data);
 				}else{
 					$data = new stdClass();
 					$data->userid = $item->userid;
@@ -174,10 +169,6 @@ if($action == 'totals'){
 					foreach($item->logs as $row){
 						if($log = $DB->get_record('local_intelliboard_logs', array('trackid' => $data->id, 'timepoint' => $row->timecreated))){
 							continue; //stop
-
-							//$log->visits = $log->visits + $row->visits;
-							//$log->timespend = $log->timespend + $row->timespend;
-							//$DB->update_record('local_intelliboard_logs', $log);
 						}else{
 							$log = new stdClass();
 							$log->trackid = $data->id;

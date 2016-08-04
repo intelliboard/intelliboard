@@ -16,13 +16,13 @@ function intelliboardInit(options){
 	intelliboardInactivity = options.intelliboardInactivity  || intelliboardInactivity ;
 	intelliboardPeriod = options.intelliboardPeriod || intelliboardPeriod;
 	intelliboardInterval = setInterval(intelliboardProgress, intelliboardPeriod);
-	
+
 	intelliboardPage = getIntelliboardCookie('intelliboardPage');
 	intelliboardParam = getIntelliboardCookie('intelliboardParam');
 }
 
 function intelliboardProgress(){
-	if(intelliboardCounter <= intelliboardInactivity){ 
+	if(intelliboardCounter <= intelliboardInactivity){
 		intelliboardTime++;
 		intelliboardCounter++;
 		intelliboardAjaxCounter++;
@@ -88,7 +88,7 @@ function setIntelliboardCookie(name, value, options) {
 		d.setTime(d.getTime() + expires*1000);
 		expires = options.expires = d;
 	}
-	if (expires && expires.toUTCString) { 
+	if (expires && expires.toUTCString) {
 		options.expires = expires.toUTCString();
 	}
 	options.path = "/";
@@ -96,8 +96,8 @@ function setIntelliboardCookie(name, value, options) {
 	var updatedCookie = name + "=" + value;
 	for(var propName in options) {
 		updatedCookie += "; " + propName;
-		var propValue = options[propName];    
-		if (propValue !== true) { 
+		var propValue = options[propName];
+		if (propValue !== true) {
 			updatedCookie += "=" + propValue;
 		}
 	}
