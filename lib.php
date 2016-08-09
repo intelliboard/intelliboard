@@ -25,7 +25,7 @@
  * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
-function local_intelliboard_extend_navigation(global_navigation $nav){
+function local_intelliboard_extends_navigation(global_navigation $nav){
 	global $USER, $CFG;
 
 	$context = context_system::instance();
