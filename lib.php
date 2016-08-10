@@ -25,6 +25,18 @@
  * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
+
+
+// In versions before Moodle 2.9, the supported callbacks have _extends_ (not imperative mood) in their names. This was a consistency bug fixed in MDL-49643.
+function local_intelliboard_extends_navigation(global_navigation $nav){
+	global $USER, $CFG;
+
+	$context = context_system::instance();
+	if(isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)){
+		$nav->add(get_string('intelliboardstudent', 'local_intelliboard'), new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+	}
+}
+//call-back method to extend the navigation
 function local_intelliboard_extend_navigation(global_navigation $nav){
 	global $USER, $CFG;
 

@@ -56,7 +56,7 @@ $string['intelliboardstudent'] = 'IntelliBoard';
 $string['intelliboardaccess'] = 'You do not have permission to view Learner Dashboard. Please contact your Administrator for assistance.';
 $string['tex1'] = 'IntelliBoard Learner Dashboard is not enabled.';
 $string['te1'] = 'Subscription email';
-$string['te1_desc'] = 'Enter email used with IntelliBoard.net subscription. If you do not have an active subscription, please register at <a target="_blank" href="https://intelliboard.net">IntelliBoard.net</a>. The Learner Dashboard is available with a subscription of Level 4 and higher.';
+$string['te1_desc'] = 'Enter email used with IntelliBoard.net subscription. If you do not have an active subscription, please register at <a target="_blank" href="https://intelliboard.net">IntelliBoard.net</a>. The Learner Dashboard is available with a subscription of Level 3 and higher.';
 
 $string['ts1'] = 'Learner Dashboard';
 $string['ts2'] = 'Learner Dashboard Page';
