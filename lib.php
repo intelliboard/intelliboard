@@ -31,6 +31,7 @@
 function local_intelliboard_extends_navigation(global_navigation $nav){
 	global $USER, $CFG;
 
+	insert_intelliboard_tracking(false);
 	$context = context_system::instance();
 	if(isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)){
 		$nav->add(get_string('intelliboardstudent', 'local_intelliboard'), new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
@@ -40,6 +41,7 @@ function local_intelliboard_extends_navigation(global_navigation $nav){
 function local_intelliboard_extend_navigation(global_navigation $nav){
 	global $USER, $CFG;
 
+	insert_intelliboard_tracking(false);
 	$context = context_system::instance();
 	if(isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)){
 		$nav->add(get_string('intelliboardstudent', 'local_intelliboard'), new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
@@ -275,5 +277,3 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		$PAGE->requires->js_function_call('intelliboardInit', array($params), false);
 	}
 }
-$ajaxRequest = (isset($ajaxRequest)) ? $ajaxRequest : false;
-insert_intelliboard_tracking($ajaxRequest);
