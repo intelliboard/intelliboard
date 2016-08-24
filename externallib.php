@@ -2553,6 +2553,96 @@ class local_intelliboard_external extends external_api {
 					"recordsFiltered" => key($size),
 					"data"            => $data);
 	}
+
+	function report72($params)
+	{
+		global $USER, $CFG, $DB;
+
+		require_once($CFG->dirroot.'/mod/scorm/locallib.php');
+		require_once($CFG->dirroot.'/mod/scorm/report/reportlib.php');
+
+
+		$data = $DB->get_records_sql("SELECT t.*
+				FROM {$CFG->prefix}scorm_scoes_track t, {$CFG->prefix}scorm s
+				WHERE s.course = $params->courseid AND t.scormid = s.id AND t.userid = $params->userid AND t.attempt = $params->custom");
+
+		$questioncount = get_scorm_question_count(array_values($data)[0]->scormid);
+		$data = scorm_format_interactions($data);
+
+		return array(
+					"questioncount"   => $questioncount,
+					"recordsTotal"    => count($data),
+					"recordsFiltered" => count($data),
+					"data"            => $data);
+	}
+	function report73($params)
+	{
+		global $USER, $CFG, $DB;
+
+		$data = $DB->get_records_sql("SELECT b.id, b.name, i.timemodified, i.location, u.firstname, u.lastname, c.fullname FROM
+					{$CFG->prefix}scorm_ajax_buttons b
+					LEFT JOIN {$CFG->prefix}user u ON u.id = $params->userid
+					LEFT JOIN {$CFG->prefix}course c ON c.id = $params->courseid
+					LEFT JOIN {$CFG->prefix}scorm s ON s.course = c.id
+					LEFT JOIN {$CFG->prefix}scorm_ajax a ON a.scormid = s.id
+					LEFT JOIN {$CFG->prefix}scorm_ajax_info i ON i.page = b.id AND i.userid = u.id AND i.relid = a.relid
+					ORDER BY b.id");
+
+		return array(
+					"recordsTotal"    => count($data),
+					"recordsFiltered" => count($data),
+					"data"            => $data);
+	}
+	function report74($params)
+	{
+		global $USER, $CFG, $DB;
+
+		$date = explode("-", $params->custom);
+		$year = (int) $date[2];
+		$start = (int) $date[0];
+		$end = (int) $date[1];
+
+		if(!$year or !$start or !$end or !$params->custom2){
+			return array();
+		}
+		$position = ($params->custom2)?$params->custom2:4;
+
+		$sql_select = "";
+		$sql_join = "";
+		if($start < $end){
+			while($start <= $end){
+				$startdate = strtotime("$start/1/$year");
+				$enddate = strtotime("$start/1/$year +1 month");
+				$sql_select .= ", k$start.users as month_$start";
+				$sql_join .= "LEFT JOIN (SELECT p.organisationid, COUNT(distinct ue.userid) as users FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}pos_assignment p WHERE p.positionid = $position AND p.userid = ue.userid AND ue.timecreated BETWEEN $startdate AND $enddate GROUP BY p.organisationid) k$start ON  k$start.organisationid = o.id ";
+				$start++;
+			}
+		}
+
+		$data = $DB->get_records_sql("SELECT
+			SQL_CALC_FOUND_ROWS o.id,
+			o.fullname as organization,
+			o.typeid,
+			t.fullname as type,
+			s.svp,
+			k0.users as total
+			$sql_select
+			FROM {$CFG->prefix}org o
+			LEFT JOIN {$CFG->prefix}org_type t ON t.id = o.typeid
+			LEFT JOIN (SELECT o2.organisationid, o1.typeid, GROUP_CONCAT( DISTINCT o2.data) AS svp FROM {$CFG->prefix}org_type_info_field o1, {$CFG->prefix}org_type_info_data o2 WHERE o1.id = o2.fieldid AND o1.shortname LIKE '%svp%' GROUP BY o2.organisationid, o1.typeid) s ON s.organisationid = o.id AND s.typeid = t.id
+
+			LEFT JOIN (SELECT p.organisationid, COUNT(distinct ue.userid) as users FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}pos_assignment p WHERE p.positionid = $position AND p.userid = ue.userid GROUP BY p.organisationid) k0 ON  k0.organisationid = o.id
+
+			$sql_join
+			WHERE o.visible = 1 ORDER BY o.typeid, o.fullname");
+
+		return array(
+					"recordsTotal"    => count($data),
+					"recordsFiltered" => count($data),
+					"data"            => $data);
+
+	}
+
 	function report71($params)
 	{
 		global $USER, $CFG, $DB;
@@ -2757,10 +2847,17 @@ class local_intelliboard_external extends external_api {
 			}
 		}
 		if($params->cohortid){
-			$sql_filter .= " AND qt.userid IN(SELECT userid FROM {$CFG->prefix}cohort_members WHERE cohortid  IN ($params->cohortid))";
-			$sql_group = "GROUP BY qt.quiz, qt.attempt";
-			$sql_select .= ", cm.cohorts";
-			$sql_from .= ", (SELECT GROUP_CONCAT(name) as cohorts FROM {cohort} WHERE id  IN ($params->cohortid)) cm";
+			if($params->custom2){
+				$sql_filter .= " AND qt.userid IN(SELECT b.muserid FROM {$CFG->prefix}local_elisprogram_uset_asign a, {$CFG->prefix}local_elisprogram_usr_mdl b WHERE (a.clusterid = $params->cohortid OR a.clusterid IN (SELECT id FROM {$CFG->prefix}local_elisprogram_uset WHERE parent = $params->cohortid)) AND b.cuserid = a.userid)";
+				$sql_group = "GROUP BY qt.quiz, qt.attempt";
+				$sql_select .= ", cm.cohorts";
+				$sql_from .= ", (SELECT GROUP_CONCAT(name) as cohorts FROM {local_elisprogram_uset} WHERE id IN ($params->cohortid)) cm";
+			}else{
+				$sql_filter .= " AND qt.userid IN(SELECT userid FROM {$CFG->prefix}cohort_members WHERE cohortid  IN ($params->cohortid))";
+				$sql_group = "GROUP BY qt.quiz, qt.attempt";
+				$sql_select .= ", cm.cohorts";
+				$sql_from .= ", (SELECT GROUP_CONCAT(name) as cohorts FROM {cohort} WHERE id  IN ($params->cohortid)) cm";
+			}
 		}else{
 			$sql_group = "GROUP BY qt.quiz, qt.attempt";
 		}
@@ -2820,16 +2917,22 @@ class local_intelliboard_external extends external_api {
 			$sql_from .= " {course} c,";
 		}
 		if($params->cohortid){
-			$sql_filter .= " AND qt.userid IN(SELECT userid FROM {$CFG->prefix}cohort_members WHERE cohortid  IN ($params->cohortid))";
-			$sql_group = "GROUP BY qt.quiz, qt.attempt, ti.tagid";
+			if($params->custom2){
+				$sql_filter .= " AND qt.userid IN(SELECT b.muserid FROM {$CFG->prefix}local_elisprogram_uset_asign a, {$CFG->prefix}local_elisprogram_usr_mdl b WHERE (a.clusterid = $params->cohortid OR a.clusterid IN (SELECT id FROM {$CFG->prefix}local_elisprogram_uset WHERE parent = $params->cohortid)) AND b.cuserid = a.userid)";
+				$sql_group = "GROUP BY qt.quiz, qt.attempt, ti.tagid";
+				$sql_select .= ", cm.cohorts";
+				$sql_from .= "(SELECT GROUP_CONCAT(name) as cohorts FROM {local_elisprogram_uset} WHERE id IN ($params->cohortid)) cm, ";
+			}else{
+				$sql_filter .= " AND qt.userid IN(SELECT userid FROM {$CFG->prefix}cohort_members WHERE cohortid  IN ($params->cohortid))";
+				$sql_group = "GROUP BY qt.quiz, qt.attempt, ti.tagid";
 
-			$sql_select .= ", cm.cohorts";
-			$sql_from .= " (SELECT GROUP_CONCAT(name) as cohorts FROM {cohort} WHERE id  IN ($params->cohortid)) cm,";
+				$sql_select .= ", cm.cohorts";
+				$sql_from .= " (SELECT GROUP_CONCAT(name) as cohorts FROM {cohort} WHERE id  IN ($params->cohortid)) cm,";
+			}
 		}else{
 			$sql_group = "GROUP BY qt.quiz, qt.attempt, ti.tagid";
 		}
 		if($params->users){
-
 			$data = $DB->get_records_sql("SELECT
 				SQL_CALC_FOUND_ROWS qas.id, qt.id as attempt,
 			    qz.name,
@@ -3643,18 +3746,25 @@ class local_intelliboard_external extends external_api {
 
 	function get_cohort_users($params)
 	{
-		global $DB;
+		global $USER, $CFG, $DB;
 
 		$sql = "";
-		if($params->cohortid){
-			$sql = " AND cm.cohortid IN($params->cohortid)";
+		if($params->custom2){
+			if($params->cohortid){
+				$sql = " AND (a.clusterid = $params->cohortid or a.clusterid IN (SELECT id FROM {$CFG->prefix}local_elisprogram_uset WHERE parent = $params->cohortid))";
+			}
+			return $DB->get_records_sql("SELECT DISTINCT b.muserid as id, CONCAT(u.firstname,' ',u.lastname) as name FROM {$CFG->prefix}local_elisprogram_uset_asign a,{$CFG->prefix}local_elisprogram_usr_mdl b, {$CFG->prefix}local_elisprogram_usr u WHERE a.userid = u.id AND b.cuserid = a.userid and b.muserid IN (SELECT distinct userid FROM {quiz_attempts} where state = 'finished') $sql");
+		}else{
+			if($params->cohortid){
+				$sql = " AND cm.cohortid IN($params->cohortid)";
+			}
+			if($params->courseid){
+				$sql .= " AND u.id IN(SELECT distinct ue.userid FROM {user_enrolments} ue, {enrol} e where e.courseid IN ($params->courseid) and ue.enrolid = e.id)";
+			}
+			return $DB->get_records_sql("SELECT DISTINCT u.id, CONCAT(u.firstname,' ',u.lastname) as name
+				FROM {user} u, {cohort_members} cm
+				WHERE cm.userid = u.id AND u.deleted = 0 AND u.suspended = 0 and u.id IN (SELECT distinct userid FROM {quiz_attempts} where state = 'finished') $sql");
 		}
-		if($params->courseid){
-			$sql .= " AND u.id IN(SELECT distinct ue.userid FROM {user_enrolments} ue, {enrol} e where e.courseid IN ($params->courseid) and ue.enrolid = e.id)";
-		}
-		return $DB->get_records_sql("SELECT DISTINCT u.id, CONCAT(u.firstname,' ',u.lastname) as name
-			FROM {user} u, {cohort_members} cm
-			WHERE cm.userid = u.id AND u.deleted = 0 AND u.suspended = 0 and u.id IN (SELECT distinct userid FROM {quiz_attempts} where state = 'finished') $sql");
 	}
 	function get_users($params){
 		global $DB;
@@ -4264,6 +4374,30 @@ class local_intelliboard_external extends external_api {
 		global $USER, $CFG, $DB;
 
 		return $DB->get_records_sql("SELECT id, name FROM {$CFG->prefix}cohort ORDER BY name");
+	}
+	function get_elisuset($params)
+	{
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("SELECT id, name FROM {$CFG->prefix}local_elisprogram_uset ORDER BY name");
+	}
+	function get_totara_pos($params)
+	{
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("SELECT id, fullname FROM {$CFG->prefix}pos WHERE visible = 1 ORDER BY fullname");
+	}
+	function get_scorm_user_attempts($params)
+	{
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("SELECT DISTINCT b.attempt FROM {$CFG->prefix}scorm a, {$CFG->prefix}scorm_scoes_track b WHERE a.course = $params->courseid AND b.scormid = a.id AND b.userid = $params->userid");
+	}
+	function get_course_users($params)
+	{
+		global $USER, $CFG, $DB;
+
+		return $DB->get_records_sql("SELECT DISTINCT u.id, u.firstname, u.lastname FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e, {$CFG->prefix}user u WHERE e.courseid = $params->courseid AND ue.enrolid = e.id AND u.id = ue.userid AND deleted = 0 AND suspended = 0 AND e.status = 0 AND ue.status = 0");
 	}
 
 	function get_info($params){
