@@ -2614,7 +2614,7 @@ class local_intelliboard_external extends external_api {
 				$startdate = strtotime("$start/1/$year");
 				$enddate = strtotime("$start/1/$year +1 month");
 				$sql_select .= ", k$start.users as month_$start";
-				$sql_join .= "LEFT JOIN (SELECT p.organisationid, COUNT(distinct ue.userid) as users FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}pos_assignment p WHERE p.positionid = $position AND p.userid = ue.userid AND ue.timecreated BETWEEN $startdate AND $enddate GROUP BY p.organisationid) k$start ON  k$start.organisationid = o.id ";
+				$sql_join .= "LEFT JOIN (SELECT p.organisationid, COUNT(distinct ue.userid) as users FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}pos_assignment p, {$CFG->prefix}pos ps WHERE ps.id = $position AND ps.visible = 1 AND p.positionid = ps.id AND p.userid = ue.userid AND ue.timecreated BETWEEN $startdate AND $enddate GROUP BY p.organisationid) k$start ON  k$start.organisationid = o.id ";
 				$start++;
 			}
 		}
@@ -2631,7 +2631,7 @@ class local_intelliboard_external extends external_api {
 			LEFT JOIN {$CFG->prefix}org_type t ON t.id = o.typeid
 			LEFT JOIN (SELECT o2.organisationid, o1.typeid, GROUP_CONCAT( DISTINCT o2.data) AS svp FROM {$CFG->prefix}org_type_info_field o1, {$CFG->prefix}org_type_info_data o2 WHERE o1.id = o2.fieldid AND o1.shortname LIKE '%svp%' GROUP BY o2.organisationid, o1.typeid) s ON s.organisationid = o.id AND s.typeid = t.id
 
-			LEFT JOIN (SELECT p.organisationid, COUNT(distinct ue.userid) as users FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}pos_assignment p WHERE p.positionid = $position AND p.userid = ue.userid GROUP BY p.organisationid) k0 ON  k0.organisationid = o.id
+			LEFT JOIN (SELECT p.organisationid, COUNT(distinct ue.userid) as users FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}pos_assignment p, {$CFG->prefix}pos ps WHERE ps.id = $position AND ps.visible = 1 AND p.positionid = ps.id AND p.userid = ue.userid GROUP BY p.organisationid) k0 ON  k0.organisationid = o.id
 
 			$sql_join
 			WHERE o.visible = 1 ORDER BY o.typeid, o.fullname");
