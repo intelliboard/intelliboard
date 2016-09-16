@@ -52,7 +52,8 @@ function getUserDetails()
 {
     $user_agent     =   $_SERVER['HTTP_USER_AGENT'];
     $platform    =   "Unknown OS Platform";
-    $os_array       =   array(
+	$os_array       =   array(
+                            '/windows nt 10.0/i'    =>  'Windows 10',
                             '/windows nt 6.3/i'     =>  'Windows 8.1',
                             '/windows nt 6.2/i'     =>  'Windows 8',
                             '/windows nt 6.1/i'     =>  'Windows 7',
@@ -83,15 +84,16 @@ function getUserDetails()
     }
 	$browser        =   "Unknown Browser";
     $browser_array  =   array(
-                            '/msie/i'       =>  'Internet Explorer',
-                            '/firefox/i'    =>  'Firefox',
-                            '/safari/i'     =>  'Safari',
-                            '/chrome/i'     =>  'Chrome',
-                            '/opera/i'      =>  'Opera',
-                            '/netscape/i'   =>  'Netscape',
-                            '/maxthon/i'    =>  'Maxthon',
-                            '/konqueror/i'  =>  'Konqueror',
-                            '/mobile/i'     =>  'Mobile browser'
+                            '/msie|trident/i'   =>  'Internet Explorer',
+                            '/firefox/i'        =>  'Firefox',
+                            '/chrome/i'         =>  'Chrome',
+                            '/safari/i'         =>  'Safari',
+                            '/edge/i'           =>  'Microsoft Edge',
+                            '/opera/i'          =>  'Opera',
+                            '/netscape/i'       =>  'Netscape',
+                            '/maxthon/i'        =>  'Maxthon',
+                            '/konqueror/i'      =>  'Konqueror',
+                            '/mobile/i'         =>  'Mobile browser'
                         );
     foreach ($browser_array as $regex => $value) {
         if (preg_match($regex, $user_agent)) {

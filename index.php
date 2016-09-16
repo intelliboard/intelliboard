@@ -30,6 +30,7 @@ require('../../config.php');
 require_once($CFG->libdir . '/filelib.php');
 require_once($CFG->libdir.'/adminlib.php');
 require('externallib.php');
+require('locallib.php');
 
 require_login();
 require_capability('local/intelliboard:view', context_system::instance());
@@ -65,12 +66,15 @@ $c = new curl;
 $intelliboard = json_decode($c->post('https://intelliboard.net/dashboard/api', $params));
 
 $params = (object) array(
+	'sizemode'=>0,
 	'start'=>0,
 	'userid'=>0,
 	'length'=>10,
 	'courseid'=>0,
 	'filter'=>'',
 	'custom'=> $time,
+	'custom2'=> '',
+	'custom3'=> '',
 	'timestart'=>strtotime('-6 month'),
 	'timefinish'=>time()
 );
@@ -173,7 +177,7 @@ echo $OUTPUT->header();
 					</td>
 					<td align="center" class="intelliboard-tooltip" title="<?php echo "$row->user grade: ".intval($row->grade).", Average grade: ".intval($avg->grade_site); ?>"><span class='<?php echo ($avg->grade_site > $row->grade) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left"; ?>'> <?php echo (int)$row->grade; ?></span></td>
 					<td align="center" class="intelliboard-tooltip" title="<?php echo "$row->user visits: ".intval($row->visits).", Average visits: ".intval($avg->visits_site); ?>"><span class='<?php echo ($avg->visits_site > $row->visits) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left"; ?>'> <?php echo (int)$row->visits; ?></span></td>
-					<td align="center" class="intelliboard-tooltip" title="<?php echo "$row->user time: ".gmdate("H:i:s", $row->timespend).", Average time: ".gmdate("H:i:s", $avg->timespend_site); ?>"><span class='<?php echo ($avg->timespend_site > $row->timespend) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left"; ?>'> <?php echo gmdate("H:i:s", $row->timespend); ?></span></td>
+					<td align="center" class="intelliboard-tooltip" title="<?php echo "$row->user time: ".seconds_to_time($row->timespend).", Average time: ".seconds_to_time($avg->timespend_site); ?>"><span class='<?php echo ($avg->timespend_site > $row->timespend) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left"; ?>'> <?php echo seconds_to_time($row->timespend); ?></span></td>
 					<td><?php echo date("m/d/Y", $row->timecreated); ?></td>
 				</tr>
 				<?php endforeach; ?>

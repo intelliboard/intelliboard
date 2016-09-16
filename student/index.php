@@ -28,6 +28,7 @@
 
 require('../../../config.php');
 require_once($CFG->libdir . '/filelib.php');
+require_once('../locallib.php');
 require_once('lib.php');
 
 require_login();
@@ -135,7 +136,7 @@ if($t5){
 $json_data2 = array();
 foreach($courses as $item){
 	$l = intval($item->duration_calc);
-	$d = gmdate("H:i:s", intval($item->duration));
+	$d = seconds_to_time(intval($item->duration));
 
 	$tooltip = "<div class=\"chart-tooltip\">";
 	$tooltip .= "<div class=\"chart-tooltip-header\">". $item->fullname ."</div>";
@@ -264,7 +265,7 @@ echo $OUTPUT->header();
 							<tr>
 								<td width="1%"><i class="intelliboard-icon <?php echo $class; ?>"></i></td>
 								<td>
-									<a><?php echo $item->name; ?></a>
+									<a href="<?php echo $CFG->wwwroot; ?>/mod/assign/view.php?id=<?php echo $item->cmid; ?>"><?php echo $item->name; ?></a>
 									<p class="intelliboard-fade60"><?php echo $item->fullname; ?></p>
 								</td>
 								<?php if($t31): ?>
@@ -320,7 +321,7 @@ echo $OUTPUT->header();
 							<tr class="">
 								<td width="1%"><i class="intelliboard-icon <?php echo $class; ?>"></i></td>
 								<td>
-									<a><?php echo $item->name; ?></a>
+									<a href="<?php echo $CFG->wwwroot; ?>/mod/quiz/view.php?id=<?php echo $item->cmid; ?>"><?php echo $item->name; ?></a>
 									<p class="intelliboard-fade60"><?php echo $item->fullname; ?></p>
 								</td>
 								<?php if($t33): ?>
@@ -638,7 +639,7 @@ google.setOnLoadCallback(Correlations);
 	        var data = google.visualization.arrayToDataTable([
 	          ['Module', 'Time spent'],
 	          <?php foreach($modules_progress as $row):  ?>
-		          ['<?php echo ucfirst($row->name); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo gmdate("H:i:s", intval($row->duration)); ?>'}],
+		          ['<?php echo ucfirst($row->name); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
 		      <?php endforeach; ?>
 	        ]);
 	        var options = <?php echo $factorInfo->LearningProgressCalculation; ?>;

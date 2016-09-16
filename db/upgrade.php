@@ -79,30 +79,51 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
   	if (!$dbman->table_exists($table)) {
   		$dbman->create_table($table);
   	}
-	
+
 	if ($oldversion < 2016030700) {
 	    $table = new xmldb_table('local_intelliboard_tracking');
-		
+
 		$field = new xmldb_field('useragent');
 		$field->set_attributes(XMLDB_TYPE_CHAR, '100', null, null, null, null);
 		try { $dbman->change_field_type($table, $field);
 		} catch (moodle_exception $e) {}
-		
+
 		$field = new xmldb_field('useros');
 		$field->set_attributes(XMLDB_TYPE_CHAR, '100', null, null, null, null);
 		try { $dbman->change_field_type($table, $field);
 		} catch (moodle_exception $e) {}
-		
+
 		$field = new xmldb_field('userlang');
 		$field->set_attributes(XMLDB_TYPE_CHAR, '100', null, null, null, null);
 		try { $dbman->change_field_type($table, $field);
 		} catch (moodle_exception $e) {}
-		
+
 		$field = new xmldb_field('userip');
 		$field->set_attributes(XMLDB_TYPE_CHAR, '100', null, null, null, null);
 		try { $dbman->change_field_type($table, $field);
 		} catch (moodle_exception $e) {}
 	}
+
+	if ($oldversion < 2016090900) {
+        // Add index to local_intelliboard_tracking
+        $table = new xmldb_table('local_intelliboard_tracking');
+        $index = new xmldb_index('userid_page_param_idx', XMLDB_INDEX_NOTUNIQUE, array('userid', 'page', 'param'));
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        // Add index to local_intelliboard_logs
+        $table = new xmldb_table('local_intelliboard_logs');
+        $index = new xmldb_index('trackid_timepoint_idx', XMLDB_INDEX_NOTUNIQUE, array('trackid', 'timepoint'));
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        // Add index to local_intelliboard_totals
+        $table = new xmldb_table('local_intelliboard_totals');
+        $index = new xmldb_index('timepoint_idx', XMLDB_INDEX_NOTUNIQUE, array('timepoint'));
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+    }
 
     return true;
 }

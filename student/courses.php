@@ -28,6 +28,7 @@
 
 require('../../../config.php');
 require_once($CFG->libdir . '/filelib.php');
+require_once('../locallib.php');
 require_once('lib.php');
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
@@ -159,7 +160,7 @@ echo $OUTPUT->header();
 						<?php if($t21): ?>
 						<div>
 							<span>Time Spent</span>
-							<p><?php echo ($item->duration)?gmdate("H:i:s", intval($item->duration)):'-'; ?></p>
+							<p><?php echo ($item->duration)?seconds_to_time(intval($item->duration)):'-'; ?></p>
 						</div>
 						<?php endif; ?>
 					</div>

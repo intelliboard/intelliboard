@@ -23,6 +23,9 @@
         <KEYS>
           <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         </KEYS>
+        <INDEXES>
+          <INDEX NAME="userid_page_param_idx" UNIQUE="false" FIELDS="userid, page, param"/>
+        </INDEXES>
       </TABLE>
       <TABLE NAME="local_intelliboard_logs" COMMENT="intelliboard totals">
         <FIELDS>
@@ -35,6 +38,9 @@
         <KEYS>
           <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         </KEYS>
+        <INDEXES>
+          <INDEX NAME="trackid_timepoint_idx" UNIQUE="false" FIELDS="trackid, timepoint"/>
+        </INDEXES>
       </TABLE>
       <TABLE NAME="local_intelliboard_totals" COMMENT="intelliboard totals">
         <FIELDS>
@@ -48,6 +54,9 @@
         <KEYS>
           <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         </KEYS>
+        <INDEXES>
+          <INDEX NAME="timepoint_idx" UNIQUE="false" FIELDS="timepoint"/>
+        </INDEXES>
       </TABLE>
     </TABLES>
   </XMLDB>

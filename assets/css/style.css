@@ -257,7 +257,7 @@
 .intelliboard-box .up{color:#AABC39}
 .intelliboard-box .down{color:#DD4B39}
 .intelliboard-box .table th[align="center"], .intelliboard-box  .table td[align="center"]{text-align:center;}
-.intelliboard-progress{height:6px;background:#E3E3E3;}
+.intelliboard-progress{height:6px;background:#E3E3E3; overflow: hidden;}
 .intelliboard-progress.s{height:3px;background:#E3E3E3;margin-top:10px;}
 .intelliboard-progress.xl{height:10px;background:#E3E3E3;margin-top:5px;}
 .intelliboard-progress.xxl{height:20px;background:#E3E3E3;margin-top:5px;}

@@ -20,7 +20,7 @@ function intelliboard_data($type, $userid) {
             $sql .= " AND a.duedate BETWEEN $timestart AND $timefinish";
         }
 
-        $data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS a.id, a.name, a.duedate, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate FROM {$CFG->prefix}course c, {$CFG->prefix}assign a
+        $data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS a.id, a.name, a.duedate, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid FROM {$CFG->prefix}course c, {$CFG->prefix}assign a
             LEFT JOIN {$CFG->prefix}modules m ON m.name = 'assign'
             LEFT JOIN {$CFG->prefix}course_modules cm ON cm.module = m.id AND cm.instance = a.id
             LEFT JOIN {$CFG->prefix}course_modules_completion cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = $userid
@@ -35,7 +35,7 @@ function intelliboard_data($type, $userid) {
             list($timestart, $timefinish) = get_timerange($USER->activity_time);
             $sql .= " AND a.timeclose BETWEEN $timestart AND $timefinish";
         }
-        $data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS a.id, a.name, a.timeclose, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate FROM {course} c, {quiz} a
+        $data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS a.id, a.name, a.timeclose, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid FROM {course} c, {quiz} a
                 LEFT JOIN {$CFG->prefix}modules m ON m.name = 'quiz'
                 LEFT JOIN {$CFG->prefix}course_modules cm ON cm.module = m.id AND cm.instance = a.id
                 LEFT JOIN {$CFG->prefix}course_modules_completion cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = $userid
@@ -109,7 +109,7 @@ function get_timerange($time){
         $timefinish = time();
     }else{
         $timestart = strtotime('-14 days');
-        $timefinish = time();
+        $timefinish = strtotime('+14 days');
     }
     return array($timestart,$timefinish);
 }

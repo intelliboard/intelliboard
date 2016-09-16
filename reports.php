@@ -51,6 +51,9 @@ if($id){
 	}
 
 	$params = (object) array(
+		'sizemode'=>0,
+		'custom2'=> '',
+		'custom3'=> '',
 		'length'=>$length,
 		'start'=>$page,
 		'userid'=>0,
