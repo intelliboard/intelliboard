@@ -596,7 +596,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $USER, $CFG, $DB;
 
-		$columns = array_merge(array("learner","u.email","registered","ue.courses","cmc.completed_activities","cm.completed_courses","lit.visits","lit.timespend","gc.grade"), $this->get_filter_columns($params));
+		$columns = array_merge(array("learner","u.email","registered","ue.courses","cmc.completed_activities","cm.completed_courses","lit.visits","lit.timespend","gc.grade", "u.lastaccess"), $this->get_filter_columns($params));
 
 		$sql_filter = $this->get_teacher_sql($params, "u.id", "users");
 		$sql_having = $this->get_filter_sql($params->filter, $columns);
@@ -620,6 +620,7 @@ class local_intelliboard_external extends external_api {
 				SQL_CALC_FOUND_ROWS DISTINCT u.id,
 				CONCAT(u.firstname, ' ', u.lastname) as learner,
 				u.email,
+				u.lastaccess,
 				u.timecreated as registered,
 				ue.courses,
 				round(gc.grade, 2) as grade,
@@ -4144,7 +4145,7 @@ class local_intelliboard_external extends external_api {
 			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles) $sql4) as students,
 			(SELECT count(DISTINCT (userid)) FROM {$CFG->prefix}role_assignments WHERE roleid IN ($this->teacher_roles) $sql4) as tutors,
 			(SELECT count(*) FROM {$CFG->prefix}course_modules_completion WHERE completionstate > 0 $sql4) as completed,
-			(SELECT COUNT(*) FROM {$CFG->prefix}local_intelliboard_tracking WHERE page = 'module' $sql4) as reviewed,
+			(SELECT COUNT(DISTINCT (param)) FROM {$CFG->prefix}local_intelliboard_tracking WHERE page = 'module' $sql4) as reviewed,
 			(SELECT count(cm.id) FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}modules m WHERE m.name = 'certificate' AND cm.module = m.id $sql3) as certificates");
 	}
 
@@ -4353,13 +4354,14 @@ class local_intelliboard_external extends external_api {
 			$ext = 31556926; //by year
 		}
 
-		$data = $DB->get_records_sql("SELECT floor(lastaccess / $ext) * $ext as time, COUNT(id) as users
-				FROM {$CFG->prefix}user
-					WHERE id IN (SELECT DISTINCT(userid) FROM {$CFG->prefix}role_assignments WHERE roleid  IN ($this->learner_roles)) AND floor(lastaccess / $ext) * $ext BETWEEN $params->timestart AND $params->timefinish
-						GROUP BY floor(lastaccess / $ext) * $ext");
+		$data = $DB->get_records_sql("
+			SELECT floor(timepoint / $ext) * $ext as timepoint, SUM(sessions) as users
+				FROM {local_intelliboard_totals}
+					WHERE floor(timepoint / $ext) * $ext BETWEEN $params->timestart AND $params->timefinish
+						GROUP BY floor(timepoint / $ext) * $ext");
 		$response = array();
 		foreach($data as $item){
-			$response[] = $item->time.'.'.$item->users;
+			$response[] = $item->timepoint.'.'.$item->users;
 		}
 		$obj = new stdClass();
 		$obj->id = 0;
@@ -4451,11 +4453,13 @@ class local_intelliboard_external extends external_api {
 			$ext = 31556926; //by year
 		}
 
-		$data = $DB->get_records_sql("
-			SELECT floor(timepoint / $ext) * $ext as timepoint, SUM(sessions) as users
+		$data = $DB->get_records_sql("SELECT floor(timepoint / $ext) * $ext as timepoint, SUM(visits) as users
 				FROM {local_intelliboard_totals}
 					WHERE floor(timepoint / $ext) * $ext BETWEEN $params->timestart AND $params->timefinish
 						GROUP BY floor(timepoint / $ext) * $ext");
+
+
+
 		$response = array();
 		foreach($data as $item){
 			$response[] = $item->timepoint.'.'.$item->users;
