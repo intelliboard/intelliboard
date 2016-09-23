@@ -49,8 +49,12 @@ $c = new curl;
 $email = get_config('local_intelliboard', 'te1');
 $params = array('url'=>$CFG->wwwroot,'email'=>$email,'firstname'=>$USER->firstname,'lastname'=>$USER->lastname,'do'=>'learner');
 $intelliboard = json_decode($c->post('https://intelliboard.net/dashboard/api', $params));
-$factorInfo = json_decode($intelliboard->content);
-
+if (isset($intelliboard->content)) {
+    $factorInfo = json_decode($intelliboard->content);
+} else {
+	// TODO: Further define case when no content loaded.
+	$factorInfo = '';
+}
 
 $action = optional_param('action', '', PARAM_RAW);
 $search = optional_param('search', '', PARAM_RAW);
@@ -158,7 +162,7 @@ if(get_config('local_intelliboard', 't03'))
 
 echo $OUTPUT->header();
 ?>
-<?php if(!$intelliboard->token): ?>
+<?php if(!isset($intelliboard) || !$intelliboard->token): ?>
 	<div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
 <div class="intelliboard-page intelliboard-student">

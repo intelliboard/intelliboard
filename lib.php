@@ -109,8 +109,12 @@ function getUserDetails()
 		$ip = $_SERVER["REMOTE_ADDR"];
 	}
 	$ip = ($ip) ? $ip : 0;
-	$userlang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
-	$userlang = ($userlang) ? $userlang : 'Unknown';
+	// Don't assume accept language is set in server superglobal.
+	if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+		$userlang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
+	} else {
+		$userlang = 'Unknown';
+	}
 
 	return array(
         'useragent'  => $browser,
