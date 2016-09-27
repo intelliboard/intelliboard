@@ -2663,7 +2663,7 @@ class local_intelliboard_external extends external_api {
 		$sql_filter = $this->get_teacher_sql($params, "mc.course", "courses");
 		$sql_filter .= ($params->courseid) ? " AND mc.course IN($params->courseid)" : "";
 
-		$data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS DISTINCT
+		$data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS DISTINCT mci.id,
 				mc.course AS mc_course,
 				mco.fullname AS mco_name,
 				mc.name AS mc_name,
