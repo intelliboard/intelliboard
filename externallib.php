@@ -2494,7 +2494,7 @@ class local_intelliboard_external extends external_api {
 
 		$data = $DB->get_records_sql("
 			SELECT
-				mfv.id,
+				@x:=@x+1 as id,
 				u.firstname,
 				u.lastname,
 				u.email,
@@ -2508,7 +2508,7 @@ class local_intelliboard_external extends external_api {
 				c.fullname as course_name,
 				round(((g.finalgrade/g.rawgrademax)*100), 0) AS grade
 				$sql_columns
-			FROM {$CFG->prefix}feedback AS mf
+			FROM (SELECT @x:= 0) AS x, {$CFG->prefix}feedback AS mf
 			LEFT JOIN {$CFG->prefix}feedback_item AS mfi ON mfi.feedback = mf.id
 			LEFT JOIN {$CFG->prefix}feedback_value mfv ON mfv.item = mfi.id
 			LEFT JOIN {$CFG->prefix}feedback_completed as mfc ON mfc.id = mfv.completed
