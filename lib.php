@@ -50,7 +50,12 @@ function local_intelliboard_extend_navigation(global_navigation $nav){
 
 function getUserDetails()
 {
-    $user_agent     =   $_SERVER['HTTP_USER_AGENT'];
+    if (isset($_SERVER['HTTP_USER_AGENT'])) {
+		$user_agent = $_SERVER['HTTP_USER_AGENT'];
+	} else {
+		$user_agent = '';
+	}
+
     $platform    =   "Unknown OS Platform";
 	$os_array       =   array(
                             '/windows nt 10.0/i'    =>  'Windows 10',
@@ -109,8 +114,11 @@ function getUserDetails()
 		$ip = $_SERVER["REMOTE_ADDR"];
 	}
 	$ip = ($ip) ? $ip : 0;
-	$userlang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
-	$userlang = ($userlang) ? $userlang : 'Unknown';
+	if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+		$userlang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
+	} else {
+		$userlang = 'Unknown';
+	}
 
 	return array(
         'useragent'  => $browser,

@@ -50,6 +50,8 @@ $string['trackadmin_desc'] = 'Enable tracking for admin users (not recommended)'
 $string['intelliboard:students'] = 'IntelliBoard [student]';
 $string['intelliboard:view'] = 'IntelliBoard [view]';
 $string['intelliboard:manage'] = 'IntelliBoard [manage]';
+$string['tls12'] = 'TLS v1.2';
+$string['tls12_desc'] = 'Advanced settings: TLS v1.2';
 
 
 $string['intelliboardstudent'] = 'IntelliBoard';

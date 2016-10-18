@@ -26,9 +26,9 @@
  * @website		www.intelliboard.net
  */
 require('../../config.php');
-require_once($CFG->libdir . '/filelib.php');
 require_once($CFG->libdir.'/adminlib.php');
 require('externallib.php');
+require('locallib.php');
 
 require_login();
 require_capability('local/intelliboard:view', context_system::instance());
@@ -65,8 +65,7 @@ $params = array(
 	'type'=>'load',
 	'do'=>'widgets'
 );
-$c = new curl;
-$intelliboard = json_decode($c->post('https://intelliboard.net/dashboard/api', $params));
+$intelliboard = intelliboard($params);
 $PAGE->set_url(new moodle_url("/local/intelliboard/load.php"));
 $PAGE->set_pagelayout('report');
 $PAGE->set_pagetype('load');

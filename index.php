@@ -27,7 +27,6 @@
  */
 
 require('../../config.php');
-require_once($CFG->libdir . '/filelib.php');
 require_once($CFG->libdir.'/adminlib.php');
 require('externallib.php');
 require('locallib.php');
@@ -62,8 +61,7 @@ if($action == 'noalert'){
 	$params['do'] = $action;
 	$params['agreement'] = true;
 }
-$c = new curl;
-$intelliboard = json_decode($c->post('https://intelliboard.net/dashboard/api', $params));
+$intelliboard = intelliboard($params);
 
 $params = (object) array(
 	'sizemode'=>0,
@@ -186,7 +184,7 @@ echo $OUTPUT->header();
 				<tr>
 					<td colspan="6">
 						<a style="float:left" href="learners.php">More users</a>
-						<span style="float:right;color:#ddd;">Showing 1 to 10 of <?php echo $report43['recordsTotal']; ?></span>
+						<span style="float:right;color:#ddd;">Showing 1 to 10</span>
 					</td>
 				</tr>
 			</tfoot>
@@ -213,7 +211,7 @@ echo $OUTPUT->header();
 			</li>
 			<?php endforeach; ?>
 			<li class="clearfix"><a style="float:left" href="courses.php">More courses</a>
-				<span style="float:right;color:#ddd;">Showing 1 to 10 of <?php echo $report44['recordsTotal']; ?></span>
+				<span style="float:right;color:#ddd;">Showing 1 to 10</span>
 			</li>
 		</ul>
 	</div>

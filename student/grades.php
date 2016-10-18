@@ -27,7 +27,7 @@
  */
 
 require('../../../config.php');
-require_once($CFG->libdir . '/filelib.php');
+require_once('../locallib.php');
 require_once('lib.php');
 require_once('tables.php');
 
@@ -40,12 +40,14 @@ require_capability('local/intelliboard:students', context_system::instance());
 if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 't4')){
 	throw new moodle_exception('invalidaccess', 'error');
 }
-
-$c = new curl;
 $email = get_config('local_intelliboard', 'te1');
 $params = array('url'=>$CFG->wwwroot,'email'=>$email,'firstname'=>$USER->firstname,'lastname'=>$USER->lastname,'do'=>'learner');
-$intelliboard = json_decode($c->post('https://intelliboard.net/dashboard/api', $params));
-$factorInfo = json_decode($intelliboard->content);
+$intelliboard = intelliboard($params);
+if (isset($intelliboard->content)) {
+    $factorInfo = json_decode($intelliboard->content);
+} else {
+	$factorInfo = '';
+}
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>$search, "id"=>$id)));
 $PAGE->set_pagetype('grades');
@@ -70,7 +72,7 @@ $table->is_downloading('', '', '');
 
 echo $OUTPUT->header();
 ?>
-<?php if(!$intelliboard->token): ?>
+<?php if(!isset($intelliboard) || !$intelliboard->token): ?>
 	<div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
 <div class="intelliboard-page intelliboard-student">

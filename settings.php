@@ -83,6 +83,12 @@ $default = false;
 $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
 $settings->add($setting);
 
+$name = 'local_intelliboard/tls12';
+$title = get_string('tls12', 'local_intelliboard');
+$description = get_string('tls12_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
 
 $settings->add(new admin_setting_heading('local_intelliboard/ts1', get_string('ts1', 'local_intelliboard'), ''));
 
