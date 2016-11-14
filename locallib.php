@@ -34,7 +34,7 @@ function intelliboard($params){
 
 	$tls12 = get_config('local_intelliboard', 'tls12');
 	if($tls12){
-		$options = array('CURLOPT_SSLVERSION'=>6);
+		$options = array('CURLOPT_SSL_CIPHER_LIST'=>'ECDHE_ECDSA_AES_128_GCM_SHA_256');
 	}else{
 		$options = array();
 	}

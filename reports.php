@@ -51,6 +51,13 @@ if($id){
 	}
 
 	$params = (object) array(
+		'filter_user_deleted'=>get_config('local_intelliboard', 'filter1'),
+		'filter_user_suspended'=>get_config('local_intelliboard', 'filter2'),
+		'filter_user_guest'=>get_config('local_intelliboard', 'filter3'),
+		'filter_course_visible'=>get_config('local_intelliboard', 'filter4'),
+		'filter_enrolmethod_status'=>get_config('local_intelliboard', 'filter5'),
+		'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
+		'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
 		'sizemode'=>0,
 		'custom2'=> '',
 		'custom3'=> '',

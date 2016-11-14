@@ -26,8 +26,8 @@
  * @website		www.intelliboard.net
  */
 
-$plugin->version  = 2016102500;
+$plugin->version  = 2016111400;
 $plugin->requires = 2011120500;
-$plugin->release = '4.2.1';
+$plugin->release = '4.3';
 $plugin->maturity = MATURITY_STABLE;
 $plugin->component = 'local_intelliboard';

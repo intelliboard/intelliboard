@@ -35,6 +35,14 @@ require_capability('local/intelliboard:view', context_system::instance());
 admin_externalpage_setup('intelliboardcourses');
 
 $params = (object) array(
+	'filter_user_deleted'=>get_config('local_intelliboard', 'filter1'),
+	'filter_user_suspended'=>get_config('local_intelliboard', 'filter2'),
+	'filter_user_guest'=>get_config('local_intelliboard', 'filter3'),
+	'filter_course_visible'=>get_config('local_intelliboard', 'filter4'),
+	'filter_enrolmethod_status'=>get_config('local_intelliboard', 'filter5'),
+	'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
+	'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
+	'sizemode'=> get_config('local_intelliboard', 'sizemode'),
 	'userid'=>0,
 	'courseid'=>0,
 	'timestart'=>strtotime('-6 month'),
@@ -50,7 +58,6 @@ $data  = array(
 	6 => json_encode($plugin->get_enrollments_per_course($params)),
 	18 => json_encode($plugin->get_new_courses_per_day($params)),
 	8 => json_encode($plugin->get_most_visited_courses($params)),
-	7 => json_encode($plugin->get_most_visited_courses($params)),
 	5 => json_encode($plugin->get_unique_sessions($params)),
 	9 => json_encode($plugin->get_no_visited_courses($params))
 );

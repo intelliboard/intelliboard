@@ -89,6 +89,56 @@ $description = get_string('tls12_desc', 'local_intelliboard');
 $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
 $settings->add($setting);
 
+$name = 'local_intelliboard/sizemode';
+$title = get_string('sizemode', 'local_intelliboard');
+$description = get_string('sizemode_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
+$settings->add(new admin_setting_heading('local_intelliboard/filters', get_string('filters', 'local_intelliboard'), ''));
+
+$name = 'local_intelliboard/filter1';
+$title = get_string('filter1', 'local_intelliboard');
+$description = get_string('filter1_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
+$name = 'local_intelliboard/filter2';
+$title = get_string('filter2', 'local_intelliboard');
+$description = get_string('filter2_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
+$name = 'local_intelliboard/filter3';
+$title = get_string('filter3', 'local_intelliboard');
+$description = get_string('filter3_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
+$name = 'local_intelliboard/filter4';
+$title = get_string('filter4', 'local_intelliboard');
+$description = get_string('filter4_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
+$name = 'local_intelliboard/filter5';
+$title = get_string('filter5', 'local_intelliboard');
+$description = get_string('filter5_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
+$name = 'local_intelliboard/filter6';
+$title = get_string('filter6', 'local_intelliboard');
+$description = get_string('filter6_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
+$name = 'local_intelliboard/filter7';
+$title = get_string('filter7', 'local_intelliboard');
+$description = get_string('filter7_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
 
 $settings->add(new admin_setting_heading('local_intelliboard/ts1', get_string('ts1', 'local_intelliboard'), ''));
 

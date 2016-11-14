@@ -52,6 +52,15 @@ $params = array(
 	'reports'=>get_config('local_intelliboard', 'reports'),
 	'filter'=>$filter
 );
+if($action == 'enable_report_time'){
+	set_config("report_time", 0, "local_intelliboard");
+}
+if($action == 'disable_report_time'){
+	set_config("report_time", 1, "local_intelliboard");
+}
+$report_time = get_config('local_intelliboard', 'report_time');
+$sizemode = get_config('local_intelliboard', 'sizemode');
+
 if($action == 'noalert'){
 	$USER->noalert = true;
 }elseif($action == 'signup' or $action == 'setup'){
@@ -62,9 +71,15 @@ if($action == 'noalert'){
 	$params['agreement'] = true;
 }
 $intelliboard = intelliboard($params);
-
 $params = (object) array(
-	'sizemode'=>0,
+	'filter_user_deleted'=>get_config('local_intelliboard', 'filter1'),
+	'filter_user_suspended'=>get_config('local_intelliboard', 'filter2'),
+	'filter_user_guest'=>get_config('local_intelliboard', 'filter3'),
+	'filter_course_visible'=>get_config('local_intelliboard', 'filter4'),
+	'filter_enrolmethod_status'=>get_config('local_intelliboard', 'filter5'),
+	'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
+	'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
+	'sizemode'=>$sizemode,
 	'start'=>0,
 	'userid'=>0,
 	'length'=>10,
@@ -81,17 +96,34 @@ $plugin = new $class();
 $plugin->teacher_roles = '3,4';
 $plugin->learner_roles = '5';
 
+if($action == 'report43'){
+	if(!$sizemode){
+		$avg = $plugin->get_dashboard_avg($params);
+	}else{
+		$avg = null;
+	}
+
+	$params->timestart = 0;
+	$params->sizemode = $report_time;
+	$report43 = $plugin->report43($params);
+	include("views/report43.php");
+	exit;
+}elseif($action == 'report44'){
+	$params->timestart = 0;
+	$report44 = $plugin->report44($params);
+	include("views/report44.php");
+	exit;
+}
+
+
+
 $stat = $plugin->get_dashboard_stats($params);
 $LineChart = $plugin->get_dashboard_info($params);
 $countries = $plugin->get_dashboard_countries($params);
 $enrols = $plugin->get_dashboard_enrols($params);
-$courses = $plugin->get_dashboard_courses($params);
+$params->sizemode = 1;
 $totals = $plugin->get_total_info($params);
-$avg = $plugin->get_dashboard_avg($params);
 
-$params->timestart = 0;
-$report43 = $plugin->report43($params);
-$report44 = $plugin->report44($params);
 
 $json_countries = array();
 foreach($countries as $country){
@@ -113,7 +145,7 @@ foreach($LineChart[2] as $item){
 	$t = (isset($LineChart[4][$item->timepoint])) ? $LineChart[4][$item->timepoint]->users : 0;
 	$json_data[] = "[new Date($y, $m, $d), $l, $t, $v]";
 }
-
+$PAGE->requires->jquery();
 $PAGE->set_url(new moodle_url("/local/intelliboard/index.php", array()));
 $PAGE->set_pagetype('home');
 $PAGE->set_pagelayout('report');
@@ -136,11 +168,28 @@ echo $OUTPUT->header();
 	</div>
 	<div class="intelliboard-stats">
 		<h4 class="ion-person-stalker"> Number of sessions</h4>
-		<p><i class="<?php echo ($stat[1]->sessions_today<$stat[0]->sessions_today or $stat[1]->sessions_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left'; ?>"></i> <?php echo $stat[1]->sessions_today; ?> today &nbsp;  <i class="<?php echo ($stat[1]->sessions_week<$stat[0]->sessions_week or $stat[1]->sessions_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left'; ?>"></i> <?php echo $stat[1]->sessions_week; ?> this week</p>
+		<p>
+			<i class="<?php if(isset($stat[0]->sessions_today)){ echo ($stat[1]->sessions_today<$stat[0]->sessions_today or $stat[1]->sessions_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+			<?php echo (int)$stat[1]->sessions_today; ?> today &nbsp;
+			<i class="<?php if(isset($stat[0]->sessions_week)){ echo ($stat[1]->sessions_week<$stat[0]->sessions_week or $stat[1]->sessions_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+			<?php echo (int)$stat[1]->sessions_week; ?> this week
+		</p>
+
 		<h4 class="ion-ribbon-b"> Course completions</h4>
-		<p><i class="<?php echo ($stat[1]->compl_today<$stat[0]->compl_today or $stat[1]->compl_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left'; ?>"></i> <?php echo $stat[1]->compl_today; ?> today &nbsp; <i class="<?php echo ($stat[1]->compl_week<$stat[0]->compl_week or $stat[1]->compl_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left'; ?>"></i> <?php echo $stat[1]->compl_week; ?> this week</p>
+		<p>
+			<i class="<?php if(isset($stat[0]->compl_today)){ echo ($stat[1]->compl_today<$stat[0]->compl_today or $stat[1]->compl_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+			<?php echo (int)$stat[1]->compl_today; ?> today &nbsp;
+			<i class="<?php if(isset($stat[0]->compl_week )){ echo ($stat[1]->compl_week<$stat[0]->compl_week or $stat[1]->compl_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+			<?php echo (int)$stat[1]->compl_week; ?> this week
+		</p>
+
 		<h4 class="ion-university"> User Enrolments</h4>
-		<p><i class="<?php echo ($stat[1]->enrolments_today<$stat[0]->enrolments_today or $stat[1]->enrolments_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left'; ?>"></i> <?php echo $stat[1]->enrolments_today; ?> today &nbsp; <i class="<?php echo ($stat[1]->enrolments_week<$stat[0]->enrolments_week or $stat[1]->enrolments_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left'; ?>"></i> <?php echo $stat[1]->enrolments_week; ?> this week</p>
+		<p>
+			<i class="<?php if(isset($stat[0]->enrolments_today)){echo ($stat[1]->enrolments_today<$stat[0]->enrolments_today or $stat[1]->enrolments_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+			<?php echo (int)$stat[1]->enrolments_today; ?> today &nbsp;
+			<i class="<?php if(isset($stat[0]->enrolments_today)){echo ($stat[1]->enrolments_week<$stat[0]->enrolments_week or $stat[1]->enrolments_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+			<?php echo (int)$stat[1]->enrolments_week; ?> this week
+		</p>
 	</div>
 	<div id="intelliboard-chart" class="intelliboard-chart-body"></div>
 </div>
@@ -154,41 +203,9 @@ echo $OUTPUT->header();
 
 <div class="intelliboard-box">
 	<div class="box60 pull-left">
-		<h3>Users Overview</h3>
-		<table class="table">
-			<thead>
-				<tr>
-					<th>Name</th>
-					<th align="center">Progress</th>
-					<th align="center">Score</th>
-					<th align="center">Visits</th>
-					<th align="center">Time Spent</th>
-					<th align="center">Registered</th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php foreach($report43['data'] as $row): ?>
-				<tr>
-					<td><a href="<?php echo $CFG->wwwroot; ?>/user/profile.php?id=<?php echo $row->id; ?>"><?php echo $row->user; ?></a></td>
-					<td align="center" class="intelliboard-tooltip" title="<?php echo "Enrolled: ".intval($row->courses).", Completed: ".intval($row->completed_courses); ?>">
-						<div class="intelliboard-progress xl"><span style="width:<?php echo ($row->completed_courses) ? (($row->completed_courses / $row->courses) * 100) : 0; ?>%"></span></div>
-					</td>
-					<td align="center" class="intelliboard-tooltip" title="<?php echo "$row->user grade: ".intval($row->grade).", Average grade: ".intval($avg->grade_site); ?>"><span class='<?php echo ($avg->grade_site > $row->grade) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left"; ?>'> <?php echo (int)$row->grade; ?></span></td>
-					<td align="center" class="intelliboard-tooltip" title="<?php echo "$row->user visits: ".intval($row->visits).", Average visits: ".intval($avg->visits_site); ?>"><span class='<?php echo ($avg->visits_site > $row->visits) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left"; ?>'> <?php echo (int)$row->visits; ?></span></td>
-					<td align="center" class="intelliboard-tooltip" title="<?php echo "$row->user time: ".seconds_to_time($row->timespend).", Average time: ".seconds_to_time($avg->timespend_site); ?>"><span class='<?php echo ($avg->timespend_site > $row->timespend) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left"; ?>'> <?php echo seconds_to_time($row->timespend); ?></span></td>
-					<td><?php echo date("m/d/Y", $row->timecreated); ?></td>
-				</tr>
-				<?php endforeach; ?>
-			</tbody>
-			<tfoot>
-				<tr>
-					<td colspan="6">
-						<a style="float:left" href="learners.php">More users</a>
-						<span style="float:right;color:#ddd;">Showing 1 to 10</span>
-					</td>
-				</tr>
-			</tfoot>
-		</table>
+		<h3>Users Overview <a href="<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=<?php echo ($report_time)?'enable_report_time':'disable_report_time'; ?>" style="opacity: 0.4; font-size: 19px;" title="<?php echo ($report_time)?'Enable':'Disable'; ?> time spent and visits in Users Overview"><i class="<?php echo ($report_time)?'ion-android-radio-button-off':'ion-android-checkmark-circle'; ?>"></i></a></h3>
+
+		<div class="ajax-widget" id="report43">Loading...</div>
 	</div>
 	<div class="box40 pl15 pull-right">
 		<h3>Enrollments</h3>
@@ -202,18 +219,7 @@ echo $OUTPUT->header();
 	</div>
 	<div class="box50 pull-right">
 		<h3>Participation</h3>
-		<ul class="intelliboard-list">
-			<?php foreach($report44['data'] as $row):  ?>
-			<li class="intelliboard-tooltip" title="<?php echo "Enrolled users: $row->users, Completed: $row->completed"; ?>">
-				<?php echo $row->fullname; ?>
-				<span class="pull-right"><?php echo (int) $row->completed; ?>/<?php echo (int) $row->users; ?></span>
-				<div class="intelliboard-progress"><span style="width:<?php echo ($row->completed) ? (($row->completed / $row->users) * 100) : 0; ?>%"></span></div>
-			</li>
-			<?php endforeach; ?>
-			<li class="clearfix"><a style="float:left" href="courses.php">More courses</a>
-				<span style="float:right;color:#ddd;">Showing 1 to 10</span>
-			</li>
-		</ul>
+		<div class="ajax-widget" id="report44">Loading...</div>
 	</div>
 </div>
 <?php include("views/footer.php"); ?>
@@ -263,7 +269,7 @@ echo $OUTPUT->header();
 	function drawRegionsMap() {
 		var data = google.visualization.arrayToDataTable([['Country', 'Users'], <?php echo ($json_countries) ? implode(",", $json_countries):"";?>]);
 		var chart = new google.visualization.GeoChart(document.getElementById('countries'));
-		chart.draw(data, {});
+		chart.draw(data, {backgroundColor:{fill:'transparent'}});
 	}
 
 	google.setOnLoadCallback(drawEnrolments);
@@ -280,6 +286,10 @@ echo $OUTPUT->header();
 		var chart = new google.visualization.PieChart(document.getElementById('enrolments'));
 		chart.draw(data, options);
 	}
+	jQuery(document).ready(function(){
+		jQuery('#report43').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report43');
+		jQuery('#report44').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report44');
+	});
 </script>
 <?php
 echo $OUTPUT->footer();

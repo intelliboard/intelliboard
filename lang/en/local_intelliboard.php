@@ -52,6 +52,25 @@ $string['intelliboard:view'] = 'IntelliBoard [view]';
 $string['intelliboard:manage'] = 'IntelliBoard [manage]';
 $string['tls12'] = 'TLS v1.2';
 $string['tls12_desc'] = 'Advanced settings: TLS v1.2';
+$string['sizemode'] = 'Large size mode';
+$string['sizemode_desc'] = 'Large ( > 5.000 users)';
+
+
+$string['filters'] = 'Dashboard filters';
+$string['filter1'] = 'Deleted users';
+$string['filter2'] = 'Suspended users';
+$string['filter3'] = 'Guest user';
+$string['filter4'] = 'Course filter';
+$string['filter5'] = 'Enrolment method filter';
+$string['filter6'] = 'User enrolment filter';
+$string['filter7'] = 'Activities/Resourses filter';
+$string['filter1_desc'] = 'Show deleted users';
+$string['filter2_desc'] = 'Show suspended users';
+$string['filter3_desc'] = 'Show [guest] user in reports';
+$string['filter4_desc'] = 'Show not visible courses';
+$string['filter5_desc'] = 'Show not active enrollment methods';
+$string['filter6_desc'] = 'Show users with not active enrollment status';
+$string['filter7_desc'] = 'Show not visible Activities/Resourses';
 
 
 $string['intelliboardstudent'] = 'IntelliBoard';
