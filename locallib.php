@@ -28,7 +28,7 @@
 
 
 function intelliboard($params){
-	global $USER, $CFG, $DB;
+	global $CFG;
 
 	require_once($CFG->libdir . '/filelib.php');
 

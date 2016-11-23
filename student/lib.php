@@ -15,7 +15,10 @@ function intelliboard_data($type, $userid) {
         $sql = ($search and $t == 'assignment') ? "AND (a.name LIKE '%$search%' OR c.fullname LIKE '%$search%')":"";
         if($USER->activity_courses){
              $sql .= " AND c.id = ".intval($USER->activity_courses);
-        }if($USER->activity_time !== -1){
+        }else{
+            $sql .= " AND c.id IN (SELECT e.courseid FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e WHERE ue.userid = $USER->id AND e.id = ue.enrolid )";
+        }
+        if($USER->activity_time !== -1){
             list($timestart, $timefinish) = get_timerange($USER->activity_time);
             $sql .= " AND a.duedate BETWEEN $timestart AND $timefinish";
         }
@@ -31,7 +34,10 @@ function intelliboard_data($type, $userid) {
         $sql = ($search and $t == 'quiz') ? "AND (a.name LIKE '%$search%' OR c.fullname LIKE '%$search%')":"";
         if($USER->activity_courses){
              $sql .= " AND c.id = ".intval($USER->activity_courses);
-        }if($USER->activity_time !== -1){
+        }else{
+            $sql .= " AND c.id IN (SELECT e.courseid FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e WHERE ue.userid = $USER->id AND e.id = ue.enrolid )";
+        }
+        if($USER->activity_time !== -1){
             list($timestart, $timefinish) = get_timerange($USER->activity_time);
             $sql .= " AND a.timeclose BETWEEN $timestart AND $timefinish";
         }

@@ -27,9 +27,9 @@
  */
 
 function xmldb_local_intelliboard_upgrade($oldversion) {
-    global $CFG, $DB;
+  global $DB;
 
-    $dbman = $DB->get_manager();
+  $dbman = $DB->get_manager();
 
 	// Define table local_intelliboard_tracking to be created.
 	$table = new xmldb_table('local_intelliboard_tracking');

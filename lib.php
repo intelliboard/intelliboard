@@ -29,7 +29,7 @@
 
 // In versions before Moodle 2.9, the supported callbacks have _extends_ (not imperative mood) in their names. This was a consistency bug fixed in MDL-49643.
 function local_intelliboard_extends_navigation(global_navigation $nav){
-	global $USER, $CFG;
+	global $CFG;
 
 	insert_intelliboard_tracking(false);
 	$context = context_system::instance();
@@ -39,7 +39,7 @@ function local_intelliboard_extends_navigation(global_navigation $nav){
 }
 //call-back method to extend the navigation
 function local_intelliboard_extend_navigation(global_navigation $nav){
-	global $USER, $CFG;
+	global $CFG;
 
 	insert_intelliboard_tracking(false);
 	$context = context_system::instance();
@@ -131,7 +131,6 @@ function insert_intelliboard_tracking($ajaxRequest = false){
     global $CFG, $PAGE, $SITE, $DB, $USER;
 
 	$version = get_config('local_intelliboard', 'version');
-	$intelliboard = optional_param('intelliboard', 0, PARAM_INT);
 	$enabled = get_config('local_intelliboard', 'enabled');
 	$ajax = (int) get_config('local_intelliboard', 'ajax');
 	$inactivity = (int) get_config('local_intelliboard', 'inactivity');
