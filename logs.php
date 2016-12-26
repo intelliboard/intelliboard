@@ -29,7 +29,6 @@
 require('../../config.php');
 require_once($CFG->libdir . '/filelib.php');
 require_once($CFG->libdir.'/adminlib.php');
-require('externallib.php');
 
 require_login();
 require_capability('local/intelliboard:manage', context_system::instance());

@@ -1,4 +1,4 @@
-<?php 
+<?php
 	$id = optional_param('id', 0, PARAM_INT);
 	echo (!isset($USER->noalert) and $intelliboard->alert) ? $intelliboard->alert : '';
 ?>
@@ -7,15 +7,15 @@
 	<li><a href="learners.php" <?php echo ($PAGE->pagetype == 'learners')?'class="active"':''; ?>>Learners</a></li>
 	<li><a href="courses.php" <?php echo ($PAGE->pagetype == 'courses')?'class="active"':''; ?>>Courses</a></li>
 	<li><a href="load.php" <?php echo ($PAGE->pagetype == 'load')?'class="active"':''; ?>>Load</a></li>
+	<?php if(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
 	<li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'reports')?'class="active"':''; ?>>Reports <i class="arr ion-arrow-down-b"></i></a>
 		<ul>
-			<?php if(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
-				<?php foreach($intelliboard->reports as $key=>$val): ?>
-					<li><a href="reports.php?id=<?php echo $key; ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo $val; ?></a></li>
-				<?php endforeach; ?>
-			<?php endif; ?>
+			<?php foreach($intelliboard->reports as $key=>$val): ?>
+				<li><a href="reports.php?id=<?php echo $key; ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo $val; ?></a></li>
+			<?php endforeach; ?>
 		</ul>
 	</li>
+	<?php endif; ?>
 	<li><a href="config.php" <?php echo ($PAGE->pagetype == 'settings')?'class="active"':''; ?>>Settings</a></li>
 	<li class="sso">
 		<?php if($intelliboard->token): ?>

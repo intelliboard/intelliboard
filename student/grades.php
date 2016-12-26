@@ -27,12 +27,12 @@
  */
 
 require('../../../config.php');
-require_once('../locallib.php');
-require_once('lib.php');
-require_once('tables.php');
+require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
+require_once($CFG->dirroot .'/local/intelliboard/student/tables.php');
 
 $id = optional_param('id', 0, PARAM_INT);
-$search = optional_param('search', '', PARAM_TEXT);
+$search = clean_raw(optional_param('search', '', PARAM_TEXT));
 
 require_login();
 require_capability('local/intelliboard:students', context_system::instance());
@@ -41,7 +41,7 @@ if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 
 	throw new moodle_exception('invalidaccess', 'error');
 }
 $email = get_config('local_intelliboard', 'te1');
-$params = array('url'=>$CFG->wwwroot,'email'=>$email,'firstname'=>$USER->firstname,'lastname'=>$USER->lastname,'do'=>'learner');
+$params = array('url'=>$CFG->wwwroot,'email'=>$email,'firstname'=>$USER->firstname,'lastname'=>$USER->lastname,'do'=>'learner', 'mode'=> 1);
 $intelliboard = intelliboard($params);
 if (isset($intelliboard->content)) {
     $factorInfo = json_decode($intelliboard->content);

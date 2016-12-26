@@ -1,3 +1,4 @@
+<?php $id = optional_param('id', 0, PARAM_INT); ?>
 <div class="sheader clearfix">
 	<div class="avatar">
 		<?php echo $OUTPUT->user_picture($USER, array('size'=>75)); ?>
@@ -37,5 +38,15 @@
 	<?php endif; ?>
 	<?php if(get_config('local_intelliboard', 't4')): ?>
 		<li><a href="grades.php" <?php echo ($PAGE->pagetype == 'grades')?'class="active"':''; ?>>Grades</a></li>
+	<?php endif; ?>
+
+	<?php if(get_config('local_intelliboard', 't48') and isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
+	<li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'reports')?'class="active"':''; ?>>Reports <i class="arr ion-arrow-down-b"></i></a>
+		<ul>
+			<?php foreach($intelliboard->reports as $key=>$val): ?>
+				<li><a href="reports.php?id=<?php echo $key; ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo $val; ?></a></li>
+			<?php endforeach; ?>
+		</ul>
+	</li>
 	<?php endif; ?>
 </ul>

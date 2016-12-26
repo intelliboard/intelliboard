@@ -139,6 +139,12 @@ $description = get_string('filter7_desc', 'local_intelliboard');
 $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
 $settings->add($setting);
 
+$name = 'local_intelliboard/filter8';
+$title = get_string('filter8', 'local_intelliboard');
+$description = get_string('filter8_desc', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+$settings->add($setting);
+
 
 $settings->add(new admin_setting_heading('local_intelliboard/ts1', get_string('ts1', 'local_intelliboard'), ''));
 
@@ -418,5 +424,12 @@ $settings->add($setting);
 
 $name = 'local_intelliboard/t46';
 $title = get_string('t46', 'local_intelliboard');
+$setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+$settings->add($setting);
+
+$settings->add(new admin_setting_heading('local_intelliboard/ts5', get_string('ts5', 'local_intelliboard'), ''));
+
+$name = 'local_intelliboard/t48';
+$title = get_string('t48', 'local_intelliboard');
 $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
 $settings->add($setting);

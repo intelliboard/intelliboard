@@ -25,22 +25,56 @@
  * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
-require('../../config.php');
-require_once($CFG->libdir.'/adminlib.php');
-require_once($CFG->dirroot .'/local/intelliboard/externallib.php');
+
+require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/externallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
 
-require_login();
-require_capability('local/intelliboard:view', context_system::instance());
-admin_externalpage_setup('intelliboardreports');
-
-$id = optional_param('id', 1, PARAM_INT);
-$page = optional_param('page', 1, PARAM_INT);
+$id = required_param('id', PARAM_INT);
+$trigger = optional_param('trigger', 1, PARAM_INT);
+$page = optional_param('page', 0, PARAM_INT);
 $length = optional_param('length', 20, PARAM_INT);
-$filter = clean_raw(optional_param('filter', '', PARAM_RAW));
+$filter = optional_param('filter', '', PARAM_RAW);
 $daterange = optional_param('daterange', 3, PARAM_INT);
 
-if($id){
+$custom = optional_param('custom', 0, PARAM_INT);
+$custom2 = optional_param('custom2', 0, PARAM_INT);
+$custom3 = optional_param('custom3', 0, PARAM_INT);
+$users = optional_param('users', 0, PARAM_INT);
+$userid = optional_param('userid', 0, PARAM_INT);
+$courseid = optional_param('courseid', 0, PARAM_INT);
+$cohortid = optional_param('cohortid', 0, PARAM_INT);
+
+require_login();
+require_capability('local/intelliboard:students', context_system::instance());
+
+if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 't48')){
+	throw new moodle_exception('invalidaccess', 'error');
+}
+$email = get_config('local_intelliboard', 'te1');
+
+$mode_filter = true;
+if($trigger){
+	$params = array(
+		'id'=> $id,
+		'url'=>$CFG->wwwroot,
+		'email'=>$email,
+		'firstname'=>$USER->firstname,
+		'lastname'=>$USER->lastname,
+		'reports'=>get_config('local_intelliboard', 'reports'),
+		'type'=>'reports',
+		'do'=>'reportform',
+		'mode'=> 1
+	);
+	$intelliboard = intelliboard($params);
+
+	if(!empty($intelliboard->content)){
+		$mode_filter = false;
+	}
+}
+
+if($mode_filter){
 	switch ($daterange) {
 		case 1: $timestart = strtotime('today'); $timefinish = time(); break;
 		case 2: $timestart = strtotime('yesterday'); $timefinish = strtotime('today'); break;
@@ -57,16 +91,17 @@ if($id){
 		'filter_course_visible'=>get_config('local_intelliboard', 'filter4'),
 		'filter_enrolmethod_status'=>get_config('local_intelliboard', 'filter5'),
 		'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
-		'filter_enrolled_users'=>get_config('local_intelliboard', 'filter8'),
 		'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
-		'sizemode'=>0,
-		'custom2'=> '',
-		'custom3'=> '',
+		'sizemode'=> get_config('local_intelliboard', 'sizemode'),
+		'users'=> $USER->id,
+		'custom'=> $custom,
+		'custom2'=> $custom2,
+		'custom3'=> $custom3,
 		'length'=>$length,
 		'start'=>$page,
-		'userid'=>0,
-		'courseid'=>0,
-		'cohortid'=>0,
+		'userid'=>$userid,
+		'courseid'=>$courseid,
+		'cohortid'=>$cohortid,
 		'filter'=>$filter,
 		'timestart'=> $timestart,
 		'timefinish'=>$timefinish
@@ -79,39 +114,52 @@ if($id){
 	$plugin->learner_roles = '5';
 
 	$data = json_encode($plugin->{$function}($params));
+
+	$params = array(
+		'url'=>$CFG->wwwroot,
+		'email'=>$email,
+		'firstname'=>$USER->firstname,
+		'lastname'=>$USER->lastname,
+		'reports'=>get_config('local_intelliboard', 'reports'),
+		'filter'=>$filter,
+		'daterange'=>$daterange,
+		'data'=>$data,
+		'users'=> $USER->id,
+		'id'=> $id,
+		'length'=>$length,
+		'page'=>$page,
+		'type'=>'reports',
+		'do'=>'reports',
+		'mode'=> 1
+	);
+
+	$intelliboard = intelliboard($params);
 }else{
 	$data = '';
 }
 
-$params = array(
-	'url'=>$CFG->wwwroot,
-	'email'=>$USER->email,
-	'firstname'=>$USER->firstname,
-	'lastname'=>$USER->lastname,
-	'reports'=>get_config('local_intelliboard', 'reports'),
-	'filter'=>$filter,
-	'daterange'=>$daterange,
-	'data'=>$data,
-	'id'=> $id,
-	'length'=>$length,
-	'page'=>$page,
-	'type'=>'reports',
-	'do'=>'reports'
-);
-$intelliboard = intelliboard($params);
-$PAGE->set_url(new moodle_url("/local/intelliboard/reports.php", array('id'=>$id)));
-$PAGE->set_pagelayout('report');
+$totals = intelliboard_learner_totals($USER->id);
+
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/reports.php"));
 $PAGE->set_pagetype('reports');
+$PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
+$PAGE->requires->jquery();
+$PAGE->requires->js('/local/intelliboard/assets/js/jquery.circlechart.js');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 echo $OUTPUT->header();
 ?>
-<div class="intelliboard-page">
+
+<?php if(!isset($intelliboard) || !$intelliboard->token): ?>
+	<div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+<?php else: ?>
+<div class="intelliboard-page intelliboard-student">
 	<?php include("views/menu.php"); ?>
 	<div class="intelliboard-content"><?php echo $intelliboard->content; ?></div>
-	<?php include("views/footer.php"); ?>
+	<?php include("../views/footer.php"); ?>
 </div>
+<?php endif; ?>
 <?php
 echo $OUTPUT->footer();

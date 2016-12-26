@@ -64,6 +64,7 @@ $string['filter4'] = 'Course filter';
 $string['filter5'] = 'Enrolment method filter';
 $string['filter6'] = 'User enrolment filter';
 $string['filter7'] = 'Activities/Resourses filter';
+$string['filter8'] = 'Enrolled users filter';
 $string['filter1_desc'] = 'Show deleted users';
 $string['filter2_desc'] = 'Show suspended users';
 $string['filter3_desc'] = 'Show [guest] user in reports';
@@ -71,6 +72,7 @@ $string['filter4_desc'] = 'Show not visible courses';
 $string['filter5_desc'] = 'Show not active enrollment methods';
 $string['filter6_desc'] = 'Show users with not active enrollment status';
 $string['filter7_desc'] = 'Show not visible Activities/Resourses';
+$string['filter8_desc'] = 'Show only enrolled users';
 
 
 $string['intelliboardstudent'] = 'IntelliBoard';
@@ -83,6 +85,7 @@ $string['ts1'] = 'Learner Dashboard';
 $string['ts2'] = 'Learner Dashboard Page';
 $string['ts3'] = 'Learner Dashboard Courses';
 $string['ts4'] = 'Learner Dashboard Grades';
+$string['ts5'] = 'Learner Dashboard Reports';
 
 $string['t01'] = 'Time filter: Last Month';
 $string['t02'] = 'Time filter: Last Quarter';
@@ -96,6 +99,7 @@ $string['t1'] = 'Enable Learner Dashboard';
 $string['t2'] = 'Enable Dashboard';
 $string['t3'] = 'Enable Courses';
 $string['t4'] = 'Enable Grades';
+$string['t48'] = 'Enable Reports';
 $string['t5'] = 'Enable [Activity progress] chart';
 $string['t6'] = 'Enable [Course progress] chart';
 $string['t7'] = 'Enable [My course average]';
@@ -140,3 +144,4 @@ $string['t44'] = 'Enable [Activity Grades] Score column';
 $string['t45'] = 'Enable [Activity Grades] Graded column';
 $string['t46'] = 'Enable [Activity Grades] Completed column';
 $string['t47'] = 'Courses [grid] background color';
+

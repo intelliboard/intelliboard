@@ -47,7 +47,7 @@ class intelliboard_courses_grades_table extends table_sql {
 
             LEFT JOIN {$CFG->prefix}course_completions cc ON cc.course = c.id AND cc.userid = c.userid
             LEFT JOIN (SELECT course, count(id) as modules FROM {$CFG->prefix}course_modules WHERE visible = 1 AND completion = 1 GROUP BY course) m ON m.course = c.id
-            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate > 0 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = c.userid
+            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = c.userid
             LEFT JOIN {$CFG->prefix}course_completion_criteria as cri ON cri.course = c.id AND cri.criteriatype = 6
             LEFT JOIN {$CFG->prefix}grade_items gi ON gi.courseid = c.id AND gi.itemtype = 'course'
             LEFT JOIN {$CFG->prefix}grade_grades g ON g.itemid = gi.id AND g.userid = c.userid

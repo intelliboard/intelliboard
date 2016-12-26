@@ -27,8 +27,8 @@
  */
 require('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
-require('externallib.php');
-require('locallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/externallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 
 require_login();
 require_capability('local/intelliboard:view', context_system::instance());
@@ -41,6 +41,7 @@ $params = (object) array(
 	'filter_course_visible'=>get_config('local_intelliboard', 'filter4'),
 	'filter_enrolmethod_status'=>get_config('local_intelliboard', 'filter5'),
 	'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
+	'filter_enrolled_users'=>get_config('local_intelliboard', 'filter8'),
 	'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
 	'sizemode'=> get_config('local_intelliboard', 'sizemode'),
 	'userid'=>0,

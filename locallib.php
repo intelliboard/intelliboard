@@ -26,6 +26,16 @@
  * @website		www.intelliboard.net
  */
 
+function clean_raw($value, $mode = true)
+{
+	$params = array("'","`");
+	if($mode){
+		$params[] = '"';
+		$params[] = '(';
+		$params[] = ')';
+	}
+	return str_replace($params, '', $value);
+}
 
 function intelliboard($params){
 	global $CFG;

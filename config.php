@@ -27,8 +27,8 @@
  */
 require('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
-require('externallib.php');
-require('locallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/externallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 
 require_login();
 require_capability('local/intelliboard:view', context_system::instance());

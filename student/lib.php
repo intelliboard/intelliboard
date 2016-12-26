@@ -6,8 +6,8 @@ function intelliboard_data($type, $userid) {
 
     $data = array();
     $page = optional_param($type.'_page', 0, PARAM_INT);
-    $search = optional_param('search', '', PARAM_TEXT);
-    $t = optional_param('type', '', PARAM_RAW);
+    $search = optional_param('search', '', PARAM_ALPHANUMEXT);
+    $t = optional_param('type', '', PARAM_ALPHANUMEXT);
     $perpage = 10;
     $start = $page * $perpage;
 
@@ -23,7 +23,7 @@ function intelliboard_data($type, $userid) {
             $sql .= " AND a.duedate BETWEEN $timestart AND $timefinish";
         }
 
-        $data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS a.id, a.name, a.duedate, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid FROM {$CFG->prefix}course c, {$CFG->prefix}assign a
+        $data = $DB->get_records_sql("SELECT a.id, a.name, a.duedate, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid FROM {$CFG->prefix}course c, {$CFG->prefix}assign a
             LEFT JOIN {$CFG->prefix}modules m ON m.name = 'assign'
             LEFT JOIN {$CFG->prefix}course_modules cm ON cm.module = m.id AND cm.instance = a.id
             LEFT JOIN {$CFG->prefix}course_modules_completion cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = $userid
@@ -41,7 +41,7 @@ function intelliboard_data($type, $userid) {
             list($timestart, $timefinish) = get_timerange($USER->activity_time);
             $sql .= " AND a.timeclose BETWEEN $timestart AND $timefinish";
         }
-        $data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS a.id, a.name, a.timeclose, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid FROM {course} c, {quiz} a
+        $data = $DB->get_records_sql("SELECT a.id, a.name, a.timeclose, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid FROM {course} c, {quiz} a
                 LEFT JOIN {$CFG->prefix}modules m ON m.name = 'quiz'
                 LEFT JOIN {$CFG->prefix}course_modules cm ON cm.module = m.id AND cm.instance = a.id
                 LEFT JOIN {$CFG->prefix}course_modules_completion cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = $userid
@@ -51,17 +51,17 @@ function intelliboard_data($type, $userid) {
     }elseif ($type == 'course') {
         $sql = ($search) ? "AND c.fullname LIKE '%$search%'":"";
 
-        $data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, c.fullname, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules FROM
+        $data = $DB->get_records_sql("SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, c.fullname, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules FROM
             {$CFG->prefix}user_enrolments ue
             LEFT JOIN {$CFG->prefix}enrol e ON e.id = ue.enrolid
             LEFT JOIN {$CFG->prefix}course c ON c.id = e.courseid
             LEFT JOIN {$CFG->prefix}course_completions cc ON cc.course = c.id AND cc.userid = ue.userid
             LEFT JOIN (SELECT course, count(id) as modules FROM {$CFG->prefix}course_modules WHERE visible = 1 AND completion = 1 GROUP BY course) m ON m.course = c.id
-            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate > 0 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
+            LEFT JOIN (SELECT cm.course, cmc.userid, count(DISTINCT cmc.id) as completedmodules FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
             LEFT JOIN (SELECT courseid, sum(timespend) AS duration FROM {$CFG->prefix}local_intelliboard_tracking WHERE userid = $userid AND courseid > 0 GROUP BY courseid ) l ON l.courseid = c.id
             LEFT JOIN {$CFG->prefix}grade_items gi ON gi.courseid = c.id AND gi.itemtype = 'course'
             LEFT JOIN {$CFG->prefix}grade_grades g ON g.itemid = gi.id AND g.userid = ue.userid
-         WHERE ue.userid = $userid AND c.visible = 1 GROUP BY c.fullname $sql ORDER BY c.fullname LIMIT $start, $perpage");
+         WHERE ue.userid = $userid AND c.visible = 1 $sql GROUP BY c.fullname ORDER BY c.fullname LIMIT $start, $perpage");
     }elseif ($type == 'courses') {
         $sql = ($search) ? "AND c.fullname LIKE '%$search%'":"";
 
@@ -75,12 +75,12 @@ function intelliboard_data($type, $userid) {
             $sql_select = ",'' as certificates";
         }
 
-        $data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, c.fullname, ca.name as category, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules, l.duration $sql_select FROM
+        $data = $DB->get_records_sql("SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, c.fullname, ca.name as category, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules, l.duration $sql_select FROM
             {$CFG->prefix}user_enrolments ue
             LEFT JOIN {$CFG->prefix}enrol e ON e.id = ue.enrolid LEFT JOIN {$CFG->prefix}course c ON c.id = e.courseid
             LEFT JOIN {$CFG->prefix}course_completions cc ON cc.course = c.id AND cc.userid = ue.userid
             LEFT JOIN (SELECT course, count(id) as modules FROM {$CFG->prefix}course_modules WHERE visible = 1 AND completion = 1 GROUP BY course) m ON m.course = c.id
-            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate > 0 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
+            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
             LEFT JOIN (SELECT courseid, sum(timespend) AS duration FROM {$CFG->prefix}local_intelliboard_tracking WHERE userid = $userid AND courseid > 0 GROUP BY courseid ) l ON l.courseid = c.id
             LEFT JOIN {course_categories} ca ON ca.id = c.category
             LEFT JOIN {$CFG->prefix}grade_items gi ON gi.courseid = c.id AND gi.itemtype = 'course'
@@ -204,7 +204,7 @@ function intelliboard_learner_modules($userid){
 
     return $DB->get_records_sql("SELECT m.id, m.name, count(distinct cm.id) as modules , count(distinct cmc.id) as completed_modules, count(distinct l.id) as start_modules, sum(l.timespend) as duration
         FROM {$CFG->prefix}modules m, {$CFG->prefix}course_modules cm
-        LEFT JOIN {$CFG->prefix}course_modules_completion cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = $userid AND cmc.completionstate > 0
+        LEFT JOIN {$CFG->prefix}course_modules_completion cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = $userid AND cmc.completionstate = 1
         LEFT JOIN {$CFG->prefix}local_intelliboard_tracking l ON l.page = 'module' AND l.userid = $userid AND l.param = cm.id
         WHERE cm.visible = 1 AND cm.module = m.id and cm.course IN (SELECT distinct e.courseid FROM {$CFG->prefix}enrol e, {$CFG->prefix}user_enrolments ue WHERE ue.userid = $userid AND e.id = ue.enrolid) GROUP BY m.id");
 }
