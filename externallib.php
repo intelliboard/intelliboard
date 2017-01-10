@@ -28,9 +28,6 @@
 
 require_once($CFG->libdir . "/externallib.php");
 
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-
 
 class local_intelliboard_external extends external_api {
 
