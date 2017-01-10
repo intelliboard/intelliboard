@@ -35,7 +35,7 @@ require_capability('local/intelliboard:view', context_system::instance());
 admin_externalpage_setup('intelliboardreports');
 
 $id = optional_param('id', 1, PARAM_INT);
-$page = optional_param('page', 1, PARAM_INT);
+$page = optional_param('page', 0, PARAM_INT);
 $length = optional_param('length', 20, PARAM_INT);
 $filter = clean_raw(optional_param('filter', '', PARAM_RAW));
 $daterange = optional_param('daterange', 3, PARAM_INT);
@@ -59,7 +59,10 @@ if($id){
 		'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
 		'filter_enrolled_users'=>get_config('local_intelliboard', 'filter8'),
 		'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
+		'filter_columns'=>get_config('local_intelliboard', 'filter9'),
+		'filter_profile'=>0,
 		'sizemode'=>0,
+		'custom'=> '',
 		'custom2'=> '',
 		'custom3'=> '',
 		'length'=>$length,
@@ -75,8 +78,8 @@ if($id){
 	$function = "report$id";
 	$class = 'local_intelliboard_external';
 	$plugin = new $class();
-	$plugin->teacher_roles = '3,4';
-	$plugin->learner_roles = '5';
+	$plugin->teacher_roles = get_config('local_intelliboard', 'filter10');
+	$plugin->learner_roles = get_config('local_intelliboard', 'filter11');
 
 	$data = json_encode($plugin->{$function}($params));
 }else{

@@ -80,6 +80,8 @@ $params = (object) array(
 	'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
 	'filter_enrolled_users'=>get_config('local_intelliboard', 'filter8'),
 	'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
+	'filter_columns'=>get_config('local_intelliboard', 'filter9'),
+	'filter_profile'=>0,
 	'sizemode'=>$sizemode,
 	'start'=>0,
 	'userid'=>0,
@@ -94,8 +96,8 @@ $params = (object) array(
 );
 $class = 'local_intelliboard_external';
 $plugin = new $class();
-$plugin->teacher_roles = '3,4';
-$plugin->learner_roles = '5';
+$plugin->teacher_roles = get_config('local_intelliboard', 'filter10');
+$plugin->learner_roles = get_config('local_intelliboard', 'filter11');
 
 if($action == 'report43'){
 	if(!$sizemode){

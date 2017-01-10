@@ -51,8 +51,8 @@ $params = (object) array(
 );
 $class = 'local_intelliboard_external';
 $plugin = new $class();
-$plugin->teacher_roles = '3,4';
-$plugin->learner_roles = '5';
+$plugin->teacher_roles = get_config('local_intelliboard', 'filter10');
+$plugin->learner_roles = get_config('local_intelliboard', 'filter11');
 
 $data  = array(
 	16 => json_encode($plugin->get_system_courses($params)),

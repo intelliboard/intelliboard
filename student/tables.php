@@ -5,7 +5,7 @@ require_once($CFG->libdir . '/gradelib.php');
 class intelliboard_courses_grades_table extends table_sql {
 
     function __construct($uniqueid, $userid = 0, $search = '') {
-        global $CFG, $PAGE;
+        global $CFG, $PAGE, $DB;
 
         parent::__construct($uniqueid);
 
@@ -39,23 +39,28 @@ class intelliboard_courses_grades_table extends table_sql {
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $sql = ($search) ? "AND c.fullname LIKE '%$search%'":"";
+        $params = array();
+        $sql = "";
+        if($search){
+            $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
+            $params['fullname'] = "%$search%";
+        }
 
         $fields = "c.id, c.fullname as course, c.timemodified, c.startdate, c.enablecompletion, cri.gradepass, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, cc.timecompleted, m.modules, cm.completedmodules, '' as actions, '' as letter";
 
-        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, ue.timemodified, ue.userid FROM {$CFG->prefix}user_enrolments ue, {$CFG->prefix}enrol e, {$CFG->prefix}course c WHERE ue.userid = $userid AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid AND c.visible = 1) c
+        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, ue.timemodified, ue.userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.userid = $userid AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid AND c.visible = 1) c
 
-            LEFT JOIN {$CFG->prefix}course_completions cc ON cc.course = c.id AND cc.userid = c.userid
-            LEFT JOIN (SELECT course, count(id) as modules FROM {$CFG->prefix}course_modules WHERE visible = 1 AND completion = 1 GROUP BY course) m ON m.course = c.id
-            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {$CFG->prefix}course_modules cm, {$CFG->prefix}course_modules_completion cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = c.userid
-            LEFT JOIN {$CFG->prefix}course_completion_criteria as cri ON cri.course = c.id AND cri.criteriatype = 6
-            LEFT JOIN {$CFG->prefix}grade_items gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-            LEFT JOIN {$CFG->prefix}grade_grades g ON g.itemid = gi.id AND g.userid = c.userid
-            LEFT JOIN (SELECT gi.courseid, AVG( (g.finalgrade/g.rawgrademax)*100) AS average FROM {$CFG->prefix}grade_items gi, {$CFG->prefix}grade_grades g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id";
+            LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = c.userid
+            LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion = 1 GROUP BY course) m ON m.course = c.id
+            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = c.userid
+            LEFT JOIN {course_completion_criteria} as cri ON cri.course = c.id AND cri.criteriatype = 6
+            LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = c.userid
+            LEFT JOIN (SELECT gi.courseid, AVG( (g.finalgrade/g.rawgrademax)*100) AS average FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id";
 
         $where = "c.id > 0 $sql";
 
-        $this->set_sql($fields, $from, $where, array());
+        $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
     }
     function col_average($values) {
@@ -123,7 +128,7 @@ class intelliboard_courses_grades_table extends table_sql {
 class intelliboard_activities_grades_table extends table_sql {
 
     function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '') {
-        global $CFG, $PAGE;
+        global $CFG, $PAGE, $DB;
 
         parent::__construct($uniqueid);
 
@@ -147,17 +152,22 @@ class intelliboard_activities_grades_table extends table_sql {
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $sql = ($search) ? "AND gi.itemname LIKE '%$search%'":"";
+        $params = array();
+        $sql = "";
+        if($search){
+            $sql .= " AND " . $DB->sql_like('gi.itemname', ":itemname", false, false);
+            $params['itemname'] = "%$search%";
+        }
 
         $fields = "gi.id, gi.itemname, cm.id as cmid, gi.itemmodule, cmc.timemodified as timecompleted, (g.finalgrade/g.rawgrademax)*100 AS grade, IFNULL(g.timemodified, g.timecreated)  as timepoint";
-        $from = "{$CFG->prefix}grade_items gi
-            LEFT JOIN {$CFG->prefix}grade_grades g ON g.itemid = gi.id AND g.userid = $userid
-            LEFT JOIN {$CFG->prefix}modules m ON m.name = gi.itemmodule
-            LEFT JOIN {$CFG->prefix}course_modules cm ON cm.instance = gi.iteminstance AND cm.module = m.id
-            LEFT JOIN {$CFG->prefix}course_modules_completion cmc ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1 AND cmc.userid = $userid";
+        $from = "{grade_items} gi
+            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = $userid
+            LEFT JOIN {modules} m ON m.name = gi.itemmodule
+            LEFT JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
+            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1 AND cmc.userid = $userid";
         $where = "gi.courseid = $courseid AND gi.itemtype = 'mod' AND cm.visible = 1 $sql";
 
-        $this->set_sql($fields, $from, $where, array());
+        $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
     }
 

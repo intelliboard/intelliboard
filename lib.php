@@ -31,7 +31,7 @@
 function local_intelliboard_extends_navigation(global_navigation $nav){
 	global $CFG;
 
-	insert_intelliboard_tracking(false);
+	local_intelliboard_insert_tracking(false);
 	$context = context_system::instance();
 	if(isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)){
 		$nav->add(get_string('intelliboardstudent', 'local_intelliboard'), new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
@@ -41,17 +41,17 @@ function local_intelliboard_extends_navigation(global_navigation $nav){
 function local_intelliboard_extend_navigation(global_navigation $nav){
 	global $CFG;
 
-	insert_intelliboard_tracking(false);
+	local_intelliboard_insert_tracking(false);
 	$context = context_system::instance();
 	if(isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)){
 		$nav->add(get_string('intelliboardstudent', 'local_intelliboard'), new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
 	}
 }
 
-function getUserDetails()
+function local_intelliboard_user_details()
 {
     if (isset($_SERVER['HTTP_USER_AGENT'])) {
-		$user_agent = $_SERVER['HTTP_USER_AGENT'];
+		$user_agent = strtolower($_SERVER['HTTP_USER_AGENT']);
 	} else {
 		$user_agent = '';
 	}
@@ -95,6 +95,7 @@ function getUserDetails()
                             '/safari/i'         =>  'Safari',
                             '/edge/i'           =>  'Microsoft Edge',
                             '/opera/i'          =>  'Opera',
+                            '/opr/i'          =>  'Opera',
                             '/netscape/i'       =>  'Netscape',
                             '/maxthon/i'        =>  'Maxthon',
                             '/konqueror/i'      =>  'Konqueror',
@@ -103,9 +104,10 @@ function getUserDetails()
     foreach ($browser_array as $regex => $value) {
         if (preg_match($regex, $user_agent)) {
             $browser    =   $value;
+            break;
         }
-
     }
+
 	if (isset($_SERVER["HTTP_X_FORWARDED_FOR"])){
 		$ip = $_SERVER["HTTP_X_FORWARDED_FOR"];
 	}elseif (isset($_SERVER["HTTP_CLIENT_IP"])){
@@ -127,7 +129,7 @@ function getUserDetails()
         'userlang'     => $userlang
     );
 }
-function insert_intelliboard_tracking($ajaxRequest = false){
+function local_intelliboard_insert_tracking($ajaxRequest = false){
     global $CFG, $PAGE, $SITE, $DB, $USER;
 
 	$version = get_config('local_intelliboard', 'version');
@@ -153,7 +155,7 @@ function insert_intelliboard_tracking($ajaxRequest = false){
 		$intelliboardTime = (isset($_COOKIE['intelliboardTime'])) ? clean_param($_COOKIE['intelliboardTime'], 0, PARAM_INT) : 0;
 
 		if(!empty($intelliboardPage)){
-			$userDetails = (object)getUserDetails();
+			$userDetails = (object)local_intelliboard_user_details();
 			if($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')){
 				if(!$ajaxRequest){
 					$data->visits = $data->visits + 1;

@@ -44,7 +44,14 @@ if(!get_config('local_intelliboard', 't1')){
 	throw new moodle_exception('invalidaccess', 'error');
 }
 $email = get_config('local_intelliboard', 'te1');
-$params = array('url'=>$CFG->wwwroot,'email'=>$email,'firstname'=>$USER->firstname,'lastname'=>$USER->lastname,'do'=>'learner', 'mode'=> 1);
+$params = array(
+	'url'=>$CFG->wwwroot,
+	'email'=>$email,
+	'firstname'=>$USER->firstname,
+	'lastname'=>$USER->lastname,
+	'do'=>'learner',
+	'mode'=> 1
+);
 $intelliboard = intelliboard($params);
 if (isset($intelliboard->content)) {
     $factorInfo = json_decode($intelliboard->content);
@@ -56,6 +63,9 @@ $action = optional_param('action', '', PARAM_ALPHANUMEXT);
 $search = clean_raw(optional_param('search', '', PARAM_RAW));
 $type = optional_param('type', '', PARAM_ALPHANUMEXT);
 $time = optional_param('time', 0, PARAM_INT);
+
+
+
 
 $activity_setting = optional_param('activity_setting', 0, PARAM_INT);
 $activity_courses = optional_param('activity_courses', 0, PARAM_INT);
@@ -102,14 +112,18 @@ $t38 = get_config('local_intelliboard', 't38');
 $courses = intelliboard_learner_courses($USER->id);
 $totals = intelliboard_learner_totals($USER->id);
 
-if($t12 or $t13)
+if($t12 or $t13){
 	$modules_progress = intelliboard_learner_modules($USER->id);
-if($t9)
+}
+if($t9){
 	$assignments = intelliboard_data('assignment', $USER->id);
-if($t10)
+}
+if($t10){
 	$quizes = intelliboard_data('quiz', $USER->id);
-if($t11)
+}
+if($t11){
 	$courses_report = intelliboard_data('course', $USER->id);
+}
 
 if($t5){
 	$progress = intelliboard_learner_progress($time, $USER->id);
@@ -148,12 +162,15 @@ foreach($courses as $item){
 }
 
 $menu = array("Last Week");
-if(get_config('local_intelliboard', 't01'))
+if(get_config('local_intelliboard', 't01')){
 	array_push($menu, "Last Month");
-if(get_config('local_intelliboard', 't02'))
+}
+if(get_config('local_intelliboard', 't02')){
 	array_push($menu, "Last Quarter");
-if(get_config('local_intelliboard', 't03'))
+}
+if(get_config('local_intelliboard', 't03')){
 	array_push($menu, "Last Semester");
+}
 
 echo $OUTPUT->header();
 ?>

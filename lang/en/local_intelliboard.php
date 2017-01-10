@@ -72,7 +72,7 @@ $string['filter4_desc'] = 'Show not visible courses';
 $string['filter5_desc'] = 'Show not active enrollment methods';
 $string['filter6_desc'] = 'Show users with not active enrollment status';
 $string['filter7_desc'] = 'Show not visible Activities/Resourses';
-$string['filter8_desc'] = 'Show only enrolled users';
+$string['filter8_desc'] = 'Show only enrolled users (not recommended)';
 
 
 $string['intelliboardstudent'] = 'IntelliBoard';
@@ -144,4 +144,7 @@ $string['t44'] = 'Enable [Activity Grades] Score column';
 $string['t45'] = 'Enable [Activity Grades] Graded column';
 $string['t46'] = 'Enable [Activity Grades] Completed column';
 $string['t47'] = 'Courses [grid] background color';
+$string['t49'] = 'Report filter columns';
+$string['t50'] = 'Teacher roles';
+$string['t51'] = 'Student roles';
 

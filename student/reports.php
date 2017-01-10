@@ -92,6 +92,8 @@ if($mode_filter){
 		'filter_enrolmethod_status'=>get_config('local_intelliboard', 'filter5'),
 		'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
 		'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
+		'filter_columns'=>get_config('local_intelliboard', 'filter9'),
+		'filter_profile'=>0,
 		'sizemode'=> get_config('local_intelliboard', 'sizemode'),
 		'users'=> $USER->id,
 		'custom'=> $custom,
@@ -110,8 +112,8 @@ if($mode_filter){
 	$function = "report$id";
 	$class = 'local_intelliboard_external';
 	$plugin = new $class();
-	$plugin->teacher_roles = '3,4';
-	$plugin->learner_roles = '5';
+	$plugin->teacher_roles = get_config('local_intelliboard', 'filter10');
+	$plugin->learner_roles = get_config('local_intelliboard', 'filter11');
 
 	$data = json_encode($plugin->{$function}($params));
 

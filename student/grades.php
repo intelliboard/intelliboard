@@ -41,7 +41,14 @@ if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 
 	throw new moodle_exception('invalidaccess', 'error');
 }
 $email = get_config('local_intelliboard', 'te1');
-$params = array('url'=>$CFG->wwwroot,'email'=>$email,'firstname'=>$USER->firstname,'lastname'=>$USER->lastname,'do'=>'learner', 'mode'=> 1);
+$params = array(
+	'url'=>$CFG->wwwroot,
+	'email'=>$email,
+	'firstname'=>$USER->firstname,
+	'lastname'=>$USER->lastname,
+	'do'=>'learner',
+	'mode'=> 1
+);
 $intelliboard = intelliboard($params);
 if (isset($intelliboard->content)) {
     $factorInfo = json_decode($intelliboard->content);
