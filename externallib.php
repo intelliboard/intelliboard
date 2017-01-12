@@ -28,7 +28,6 @@
 
 require_once($CFG->libdir . "/externallib.php");
 
-
 class local_intelliboard_external extends external_api {
 
 	var $params = array();
@@ -2613,6 +2612,7 @@ class local_intelliboard_external extends external_api {
 				"u.lastname",
 				"u.email",
 				"feedback",
+				"question_number",
 				"question",
 				"answer",
 				"feedback_time",
@@ -2639,6 +2639,7 @@ class local_intelliboard_external extends external_api {
 				cc.timecompleted,
 				mfi.presentation,
                 mfi.typ,
+				mfi.id as question_number,
 				mfi.name as question,
 				mfv.value as answer,
 				mf.name as feedback,
