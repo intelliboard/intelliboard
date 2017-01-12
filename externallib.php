@@ -453,8 +453,12 @@ class local_intelliboard_external extends external_api {
 		}else{
 			$sql_filter_column = "ue.timecreated";
 		}
+		if($sql_mode){
+			$sql_join_filter .= $this->get_filterdate_sql($params, "$sql_filter_column");
+		}else{
+			$sql_filter .= $this->get_filterdate_sql($params, "$sql_filter_column");
+		}
 
-		$sql_filter .= $this->get_filterdate_sql($params, "$sql_filter_column");
 		$sql_filter .= $this->get_filter_user_sql($params, "u.");
 		$sql_filter .= $this->get_filter_course_sql($params, "c.");
 		$sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
