@@ -443,6 +443,7 @@ class local_intelliboard_external extends external_api {
 
 		$sql_join = "";
 		if(isset($params->custom) and  strrpos($params->custom, ',') !== false){
+			$params->custom = clean_param($params->custom, PARAM_SEQUENCE);
 			$sql_filter .= " AND u.id IN($params->custom)";
 			$sql_filter_column = "ue.timecreated";
 		}elseif(isset($params->custom) and $params->custom == 2 and !$params->sizemode){
@@ -1572,7 +1573,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $CFG, $DB;
 
-		$columns = array_merge(array("gi.itemname", "learner", "u.email", "graduated", "grade", "completionstate", "timespend", "visits"), $this->get_filter_columns($params));
+		$columns = array_merge(array("gi.itemname", "learner", "u.email", "graduated", "grade", "completionstate", "timespend", "visits","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
 
 		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
 		$sql_having = $this->get_filter_sql($params, $columns);
@@ -1601,6 +1602,13 @@ class local_intelliboard_external extends external_api {
 					gi.itemname,
 					gg.userid,
 					u.email,
+					u.phone1,
+					u.phone2,
+					u.institution,
+					u.department,
+					u.address,
+					u.city,
+					u.country,
 					CONCAT(u.firstname, ' ', u.lastname) as learner,
 					gg.timemodified as graduated,
 					(gg.finalgrade/gg.rawgrademax)*100 as grade,
@@ -2155,7 +2163,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $CFG, $DB;
 
-		$columns = array("course", "learner","email", "certificate", "ci.timecreated", "ci.code");
+		$columns = array("course", "learner","email", "certificate", "ci.timecreated", "ci.code","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","");
 
 		$sql_having = $this->get_filter_sql($params, $columns);
 		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
@@ -2170,6 +2178,13 @@ class local_intelliboard_external extends external_api {
 		$data = $DB->get_records_sql("SELECT ci.id,
 			CONCAT(u.firstname, ' ', u.lastname) as learner,
 			u.email,
+			u.phone1,
+			u.phone2,
+			u.institution,
+			u.department,
+			u.address,
+			u.city,
+			u.country,
 			ce.name as certificate,
 			ci.timecreated,
 			ci.code,
@@ -2496,7 +2511,7 @@ class local_intelliboard_external extends external_api {
 	{
 		global $CFG, $DB;
 
- 		$columns = array("user", "u.email", "course", "assignment", "a.duedate", "s.status", "gc.grade", "cc.timecompleted", "ue.timecreated");
+ 		$columns = array("user", "u.email", "course", "assignment", "a.duedate", "s.status", "gc.grade", "cc.timecompleted", "ue.timecreated","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","");
 
 		$sql_columns = $this->get_columns($params, "u.id");
 		$sql_having = $this->get_filter_sql($params, $columns);
@@ -2515,6 +2530,13 @@ class local_intelliboard_external extends external_api {
 				s.status,
 				s.timemodified AS submitted ,
 				u.email,
+				u.phone1,
+				u.phone2,
+				u.institution,
+				u.department,
+				u.address,
+				u.city,
+				u.country,
 				CONCAT(u.firstname, ' ', u.lastname) as user
 				$sql_columns
 				FROM (SELECT @x:= 0) AS x, {assign} a
@@ -3266,6 +3288,7 @@ class local_intelliboard_external extends external_api {
 				"emploee_id",
 				"emploee_name",
 				"manager_name",
+				"tr.form_origin",
 				"tr.education",
 				"job_title",
 				"overal_rating",
@@ -3273,7 +3296,18 @@ class local_intelliboard_external extends external_api {
 				"behaviors_rating",
 				"promotability",
 				"mobility",
-				"tr.complited_date"),
+				"tr.behaviors_growth",
+				"tr.behaviors_accountability",
+				"tr.behaviors_champions",
+				"tr.behaviors_self_aware",
+				"tr.behaviors_initiative",
+				"tr.behaviors_judgment",
+				"tr.behaviors_makes_people",
+				"tr.behaviors_leadership",
+				"tr.behaviors_effective_com",
+				"tr.behaviors_gets_result",
+				"tr.behaviors_integrative",
+				"tr.behaviors_intelligent"),
 		 	$this->get_filter_columns($params)
 		 );
 		$sql_filter = $this->get_teacher_sql($params, "u.id", "users");
@@ -3287,11 +3321,24 @@ class local_intelliboard_external extends external_api {
 				tr.user_id as emploee_id,
 				CONCAT(u.firstname, ' ', u.lastname) as emploee_name,
 				tr.manager as manager_name,
+				tr.form_origin,
 				tr.education,
 				tr.title as job_title,
 				tr.overal_review_rating as overal_rating,
 				tr.goals_perfomance_overal as overal_perfomance_rating,
 				tr.behaviors_overal as behaviors_rating,
+				tr.behaviors_growth,
+				tr.behaviors_accountability,
+				tr.behaviors_champions,
+				tr.behaviors_self_aware,
+				tr.behaviors_initiative,
+				tr.behaviors_judgment,
+				tr.behaviors_makes_people,
+				tr.behaviors_leadership,
+				tr.behaviors_effective_com,
+				tr.behaviors_gets_result,
+				tr.behaviors_integrative,
+				tr.behaviors_intelligent,
 				tr.complited_date,
                 if(promotability_hp1 = 1, 1,
                   if(promotability_hp2 = 1, 2,
@@ -3475,6 +3522,78 @@ class local_intelliboard_external extends external_api {
 
 		WHERE 1 $sql_filter GROUP BY ue.userid, e.courseid $sql_having $sql_order $sql_limit", $this->params);
 
+
+		return array("data" => $data);
+	}
+	function report94($params)
+	{
+		global $CFG, $DB;
+
+		$columns = array_merge(array("u.id", "u.firstname", "u.lastname", "u.email", "submitted", "attempted","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
+		$sql_having = $this->get_filter_sql($params, $columns);
+		$sql_order = $this->get_order_sql($params, $columns);
+		$sql_limit = $this->get_limit_sql($params);
+		$sql_columns = $this->get_columns($params, "u.id");
+		$sql_filter = $this->get_teacher_sql($params, "u.id", "users");
+		$sql_filter .= ($params->courseid) ? " AND c.id IN($params->courseid)" : "";
+		$sql_filter .= $this->get_filterdate_sql($params, "qa.timemodified");
+		$sql_filter .= $this->get_filter_user_sql($params, "u.");
+		$sql_filter .= $this->get_filter_course_sql($params, "c.");
+
+		$data = $DB->get_records_sql("SELECT u.id, u.firstname, u.lastname, u.email,
+			u.phone2,
+			u.institution,
+			u.department,
+			u.address,
+			u.city,
+			u.country,
+			COUNT(DISTINCT(qa.quiz)) as submitted,
+			COUNT(DISTINCT(qa.id)) as attempted $sql_columns
+			FROM {quiz_attempts} qa, {user} u, {quiz} q, {course} c
+			WHERE qa.quiz = q.id AND c.id = q.course AND qa.userid = u.id $sql_filter GROUP BY u.id $sql_having $sql_order $sql_limit", $this->params);
+
+		return array("data" => $data);
+	}
+	function report95($params)
+	{
+		global $CFG, $DB;
+
+		$columns = array_merge(array( "c.fullname", "submitted", "attempted"), $this->get_filter_columns($params));
+		$sql_having = $this->get_filter_sql($params, $columns);
+		$sql_order = $this->get_order_sql($params, $columns);
+		$sql_limit = $this->get_limit_sql($params);
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id IN($params->courseid)" : "";
+		$sql_filter .= $this->get_filterdate_sql($params, "qa.timemodified");
+		$sql_filter .= $this->get_filter_course_sql($params, "c.");
+
+		$data = $DB->get_records_sql("SELECT c.id, c.fullname,
+			COUNT(DISTINCT(qa.quiz)) as submitted,
+			COUNT(DISTINCT(qa.id)) as attempted
+			FROM {quiz_attempts} qa, {quiz} q, {course} c
+		WHERE qa.quiz = q.id AND c.id = q.course $sql_filter GROUP BY c.id $sql_having $sql_order $sql_limit", $this->params);
+
+		return array("data" => $data);
+	}
+	function report96($params)
+	{
+		global $CFG, $DB;
+
+		$columns = array_merge(array( "co.name", "submitted", "attempted"), $this->get_filter_columns($params));
+		$sql_having = $this->get_filter_sql($params, $columns);
+		$sql_order = $this->get_order_sql($params, $columns);
+		$sql_limit = $this->get_limit_sql($params);
+		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+		$sql_filter .= ($params->courseid) ? " AND c.id IN($params->courseid)" : "";
+		$sql_filter .= ($params->cohortid) ? " AND co.id IN($params->cohortid)" : "";
+		$sql_filter .= $this->get_filterdate_sql($params, "qa.timemodified");
+		$sql_filter .= $this->get_filter_course_sql($params, "c.");
+
+		$data = $DB->get_records_sql("SELECT co.id, co.name,
+			COUNT(DISTINCT(qa.quiz)) as submitted,
+			COUNT(DISTINCT(qa.id)) as attempted
+			FROM {quiz_attempts} qa, {quiz} q, {course} c, {cohort} co, {cohort_members} cm
+			WHERE qa.quiz = q.id AND c.id = q.course AND cm.userid = qa.userid AND co.id = cm.cohortid $sql_filter GROUP BY co.id $sql_having $sql_order $sql_limit", $this->params);
 
 		return array("data" => $data);
 	}
