@@ -135,7 +135,9 @@ echo $OUTPUT->header();
 						<div class="title">
 							<strong><?php echo $item->fullname; ?></strong>
 							<?php if($t16): ?>
-								<?php $teachers = get_users_by_capability(context_course::instance($item->id), 'moodle/course:update', '', '', '', '', '', null, false); ?>
+								<?php $teachers = get_users_by_capability(context_course::instance($item->id), 'moodle/course:update', '', '', '', '', '', null, false);
+									$teachers = sort_by_roleassignment_authority($teachers, context_course::instance($item->id));
+								?>
 								<?php foreach($teachers as $teacher): ?>
 									<p title="Teacher"><?php echo $OUTPUT->user_picture($teacher, array('size'=>20)); ?> <?php echo fullname($teacher); ?></p>
 								<?php break; endforeach; ?>
