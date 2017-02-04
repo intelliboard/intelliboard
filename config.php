@@ -42,9 +42,9 @@ if($reports){
 
 $params = array(
 	'url'=>$CFG->wwwroot,
-	'email'=>$USER->email,
-	'firstname'=>$USER->firstname,
-	'lastname'=>$USER->lastname,
+    'email'=>s($USER->email),
+    'firstname'=>s($USER->firstname),
+    'lastname'=>s($USER->lastname),
 	'reports'=>get_config('local_intelliboard', 'reports'),
 	'type'=>'settings',
 	'do'=>'reportslist'
@@ -61,8 +61,8 @@ echo $OUTPUT->header();
 ?>
 <div class="intelliboard-page">
 	<?php include("views/menu.php"); ?>
-	<div class="intelliboard-content"><?php echo $intelliboard->content; ?></div>
-	<a href="<?php echo $CFG->wwwroot; ?>/admin/settings.php?section=local_intelliboard">Advanced Setting</a>
+	<div class="intelliboard-content"><?php echo intelliboard_clean($intelliboard->content); ?></div>
+	<a href="<?php echo $CFG->wwwroot; ?>/admin/settings.php?section=local_intelliboard"><?php echo get_string('adv_settings','local_intelliboard');?></a>
 	<?php include("views/footer.php"); ?>
 </div>
 <?php

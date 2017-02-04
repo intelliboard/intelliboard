@@ -2,33 +2,45 @@
 	<thead>
 		<tr>
 			<th>Name</th>
-			<th align="center">Progress</th>
-			<th align="center">Score</th>
-			<th align="center">Visits</th>
-			<th align="center">Time Spent</th>
-			<th align="center">Registered</th>
+			<th align="center"><?php echo get_string('progress', 'local_intelliboard');?></th>
+			<th align="center"><?php echo get_string('score', 'local_intelliboard');?></th>
+			<th align="center"><?php echo get_string('visits', 'local_intelliboard');?></th>
+			<th align="center"><?php echo get_string('time_spent', 'local_intelliboard');?></th>
+			<th align="center"><?php echo get_string('registered', 'local_intelliboard');?></th>
 		</tr>
 	</thead>
 	<tbody>
 		<?php foreach($report43['data'] as $row): ?>
+		<?php
+			//clean variables
+			$row->courses = intval($row->courses);
+			$row->completed_courses = intval($row->completed_courses);
+			$row->grade = intval($row->grade);
+			$row->avg_grade_site = ($avg)?intval($avg->grade_site):0;
+			$row->avg_visits_site = ($avg)?intval($avg->visits_site):0;
+			$row->avg_timespend_site = ($avg)?seconds_to_time($avg->timespend_site):0;
+			$row->visits = intval($row->visits);
+			$row->timespend = seconds_to_time($row->timespend);
+			$row->user = format_string($row->user);
+            ?>
 		<tr>
 			<td><a href="<?php echo $CFG->wwwroot; ?>/user/profile.php?id=<?php echo $row->id; ?>"><?php echo $row->user; ?></a></td>
-			<td align="center" class="intelliboard-tooltip" title="<?php echo "Enrolled: ".intval($row->courses).", Completed: ".intval($row->completed_courses); ?>">
+			<td align="center" class="intelliboard-tooltip" title="<?php echo get_string('enrolled_completed', 'local_intelliboard', $row); ?>">
 				<div class="intelliboard-progress xl"><span style="width:<?php echo ($row->completed_courses) ? (($row->completed_courses / $row->courses) * 100) : 0; ?>%"></span></div>
 			</td>
-			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo "$row->user grade: ".intval($row->grade).", Average grade: ".intval($avg->grade_site);} ?>">
+			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo get_string('user_grade_avg', 'local_intelliboard', $row);} ?>">
 				<span class='<?php if($avg){echo ($avg->grade_site > $row->grade) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left";} ?>'>
-					 <?php echo (int)$row->grade; ?>
+					 <?php echo $row->grade; ?>
 				</span>
 			</td>
-			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo "$row->user visits: ".intval($row->visits).", Average visits: ".intval($avg->visits_site);} ?>">
+			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo get_string('user_visit_avg', 'local_intelliboard', $row);} ?>">
 				<span class='<?php if($avg){echo ($avg->visits_site > $row->visits)?"down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left";} ?>'>
-					 <?php echo ($report_time)?'Disabled':intval($row->visits); ?>
+					 <?php echo ($report_time)?get_string('disabled', 'local_intelliboard'):$row->visits; ?>
 				</span>
 			</td>
-			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo "$row->user time: ".seconds_to_time($row->timespend).", Average time: ".seconds_to_time($avg->timespend_site);} ?>">
+			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo get_string('user_time_avg', 'local_intelliboard', $row);} ?>">
 				<span class='<?php if($avg){echo ($avg->timespend_site > $row->timespend)?"down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left";} ?>'>
-					 <?php echo ($report_time)?'Disabled':seconds_to_time($row->timespend); ?>
+					 <?php echo ($report_time)?get_string('disabled', 'local_intelliboard'):$row->timespend; ?>
 				</span>
 			</td>
 			<td><?php echo date("m/d/Y", $row->timecreated); ?></td>
@@ -38,8 +50,8 @@
 	<tfoot>
 		<tr>
 			<td colspan="6">
-				<a style="float:left" href="learners.php">More users</a>
-				<span style="float:right;color:#ddd;">Showing 1 to 10</span>
+				<a style="float:left" href="learners.php"><?php echo get_string('more_users', 'local_intelliboard'); ?></a>
+				<span style="float:right;color:#ddd;"><?php echo get_string('showing_1_to_10', 'local_intelliboard'); ?></span>
 			</td>
 		</tr>
 	</tfoot>

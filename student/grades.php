@@ -43,9 +43,9 @@ if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 
 $email = get_config('local_intelliboard', 'te1');
 $params = array(
 	'url'=>$CFG->wwwroot,
-	'email'=>$email,
-	'firstname'=>$USER->firstname,
-	'lastname'=>$USER->lastname,
+    'email'=>s($email),
+    'firstname'=>s($USER->firstname),
+    'lastname'=>s($USER->lastname),
 	'do'=>'learner',
 	'mode'=> 1
 );
@@ -56,7 +56,7 @@ if (isset($intelliboard->content)) {
 	$factorInfo = '';
 }
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>$search, "id"=>$id)));
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>s($search), "id"=>$id)));
 $PAGE->set_pagetype('grades');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -69,10 +69,10 @@ $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 
 $totals = intelliboard_learner_totals($USER->id);
 if($id){
-	$table = new intelliboard_activities_grades_table('table', $USER->id, $id, $search);
+	$table = new intelliboard_activities_grades_table('table', $USER->id, $id, s($search));
 	$course = intelliboard_learner_course($USER->id, $id);
 }else{
-	$table = new intelliboard_courses_grades_table('table', $USER->id, $search);
+	$table = new intelliboard_courses_grades_table('table', $USER->id, s($search));
 }
 $table->show_download_buttons_at(array());
 $table->is_downloading('', '', '');
@@ -91,27 +91,27 @@ echo $OUTPUT->header();
 						<div class="circle-progress-course"  data-percent="<?php echo (int)$course->grade; ?>"></div>
 					</div>
 					<div class="details">
-						<h3><?php echo $course->fullname ?></h3>
+						<h3><?php echo format_string($course->fullname); ?></h3>
 						<p>
 							<?php if($course->enablecompletion and get_config('local_intelliboard', 't41')): ?>
-								<?php echo ($course->timecompleted) ? " <i class='green-color ion-android-done'></i> Completed on ".date('m/d/Y', $course->timecompleted) : " <i class='orange-color ion-android-radio-button-on'></i> Incomplete" ?>
+								<?php echo ($course->timecompleted) ? " <i class='green-color ion-android-done'></i> ". get_string('completed_on', 'local_intelliboard', date('m/d/Y', $course->timecompleted)): " <i class='orange-color ion-android-radio-button-on'></i> ".get_string('incomplete', 'local_intelliboard'); ?>
 							<?php endif; ?>
 							<?php if(get_config('local_intelliboard', 't42')): ?>
 							&nbsp; &nbsp; &nbsp;
 
-							<?php echo ($course->timeaccess) ? " <i class='ion-android-person'></i> Last access on course: ".date('F d, Y h:i', $course->timeaccess) : "" ?>
+							<?php echo ($course->timeaccess) ? " <i class='ion-android-person'></i> ".get_string('last_access_on_course', 'local_intelliboard', date('F d, Y h:i', $course->timeaccess)) : "" ?>
 							<?php endif; ?>
 						</p>
 					</div>
 					<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/student/grades.php'; ?>" class="btn">
-					<i class="ion-android-arrow-back"></i> Return to Grades</a>
+					<i class="ion-android-arrow-back"></i> <?php echo get_string('return_to_grades', 'local_intelliboard');?></a>
 				</div>
 			<?php endif; ?>
 			<div class="intelliboard-search clearfix">
 				<form action="<?php echo $PAGE->url; ?>" method="GET">
 					<input name="id" type="hidden" value="<?php echo $id; ?>" />
-					<input name="search" type="text" value="<?php echo $search; ?>" placeholder="Type here..." />
-					<button>Search</button>
+					<input name="search" type="text" value="<?php echo format_string($search); ?>" placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>" />
+					<button><?php echo get_string('search');?></button>
 				</form>
 			</div>
 
@@ -121,8 +121,8 @@ echo $OUTPUT->header();
 </div>
 <script type="text/javascript">
 	jQuery(document).ready(function(){
-		jQuery('.circle-progress').percentcircle(<?php echo $factorInfo->GradesXCalculation; ?>);
-		jQuery('.circle-progress-course').percentcircle(<?php echo $factorInfo->GradesZCalculation; ?>);
+		jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesXCalculation); ?>);
+		jQuery('.circle-progress-course').percentcircle(<?php echo format_string($factorInfo->GradesZCalculation); ?>);
 	});
 </script>
 <?php endif; ?>

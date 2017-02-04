@@ -1,3 +1,3 @@
 <p class="intelliboard-footer">
-	Powered by <a href="http://intelliboard.net/">IntelliBoard.net</a>
+    <?php echo get_string('powered_by', 'local_intelliboard');?>
 </p>

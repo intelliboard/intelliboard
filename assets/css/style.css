@@ -13,6 +13,11 @@
 .intelliboard-page h3{font-family:'Open Sans';font-weight:400;}
 .intelliboard-page .log{font-family: monospace; font-size: 9px; margin: 0;}
 
+.intelliboard-filterform{display: block;  margin: 0 auto;  padding: 20px;  width: 300px;}
+.intelliboard-filterform button,
+.intelliboard-filterform select,
+.intelliboard-filterform input{width:100%; display: block; margin-bottom: 10px}
+.intelliboard-filterform button{  margin: 30px 0 0;}
 
 .intelliboard-search{margin: 30px 0 20px;}
 .intelliboard-search form{margin: 0;}
@@ -102,6 +107,9 @@
 .intelliboard-student .actions a{display: block;width: 100%; border:1px solid #4c75a2; margin-bottom: 10px; text-align: center; padding: 5px; border-radius: 5px; box-sizing: border-box;}
 
 .align-center{text-align: center !important;}
+
+
+
 
 .intelliboard-data-table span.brd{border:1px solid #444;font-size: 12px; padding:3px 6px; border-radius: 3px; }
 .intelliboard-data-table span.d1{border-color:#5cb85c; }
@@ -262,7 +270,7 @@
 .intelliboard-progress.xl{height:10px;background:#E3E3E3;margin-top:5px;}
 .intelliboard-progress.xxl{height:20px;background:#E3E3E3;margin-top:5px;}
 .intelliboard-progress.xxx{height:30px;background:#E3E3E3;margin-top:5px;}
-.intelliboard-progress span{background:#41BEE9;height: 100%; display: block;}
+.intelliboard-progress span{background:#41BEE9;height: 100%; display: block; text-align: center; text-shadow: 0px 0px rgba(0, 0, 0, 0.1);}
 .intelliboard-progress.g1 span{background:#428bca;}
 .intelliboard-list{padding:0;margin:0; list-style:none;}
 .intelliboard-list li{padding:0;margin:0 0 10px;}
@@ -315,7 +323,7 @@
 .intelliboard-stats .up{color:#AABC39}
 .intelliboard-stats .down{color:#DD4B39}
 .intelliboard-tooltip {position: relative;}
-.intelliboard-tooltip:hover:after{font-size:12px;background: #333;background: rgba(0,0,0,.8);border-radius: 5px;bottom: 26px;color: #fff;content: attr(title);left: 20%;padding: 5px 15px;position: absolute;z-index: 98;width: 220px;}
+.intelliboard-tooltip:hover:after{font-size:12px;background: #333;background: rgba(0,0,0,.8);border-radius: 5px;bottom: 26px;color: #fff;content: attr(title);left: 20%;padding: 5px 15px;position: absolute;z-index: 98;white-space: pre;}
 .intelliboard-tooltip:hover:before{border: solid;border-color: #333 transparent;border-width: 6px 6px 0 6px;bottom: 20px;content: "";left: 50%;position: absolute;z-index: 99;}
 
 .grades-table{margin-top: 30px}
@@ -328,13 +336,34 @@
 .orange-color{color: #f0ad4e}
 .green-color{color: #5cb85c}
 
+.progress-table tr{ }
+.progress-table tr td{overflow: auto; vertical-align: middle;}
+.progress-table tr td .intelliboard-progres{margin: 0}
 
 .intelliboard-course-header{margin-bottom: 20px;}
 .intelliboard-course-header .grade{float: left;margin-right: 20px}
 .intelliboard-course-header .details{float: left;}
 .intelliboard-course-header h3{margin:5px 0;}
-.intelliboard-course-header p{margin:0;opacity: 0.6}
+.intelliboard-course-header h3 i{font-size: 14px;opacity: 0.2;}
+.intelliboard-course-header h3:hover i{opacity: 1;}
+.intelliboard-course-header p{margin:0;}
+.intelliboard-course-header p i{margin-right: 5px;}
+.intelliboard-course-header p span{margin-right: 10px;color: rgba(0,0,0,0.4)}
 .intelliboard-course-header a{float: right;}
+
+
+.intelliboard-course-header ul.summary{clear:both; margin: 0 0 0 100px;  padding: 5px 0;list-style: none; border-top: 1px solid #ccc;}
+.intelliboard-course-header ul.summary li{display: block; font-size: 15px; font-weight: 400; display: inline-block; margin-right: 25px }
+.intelliboard-course-header ul.summary li span{display: block; font-size: 13px; opacity: 0.6; font-weight: 400;}
+.intelliboard-course-header .avatar{float: left;margin-right: 20px}
+.intelliboard-course-header .avatar img{ border-radius: 50%}
+.intelliboard-course-header .activity{ width: 80px;height: 80px;border-radius: 50%; background-color: #ddd; float: left;margin-right: 20px; line-height: 80px; font-size: 36px; color: #fff; text-transform: uppercase;text-align: center}
+
+.intelliboard-course-header ul.totals{float:right;padding: 0;margin: 0;list-style: none;}
+.intelliboard-course-header ul.totals li{padding: 15px 0 15px 20px; margin: 0; display: inline-block;font-size: 32px;font-weight: 400; text-align: center;}
+.intelliboard-course-header ul.totals li{}
+.intelliboard-course-header ul.totals li:first-child{padding-left: 0}
+.intelliboard-course-header ul.totals li span{display: block; font-size: 13px; opacity: 0.8; font-weight: 400;margin-top: 5px;}
 
 .info-progress{width:150px;height:14px;background-color:#fff;box-shadow: 0 0 10px #DDDDDD inset;position:relative;}
 .info-progress span{display:block;height:100%;position:absolute;top:0;left:0;text-indent: -9999px;}
@@ -441,7 +470,24 @@
   border-top-right-radius: 3px;
   border-bottom-right-radius: 3px;
 }
-
+.quizchartcontainer{position: relative;padding-top: 50px;padding-bottom:10px;background: #fff none repeat scroll 0 0;}
+.quizchartcontainer .graph-tabs{position: absolute;left:10px;top: 10px; }
+.quizchartcontainer .graph-tabs span{display: inline-block;padding: 5px;margin-left: 10px;font-weight: 600;cursor: pointer; opacity: 0.4;}
+.quizchartcontainer .graph-tabs span.active{border-bottom: 1px solid #666; opacity: 1;}
+.quizchartcontainer .graph-tabs span.active:hover{border-bottom: 1px solid #666; opacity: 1;}
+.quizchartcontainer .quizchart{}
+.quizchartcontainer .quizchart.hidden{display: none}
+.quizchartcontainer .quizchart.active{display: block}
+.quizchart.actives::after {
+    background: #fff none repeat scroll 0 0;
+    border: 0px solid;
+    bottom: 0;
+    content: "";
+    height: 30px;
+    position: absolute;
+    right: 0;
+    width: 37%;
+}
 .ion-spin-animation { -webkit-animation: spin 1s infinite linear; -moz-animation: spin 1s infinite linear; -o-animation: spin 1s infinite linear; animation: spin 1s infinite linear; }
 
 @-moz-keyframes spin { 0% { -moz-transform: rotate(0deg); }

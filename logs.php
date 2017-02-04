@@ -46,7 +46,7 @@ $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 echo $OUTPUT->header();
-echo $OUTPUT->heading("IntelliBoard Migration Tool");
+echo $OUTPUT->heading(get_string('intelliBoard_migration_tool', 'local_intelliboard'));
 
 
 if($admins = get_admins()){
@@ -60,14 +60,15 @@ if($admins = get_admins()){
 }
 $html = '';
 if($action == 'totals'){
-	$html .= '<h2>Importing totals</h2>';
+	$html .= '<h2>'.get_string('importing_totals', 'local_intelliboard').'</h2>';
 	$r = '';
-	if($data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS FROM_UNIXTIME(timecreated, '%Y%m%d') as timeday, COUNT(userid) as visits, COUNT(DISTINCT (userid)) as sessions, COUNT(DISTINCT (courseid)) as courses
+	$query = "SELECT FROM_UNIXTIME(timecreated, '%Y%m%d') as timeday, COUNT(userid) as visits, COUNT(DISTINCT (userid)) as sessions, COUNT(DISTINCT (courseid)) as courses
 				FROM {logstore_standard_log}
 					WHERE userid NOT IN ($ids)
-						GROUP BY timeday HAVING timeday NOT IN (SELECT FROM_UNIXTIME(timepoint, '%Y%m%d') as timepoint FROM {local_intelliboard_totals}) LIMIT 0, $length")){
-		$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
-		$size = key($size);
+						GROUP BY timeday HAVING timeday NOT IN (SELECT FROM_UNIXTIME(timepoint, '%Y%m%d') as timepoint
+							FROM {local_intelliboard_totals})";
+	if($data = $DB->get_records_sql($query, array(), 0, $length)){
+		$size = $DB->count_records_sql("SELECT COUNT(*) FROM ($query) AS x", array());
 		foreach($data as $item){
 			$data = new stdClass();
 			$data->sessions = $item->sessions;
@@ -76,25 +77,25 @@ if($action == 'totals'){
 			$data->timespend = $item->visits * 10;
 			$data->timepoint = strtotime($item->timeday."000000");
 			$DB->insert_record("local_intelliboard_totals", $data);
-			$r .= "<p class='log'>Date: $data->timepoint, Sessions: $data->sessions, Visits: $data->visits,  Time Spent: $data->timespend</p>";
+			$r .= "<p class='log'>".get_string('total_numbers', 'local_intelliboard',$data)."</p>";
 		}
 	}else{
 		$size = 0;
 	}
 
-	$html .= '<strong>Logs to process '.$size.'</strong>';
+	$html .= '<strong>'.get_string('logs_to_process', 'local_intelliboard',$size).'</strong>';
 	if($size > $length){
-		$html .= '<p>Please wait to continue or <a href="'.$PAGE->url.'">Cancel</a></p>';
+		$html .= '<p>'.get_string('please_wait_or_cancel', 'local_intelliboard',$PAGE->url).'</p>';
 		$html .= '<meta http-equiv="refresh" content="1; url='.$PAGE->url.'?action=totals&length='.$length.'" />';
 	}else{
-		$html .= '<p>Done!</p>';
-		$html .= '<p><a href="'.$PAGE->url.'">Return to home</a></p>';
+		$html .= '<p>'.get_string('done', 'local_intelliboard').'</p>';
+		$html .= '<p><a href="'.$PAGE->url.'">'.get_string('return_to_home', 'local_intelliboard').'</a></p>';
 	}
 	$html .= $r;
 }elseif($action == 'logs'){
-	$html .= '<h2>Importing logs</h2>';
+	$html .= '<h2>'.get_string('importing_logs', 'local_intelliboard').'</h2>';
 	$r = '';
-	if($data = $DB->get_records_sql("SELECT SQL_CALC_FOUND_ROWS
+	$query = "SELECT
 			id,
 			component,
 			target,
@@ -105,10 +106,10 @@ if($action == 'totals'){
 			ip FROM {logstore_standard_log}
 		WHERE
 			contextinstanceid > 0 and userid NOT IN ($ids)
-		GROUP BY contextinstanceid, userid, component, target, floor(timecreated / 86400) * 86400
-		LIMIT $start, $length")){
-			$size = $DB->get_records_sql("SELECT FOUND_ROWS()");
-			$size = key($size);
+		GROUP BY contextinstanceid, userid, component, target, floor(timecreated / 86400) * 86400";
+	if($data = $DB->get_records_sql($query, array(), $start, $length)){
+
+			$size = $DB->count_records_sql("SELECT COUNT(*) FROM ($query) AS x", array());
 
 			$collector = array();
 			foreach($data as $item){
@@ -162,7 +163,7 @@ if($action == 'totals'){
 					$data->timespend = $item->timespend;
 
 					$data->id =$DB->insert_record("local_intelliboard_tracking", $data);
-					$r .= "<p class='log'>USER: $data->userid, Page: $data->page, Param:$data->param, Visits: $data->visits,  Time Spent: $data->timespend</p>";
+					$r .= "<p class='log'>".get_string('total_numbers2', 'local_intelliboard', $data)."</p>";
 				}
 				if($data->id and !empty($item->logs)){
 					foreach($item->logs as $row){
@@ -176,7 +177,13 @@ if($action == 'totals'){
 							$log->timepoint = $row->timecreated;
 							$DB->insert_record('local_intelliboard_logs', $log);
 						}
-						$r .= "<p class='log'>----Date: ".date('m/d/Y', $row->timecreated).", Track ID: $log->trackid, Visits: $row->visits,  Time Spent: $row->timespend</p>";
+
+						$a = new stdClass();
+						$a->timecreated = date('m/d/Y', $row->timecreated);
+						$a->trackid = $log->trackid;
+						$a->visits = $row->visits;
+						$a->timespend = $row->timespend;
+						$r .= "<p class='log'>".get_string('total_numbers3', 'local_intelliboard', $a)."</p>";
 					}
 				}
 			}
@@ -186,13 +193,13 @@ if($action == 'totals'){
 
 
 
-	$html .= '<strong>Logs to process '.((($size - $start)>0)?($size - $start):0).'</strong>';
+	$html .= '<strong>'.get_string('logs_to_process', 'local_intelliboard', ((($size - $start)>0)?($size - $start):0)).'</strong>';
 	if($size > $length){
-		$html .= '<p>Please wait to continue or <a href="'.$PAGE->url.'">Cancel</a></p>';
+		$html .= '<p>'.get_string('please_wait_or_cancel', 'local_intelliboard',$PAGE->url).'</p>';
 		$html .= '<meta http-equiv="refresh" content="1; url='.$PAGE->url.'?action=logs&length='.$length.'&start='.($start + $length).'" />';
 	}else{
-		$html .= '<p>Done!</p>';
-		$html .= '<p><a href="'.$PAGE->url.'">Return to home</a></p>';
+        $html .= '<p>'.get_string('done', 'local_intelliboard').'</p>';
+        $html .= '<p><a href="'.$PAGE->url.'">'.get_string('return_to_home', 'local_intelliboard').'</a></p>';
 	}
 	$html .= $r;
 }
@@ -208,30 +215,30 @@ if(!$html){
 ?>
 <div class="intelliboard-page">
 	<div class="intelliboard-content">
-		<p>IntelliBoard migration tool is used to migrate historical data from Moodle logs table into new format. Please note, Moodle logs storing procedure will not change. Once historical data migrated to new format, historical values like 'Time Spent' and 'Visits' will be available for preview at IntelliBoard.net.</p>
+		<p><?php echo get_string('intelliBoard_migration_tool_info', 'local_intelliboard'); ?></p>
 		<br>
 		<br>
 		<?php if(!$html): ?>
 		<table class="table">
 			<tr>
-				<td><strong>Moodle logs</strong></td>
-				<td><?php echo $result->logs; ?></td>
+				<td><strong><?php echo get_string('moodle_logs', 'local_intelliboard'); ?></strong></td>
+				<td><?php echo format_string($result->logs); ?></td>
 			</tr>
 			<tr>
-				<td><strong>IntelliBoard tracking</strong></td>
-				<td><?php echo $result->intelliboard_tracking; ?></td>
+				<td><strong><?php echo get_string('intelliboard_tracking', 'local_intelliboard'); ?></strong></td>
+				<td><?php echo format_string($result->intelliboard_tracking); ?></td>
 			</tr>
 			<tr>
-				<td><strong>IntelliBoard logs</strong></td>
-				<td><?php echo $result->intelliboard_logs; ?></td>
+				<td><strong><?php echo get_string('intelliboard_logs', 'local_intelliboard'); ?></strong></td>
+				<td><?php echo format_string($result->intelliboard_logs); ?></td>
 			</tr>
 			<tr>
-				<td><strong>IntelliBoard totals</strong></td>
-				<td><?php echo $result->intelliboard_totals; ?></td>
+				<td><strong><?php echo get_string('intelliboard_totals', 'local_intelliboard'); ?></strong></td>
+				<td><?php echo format_string($result->intelliboard_totals); ?></td>
 			</tr>
 			<tr>
-				<td><strong>IntelliBoard start tracking</strong></td>
-				<td><?php echo ($result->startdate)?date("m/d/Y",$result->startdate):''; ?></td>
+				<td><strong><?php echo get_string('intelliboard_start_tracking', 'local_intelliboard'); ?></strong></td>
+				<td><?php echo ($result->startdate)?format_string(date("m/d/Y",$result->startdate)):''; ?></td>
 			</tr>
 
 		</table>
@@ -239,21 +246,21 @@ if(!$html){
 		<br>
 		<form action="<?php echo $PAGE->url; ?>">
 			<fieldset>
-				<legend>Total Values include unique sessions, courses, visits, time spent.</legend>
-				<label>Items per-query</label><br>
+				<legend><?php echo get_string('total_values_include', 'local_intelliboard'); ?></legend>
+				<label><?php echo get_string('items_per_query', 'local_intelliboard'); ?></label><br>
 				<input type="text" value="300" name="length">
 				<input type="hidden" value="totals" name="action">
-				<button>Import</button>
+				<button><?php echo get_string('import', 'local_intelliboard'); ?></button>
 			</fieldset>
 		</form>
 		<hr>
 		<form action="<?php echo $PAGE->url; ?>">
 			<fieldset>
-				<legend>Log values include logs for each user per day.</legend>
-				<label>Items per-query</label><br>
+				<legend><?php echo get_string('log_values_include', 'local_intelliboard'); ?></legend>
+				<label><?php echo get_string('items_per_query', 'local_intelliboard'); ?></label><br>
 				<input type="text" value="300" name="length">
 				<input type="hidden" value="logs" name="action">
-				<button>Import</button>
+				<button><?php echo get_string('import', 'local_intelliboard'); ?></button>
 			</fieldset>
 		</form>
 		<?php else: ?>

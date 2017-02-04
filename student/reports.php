@@ -59,9 +59,9 @@ if($trigger){
 	$params = array(
 		'id'=> $id,
 		'url'=>$CFG->wwwroot,
-		'email'=>$email,
-		'firstname'=>$USER->firstname,
-		'lastname'=>$USER->lastname,
+        'email'=>s($email),
+        'firstname'=>s($USER->firstname),
+        'lastname'=>s($USER->lastname),
 		'reports'=>get_config('local_intelliboard', 'reports'),
 		'type'=>'reports',
 		'do'=>'reportform',
@@ -93,6 +93,8 @@ if($mode_filter){
 		'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
 		'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
 		'filter_columns'=>get_config('local_intelliboard', 'filter9'),
+		'teacher_roles'=>get_config('local_intelliboard', 'filter10'),
+		'learner_roles'=>get_config('local_intelliboard', 'filter11'),
 		'filter_profile'=>0,
 		'sizemode'=> get_config('local_intelliboard', 'sizemode'),
 		'users'=> $USER->id,
@@ -104,26 +106,22 @@ if($mode_filter){
 		'userid'=>$userid,
 		'courseid'=>$courseid,
 		'cohortid'=>$cohortid,
-		'filter'=>$filter,
+		'filter'=> s($filter),
 		'timestart'=> $timestart,
 		'timefinish'=>$timefinish
 	);
 
 	$function = "report$id";
-	$class = 'local_intelliboard_external';
-	$plugin = new $class();
-	$plugin->teacher_roles = get_config('local_intelliboard', 'filter10');
-	$plugin->learner_roles = get_config('local_intelliboard', 'filter11');
-
+	$plugin = new local_intelliboard_external();
 	$data = json_encode($plugin->{$function}($params));
 
 	$params = array(
 		'url'=>$CFG->wwwroot,
-		'email'=>$email,
-		'firstname'=>$USER->firstname,
-		'lastname'=>$USER->lastname,
+        'email'=>s($email),
+        'firstname'=>s($USER->firstname),
+        'lastname'=>s($USER->lastname),
 		'reports'=>get_config('local_intelliboard', 'reports'),
-		'filter'=>$filter,
+		'filter'=>s($filter),
 		'daterange'=>$daterange,
 		'data'=>$data,
 		'users'=> $USER->id,
@@ -159,7 +157,7 @@ echo $OUTPUT->header();
 <?php else: ?>
 <div class="intelliboard-page intelliboard-student">
 	<?php include("views/menu.php"); ?>
-	<div class="intelliboard-content"><?php echo $intelliboard->content; ?></div>
+	<div class="intelliboard-content"><?php echo intelliboard_clean($intelliboard->content); ?></div>
 	<?php include("../views/footer.php"); ?>
 </div>
 <?php endif; ?>

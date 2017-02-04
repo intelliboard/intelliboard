@@ -60,6 +60,8 @@ if($id){
 		'filter_enrolled_users'=>get_config('local_intelliboard', 'filter8'),
 		'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
 		'filter_columns'=>get_config('local_intelliboard', 'filter9'),
+		'teacher_roles'=>get_config('local_intelliboard', 'filter10'),
+		'learner_roles'=>get_config('local_intelliboard', 'filter11'),
 		'filter_profile'=>0,
 		'sizemode'=>0,
 		'custom'=> '',
@@ -67,20 +69,17 @@ if($id){
 		'custom3'=> '',
 		'length'=>$length,
 		'start'=>$page,
+		'users'=>0,
 		'userid'=>0,
 		'courseid'=>0,
 		'cohortid'=>0,
-		'filter'=>$filter,
+		'filter'=>s($filter),
 		'timestart'=> $timestart,
 		'timefinish'=>$timefinish
 	);
 
 	$function = "report$id";
-	$class = 'local_intelliboard_external';
-	$plugin = new $class();
-	$plugin->teacher_roles = get_config('local_intelliboard', 'filter10');
-	$plugin->learner_roles = get_config('local_intelliboard', 'filter11');
-
+	$plugin = new local_intelliboard_external();
 	$data = json_encode($plugin->{$function}($params));
 }else{
 	$data = '';
@@ -92,7 +91,7 @@ $params = array(
 	'firstname'=>$USER->firstname,
 	'lastname'=>$USER->lastname,
 	'reports'=>get_config('local_intelliboard', 'reports'),
-	'filter'=>$filter,
+	'filter'=>s($filter),
 	'daterange'=>$daterange,
 	'data'=>$data,
 	'id'=> $id,
@@ -113,7 +112,7 @@ echo $OUTPUT->header();
 ?>
 <div class="intelliboard-page">
 	<?php include("views/menu.php"); ?>
-	<div class="intelliboard-content"><?php echo $intelliboard->content; ?></div>
+	<div class="intelliboard-content"><?php echo intelliboard_clean($intelliboard->content); ?></div>
 	<?php include("views/footer.php"); ?>
 </div>
 <?php

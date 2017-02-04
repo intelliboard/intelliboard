@@ -43,17 +43,15 @@ $params = (object) array(
 	'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
 	'filter_enrolled_users'=>get_config('local_intelliboard', 'filter8'),
 	'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
+	'teacher_roles'=>get_config('local_intelliboard', 'filter10'),
+	'learner_roles'=>get_config('local_intelliboard', 'filter11'),
 	'sizemode'=> get_config('local_intelliboard', 'sizemode'),
 	'userid'=>0,
 	'courseid'=>0,
 	'timestart'=> strtotime('-6 month'),
 	'timefinish'=>time()
 );
-$class = 'local_intelliboard_external';
-$plugin = new $class();
-$plugin->teacher_roles = get_config('local_intelliboard', 'filter10');
-$plugin->learner_roles = get_config('local_intelliboard', 'filter11');
-
+$plugin = new local_intelliboard_external();
 $data  = array(
 	15 => json_encode($plugin->get_system_users($params)),
 	19 => json_encode($plugin->get_unique_sessions($params)),
@@ -64,9 +62,9 @@ $data  = array(
 );
 $params = array(
 	'url'=>$CFG->wwwroot,
-	'email'=>$USER->email,
-	'firstname'=>$USER->firstname,
-	'lastname'=>$USER->lastname,
+	'email'=>s($USER->email),
+	'firstname'=>s($USER->firstname),
+	'lastname'=>s($USER->lastname),
 	'reports'=>get_config('local_intelliboard', 'reports'),
 	'data'=>json_encode($data),
 	'type'=>'learners',
@@ -92,7 +90,7 @@ echo $OUTPUT->header();
           }"></script>
 <div class="intelliboard-page">
 	<?php include("views/menu.php"); ?>
-	<div class="intelliboard-content"><?php echo $intelliboard->content; ?></div>
+	<div class="intelliboard-content"><?php echo intelliboard_clean($intelliboard->content); ?></div>
 	<?php include("views/footer.php"); ?>
 </div>
 <?php

@@ -43,9 +43,9 @@ if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 
 $email = get_config('local_intelliboard', 'te1');
 $params = array(
 	'url'=>$CFG->wwwroot,
-	'email'=>$email,
-	'firstname'=>$USER->firstname,
-	'lastname'=>$USER->lastname,
+	'email'=>s($email),
+	'firstname'=>s($USER->firstname),
+	'lastname'=>s($USER->lastname),
 	'do'=>'learner',
 	'mode'=> 1
 );
@@ -69,8 +69,8 @@ if($courseid and $action == 'details'){
 		$tooltip = "<div class=\"chart-tooltip\">";
 		$tooltip .= "<div class=\"chart-tooltip-header\">".date('D, M d Y', $item->timepoint)."</div>";
 		$tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-		$tooltip .= "<div class=\"chart-tooltip-left\"><span>". round($item->grade, 2)."%</span> current grade</div>";
-		$tooltip .= "<div class=\"chart-tooltip-right\"><span>". round($l, 2)."%</span> average grade</div>";
+		$tooltip .= "<div class=\"chart-tooltip-left\"><span>". round($item->grade, 2)."%</span> ".get_string('current_grade','local_intelliboard')."</div>";
+		$tooltip .= "<div class=\"chart-tooltip-right\"><span>". round($l, 2)."%</span> ".get_string('average_grade','local_intelliboard')."</div>";
 		$tooltip .= "</div>";
 		$tooltip .= "</div>";
 		$item->timepoint = $item->timepoint*1000;
@@ -80,7 +80,7 @@ if($courseid and $action == 'details'){
 	exit;
 }
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/courses.php", array("search"=>$search)));
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/courses.php", array("search"=>s($search))));
 $PAGE->set_pagetype('courses');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -112,8 +112,8 @@ echo $OUTPUT->header();
 
 		<div class="intelliboard-search clearfix">
 			<form action="<?php echo $PAGE->url; ?>" method="GET">
-				<input name="search" type="text" value="<?php echo $search; ?>" placeholder="Type here..." />
-				<button>Search</button>
+				<input name="search" type="text" value="<?php echo format_string($search); ?>" placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>" />
+				<button><?php echo get_string('search');?></button>
 				<span>
 					<a class="active" value="grid" href=""><i class="ion-android-apps"></i></a>
 					<a href="" value="list"><i class="ion-android-menu"></i></a>
@@ -129,25 +129,25 @@ echo $OUTPUT->header();
 						<div class="icon">
 							<i class="ion-social-buffer"></i>
 							<?php if($t22): ?>
-							<span title="Enrolled date"><?php echo date("d F", $item->timemodified); ?></span>
+							<span title="<?php echo get_string('enrolled_date','local_intelliboard');?>"><?php echo date("d F", $item->timemodified); ?></span>
 							<?php endif; ?>
 						</div>
 						<div class="title">
-							<strong><?php echo $item->fullname; ?></strong>
+							<strong><?php echo format_string($item->fullname); ?></strong>
 							<?php if($t16): ?>
 								<?php $teachers = get_users_by_capability(context_course::instance($item->id), 'moodle/course:update', '', '', '', '', '', null, false);
 									$teachers = sort_by_roleassignment_authority($teachers, context_course::instance($item->id));
 								?>
 								<?php foreach($teachers as $teacher): ?>
-									<p title="Teacher"><?php echo $OUTPUT->user_picture($teacher, array('size'=>20)); ?> <?php echo fullname($teacher); ?></p>
+									<p title="<?php echo get_string('teacher','local_intelliboard');?>"><?php echo $OUTPUT->user_picture($teacher, array('size'=>20)); ?> <?php echo fullname($teacher); ?></p>
 								<?php break; endforeach; ?>
 							<?php endif; ?>
 							<?php if($t17): ?>
-								<span title="Category"><i class="ion-ios-folder-outline"></i> <?php echo $item->category; ?></span>
+								<span title="<?php echo get_string('category','local_intelliboard');?>"><i class="ion-ios-folder-outline"></i> <?php echo format_string($item->category); ?></span>
 							<?php endif; ?>
 						</div>
 						<?php if($t19): ?>
-						<div class="grade" title="Current grade">
+						<div class="grade" title="<?php echo get_string('current_grade','local_intelliboard');?>">
 							<div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
 						</div>
 						<?php endif; ?>
@@ -155,36 +155,36 @@ echo $OUTPUT->header();
 					<div class="course-stats clearfix">
 						<?php if($t18): ?>
 						<div>
-							<span>Completion</span>
+							<span><?php echo get_string('completion','local_intelliboard');?></span>
 							<p><?php echo (int)$item->completedmodules; ?>/<?php echo (int)$item->modules; ?></p>
 						</div>
 						<?php endif; ?>
 
 						<?php if($t20): ?>
 						<div>
-							<span>Class average</span>
+							<span><?php echo get_string('class_average','local_intelliboard');?></span>
 							<p><?php echo (int)$item->average; ?>%</p>
 						</div>
 						<?php endif; ?>
 
 						<?php if($t21): ?>
 						<div>
-							<span>Time Spent</span>
+							<span><?php echo get_string('time_spent','local_intelliboard');?></span>
 							<p><?php echo ($item->duration)?seconds_to_time(intval($item->duration)):'-'; ?></p>
 						</div>
 						<?php endif; ?>
 					</div>
-					<div class="course-chart" id="course-chart<?php echo $item->id; ?>"></div>
+					<div class="course-chart" id="course-chart<?php echo format_string($item->id); ?>"></div>
 					<div class="course-more clearfix">
 						<span>
-							<?php if($item->timecompleted): ?><a title="Completed on <?php echo date("m/d/Y", $item->timecompleted); ?>" href="#completed"><i class="ion-android-done-all"></i></a><?php endif; ?>
+							<?php if($item->timecompleted): ?><a title="<?php echo get_string('completed_on','local_intelliboard',date("m/d/Y", $item->timecompleted));?>" href="#completed"><i class="ion-android-done-all"></i></a><?php endif; ?>
 							<?php //<a href=""><i class="ion-alert-circled"></i></a> ?>
-							<?php if($item->certificates): ?><a title="You have <?php echo $item->certificates; ?> certificates" href="#certificates"><i class="ion-ribbon-b"></i></a><?php endif; ?>
+							<?php if($item->certificates): ?><a title="<?php echo get_string('you_have_certificates','local_intelliboard',s($item->certificates));?>" href="#certificates"><i class="ion-ribbon-b"></i></a><?php endif; ?>
 							<a class="course-details" href="" value="<?php echo $item->id; ?>"><i class="ion-podium"></i>
-								<strong>Close</strong>
+								<strong><?php echo get_string('close','local_intelliboard');?></strong>
 							</a>
 						</span>
-						<a class="more" href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo $item->id; ?>">View course details</a>
+						<a class="more" href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo $item->id; ?>"><?php echo get_string('view_course_details','local_intelliboard');?></a>
 					</div>
 				</li>
 			<?php endforeach; ?>
@@ -241,14 +241,14 @@ echo $OUTPUT->header();
 					data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
 					data.addRows(json_data);
 
-					var options = <?php echo $factorInfo->CoursesCalculation; ?>;
+					var options = <?php echo format_string($factorInfo->CoursesCalculation); ?>;
 					var chart = new google.visualization.LineChart(document.getElementById('course-chart'+id));
 					chart.draw(data, options);
 				});
 			}
 		});
 
-		jQuery('.circle-progress').percentcircle(<?php echo $factorInfo->GradesFCalculation; ?>);
+		jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesFCalculation); ?>);
 		jQuery('.intelliboard-search span a').click(function(e){
 			e.preventDefault();
 			jQuery(this).parent().find('a').removeClass("active");

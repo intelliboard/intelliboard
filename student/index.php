@@ -25,7 +25,6 @@
  * @created by	IntelliBoard, Inc
  * @website		www.intelliboard.net
  */
-
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
@@ -34,29 +33,29 @@ require_login();
 require_capability('local/intelliboard:students', context_system::instance());
 
 if(!get_config('local_intelliboard', 't1')){
-	throw new moodle_exception('invalidaccess', 'error');
+    throw new moodle_exception('invalidaccess', 'error');
 }elseif(!get_config('local_intelliboard', 't2')){
-	if(get_config('local_intelliboard', 't3')){
-		redirect("$CFG->wwwroot/local/intelliboard/student/courses.php");
-	}if(get_config('local_intelliboard', 't4')){
-		redirect("$CFG->wwwroot/local/intelliboard/student/grades.php");
-	}
-	throw new moodle_exception('invalidaccess', 'error');
+    if(get_config('local_intelliboard', 't3')){
+        redirect("$CFG->wwwroot/local/intelliboard/student/courses.php");
+    }if(get_config('local_intelliboard', 't4')){
+        redirect("$CFG->wwwroot/local/intelliboard/student/grades.php");
+    }
+    throw new moodle_exception('invalidaccess', 'error');
 }
 $email = get_config('local_intelliboard', 'te1');
 $params = array(
-	'url'=>$CFG->wwwroot,
-	'email'=>$email,
-	'firstname'=>$USER->firstname,
-	'lastname'=>$USER->lastname,
-	'do'=>'learner',
-	'mode'=> 1
+    'url'=>$CFG->wwwroot,
+    'email'=>s($email),
+    'firstname'=>s($USER->firstname),
+    'lastname'=>s($USER->lastname),
+    'do'=>'learner',
+    'mode'=> 1
 );
 $intelliboard = intelliboard($params);
 if (isset($intelliboard->content)) {
     $factorInfo = json_decode($intelliboard->content);
 } else {
-	$factorInfo = '';
+    $factorInfo = '';
 }
 
 $action = optional_param('action', '', PARAM_ALPHANUMEXT);
@@ -64,22 +63,19 @@ $search = clean_raw(optional_param('search', '', PARAM_RAW));
 $type = optional_param('type', '', PARAM_ALPHANUMEXT);
 $time = optional_param('time', 0, PARAM_INT);
 
-
-
-
 $activity_setting = optional_param('activity_setting', 0, PARAM_INT);
 $activity_courses = optional_param('activity_courses', 0, PARAM_INT);
 $activity_time = optional_param('activity_time', 0, PARAM_INT);
 
 if($activity_setting){
-	$USER->activity_courses = $activity_courses;
-	$USER->activity_time = $activity_time;
+    $USER->activity_courses = $activity_courses;
+    $USER->activity_time = $activity_time;
 }else{
-	$USER->activity_courses = (isset($USER->activity_courses))?$USER->activity_courses:0;
-	$USER->activity_time = (isset($USER->activity_time))?$USER->activity_time:-1;
+    $USER->activity_courses = (isset($USER->activity_courses))?$USER->activity_courses:0;
+    $USER->activity_time = (isset($USER->activity_time))?$USER->activity_time:-1;
 }
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/index.php", array("type"=>$type, "search"=>$search)));
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/index.php", array("type"=>s($type), "search"=>s($search))));
 $PAGE->set_pagetype('home');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -113,293 +109,293 @@ $courses = intelliboard_learner_courses($USER->id);
 $totals = intelliboard_learner_totals($USER->id);
 
 if($t12 or $t13){
-	$modules_progress = intelliboard_learner_modules($USER->id);
+    $modules_progress = intelliboard_learner_modules($USER->id);
 }
 if($t9){
-	$assignments = intelliboard_data('assignment', $USER->id);
+    $assignments = intelliboard_data('assignment', $USER->id);
 }
 if($t10){
-	$quizes = intelliboard_data('quiz', $USER->id);
+    $quizes = intelliboard_data('quiz', $USER->id);
 }
 if($t11){
-	$courses_report = intelliboard_data('course', $USER->id);
+    $courses_report = intelliboard_data('course', $USER->id);
 }
 
 if($t5){
-	$progress = intelliboard_learner_progress($time, $USER->id);
-	$json_data = array();
-	foreach($progress[0] as $item){
-		$l = 0;
-		if(isset($progress[1][$item->timepoint])){
-			$d = $progress[1][$item->timepoint];
-			$l = round($d->grade,2);
-		}
-		$item->grade = round($item->grade,2);
-		$tooltip = "<div class=\"chart-tooltip\">";
-		$tooltip .= "<div class=\"chart-tooltip-header\">".date('D, M d Y', $item->timepoint)."</div>";
-		$tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-		$tooltip .= "<div class=\"chart-tooltip-left\"><span>". round($item->grade, 2)."%</span> current grade</div>";
-		$tooltip .= "<div class=\"chart-tooltip-right\"><span>". round($l, 2)."%</span> average grade</div>";
-		$tooltip .= "</div>";
-		$tooltip .= "</div>";
-		$item->timepoint = $item->timepoint*1000;
-		$json_data[] = "[new Date($item->timepoint), $item->grade, '$tooltip', $l, '$tooltip']";
-	}
+    $progress = intelliboard_learner_progress($time, $USER->id);
+    $json_data = array();
+    foreach($progress[0] as $item){
+        $l = 0;
+        if(isset($progress[1][$item->timepoint])){
+            $d = $progress[1][$item->timepoint];
+            $l = round($d->grade,2);
+        }
+        $item->grade = round($item->grade,2);
+        $tooltip = "<div class=\"chart-tooltip\">";
+        $tooltip .= "<div class=\"chart-tooltip-header\">".date('D, M d Y', $item->timepoint)."</div>";
+        $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
+        $tooltip .= "<div class=\"chart-tooltip-left\"><span>". round($item->grade, 2)."%</span> ".get_string('current_grade','local_intelliboard')."</div>";
+        $tooltip .= "<div class=\"chart-tooltip-right\"><span>". round($l, 2)."%</span> ".get_string('average_grade','local_intelliboard')."</div>";
+        $tooltip .= "</div>";
+        $tooltip .= "</div>";
+        $item->timepoint = $item->timepoint*1000;
+        $json_data[] = "[new Date($item->timepoint), ".round($item->grade, 2).", '$tooltip', $l, '$tooltip']";
+    }
 }
 $json_data2 = array();
 foreach($courses as $item){
-	$l = intval($item->duration_calc);
-	$d = seconds_to_time(intval($item->duration));
+    $l = intval($item->duration_calc);
+    $d = seconds_to_time(intval($item->duration));
 
-	$tooltip = "<div class=\"chart-tooltip\">";
-	$tooltip .= "<div class=\"chart-tooltip-header\">". $item->fullname ."</div>";
-	$tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-	$tooltip .= "<div class=\"chart-tooltip-left\">Grade: <span>". round($item->grade, 2)."</span></div>";
-	$tooltip .= "<div class=\"chart-tooltip-right\">Time spent: <span>". $d."</span></div>";
-	$tooltip .= "</div>";
-	$tooltip .= "</div>";
-	$json_data2[] = "[$l, $item->grade,'$tooltip']";
+    $tooltip = "<div class=\"chart-tooltip\">";
+    $tooltip .= "<div class=\"chart-tooltip-header\">". format_string($item->fullname) ."</div>";
+    $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
+    $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". round($item->grade, 2)."</span></div>";
+    $tooltip .= "<div class=\"chart-tooltip-right\">".get_string('time_spent','local_intelliboard').": <span>". $d."</span></div>";
+    $tooltip .= "</div>";
+    $tooltip .= "</div>";
+    $json_data2[] = "[$l, ".round($item->grade, 2).",'$tooltip']";
 }
 
-$menu = array("Last Week");
+$menu = array(get_string('last_week','local_intelliboard'));
 if(get_config('local_intelliboard', 't01')){
-	array_push($menu, "Last Month");
+    array_push($menu, get_string('last_month','local_intelliboard'));
 }
 if(get_config('local_intelliboard', 't02')){
-	array_push($menu, "Last Quarter");
+    array_push($menu, get_string('last_quarter','local_intelliboard'));
 }
 if(get_config('local_intelliboard', 't03')){
-	array_push($menu, "Last Semester");
+    array_push($menu, get_string('last_semester','local_intelliboard'));
 }
 
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-	<div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+    <div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
-<div class="intelliboard-page intelliboard-student">
-	<?php include("views/menu.php"); ?>
-		<div class="intelliboard-box intelliboard-origin">
-			<?php if($t5 or $t6): ?>
-				<div class="intelliboard-origin-head clearfix">
-					<?php if($t5): ?>
-						<a>Activity progress</a>
-					<?php endif; ?>
-					<?php if($t6): ?>
-						<a class="nofilter">Course progress</a>
-					<?php endif; ?>
-					<div class="intelliboard-dropdown">
-						<?php foreach($menu as $key=>$value): ?>
-							<?php if($key == $time): ?>
-								<button><span value="<?php echo $key; ?>"><?php echo $value; ?></span> <i class="ion-android-arrow-dropdown"></i></button>
-							<?php endif; ?>
-						<?php endforeach; ?>
-						<ul>
-							<?php foreach($menu as $key=>$value): ?>
-								<?php if($key != $time): ?>
-									<li value="<?php echo $key; ?>"><?php echo $value; ?></li>
-								<?php endif; ?>
-							<?php endforeach; ?>
-						</ul>
-					</div>
-				</div>
-				<?php if($t5): ?>
-					<div id="intelliboard-chart" class="intelliboard-chart-dash"></div>
-				<?php endif; ?>
+    <div class="intelliboard-page intelliboard-student">
+        <?php include("views/menu.php"); ?>
+        <div class="intelliboard-box intelliboard-origin">
+            <?php if($t5 or $t6): ?>
+                <div class="intelliboard-origin-head clearfix">
+                    <?php if($t5): ?>
+                        <a><?php echo get_string('activity_progress', 'local_intelliboard'); ?></a>
+                    <?php endif; ?>
+                    <?php if($t6): ?>
+                        <a class="nofilter"><?php echo get_string('course_progress', 'local_intelliboard'); ?></a>
+                    <?php endif; ?>
+                    <div class="intelliboard-dropdown">
+                        <?php foreach($menu as $key=>$value): ?>
+                            <?php if($key == $time): ?>
+                                <button><span value="<?php echo $key; ?>"><?php echo format_string($value); ?></span> <i class="ion-android-arrow-dropdown"></i></button>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                        <ul>
+                            <?php foreach($menu as $key=>$value): ?>
+                                <?php if($key != $time): ?>
+                                    <li value="<?php echo $key; ?>"><?php echo format_string($value); ?></li>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+                <?php if($t5): ?>
+                    <div id="intelliboard-chart" class="intelliboard-chart-dash"></div>
+                <?php endif; ?>
 
-				<?php if($t6): ?>
-					<div id="intelliboard-chart-combo" class="intelliboard-chart-dash"></div>
-				<?php endif; ?>
-			<?php endif; ?>
+                <?php if($t6): ?>
+                    <div id="intelliboard-chart-combo" class="intelliboard-chart-dash"></div>
+                <?php endif; ?>
+            <?php endif; ?>
 
-			<?php if($t7 or $t8): ?>
-				<div class="avg <?php echo (!$t7 or !$t8)?'full':''; ?>">
-					<?php if($t7): ?>
-						<p class="user"><?php echo round($totals->grade, 2); ?>% <span>my course average (all courses)</span></p>
-					<?php endif; ?>
-					<?php if($t8): ?>
-						<p class="site"><?php echo round($totals->average, 2); ?>% <span>overall course average (all learners; all courses)</span></p>
-					<?php endif; ?>
-				</div>
-			<?php endif; ?>
-		</div>
+            <?php if($t7 or $t8): ?>
+                <div class="avg <?php echo (!$t7 or !$t8)?'full':''; ?>">
+                    <?php if($t7): ?>
+                        <p class="user"><?php echo round($totals->grade, 2); ?>% <span><?php echo get_string('my_course_average_all', 'local_intelliboard'); ?></span></p>
+                    <?php endif; ?>
+                    <?php if($t8): ?>
+                        <p class="site"><?php echo round($totals->average, 2); ?>% <span><?php echo get_string('overall_course_average', 'local_intelliboard'); ?></span></p>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+        </div>
 
-		<?php if($t9 or $t10 or $t11): ?>
-		<div class="intelliboard-box">
-			<?php if($t9 or $t10): ?>
-			<div class="<?php echo (!$t11)?'box100':'box45'; ?> pull-left">
-				<ul class="nav nav-tabs">
-					<?php if($t9): ?>
-						<li role="presentation" class="active"><a href="assignment">Assignments</a></li>
-					<?php endif; ?>
-					<?php if($t10): ?>
-						<li role="presentation" class="<?php echo (!$t9)?'active':''; ?>"><a href="quiz">Quizzes</a></li>
-					<?php endif; ?>
-					<span>
+        <?php if($t9 or $t10 or $t11): ?>
+            <div class="intelliboard-box">
+                <?php if($t9 or $t10): ?>
+                    <div class="<?php echo (!$t11)?'box100':'box45'; ?> pull-left">
+                        <ul class="nav nav-tabs">
+                            <?php if($t9): ?>
+                                <li role="presentation" class="active"><a href="assignment"><?php echo get_string('assignments', 'local_intelliboard'); ?></a></li>
+                            <?php endif; ?>
+                            <?php if($t10): ?>
+                                <li role="presentation" class="<?php echo (!$t9)?'active':''; ?>"><a href="quiz"><?php echo get_string('quizzes', 'local_intelliboard'); ?></a></li>
+                            <?php endif; ?>
+                            <span>
 						<form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
 							<input class="intype" name="type" type="hidden" value="assignment" />
-							<input class="intsearch" name="search" placeholder="Search" type="text" value="<?php echo ($type == 'assignment' or $type == 'quiz')?$search:''; ?>" />
+							<input class="intsearch" name="search" placeholder="<?php echo get_string('search');?>" type="text" value="<?php echo ($type == 'assignment' or $type == 'quiz')?$search:''; ?>" />
 							<button type="submit"><i class="ion-ios-search-strong"></i></button>
 							<a href="" class="searchviewclose"><i class="ion-android-close"></i></a>
 						</form>
 						<a href="" class="searchview actbtn"><i class="ion-ios-search-strong"></i></a>
 						<a href="" class="intsettings actbtn"><i class="ion-ios-settings-strong"></i></a>
 					</span>
-				</ul>
-				<div>
-					<?php if($t9): ?>
-					<table class="intelliboard-data-table table tab active">
-						<thead>
-							<th colspan="2">Assignment name</th>
-							<?php if($t31): ?><th class="align-center">Grade</th><?php endif; ?>
-							<?php if($t32): ?><th class="align-center">Due Date</th><?php endif; ?>
-						</thead>
-						<tbody>
-							<?php if(!count($assignments['data'])): ?>
-								<tr colspan="3">
-									<td>No data</td>
-								</tr>
-							<?php endif; ?>
+                        </ul>
+                        <div>
+                            <?php if($t9): ?>
+                                <table class="intelliboard-data-table table tab active">
+                                    <thead>
+                                    <th colspan="2"><?php echo get_string('assignment_name', 'local_intelliboard'); ?></th>
+                                    <?php if($t31): ?><th class="align-center"><?php echo get_string('grade', 'local_intelliboard'); ?></th><?php endif; ?>
+                                    <?php if($t32): ?><th class="align-center"><?php echo get_string('due_date', 'local_intelliboard'); ?></th><?php endif; ?>
+                                    </thead>
+                                    <tbody>
+                                    <?php if(!count($assignments['data'])): ?>
+                                        <tr colspan="3">
+                                            <td><?php echo get_string('no_data', 'local_intelliboard'); ?></td>
+                                        </tr>
+                                    <?php endif; ?>
 
-							<?php foreach($assignments['data'] as $item): ?>
-							<?php
-								$d = $item->duedate - time();
-								if($item->completionstate){
-									$class = "f4 ion-android-done";
-								}elseif($d <= 0){
-									$class = "f5 ion-clipboard";
-								}elseif($d <= 3600){
-									$class = "f3 ion-clipboard";
-								}elseif($d <= 86400){
-									$class = "f6 ion-clipboard";
-								}elseif($d <= 604800){
-									$class = "f6 ion-clipboard";
-								}else{
-									$class = "f6 ion-clipboard";
-								}
-							?>
-							<tr>
-								<td width="1%"><i class="intelliboard-icon <?php echo $class; ?>"></i></td>
-								<td>
-									<a href="<?php echo $CFG->wwwroot; ?>/mod/assign/view.php?id=<?php echo $item->cmid; ?>"><?php echo $item->name; ?></a>
-									<p class="intelliboard-fade60"><?php echo $item->fullname; ?></p>
-								</td>
-								<?php if($t31): ?>
-								<td class="align-center">
-									<div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
-								</td>
-								<?php endif; ?>
-								<?php if($t32): ?>
-								<td class="align-center"><?php echo ($item->duedate)?date("m/d/Y", $item->duedate):'-'; ?></span></td>
-								<?php endif; ?>
-							</tr>
-							<?php endforeach; ?>
-						</tbody>
-						<tfoot>
-							<tr>
-								<td align="right" colspan="4"><?php echo $assignments['pagination']; ?></td>
-							</tr>
-						</tfoot>
-					</table>
-					<?php endif; ?>
+                                    <?php foreach($assignments['data'] as $item): ?>
+                                        <?php
+                                        $d = $item->duedate - time();
+                                        if($item->completionstate){
+                                            $class = "f4 ion-android-done";
+                                        }elseif($d <= 0){
+                                            $class = "f5 ion-clipboard";
+                                        }elseif($d <= 3600){
+                                            $class = "f3 ion-clipboard";
+                                        }elseif($d <= 86400){
+                                            $class = "f6 ion-clipboard";
+                                        }elseif($d <= 604800){
+                                            $class = "f6 ion-clipboard";
+                                        }else{
+                                            $class = "f6 ion-clipboard";
+                                        }
+                                        ?>
+                                        <tr>
+                                            <td width="1%"><i class="intelliboard-icon <?php echo $class; ?>"></i></td>
+                                            <td>
+                                                <a href="<?php echo $CFG->wwwroot; ?>/mod/assign/view.php?id=<?php echo s($item->cmid); ?>"><?php echo format_string($item->name); ?></a>
+                                                <p class="intelliboard-fade60"><?php echo format_string($item->fullname); ?></p>
+                                            </td>
+                                            <?php if($t31): ?>
+                                                <td class="align-center">
+                                                    <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                                </td>
+                                            <?php endif; ?>
+                                            <?php if($t32): ?>
+                                                <td class="align-center"><?php echo ($item->duedate)?date("m/d/Y", $item->duedate):'-'; ?></span></td>
+                                            <?php endif; ?>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                    <tfoot>
+                                    <tr>
+                                        <td align="right" colspan="4"><?php echo $assignments['pagination']; ?></td>
+                                    </tr>
+                                    </tfoot>
+                                </table>
+                            <?php endif; ?>
 
-					<?php if($t10): ?>
-					<table class="intelliboard-data-table table tab <?php echo (!$t9)?'active':''; ?>">
-						<thead>
-							<th colspan="2">Quiz name</th>
-							<?php if($t33): ?><th class="align-center">Grade</th><?php endif; ?>
-							<?php if($t34): ?><th class="align-center">Due Date</th><?php endif; ?>
-						</thead>
-						<tbody>
-							<?php if(!count($quizes['data'])): ?>
-								<tr colspan="3">
-									<td>No data</td>
-								</tr>
-							<?php endif; ?>
+                            <?php if($t10): ?>
+                                <table class="intelliboard-data-table table tab <?php echo (!$t9)?'active':''; ?>">
+                                    <thead>
+                                    <th colspan="2"><?php echo get_string('quiz_name', 'local_intelliboard'); ?></th>
+                                    <?php if($t33): ?><th class="align-center"><?php echo get_string('grade', 'local_intelliboard'); ?></th><?php endif; ?>
+                                    <?php if($t34): ?><th class="align-center"><?php echo get_string('due_date', 'local_intelliboard'); ?></th><?php endif; ?>
+                                    </thead>
+                                    <tbody>
+                                    <?php if(!count($quizes['data'])): ?>
+                                        <tr colspan="3">
+                                            <td><?php echo get_string('no_data', 'local_intelliboard'); ?></td>
+                                        </tr>
+                                    <?php endif; ?>
 
-							<?php foreach($quizes['data'] as $item): ?>
-							<?php
-								$d = $item->timeclose - time();
-								if($item->completionstate){
-									$class = "f4 ion-ios-list-outline";
-								}elseif($d <= 0){
-									$class = "f5 ion-ios-list-outline";
-								}elseif($d <= 3600){
-									$class = "f3 ion-ios-list-outline";
-								}elseif($d <= 86400){
-									$class = "f6 ion-ios-list-outline";
-								}elseif($d <= 604800){
-									$class = "f6 ion-ios-list-outline";
-								}else{
-									$class = "f6 ion-ios-list-outline";
-								}
-							?>
-							<tr class="">
-								<td width="1%"><i class="intelliboard-icon <?php echo $class; ?>"></i></td>
-								<td>
-									<a href="<?php echo $CFG->wwwroot; ?>/mod/quiz/view.php?id=<?php echo $item->cmid; ?>"><?php echo $item->name; ?></a>
-									<p class="intelliboard-fade60"><?php echo $item->fullname; ?></p>
-								</td>
-								<?php if($t33): ?>
-								<td class="align-center">
-									<div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
-								</td>
-								<?php endif; ?>
-								<?php if($t34): ?>
-								<td class="align-center"><?php echo ($item->timeclose)?date("m/d/Y", $item->timeclose):'-'; ?></td>
-								<?php endif; ?>
-							</tr>
-							<?php endforeach; ?>
-						</tbody>
-						<tfoot>
-							<tr>
-								<td align="right" colspan="4"><?php echo $quizes['pagination']; ?></td>
-							</tr>
-						</tfoot>
-					</table>
-					<?php endif; ?>
+                                    <?php foreach($quizes['data'] as $item): ?>
+                                        <?php
+                                        $d = $item->timeclose - time();
+                                        if($item->completionstate){
+                                            $class = "f4 ion-ios-list-outline";
+                                        }elseif($d <= 0){
+                                            $class = "f5 ion-ios-list-outline";
+                                        }elseif($d <= 3600){
+                                            $class = "f3 ion-ios-list-outline";
+                                        }elseif($d <= 86400){
+                                            $class = "f6 ion-ios-list-outline";
+                                        }elseif($d <= 604800){
+                                            $class = "f6 ion-ios-list-outline";
+                                        }else{
+                                            $class = "f6 ion-ios-list-outline";
+                                        }
+                                        ?>
+                                        <tr class="">
+                                            <td width="1%"><i class="intelliboard-icon <?php echo $class; ?>"></i></td>
+                                            <td>
+                                                <a href="<?php echo $CFG->wwwroot; ?>/mod/quiz/view.php?id=<?php echo s($item->cmid); ?>"><?php echo format_string($item->name); ?></a>
+                                                <p class="intelliboard-fade60"><?php echo format_string($item->fullname); ?></p>
+                                            </td>
+                                            <?php if($t33): ?>
+                                                <td class="align-center">
+                                                    <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                                </td>
+                                            <?php endif; ?>
+                                            <?php if($t34): ?>
+                                                <td class="align-center"><?php echo ($item->timeclose)?date("m/d/Y", $item->timeclose):'-'; ?></td>
+                                            <?php endif; ?>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                    <tfoot>
+                                    <tr>
+                                        <td align="right" colspan="4"><?php echo $quizes['pagination']; ?></td>
+                                    </tr>
+                                    </tfoot>
+                                </table>
+                            <?php endif; ?>
 
-					<div class="tab intsettings-box settings-tab">
-						<form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
-							<input name="activity_setting" type="hidden" value="1" />
+                            <div class="tab intsettings-box settings-tab">
+                                <form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
+                                    <input name="activity_setting" type="hidden" value="1" />
 
-							<div class="form-group">
-							<label for="">Courses:</label>
-							<select name="activity_courses" class="form-control">
-								<option>All courses</option>
-							  	<?php foreach($courses as $row):  ?>
-									<option <?php echo ($USER->activity_courses == $row->id)?'selected="selected"':''; ?> value="<?php echo $row->id; ?>"><?php echo $row->fullname; ?></option>
-								<?php endforeach; ?>
-							</select>
-							</div>
+                                    <div class="form-group">
+                                        <label for=""><?php echo get_string('courses', 'local_intelliboard'); ?></label>
+                                        <select name="activity_courses" class="form-control">
+                                            <option><?php echo get_string('all_courses', 'local_intelliboard'); ?></option>
+                                            <?php foreach($courses as $row):  ?>
+                                                <option <?php echo ($USER->activity_courses == $row->id)?'selected="selected"':''; ?> value="<?php echo $row->id; ?>"><?php echo format_string($row->fullname); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
 
-							<div class="form-group">
-							<label for="">Time period (Due Date):</label>
-							<select id="activity_time" name="activity_time" class="form-control">
-								<option value="-1">All data</option>
-								<?php foreach($menu as $key=>$value): ?>
-									<option <?php echo ($USER->activity_time == $key)?'selected="selected"':''; ?> value="<?php echo $key; ?>"><?php echo $value; ?></option>
-								<?php endforeach; ?>
-							</select>
-							</div>
-							<button type="submit" class="btn btn-primary">Save</button>
-							<button type="button" class="closesettings btn">Cancel</button>
-						</form>
-					</div>
-				</div>
-			</div>
-			<?php endif; ?>
+                                    <div class="form-group">
+                                        <label for=""><?php echo get_string('time_period_due', 'local_intelliboard'); ?>:</label>
+                                        <select id="activity_time" name="activity_time" class="form-control">
+                                            <option value="-1"><?php echo get_string('all_data', 'local_intelliboard'); ?></option>
+                                            <?php foreach($menu as $key=>$value): ?>
+                                                <option <?php echo ($USER->activity_time == $key)?'selected="selected"':''; ?> value="<?php echo s($key); ?>"><?php echo format_string($value); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary"><?php echo get_string('save', 'local_intelliboard');?></button>
+                                    <button type="button" class="closesettings btn"><?php echo get_string('cancel');?></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
 
-			<?php if($t11): ?>
-			<div class="<?php echo (!$t9 and !$t10)?'box100':'box50'; ?>  pull-right">
-				<ul class="nav nav-tabs clearfix">
-				  <li role="presentation" class="active"><a href="#">Course Progress</a></li>
+                <?php if($t11): ?>
+                    <div class="<?php echo (!$t9 and !$t10)?'box100':'box50'; ?>  pull-right">
+                        <ul class="nav nav-tabs clearfix">
+                            <li role="presentation" class="active"><a href="#"><?php echo get_string('course_progress', 'local_intelliboard'); ?></a></li>
 
-					<span>
+                            <span>
 						<form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
 							<input name="type" type="hidden" value="course" />
-							<input class="intsearch" name="search" placeholder="Search" type="text" value="<?php echo ($type == 'course')?$search:''; ?>" />
+							<input class="intsearch" name="search" placeholder="<?php echo get_string('search');?>" type="text" value="<?php echo ($type == 'course')?format_string($search):''; ?>" />
 							<button type="submit"><i class="ion-ios-search-strong"></i></button>
 							<a href="" class="searchviewclose"><i class="ion-android-close"></i></a>
 						</form>
@@ -407,296 +403,296 @@ echo $OUTPUT->header();
 						<a class="active actbtn cview" href="tm"><i class="ion-android-apps"></i></a>
 						<a class="cview actbtn" href="list"><i class="ion-android-menu"></i></a>
 					</span>
-				</ul>
+                        </ul>
 
-				<table class="intelliboard-data-table cview-table table tab active">
-					<thead >
-						<th colspan="2">Course</th>
-						<?php if($t35): ?><th>Progress</th><?php endif; ?>
-						<?php if($t36): ?><th class="align-center">Grade</th><?php endif; ?>
-						<?php if($t37): ?><th>Enrolled</th><?php endif; ?>
-						<?php if($t38): ?><th>Completed</th><?php endif; ?>
+                        <table class="intelliboard-data-table cview-table table tab active">
+                            <thead >
+                            <th colspan="2"><?php echo get_string('course');?></th>
+                            <?php if($t35): ?><th><?php echo get_string('progress', 'local_intelliboard'); ?></th><?php endif; ?>
+                            <?php if($t36): ?><th class="align-center"><?php echo get_string('grade', 'local_intelliboard'); ?></th><?php endif; ?>
+                            <?php if($t37): ?><th><?php echo get_string('enrolled', 'local_intelliboard'); ?></th><?php endif; ?>
+                            <?php if($t38): ?><th><?php echo get_string('completed', 'local_intelliboard'); ?></th><?php endif; ?>
 
-					</thead>
-					<tbody>
-						<?php if(!count($courses_report['data'])): ?>
-							<tr colspan="6">
-								<td>No data</td>
-							</tr>
-						<?php endif; ?>
-						<?php foreach($courses_report['data'] as $item): ?>
-						<tr class="">
-							<td width="1%"><i class="intelliboard-icon <?php echo (!$item->timecompleted)?'f6 ion-social-buffer':'f4 ion-android-done'; ?>"></i></td>
-							<td>
-								<a href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo $item->id; ?>"><?php echo $item->fullname; ?></a>
-							</td>
-							<?php if($t35): ?>
-							<td width="100">
-								<div class="intelliboard-progress g1 xl intelliboard-tooltip"  title="<?php echo "Activities: $item->modules, Completed: $item->completedmodules"; ?>"><span style="width:<?php echo ($item->completedmodules) ? (($item->completedmodules / $item->modules) * 100) : 0; ?>%"></span></div>
-							</td>
-							<?php endif; ?>
+                            </thead>
+                            <tbody>
+                            <?php if(!count($courses_report['data'])): ?>
+                                <tr colspan="6">
+                                    <td><?php echo get_string('no_data', 'local_intelliboard'); ?></td>
+                                </tr>
+                            <?php endif; ?>
+                            <?php foreach($courses_report['data'] as $item): ?>
+                                <tr class="">
+                                    <td width="1%"><i class="intelliboard-icon <?php echo (!$item->timecompleted)?'f6 ion-social-buffer':'f4 ion-android-done'; ?>"></i></td>
+                                    <td>
+                                        <a href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo s($item->id); ?>"><?php echo format_string($item->fullname); ?></a>
+                                    </td>
+                                    <?php if($t35): ?>
+                                        <td width="100">
+                                            <div class="intelliboard-progress g1 xl intelliboard-tooltip"  title="<?php echo "Activities: ".s($item->modules).", Completed: ".s($item->completedmodules); ?>"><span style="width:<?php echo ($item->completedmodules) ? (($item->completedmodules / $item->modules) * 100) : 0; ?>%"></span></div>
+                                        </td>
+                                    <?php endif; ?>
 
-							<?php if($t36): ?>
-							<td class="align-center">
-									<div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
-								</td>
-							<?php endif; ?>
+                                    <?php if($t36): ?>
+                                        <td class="align-center">
+                                            <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                        </td>
+                                    <?php endif; ?>
 
-							<?php if($t37): ?>
-							<td align="right">
-								<?php echo date("m/d/Y", $item->timemodified); ?>
-							</td>
-							<?php endif; ?>
+                                    <?php if($t37): ?>
+                                        <td align="right">
+                                            <?php echo date("m/d/Y", $item->timemodified); ?>
+                                        </td>
+                                    <?php endif; ?>
 
-							<?php if($t38): ?>
-							<td align="right">
-								<?php echo ($item->timecompleted) ? date("m/d/Y", $item->timecompleted):'-'; ?>
-							</td>
-							<?php endif; ?>
-						</tr>
-						<?php endforeach; ?>
-					</tbody>
-					<tfoot>
-						<tr>
-							<td align="right" colspan="6"><?php echo $courses_report['pagination']; ?></td>
-						</tr>
-					</tfoot>
-				</table>
-			</div>
-			<?php endif; ?>
-		</div>
-		<?php endif; ?>
+                                    <?php if($t38): ?>
+                                        <td align="right">
+                                            <?php echo ($item->timecompleted) ? date("m/d/Y", $item->timecompleted):'-'; ?>
+                                        </td>
+                                    <?php endif; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                            <tfoot>
+                            <tr>
+                                <td align="right" colspan="6"><?php echo $courses_report['pagination']; ?></td>
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
 
-		<?php if($t12 or $t13 or $t14 or $t15): ?>
-		<div class="intelliboard-box">
-			<?php if($t12 or $t13): ?>
-			<div class="<?php echo (!$t14 and !$t15)?'box100':'box40'; ?> pull-left h410">
-				<ul class="nav nav-tabs chart-tabs">
-					<?php if($t12): ?>
-					  <li role="presentation" class="active"><a href="#">Activity participation</a></li>
-					<?php endif; ?>
+        <?php if($t12 or $t13 or $t14 or $t15): ?>
+            <div class="intelliboard-box">
+                <?php if($t12 or $t13): ?>
+                    <div class="<?php echo (!$t14 and !$t15)?'box100':'box40'; ?> pull-left h410">
+                        <ul class="nav nav-tabs chart-tabs">
+                            <?php if($t12): ?>
+                                <li role="presentation" class="active"><a href="#"><?php echo get_string('activity_participation', 'local_intelliboard'); ?></a></li>
+                            <?php endif; ?>
 
-					<?php if($t13): ?>
-					  <li role="presentation" class="<?php echo (!$t12)?'active':''; ?>"><a href="#">Learning</a></li>
-					<?php endif; ?>
-				</ul>
-				<?php if($t12): ?>
-				<div id="chart1" class="chart-tab active"></div>
-				<?php endif; ?>
+                            <?php if($t13): ?>
+                                <li role="presentation" class="<?php echo (!$t12)?'active':''; ?>"><a href="#"><?php echo get_string('learning', 'local_intelliboard'); ?></a></li>
+                            <?php endif; ?>
+                        </ul>
+                        <?php if($t12): ?>
+                            <div id="chart1" class="chart-tab active"></div>
+                        <?php endif; ?>
 
-				<?php if($t13): ?>
-				<div id="chart2" class="chart-tab <?php echo (!$t12)?'active':''; ?>"></div>
-				<?php endif; ?>
-			</div>
-			<?php endif; ?>
+                        <?php if($t13): ?>
+                            <div id="chart2" class="chart-tab <?php echo (!$t12)?'active':''; ?>"></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
 
-			<?php if($t14 or $t15): ?>
-			<div class="<?php echo (!$t12 and !$t13)?'box100':'box50'; ?> pull-right h410">
-				<ul class="nav nav-tabs chart-tabs">
-					<?php if($t14): ?>
-					  <li role="presentation" class="active"><a href="#">Course success</a></li>
-					<?php endif; ?>
+                <?php if($t14 or $t15): ?>
+                    <div class="<?php echo (!$t12 and !$t13)?'box100':'box50'; ?> pull-right h410">
+                        <ul class="nav nav-tabs chart-tabs">
+                            <?php if($t14): ?>
+                                <li role="presentation" class="active"><a href="#"><?php echo get_string('course_success', 'local_intelliboard'); ?></a></li>
+                            <?php endif; ?>
 
-					<?php if($t15): ?>
-					  <li role="presentation" class="<?php echo (!$t14)?'active':''; ?>"><a href="#">Correlations</a></li>
-					<?php endif; ?>
-				</ul>
+                            <?php if($t15): ?>
+                                <li role="presentation" class="<?php echo (!$t14)?'active':''; ?>"><a href="#"><?php echo get_string('correlations', 'local_intelliboard'); ?></a></li>
+                            <?php endif; ?>
+                        </ul>
 
-				<?php if($t14): ?>
-				<div id="chart3" class="chart-tab active"></div>
-				<?php endif; ?>
+                        <?php if($t14): ?>
+                            <div id="chart3" class="chart-tab active"></div>
+                        <?php endif; ?>
 
-				<?php if($t15): ?>
-				<div id="chart4" class="chart-tab <?php echo (!$t14)?'active':''; ?>"></div>
-				<?php endif; ?>
-			</div>
-			<?php endif; ?>
-		</div>
-		<?php endif; ?>
-	<?php include("../views/footer.php"); ?>
-</div>
-<script type="text/javascript"
-          src="https://www.google.com/jsapi?autoload={
+                        <?php if($t15): ?>
+                            <div id="chart4" class="chart-tab <?php echo (!$t14)?'active':''; ?>"></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+        <?php include("../views/footer.php"); ?>
+    </div>
+    <script type="text/javascript"
+            src="https://www.google.com/jsapi?autoload={
             'modules':[{
               'name':'visualization',
               'version':'1',
               'packages':['corechart']
             }]
           }"></script>
-<script type="text/javascript">
-jQuery(document).ready(function(){
-	jQuery('.circle-progress').percentcircle(<?php echo $factorInfo->GradesCalculation; ?>);
-	jQuery('.intelliboard-dropdown ul li').click(function(e){
-		var stext = jQuery(this).parent().parent().find('span').text();
-		var svalue = jQuery(this).parent().parent().find('span').attr('value');
-		var ctext = jQuery(this).text();
-		var cvalue = jQuery(this).attr('value');
+    <script type="text/javascript">
+        jQuery(document).ready(function(){
+            jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesCalculation); ?>);
+            jQuery('.intelliboard-dropdown ul li').click(function(e){
+                var stext = jQuery(this).parent().parent().find('span').text();
+                var svalue = jQuery(this).parent().parent().find('span').attr('value');
+                var ctext = jQuery(this).text();
+                var cvalue = jQuery(this).attr('value');
 
-		jQuery(this).text(stext);
-		jQuery(this).attr('value', svalue);
-		jQuery(this).parent().parent().find('span').text(ctext);
-		jQuery(this).parent().parent().find('span').attr('value', cvalue);
-		jQuery(this).parent().hide();
-		location = "<?php echo $CFG->wwwroot; ?>/local/intelliboard/student/index.php?userid=<?php echo $USER->id; ?>&time="+cvalue;
-	});
+                jQuery(this).text(stext);
+                jQuery(this).attr('value', svalue);
+                jQuery(this).parent().parent().find('span').text(ctext);
+                jQuery(this).parent().parent().find('span').attr('value', cvalue);
+                jQuery(this).parent().hide();
+                location = "<?php echo $CFG->wwwroot; ?>/local/intelliboard/student/index.php?userid=<?php echo $USER->id; ?>&time="+cvalue;
+            });
 
-	jQuery('.intelliboard-dropdown button').click(function(e){
-		if(jQuery(this).parent().hasClass('disabled')){
-			return false;
-		}
-		jQuery(this).parent().find('ul').toggle();
-	});
+            jQuery('.intelliboard-dropdown button').click(function(e){
+                if(jQuery(this).parent().hasClass('disabled')){
+                    return false;
+                }
+                jQuery(this).parent().find('ul').toggle();
+            });
 
-	jQuery('.closesettings').click(function(e){
-		e.preventDefault();
-		jQuery(this).parent().parent().parent().parent().find('.nav-tabs li:first a').trigger("click");
-	});
+            jQuery('.closesettings').click(function(e){
+                e.preventDefault();
+                jQuery(this).parent().parent().parent().parent().find('.nav-tabs li:first a').trigger("click");
+            });
 
-	jQuery('.intsettings').click(function(e){
-		e.preventDefault();
-		jQuery(this).parent().parent().find('li').removeClass("active");
-		jQuery(this).parent().parent().parent().find('.tab').removeClass("active");
-		jQuery('.intsettings-box').addClass("active");
-	});
-	jQuery('.searchviewclose').click(function(e){
-		e.preventDefault();
-		jQuery(this).parent().parent().removeClass("active");
-	});
-	jQuery('.searchview').click(function(e){
-		e.preventDefault();
-		jQuery(this).parent().addClass("active");
-	});
+            jQuery('.intsettings').click(function(e){
+                e.preventDefault();
+                jQuery(this).parent().parent().find('li').removeClass("active");
+                jQuery(this).parent().parent().parent().find('.tab').removeClass("active");
+                jQuery('.intsettings-box').addClass("active");
+            });
+            jQuery('.searchviewclose').click(function(e){
+                e.preventDefault();
+                jQuery(this).parent().parent().removeClass("active");
+            });
+            jQuery('.searchview').click(function(e){
+                e.preventDefault();
+                jQuery(this).parent().addClass("active");
+            });
 
-	jQuery('.cview').click(function(e){
-		e.preventDefault();
+            jQuery('.cview').click(function(e){
+                e.preventDefault();
 
-		jQuery(this).parent().find('a').removeClass("active");
-		jQuery(this).addClass("active");
-		var m = jQuery(this).attr('href');
-		jQuery('.cview-table').removeClass("list");
-		jQuery('.cview-table').addClass(m);
-	});
+                jQuery(this).parent().find('a').removeClass("active");
+                jQuery(this).addClass("active");
+                var m = jQuery(this).attr('href');
+                jQuery('.cview-table').removeClass("list");
+                jQuery('.cview-table').addClass(m);
+            });
 
-	jQuery('.nav-tabs li a').click(function(e){
-		e.preventDefault();
-		jQuery(this).parent().parent().find('li').removeClass("active");
-		jQuery(this).parent().parent().find('.intype').val(jQuery(this).attr('href'));
-		jQuery(this).parent().addClass("active");
-		jQuery(this).parent().parent().parent().find('.tab').removeClass("active").eq(jQuery(this).parent().index()).addClass("active");
-	});
+            jQuery('.nav-tabs li a').click(function(e){
+                e.preventDefault();
+                jQuery(this).parent().parent().find('li').removeClass("active");
+                jQuery(this).parent().parent().find('.intype').val(jQuery(this).attr('href'));
+                jQuery(this).parent().addClass("active");
+                jQuery(this).parent().parent().parent().find('.tab').removeClass("active").eq(jQuery(this).parent().index()).addClass("active");
+            });
 
-	jQuery('.chart-tabs a').click(function(e){
-		e.preventDefault();
-		jQuery(this).parent().parent().parent().find('.chart-tab').hide().eq(jQuery(this).parent().index()).show();
-	});
+            jQuery('.chart-tabs a').click(function(e){
+                e.preventDefault();
+                jQuery(this).parent().parent().parent().find('.chart-tab').hide().eq(jQuery(this).parent().index()).show();
+            });
 
-	jQuery('.intelliboard-origin-head a').click(function(e){
-		e.preventDefault();
+            jQuery('.intelliboard-origin-head a').click(function(e){
+                e.preventDefault();
 
-		jQuery(this).parent().find('a').removeClass("active");
-		jQuery(this).addClass("active");
-		jQuery(this).parent().parent().find('.intelliboard-chart-dash').hide().eq(jQuery(this).index()).show();
-		if(jQuery(this).hasClass('nofilter')){
-			jQuery('.intelliboard-dropdown').addClass('disabled');
-		}else{
-			jQuery('.intelliboard-dropdown').removeClass('disabled');
-		}
-	});
+                jQuery(this).parent().find('a').removeClass("active");
+                jQuery(this).addClass("active");
+                jQuery(this).parent().parent().find('.intelliboard-chart-dash').hide().eq(jQuery(this).index()).show();
+                if(jQuery(this).hasClass('nofilter')){
+                    jQuery('.intelliboard-dropdown').addClass('disabled');
+                }else{
+                    jQuery('.intelliboard-dropdown').removeClass('disabled');
+                }
+            });
 
-});
-<?php if($t14): ?>
-google.setOnLoadCallback(CourseSuccess);
-      function CourseSuccess() {
-        var data = google.visualization.arrayToDataTable([
-          ['Status', 'Courses'],
-          ['Completed',<?php echo (int)$totals->completed; ?>],
-          ['In progress',<?php echo (int)$totals->inprogress; ?>],
-          ['Not started',<?php echo intval($totals->enrolled)-(intval($totals->inprogress) + intval($totals->completed)); ?>],
-        ]);
-        var options = <?php echo $factorInfo->CourseSuccessCalculation; ?>;
-        var chart = new google.visualization.PieChart(document.getElementById('chart3'));
-        chart.draw(data, options);
-}
-<?php endif; ?>
+        });
+        <?php if($t14): ?>
+        google.setOnLoadCallback(CourseSuccess);
+        function CourseSuccess() {
+            var data = google.visualization.arrayToDataTable([
+                ['Status', 'Courses'],
+                ['Completed',<?php echo (int)$totals->completed; ?>],
+                ['In progress',<?php echo (int)$totals->inprogress; ?>],
+                ['Not started',<?php echo intval($totals->enrolled)-(intval($totals->inprogress) + intval($totals->completed)); ?>],
+            ]);
+            var options = <?php echo format_string($factorInfo->CourseSuccessCalculation); ?>;
+            var chart = new google.visualization.PieChart(document.getElementById('chart3'));
+            chart.draw(data, options);
+        }
+        <?php endif; ?>
 
-<?php if($t15): ?>
-google.setOnLoadCallback(Correlations);
-      function Correlations() {
-		var data = new google.visualization.DataTable();
-		data.addColumn('number', 'Grade');
-		data.addColumn('number', 'Time Spent (%)');
-		data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-		data.addRows([<?php echo ($json_data2) ? implode(",", $json_data2):"";?>]);
-        var options = <?php echo $factorInfo->CorrelationsCalculation; ?>;
-        var chart = new google.visualization.ScatterChart(document.getElementById('chart4'));
-        chart.draw(data, options);
-}
-<?php endif; ?>
+        <?php if($t15): ?>
+        google.setOnLoadCallback(Correlations);
+        function Correlations() {
+            var data = new google.visualization.DataTable();
+            data.addColumn('number', 'Grade');
+            data.addColumn('number', 'Time Spent (%)');
+            data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+            data.addRows([<?php echo ($json_data2) ? implode(",", $json_data2):"";?>]);
+            var options = <?php echo format_string($factorInfo->CorrelationsCalculation); ?>;
+            var chart = new google.visualization.ScatterChart(document.getElementById('chart4'));
+            chart.draw(data, options);
+        }
+        <?php endif; ?>
 
-<?php if($t12): ?>
-	google.setOnLoadCallback(ActivityParticipation);
-	      function ActivityParticipation() {
-	        var data = google.visualization.arrayToDataTable([
-	          ['Module name', 'Total', 'Viewed', 'Completed'],
-	          <?php foreach($modules_progress as $row):  ?>
-		          ['<?php echo ucfirst($row->name); ?>', <?php echo (int)$row->modules; ?>, <?php echo (int)$row->start_modules; ?>, <?php echo (int)$row->completed_modules; ?>],
-		      <?php endforeach; ?>
-	        ]);
-			var options = <?php echo $factorInfo->ActivityParticipationCalculation; ?>;
-	        var chart = new google.visualization.ColumnChart(document.getElementById('chart1'));
-	        chart.draw(data, options);
-	}
-<?php endif; ?>
+        <?php if($t12): ?>
+        google.setOnLoadCallback(ActivityParticipation);
+        function ActivityParticipation() {
+            var data = google.visualization.arrayToDataTable([
+                ['Module name', 'Total', 'Viewed', 'Completed'],
+                <?php foreach($modules_progress as $row):  ?>
+                ['<?php echo format_string(ucfirst($row->name)); ?>', <?php echo (int)$row->modules; ?>, <?php echo (int)$row->start_modules; ?>, <?php echo (int)$row->completed_modules; ?>],
+                <?php endforeach; ?>
+            ]);
+            var options = <?php echo format_string($factorInfo->ActivityParticipationCalculation); ?>;
+            var chart = new google.visualization.ColumnChart(document.getElementById('chart1'));
+            chart.draw(data, options);
+        }
+        <?php endif; ?>
 
-<?php if($t13): ?>
-	google.setOnLoadCallback(LearningProgress);
-	      function LearningProgress() {
+        <?php if($t13): ?>
+        google.setOnLoadCallback(LearningProgress);
+        function LearningProgress() {
 
-	        var data = google.visualization.arrayToDataTable([
-	          ['Module', 'Time spent'],
-	          <?php foreach($modules_progress as $row):  ?>
-		          ['<?php echo ucfirst($row->name); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
-		      <?php endforeach; ?>
-	        ]);
-	        var options = <?php echo $factorInfo->LearningProgressCalculation; ?>;
-	        var chart = new google.visualization.PieChart(document.getElementById('chart2'));
-	        chart.draw(data, options);
-	}
-<?php endif; ?>
+            var data = google.visualization.arrayToDataTable([
+                ['Module', 'Time spent'],
+                <?php foreach($modules_progress as $row):  ?>
+                ['<?php echo format_string(ucfirst($row->name)); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
+                <?php endforeach; ?>
+            ]);
+            var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
+            var chart = new google.visualization.PieChart(document.getElementById('chart2'));
+            chart.draw(data, options);
+        }
+        <?php endif; ?>
 
-<?php if($t6): ?>
-	google.setOnLoadCallback(drawCourseProgress);
-      function drawCourseProgress() {
-        var data = google.visualization.arrayToDataTable([
-         ['Course', 'Course Average', 'My Grade'],
-         <?php foreach($courses as $row):  ?>
-         ['<?php echo $row->fullname; ?>', <?php echo (int)$row->average; ?>, <?php echo (int)$row->grade; ?>],
-         <?php endforeach; ?>
-      ]);
+        <?php if($t6): ?>
+        google.setOnLoadCallback(drawCourseProgress);
+        function drawCourseProgress() {
+            var data = google.visualization.arrayToDataTable([
+                ['Course', 'Course Average', 'My Grade'],
+                <?php foreach($courses as $row):  ?>
+                ['<?php echo format_string($row->fullname); ?>', <?php echo (int)$row->average; ?>, <?php echo (int)$row->grade; ?>],
+                <?php endforeach; ?>
+            ]);
 
-    var options = <?php echo $factorInfo->CourseProgressCalculation; ?>;
-    var chart = new google.visualization.ComboChart(document.getElementById('intelliboard-chart-combo'));
-    chart.draw(data, options);
-    jQuery('.intelliboard-origin-head a:first').trigger('click');
-}
-<?php endif; ?>
+            var options = <?php echo format_string($factorInfo->CourseProgressCalculation); ?>;
+            var chart = new google.visualization.ComboChart(document.getElementById('intelliboard-chart-combo'));
+            chart.draw(data, options);
+            jQuery('.intelliboard-origin-head a:first').trigger('click');
+        }
+        <?php endif; ?>
 
-<?php if($t5): ?>
-	google.setOnLoadCallback(drawActivityProgress);
-	function drawActivityProgress() {
-		var data = new google.visualization.DataTable();
-		data.addColumn('date', 'Time');
-		data.addColumn('number', 'My grade progress');
-		data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-		data.addColumn('number', 'Average grade');
-		data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-		data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
-		var options = <?php echo $factorInfo->ActivityProgressCalculation; ?>;
-		var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
-		chart.draw(data, options);
-		jQuery('.intelliboard-origin-head a:first').trigger('click');
-	}
-<?php endif; ?>
-</script>
+        <?php if($t5): ?>
+        google.setOnLoadCallback(drawActivityProgress);
+        function drawActivityProgress() {
+            var data = new google.visualization.DataTable();
+            data.addColumn('date', 'Time');
+            data.addColumn('number', 'My grade progress');
+            data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+            data.addColumn('number', 'Average grade');
+            data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+            data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
+            var options = <?php echo format_string($factorInfo->ActivityProgressCalculation); ?>;
+            var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
+            chart.draw(data, options);
+            jQuery('.intelliboard-origin-head a:first').trigger('click');
+        }
+        <?php endif; ?>
+    </script>
 <?php endif; ?>
 <?php echo $OUTPUT->footer();

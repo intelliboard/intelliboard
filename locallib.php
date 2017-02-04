@@ -37,6 +37,9 @@ function clean_raw($value, $mode = true)
 	return str_replace($params, '', $value);
 }
 
+function intelliboard_clean($content){
+	return trim($content);
+}
 function intelliboard($params){
 	global $CFG;
 

@@ -13,33 +13,33 @@ class intelliboard_courses_grades_table extends table_sql {
         $columns = array('course');
         if(get_config('local_intelliboard', 't23')){
             $columns[] =  'timemodified';
-            $headers[] =  'Course start date';
+            $headers[] =  get_string('course_start_date', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't24')){
            $columns[] =  'startdate';
-           $headers[] =  'Enrolled date';
+           $headers[] =  get_string('enrolled_date', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't25')){
            $columns[] =  'average';
-           $headers[] =  'Progress';
+           $headers[] =  get_string('progress', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't26')){
            $columns[] =  'letter';
-           $headers[] =  'Letter';
+           $headers[] =  get_string('letter', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't27')){
            $columns[] =  'completedmodules';
-           $headers[] =  'Completed Activities';
+           $headers[] =  get_string('completed_activities', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't28')){
            $columns[] =  'grade';
-           $headers[] =  'Score';
+           $headers[] =  get_string('score', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't28')){
            $columns[] =  'timecompleted';
-           $headers[] =  'Course Completion Status';
+           $headers[] =  get_string('course_completion_status', 'local_intelliboard');
         }
         $columns[] =  'actions';
-        $headers[] =  'Activity Grades';
+        $headers[] =  get_string('activity_grades', 'local_intelliboard');
 
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $params = array();
+        $params = array('userid'=>$userid);
         $sql = "";
         if($search){
             $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
@@ -48,7 +48,7 @@ class intelliboard_courses_grades_table extends table_sql {
 
         $fields = "c.id, c.fullname as course, c.timemodified, c.startdate, c.enablecompletion, cri.gradepass, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, cc.timecompleted, m.modules, cm.completedmodules, '' as actions, '' as letter";
 
-        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, ue.timemodified, ue.userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.userid = $userid AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid AND c.visible = 1) c
+        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, ue.timemodified, ue.userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.userid = :userid  AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid AND c.visible = 1) c
 
             LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = c.userid
             LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion = 1 GROUP BY course) m ON m.course = c.id
@@ -85,9 +85,9 @@ class intelliboard_courses_grades_table extends table_sql {
     }
     function col_timecompleted($values) {
         if(!$values->enablecompletion){
-            return "Completion is not enabled for this course";
+            return get_string('completion_is_not_enabled', 'local_intelliboard');
         }
-        return  ($values->timecompleted) ? "Completed on ".date('m/d/Y', $values->timemodified) : "Incomplete";
+        return  ($values->timecompleted) ? get_string('completed_on', 'local_intelliboard', date('m/d/Y', $values->timemodified)) : get_string('incomplete', 'local_intelliboard');
     }
     function col_grade($values) {
         $html = html_writer::start_tag("div",array("class"=>"grade"));
@@ -116,12 +116,12 @@ class intelliboard_courses_grades_table extends table_sql {
     function col_course($values) {
         global $CFG, $PAGE;
 
-        return html_writer::link(new moodle_url($CFG->wwwroot.'/course/view.php', array('id'=>$values->id)), $values->course, array("target"=>"_blank"));
+        return html_writer::link(new moodle_url($CFG->wwwroot.'/course/view.php', array('id'=>$values->id)), format_string($values->course), array("target"=>"_blank"));
     }
     function col_actions($values) {
         global $CFG, $PAGE;
 
-        return html_writer::link(new moodle_url($PAGE->url, array('id'=>$values->id)), 'Activities', array('class' =>'btn'));
+        return html_writer::link(new moodle_url($PAGE->url, array('id'=>$values->id)), get_string('activities', 'local_intelliboard'), array('class' =>'btn'));
     }
 }
 
@@ -133,39 +133,42 @@ class intelliboard_activities_grades_table extends table_sql {
         parent::__construct($uniqueid);
 
         $columns = array('itemname');
-        $headers = array('Activity name');
+        $headers = array(get_string('activity_name', 'local_intelliboard'));
 
         if(get_config('local_intelliboard', 't43')){
             $columns[] =  'itemmodule';
-            $headers[] =  'Type';
+            $headers[] =  get_string('type', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't44')){
             $columns[] =  'grade';
-            $headers[] =  'Score';
+            $headers[] =  get_string('score', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't45')){
             $columns[] =  'timepoint';
-            $headers[] =  'Graded';
+            $headers[] =  get_string('graded', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't46')){
             $columns[] =  'timecompleted';
-            $headers[] =  'Type';
+            $headers[] =  get_string('type', 'local_intelliboard');
         }
 
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $params = array();
         $sql = "";
+        $params = array();
         if($search){
             $sql .= " AND " . $DB->sql_like('gi.itemname', ":itemname", false, false);
             $params['itemname'] = "%$search%";
         }
+        $params['userid1'] = $userid;
+        $params['userid2'] = $userid;
+        $params['courseid'] = $courseid;
 
         $fields = "gi.id, gi.itemname, cm.id as cmid, gi.itemmodule, cmc.timemodified as timecompleted, (g.finalgrade/g.rawgrademax)*100 AS grade, IFNULL(g.timemodified, g.timecreated)  as timepoint";
         $from = "{grade_items} gi
-            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = $userid
+            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid1
             LEFT JOIN {modules} m ON m.name = gi.itemmodule
             LEFT JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
-            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1 AND cmc.userid = $userid";
-        $where = "gi.courseid = $courseid AND gi.itemtype = 'mod' AND cm.visible = 1 $sql";
+            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1 AND cmc.userid = :userid2";
+        $where = "gi.courseid = :courseid AND gi.itemtype = 'mod' AND cm.visible = 1 $sql";
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -180,7 +183,7 @@ class intelliboard_activities_grades_table extends table_sql {
 
 
     function col_timecompleted($values) {
-      return ($values->timecompleted) ? "Completed on ".date('m/d/Y', $values->timecompleted) : "Incomplete";
+      return ($values->timecompleted) ? get_string('completed_on', 'local_intelliboard', date('m/d/Y', $values->timecompleted)) : get_string('incomplete', 'local_intelliboard');
     }
     function col_timepoint($values) {
       return ($values->timepoint) ? date('m/d/Y', $values->timepoint) : '';
@@ -188,6 +191,6 @@ class intelliboard_activities_grades_table extends table_sql {
     function col_itemname($values) {
         global $CFG, $PAGE;
 
-        return html_writer::link(new moodle_url("$CFG->wwwroot/mod/$values->itemmodule/view.php", array('id'=>$values->cmid)), $values->itemname, array("target"=>"_blank"));
+        return html_writer::link(new moodle_url("$CFG->wwwroot/mod/$values->itemmodule/view.php", array('id'=>$values->cmid)), format_string($values->itemname), array("target"=>"_blank"));
     }
 }
