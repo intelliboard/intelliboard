@@ -1,29 +1,27 @@
 <?php
-// IntelliBoard.net
+// This file is part of Moodle - http://moodle.org/
 //
-// IntelliBoard.net is built to work with any LMS designed in Moodle
-// with the goal to deliver educational data analytics to single dashboard instantly.
-// With power to turn this analytical data into simple and easy to read reports,
-// IntelliBoard.net will become your primary reporting tool.
-//
-// Moodle
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// IntelliBoard.net is built as a local plugin for Moodle.
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * IntelliBoard.net
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
  *
- * @package    	intelliboard
- * @copyright  	2015 IntelliBoard, Inc
- * @license    	http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @created by	IntelliBoard, Inc
- * @website		www.intelliboard.net
+ * @package    local_intelliboard
+ * @copyright  2017 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @website    https://intelliboard.net/
  */
 
 function clean_raw($value, $mode = true)
@@ -40,6 +38,17 @@ function clean_raw($value, $mode = true)
 function intelliboard_clean($content){
 	return trim($content);
 }
+function intelliboard_url(){
+	$server = get_config('local_intelliboard', 'server');
+	if($server == 2){
+		$domain = 'eu.';
+	}elseif($server == 1){
+		$domain = 'au.';
+	}else{
+		$domain = '';
+	}
+	return 'https://'.$domain.'intelliboard.net';
+}
 function intelliboard($params){
 	global $CFG;
 
@@ -51,10 +60,9 @@ function intelliboard($params){
 	}else{
 		$options = array();
 	}
-
-
+	$url = intelliboard_url();
 	$curl = new curl;
-	$json = $curl->post('https://intelliboard.net/dashboard/api', $params, $options);
+	$json = $curl->post($url.'/dashboard/api', $params, $options);
 	$data = (object)json_decode($json);
 
 	$data->content = (isset($data->content))?$data->content:'';
@@ -68,8 +76,5 @@ function seconds_to_time($t,$f=':'){
 	if($t < 0){
 		return "00:00:00";
 	}
-	$hours = floor($t/3600);
-	$mins = ($t/60)%60;
-	$secs = $t%60;
 	return sprintf("%02d%s%02d%s%02d", floor($t/3600), $f, ($t/60)%60, $f, $t%60);
 }

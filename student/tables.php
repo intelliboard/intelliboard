@@ -1,11 +1,36 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ *
+ * @package    local_intelliboard
+ * @copyright  2017 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @website    http://intelliboard.net/
+ */
+
 require_once($CFG->libdir . '/tablelib.php');
 require_once($CFG->libdir . '/gradelib.php');
 
 class intelliboard_courses_grades_table extends table_sql {
 
     function __construct($uniqueid, $userid = 0, $search = '') {
-        global $CFG, $PAGE, $DB;
+        global $PAGE, $DB;
 
         parent::__construct($uniqueid);
 
@@ -57,9 +82,7 @@ class intelliboard_courses_grades_table extends table_sql {
             LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = c.userid
             LEFT JOIN (SELECT gi.courseid, AVG( (g.finalgrade/g.rawgrademax)*100) AS average FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id";
-
-        $where = "c.id > 0 $sql";
-
+        $where = "1 $sql";
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
     }
@@ -114,12 +137,12 @@ class intelliboard_courses_grades_table extends table_sql {
       return ($values->timemodified) ? date('m/d/Y', $values->timemodified) : '';
     }
     function col_course($values) {
-        global $CFG, $PAGE;
+        global $CFG;
 
         return html_writer::link(new moodle_url($CFG->wwwroot.'/course/view.php', array('id'=>$values->id)), format_string($values->course), array("target"=>"_blank"));
     }
     function col_actions($values) {
-        global $CFG, $PAGE;
+        global $PAGE;
 
         return html_writer::link(new moodle_url($PAGE->url, array('id'=>$values->id)), get_string('activities', 'local_intelliboard'), array('class' =>'btn'));
     }
@@ -128,7 +151,7 @@ class intelliboard_courses_grades_table extends table_sql {
 class intelliboard_activities_grades_table extends table_sql {
 
     function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '') {
-        global $CFG, $PAGE, $DB;
+        global $PAGE, $DB;
 
         parent::__construct($uniqueid);
 
@@ -189,7 +212,7 @@ class intelliboard_activities_grades_table extends table_sql {
       return ($values->timepoint) ? date('m/d/Y', $values->timepoint) : '';
     }
     function col_itemname($values) {
-        global $CFG, $PAGE;
+        global $CFG;
 
         return html_writer::link(new moodle_url("$CFG->wwwroot/mod/$values->itemmodule/view.php", array('id'=>$values->cmid)), format_string($values->itemname), array("target"=>"_blank"));
     }

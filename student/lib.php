@@ -1,8 +1,33 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ *
+ * @package    local_intelliboard
+ * @copyright  2017 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @website    http://intelliboard.net/
+ */
+
 defined('MOODLE_INTERNAL') || die();
 
 function intelliboard_data($type, $userid) {
-    global $PAGE, $DB, $CFG, $USER;
+    global $DB, $USER;
 
     $data = array();
     $page = optional_param($type.'_page', 0, PARAM_INT);
@@ -35,7 +60,7 @@ function intelliboard_data($type, $userid) {
             $params['timestart'] = $timestart;
             $params['timefinish'] = $timefinish;
         }
-        $query = "SELECT a.id, a.name, a.duedate, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid 
+        $query = "SELECT a.id, a.name, a.duedate, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid
                     FROM {course} c, {assign} a
                         LEFT JOIN {modules} m ON m.name = 'assign'
                         LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = a.id
@@ -70,7 +95,7 @@ function intelliboard_data($type, $userid) {
             $params['timestart'] = $timestart;
             $params['timefinish'] = $timefinish;
         }
-        $query = "SELECT a.id, a.name, a.timeclose, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid 
+        $query = "SELECT a.id, a.name, a.timeclose, c.fullname, (g.finalgrade/g.rawgrademax)*100 as grade, cmc.completionstate, cm.id as cmid
                   FROM {course} c, {quiz} a
                     LEFT JOIN {modules} m ON m.name = 'quiz'
                     LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = a.id
@@ -88,7 +113,7 @@ function intelliboard_data($type, $userid) {
             $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
             $params['fullname'] = "%$search%";
         }
-        $query = "SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, c.fullname, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules 
+        $query = "SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, c.fullname, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules
                   FROM {user_enrolments} ue
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid
                     LEFT JOIN {course} c ON c.id = e.courseid
@@ -120,7 +145,7 @@ function intelliboard_data($type, $userid) {
         }else{
             $sql_select = ",'' as certificates";
         }
-        $query = "SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, c.fullname, ca.name as category, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules, l.duration $sql_select 
+        $query = "SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, c.fullname, ca.name as category, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules, l.duration $sql_select
                   FROM {user_enrolments} ue
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid LEFT JOIN {course} c ON c.id = e.courseid
                     LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ue.userid
@@ -168,7 +193,7 @@ function get_timerange($time){
     return array($timestart,$timefinish);
 }
 function get_pagination($count = 0, $page = 0, $perpage = 15, $type = 'intelliboard') {
-    global $CFG, $OUTPUT, $PAGE;
+    global $OUTPUT, $PAGE;
 
     $pages = (int)ceil($count/$perpage);
     if ($pages == 1 || $pages == 0) {
@@ -179,7 +204,7 @@ function get_pagination($count = 0, $page = 0, $perpage = 15, $type = 'intellibo
 }
 
 function intelliboard_learner_course_progress($courseid, $userid){
-    global $CFG, $DB;
+    global $DB;
 
     $timestart = strtotime('-30 days');
     $timefinish = time();
@@ -190,19 +215,19 @@ function intelliboard_learner_course_progress($courseid, $userid){
     $params['timestart'] = $timestart;
     $params['timefinish'] = $timefinish;
     $params['courseid'] = $courseid;
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade 
-                                    FROM {grade_items} gi, {grade_grades} g 
-                                    WHERE gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid 
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
+                                    FROM {grade_items} gi, {grade_grades} g
+                                    WHERE gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid
                                     GROUP BY floor(g.timemodified / 86400) * 86400 ORDER BY g.timemodified", $params);
 
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade 
-                                    FROM {grade_items} gi, {grade_grades} g 
-                                    WHERE gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid 
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
+                                    FROM {grade_items} gi, {grade_grades} g
+                                    WHERE gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid
                                     GROUP BY floor(g.timemodified / 86400) * 86400 ORDER BY g.timemodified", $params);
     return $data;
 }
 function intelliboard_learner_progress($time, $userid){
-    global $CFG, $DB;
+    global $DB;
 
     list($timestart, $timefinish) = get_timerange($time);
 
@@ -211,14 +236,14 @@ function intelliboard_learner_progress($time, $userid){
     $params['userid'] = $userid;
     $params['timestart'] = $timestart;
     $params['timefinish'] = $timefinish;
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade 
-                                    FROM {grade_items} gi, {grade_grades} g 
-                                    WHERE gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish 
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
+                                    FROM {grade_items} gi, {grade_grades} g
+                                    WHERE gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish
                                     GROUP BY floor(g.timemodified / 86400) * 86400 ORDER BY g.timemodified", $params);
 
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade 
-                                    FROM {grade_items} gi, {grade_grades} g 
-                                    WHERE gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish 
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
+                                    FROM {grade_items} gi, {grade_grades} g
+                                    WHERE gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish
                                     GROUP BY floor(g.timemodified / 86400) * 86400 ORDER BY g.timemodified", $params);
     return $data;
 }
@@ -229,7 +254,7 @@ function intelliboard_learner_courses($userid){
     $params = array();
     $params['userid1'] = $userid;
     $params['userid2'] = $userid;
-    $data = $DB->get_records_sql("SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, c.fullname, l.duration, '0' AS duration_calc 
+    $data = $DB->get_records_sql("SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, c.fullname, l.duration, '0' AS duration_calc
                                   FROM {user_enrolments} ue
                                     LEFT JOIN {enrol} e ON e.id = ue.enrolid
                                     LEFT JOIN {course} c ON c.id = e.courseid
@@ -250,7 +275,7 @@ function intelliboard_learner_courses($userid){
     return $data;
 }
 
-function intelliboard_learner_totals($userid){ 
+function intelliboard_learner_totals($userid){
     global $DB;
 
     $params = array();

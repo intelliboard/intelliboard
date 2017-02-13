@@ -1,16 +1,39 @@
-@import url(https://fonts.googleapis.com/css?family=Open+Sans:400,300,600);
+/**
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+/**
+ * @package    local_intelliboard
+ * @copyright  2017 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @website    http://intelliboard.net/
+ */
+
+
 @import url(ionicons.min.css);
 
 .system{}
 .system-box{width:31.3%;float:left;margin:1%;}
-.system-header{border-bottom: 1px solid #C4C4C4;color: #000000;font: 600 14px 'Open Sans'; margin: 0 0 5px;padding: 0 0 5px;}
+.system-header{border-bottom: 1px solid #C4C4C4;color: #000000;font: 600 14px "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif; margin: 0 0 5px;padding: 0 0 5px;}
 .system-item{width:31.3%;float:left;margin:1%;}
-.system-item strong{color: #008B3A;font: 300 21px 'Open Sans';}
-.system-item p{margin:0;color: #CCCCCC;font: 13px 'Open Sans';}
+.system-item strong{color: #008B3A;font: 300 21px "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;}
+.system-item p{margin:0;color: #CCCCCC;font: 13px "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;}
 
-.intelliboard-page{}
+.intelliboard-page{font-family:"Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;}
 .intelliboard-page h2,
-.intelliboard-page h3{font-family:'Open Sans';font-weight:400;}
+.intelliboard-page h3{font-family:"Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif; font-weight:400;}
 .intelliboard-page .log{font-family: monospace; font-size: 9px; margin: 0;}
 
 .intelliboard-filterform{display: block;  margin: 0 auto;  padding: 20px;  width: 300px;}
@@ -214,7 +237,7 @@
 .intelliboard-content .submit-btn{margin:20px 0;}
 
 .intelliboard-content:after{clear: both;content: ".";display: block;height: 0;visibility: hidden;}
-.intelliboard-content{margin:20px 0; font-family: open sans;}
+.intelliboard-content{margin:20px 0;}
 .intelliboard-content h3{font-size:21px;font-weight: 400;margin:0 0 20px;}
 .intelliboard-content .grid h3 i.help{cursor:help; margin-left: 5px; color: rgba(0, 0, 0, 0); font-size: 19px; transition: all 0.5s ease;}
 .intelliboard-content .grid:hover h3 i.help{color: rgba(0, 0, 0, 0.2);}
@@ -346,6 +369,7 @@
 .intelliboard-course-header h3{margin:5px 0;}
 .intelliboard-course-header h3 i{font-size: 14px;opacity: 0.2;}
 .intelliboard-course-header h3:hover i{opacity: 1;}
+.intelliboard-course-header span{margin-right: 10px}
 .intelliboard-course-header p{margin:0;}
 .intelliboard-course-header p i{margin-right: 5px;}
 .intelliboard-course-header p span{margin-right: 10px;color: rgba(0,0,0,0.4)}
@@ -353,10 +377,11 @@
 
 
 .intelliboard-course-header ul.summary{clear:both; margin: 0 0 0 100px;  padding: 5px 0;list-style: none; border-top: 1px solid #ccc;}
-.intelliboard-course-header ul.summary li{display: block; font-size: 15px; font-weight: 400; display: inline-block; margin-right: 25px }
+.intelliboard-course-header ul.summary li{display: block; font-size: 15px; font-weight: 400; display: inline-block; margin-right: 30px }
 .intelliboard-course-header ul.summary li span{display: block; font-size: 13px; opacity: 0.6; font-weight: 400;}
 .intelliboard-course-header .avatar{float: left;margin-right: 20px}
 .intelliboard-course-header .avatar img{ border-radius: 50%}
+.intelliboard-course-header .btn-back{ margin-top: 10px}
 .intelliboard-course-header .activity{ width: 80px;height: 80px;border-radius: 50%; background-color: #ddd; float: left;margin-right: 20px; line-height: 80px; font-size: 36px; color: #fff; text-transform: uppercase;text-align: center}
 
 .intelliboard-course-header ul.totals{float:right;padding: 0;margin: 0;list-style: none;}
