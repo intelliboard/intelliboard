@@ -140,12 +140,12 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 	$path = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
 
 	if(strpos($path,'cron.php') !== false){
-		return;
+		return false;
 	}
 
 	if ($enabled and isloggedin() and !isguestuser()){
 		if(is_siteadmin() and !$trackadmin){
-			return;
+			return false;
 		}
 		$intelliboardPage = (isset($_COOKIE['intelliboardPage'])) ? clean_param($_COOKIE['intelliboardPage'], PARAM_ALPHANUMEXT) : '';
 		$intelliboardParam = (isset($_COOKIE['intelliboardParam'])) ? clean_param($_COOKIE['intelliboardParam'], 0, PARAM_INT) : 0;
@@ -285,5 +285,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 
 		$PAGE->requires->js('/local/intelliboard/module.js', false);
 		$PAGE->requires->js_function_call('intelliboardInit', array($params), false);
+
+		return true;
 	}
 }

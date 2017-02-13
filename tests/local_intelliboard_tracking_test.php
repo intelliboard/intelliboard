@@ -35,12 +35,14 @@ class local_intelliboard_tracking_testcase extends advanced_testcase
 
     public function test_tracking()
     {
-        global $DB;
+        global $DB, $CFG;
 
         $this->resetAfterTest(true);
 
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
+
+        require_once($CFG->dirroot .'/local/intelliboard/lib.php');
 
         $result = local_intelliboard_insert_tracking(false);
         $this->assertEquals(true, $result);
