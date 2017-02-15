@@ -2808,23 +2808,37 @@ class local_intelliboard_external extends external_api {
 
     public function report88($params)
     {
-        $sql_filter2 = "";
-        $sql_filter3 = "";
+    	global $DB;
+
         $sql_select = array();
-        $sql_filter = $this->get_filterdate_sql($params, "g.timecreated");
+        $sql_filter1 = $this->get_filterdate_sql($params, "g.timecreated");
+        $sql_filter2 = $this->get_filterdate_sql($params, "g.timecreated");
+        $sql_filter3 = $this->get_filterdate_sql($params, "g.timecreated");
+        $sql_filter4 = $this->get_filterdate_sql($params, "g.timecreated");
+        $sql_filter5 = $this->get_filterdate_sql($params, "g.timecreated");
+        $sql_filter6 = "";
+        $sql_filter7 = "";
         if($params->courseid){
+            $sql_filter1 .= $this->get_filter_in_sql($params->courseid, "gi.courseid");
+            $sql_filter2 .= $this->get_filter_in_sql($params->courseid, "gi.courseid");
+            $sql_filter3 .= $this->get_filter_in_sql($params->courseid, "gi.courseid");
+            $sql_filter4 .= $this->get_filter_in_sql($params->courseid, "gi.courseid");
+            $sql_filter5 .= $this->get_filter_in_sql($params->courseid, "gi.courseid");
             $this->params['csid'] = intval($params->courseid);
-            $sql_filter .= $this->get_filter_in_sql($params->courseid, "gi.courseid");
-            $sql_select[] = "(SELECT fullname FROM {course} WHERE id = :csid as course";
+            $sql_select[] = "(SELECT fullname FROM {course} WHERE id = :csid) as course";
         }else{
             return array();
         }
         if($params->users){
-            $sql_filter3 .= $this->get_filter_in_sql($params->users, "userid");
-            $sql_filter2 .= $this->get_filter_in_sql($params->users, "cmc.userid");
-            $sql_filter .= $this->get_filter_in_sql($params->users, "g.userid");
-            $sql_filter4 = $this->get_filter_in_sql($params->users, "id");
-            $sql_select[] = "(SELECT CONCAT(firstname,' ',lastname) FROM {user} WHERE 1 $sql_filter4) as user";
+        	$sql_filter1 .= $this->get_filter_in_sql($params->users, "g.userid");
+        	$sql_filter2 .= $this->get_filter_in_sql($params->users, "g.userid");
+        	$sql_filter3 .= $this->get_filter_in_sql($params->users, "g.userid");
+        	$sql_filter4 .= $this->get_filter_in_sql($params->users, "g.userid");
+        	$sql_filter5 .= $this->get_filter_in_sql($params->users, "g.userid");
+            $sql_filter6 .= $this->get_filter_in_sql($params->users, "userid");
+            $sql_filter7 .= $this->get_filter_in_sql($params->users, "cmc.userid");
+            $sql_filter8 = $this->get_filter_in_sql($params->users, "id");
+            $sql_select[] = "(SELECT CONCAT(firstname,' ',lastname) FROM {user} WHERE 1 $sql_filter8) as user";
         }
         $sql_select = ($sql_select) ? ", " . implode(",", $sql_select) : "";
 
@@ -2833,37 +2847,37 @@ class local_intelliboard_external extends external_api {
         $this->params['cx3'] = intval($params->courseid);
         $this->params['cx4'] = intval($params->courseid);
 
-        $data = $this->get_report_data("SELECT
+        $data = $DB->get_record_sql("SELECT
 			(SELECT COUNT(g.finalgrade) FROM {grade_items} gi, {grade_grades} g WHERE
 			g.itemid = gi.id AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL
-			$sql_filter AND ((g.finalgrade/g.rawgrademax)*100 ) < 60) AS grade_f,
-
-			(SELECT COUNT(g.finalgrade) FROM {grade_items} gi, {grade_grades} g WHERE
-			g.itemid = gi.id AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL
-			$sql_filter AND ((g.finalgrade/g.rawgrademax)*100 ) > 60 and ((g.finalgrade/g.rawgrademax)*100 ) < 70) AS grade_d,
+			$sql_filter1 AND ((g.finalgrade/g.rawgrademax)*100 ) < 60) AS grade_f,
 
 			(SELECT COUNT(g.finalgrade) FROM {grade_items} gi, {grade_grades} g WHERE
 			g.itemid = gi.id AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL
-			$sql_filter AND ((g.finalgrade/g.rawgrademax)*100 ) > 70 and ((g.finalgrade/g.rawgrademax)*100 ) < 80) AS grade_c,
+			$sql_filter2 AND ((g.finalgrade/g.rawgrademax)*100 ) > 60 and ((g.finalgrade/g.rawgrademax)*100 ) < 70) AS grade_d,
+
+			(SELECT COUNT(g.finalgrade) FROM {grade_items} gi, {grade_grades} g WHERE
+			g.itemid = gi.id AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL
+			$sql_filter3 AND ((g.finalgrade/g.rawgrademax)*100 ) > 70 and ((g.finalgrade/g.rawgrademax)*100 ) < 80) AS grade_c,
 
 
 			(SELECT COUNT(g.finalgrade) FROM {grade_items} gi, {grade_grades} g WHERE
 			g.itemid = gi.id AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL
-			$sql_filter AND ((g.finalgrade/g.rawgrademax)*100 ) > 80 and ((g.finalgrade/g.rawgrademax)*100 ) < 90) AS grade_b,
+			$sql_filter4 AND ((g.finalgrade/g.rawgrademax)*100 ) > 80 and ((g.finalgrade/g.rawgrademax)*100 ) < 90) AS grade_b,
 
 			(SELECT COUNT(g.finalgrade) FROM {grade_items} gi, {grade_grades} g WHERE
 			g.itemid = gi.id AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL
-			$sql_filter AND ((g.finalgrade/g.rawgrademax)*100 ) > 90) AS grade_a,
+			$sql_filter5 AND ((g.finalgrade/g.rawgrademax)*100 ) > 90) AS grade_a,
 
-			(SELECT COUNT(DISTINCT param) FROM {local_intelliboard_tracking} WHERE page = 'module' AND courseid = :cx1 $sql_filter3) as  modules_visited,
+			(SELECT COUNT(DISTINCT param) FROM {local_intelliboard_tracking} WHERE page = 'module' AND courseid = :cx1 $sql_filter6) as  modules_visited,
 
-			(SELECT count(id) FROM {course_modules} WHERE visible = 1 AND course = cx2) as modules_all,
+			(SELECT count(id) FROM {course_modules} WHERE visible = 1 AND course = :cx2) as modules_all,
 
-			(SELECT count(id) FROM {course_modules} WHERE visible = 1 and completion = 1 AND course = cx3) as modules,
+			(SELECT count(id) FROM {course_modules} WHERE visible = 1 and completion = 1 AND course = :cx3) as modules,
 
-			(SELECT count(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible = 1 AND cmc.completionstate = 1 AND cm.course = :cx4 $sql_filter2) as modules_completed
+			(SELECT count(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible = 1 AND cmc.completionstate = 1 AND cm.course = :cx4 $sql_filter7) as modules_completed
 			$sql_select
-		", $params, false);
+		", $this->params);
 
         return array("data" => $data, "timestart"=>$params->timestart, "timefinish"=>$params->timefinish);
     }
@@ -3008,33 +3022,28 @@ class local_intelliboard_external extends external_api {
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, "cmc.userid", "users");
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
-        $sql_filter .= $this->get_filterdate_sql($params, "cmc.timemodified");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql1 = $this->get_filterdate_sql($params, "cmc.timemodified");
 
-        return $this->get_report_data("
+        $data = $this->get_report_data("
             SELECT cm.id,
-                   cm.visible as module_visible,
-                   cs.section,
-                   cs.name,
-                   cs.visible,
-                   c.fullname,
-                   COUNT(DISTINCT cmc.id) as completed
-                   $sql_columns
-			FROM {course} c,
-                 {course_modules} cm,
-                 {modules} m,
-                 {course_modules_completion} cmc,
-                 {course_sections} cs
-			WHERE
-				cm.course = c.id AND
-				m.id = cm.module AND
-                cm.section= cs.id AND
-                cs.course = cm.course AND
-			    cmc.coursemoduleid = cm.id AND
-			    cmc.completionstate = 1
-			    $sql_filter
-			GROUP BY cm.id $sql_having $sql_order", $params);
+				cm.visible as module_visible,
+				cs.section,
+				cs.name,
+				cs.visible,
+				c.fullname,
+				COUNT(DISTINCT cmc.id) as completed
+				$sql_columns
+			FROM {course} c
+				LEFT JOIN {course_modules} cm ON cm.course = c.id
+				LEFT JOIN {modules} m ON m.id = cm.module
+				LEFT JOIN {course_sections} cs ON cs.id = cm.section AND cs.course = cm.course
+				LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1 $sql1
+			WHERE 1 $sql_filter
+			GROUP BY cm.id $sql_having $sql_order", $params, false);
+
+        return array("data" => $data, "timestart"=>$params->timestart, "timefinish"=>$params->timefinish);
     }
     public function report93($params){
         $columns = array_merge(array(
@@ -3200,7 +3209,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filterdate_sql($params, "l.timepoint");
 
         return $this->get_report_data("
-		    SELECT DISTINCT u.id,
+		    SELECT t.id as tid, u.id,
 	           u.firstname,
 	           u.lastname,
 	           u.email,
@@ -3209,7 +3218,7 @@ class local_intelliboard_external extends external_api {
 	           SUM(l.visits) AS visits
 			FROM  {user} u, {course} c, {local_intelliboard_tracking} t, {local_intelliboard_logs} l
 			WHERE l.trackid = t.id AND c.id = t.courseid AND u.id = t.userid $sql_filter
-			GROUP BY t.userid $sql_having $sql_order", $params);
+			GROUP BY t.userid, t.courseid $sql_having $sql_order", $params);
     }
 
     public function report78($params)
