@@ -115,7 +115,7 @@ if($action == 'user_courses_list'){
 	$html .= '</tr></thead>';
 	foreach($items as $item){
 		$html .= '<tr>';
-		$html .= '<td><a href="value="'.$item->userid.'">'.fullname($item).'</a></td>';
+		$html .= '<td>'.fullname($item).'</td>';
 		$html .= '<td>'. $item->email .'</td>';
 		$html .= '<td>'. (($item->completionstate==1)?get_string('completed_on', 'local_intelliboard', date('m/d/Y', $item->timemodified)):get_string('incomplete', 'local_intelliboard')) .'</td>';
 		$html .= '<td>'. round($item->grade, 2) .'</td>';
