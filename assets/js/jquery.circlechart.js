@@ -16,7 +16,7 @@
 (function($){
  	$.fn.extend({
 		percentcircle: function(options) {
-		var defaults = {
+			var defaults = {
 		        animate : true,
 				diameter : 100,
 				guage: 2,
@@ -25,7 +25,7 @@
 				fillColor: '#5c93c8',
 				percentSize: '15px',
 				percentWeight: 'normal'
-			}
+			};
 			defaults =  $.extend(defaults, options);
 			var	styles = {
 				    cirContainer : {
@@ -75,7 +75,7 @@
 					$this.append($chart);
 					setTimeout(function(){
 						animateChart(deg,parseInt(stop),$chart.find('.ab')); //both values set to the same value to keep the function from looping and animating
-					},250)
+					},250);
 	   	    	});
 			}
 			var animateChart = function (stop,curr,$elm){

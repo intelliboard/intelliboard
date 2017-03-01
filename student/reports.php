@@ -56,10 +56,6 @@ $mode_filter = true;
 if($trigger){
 	$params = array(
 		'id'=> $id,
-		'url'=>$CFG->wwwroot,
-        'email'=>s($email),
-        'firstname'=>s($USER->firstname),
-        'lastname'=>s($USER->lastname),
 		'reports'=>get_config('local_intelliboard', 'reports'),
 		'type'=>'reports',
 		'do'=>'reportform',

@@ -43,10 +43,6 @@ if($url){
 	return;
 }
 $params = array(
-	'url'=>$CFG->wwwroot,
-	'email'=>s($USER->email),
-	'firstname'=>s($USER->firstname),
-	'lastname'=>s($USER->lastname),
 	'reports'=>get_config('local_intelliboard', 'reports'),
 	'filter'=>$filter
 );

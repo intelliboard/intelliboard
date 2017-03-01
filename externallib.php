@@ -134,7 +134,7 @@ class local_intelliboard_external extends external_api {
 		}
 
 		//Available functions
-		$functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report93','report94','report95','report96','report97','report98','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_course_instructors','get_course_discussions','get_cohort_users','get_users','get_grade_letters','get_questions','get_activity','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_module_timespend','get_users_count','get_most_visited_courses','get_no_visited_courses','get_active_users','get_enrollments_per_course','get_size_courses','get_active_ip_users','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_teacher_sql','get_learner','get_learners','get_learner_courses','get_course','get_activity_learners','get_learner_visits_per_day','get_course_visits_per_day','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_reportcard','get_dashboard_avg','get_dashboard_countries','get_dashboard_enrols','get_dashboard_info','get_dashboard_stats','set_notification_enrol','set_notification_auth','count_records','parseFeedbackAnswer','analytic9','get_course_sections','get_course_user_groups','get_all_system_info');
+		$functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report92','report93','report94','report95','report96','report97','report98','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_course_instructors','get_course_discussions','get_cohort_users','get_users','get_grade_letters','get_questions','get_activity','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_module_timespend','get_users_count','get_most_visited_courses','get_no_visited_courses','get_active_users','get_enrollments_per_course','get_size_courses','get_active_ip_users','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_teacher_sql','get_learner','get_learners','get_learner_courses','get_course','get_activity_learners','get_learner_visits_per_day','get_course_visits_per_day','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_reportcard','get_dashboard_avg','get_dashboard_countries','get_dashboard_enrols','get_dashboard_info','get_dashboard_stats','set_notification_enrol','set_notification_auth','count_records','parseFeedbackAnswer','analytic9','get_course_sections','get_course_user_groups','get_all_system_info');
 
 		$function = (isset($params->function)) ? $params->function : '';
 		if(in_array($function, $functions)){
@@ -309,7 +309,7 @@ class local_intelliboard_external extends external_api {
 
 	public function report1($params)
 	{
-		$columns = array_merge(array("name", "u.email", "c.fullname", "enrols", "l.visits", "l.timespend", "grade","ue.timecreated", "ul.timeaccess", "ue.timeend", "cc.timecompleted","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
+		$columns = array_merge(array("u.firstname","u.lastname", "u.email", "c.fullname", "enrols", "l.visits", "l.timespend", "grade","ue.timecreated", "ul.timeaccess", "ue.timeend", "cc.timecompleted","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
 
 		$sql_columns = $this->get_columns($params, "u.id");
 		$sql_having = $this->get_filter_sql($params, $columns);
@@ -374,7 +374,8 @@ class local_intelliboard_external extends external_api {
 				u.address,
 				u.city,
 				u.country,
-				CONCAT(u.firstname, ' ', u.lastname) AS name,
+				u.firstname,
+				u.lastname,
 				e.enrol AS enrols,
 				c.id AS cid,
 				c.fullname AS course,
@@ -474,7 +475,7 @@ class local_intelliboard_external extends external_api {
 	}
 	public function report4($params)
 	{
-		$columns = array_merge(array("learner","u.email","registered","courses","cmc.completed_activities","completed_courses","lit.visits","lit.timespend","grade", "u.lastaccess"), $this->get_filter_columns($params));
+		$columns = array_merge(array("u.firstname","u.lastname","u.email","registered","courses","cmc.completed_activities","completed_courses","lit.visits","lit.timespend","grade", "u.lastaccess"), $this->get_filter_columns($params));
 
 		$sql_filter = $this->get_teacher_sql($params, "u.id", "users");
 		$sql_filter .= $this->get_filter_user_sql($params, "u.");
@@ -515,7 +516,8 @@ class local_intelliboard_external extends external_api {
 		}
 		return $this->get_report_data("
 			SELECT u.id,
-				CONCAT(u.firstname, ' ', u.lastname) as learner,
+				u.firstname,
+				u.lastname,
 				u.email,
 				u.lastaccess,
 				u.timecreated as registered,
@@ -575,7 +577,7 @@ class local_intelliboard_external extends external_api {
 	}
 	public function report6($params)
 	{
-		$columns = array_merge(array("student", "email", "c.fullname", "started", "grade", "grade", "completed", "grade", "complete", "visits", "timespend"), $this->get_filter_columns($params));
+		$columns = array_merge(array("u.firstname", "u.lastname", "email", "c.fullname", "started", "grade", "grade", "completed", "grade", "complete", "visits", "timespend"), $this->get_filter_columns($params));
 
 		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
 		$sql_filter .= $this->get_filter_in_sql($params->courseid, "e.courseid");
@@ -616,7 +618,8 @@ class local_intelliboard_external extends external_api {
 				c.id as cid,
 				c.fullname,
 				AVG((g.finalgrade/g.rawgrademax)*100) AS grade,
-				CONCAT(u.firstname, ' ', u.lastname) AS student,
+				u.firstname,
+				u.lastname,
 				c.enablecompletion,
 				cc.timecompleted as complete
 				$sql_columns
@@ -633,7 +636,7 @@ class local_intelliboard_external extends external_api {
 	}
 	public function report7($params)
 	{
-		$columns = array_merge(array("learner","email", "course", "visits", "participations", "assignments", "grade"), $this->get_filter_columns($params));
+		$columns = array_merge(array("u.firstname","u.lastname","email", "course", "visits", "participations", "assignments", "grade"), $this->get_filter_columns($params));
 
 		$sql_having = $this->get_filter_sql($params, $columns);
 		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
@@ -662,7 +665,8 @@ class local_intelliboard_external extends external_api {
 				((COUNT(DISTINCT lit.id) / cm.cmnums)*100 ) as visits,
 				cma.cmnuma as assigns,
 				c.fullname as course,
-				CONCAT( u.firstname, ' ', u.lastname ) AS learner
+				u.firstname,
+				u.lastname
 				$sql_columns
 			FROM {user_enrolments} ue
                 LEFT JOIN {user} u ON u.id = ue.userid
@@ -756,7 +760,7 @@ class local_intelliboard_external extends external_api {
 	}
 	public function report10($params)
 	{
-		$columns = array_merge(array("q.name","learner", "u.email", "c.fullname", "qa.state", "qa.timestart", "qa.timefinish", "duration", "grade"), $this->get_filter_columns($params));
+		$columns = array_merge(array("q.name","u.firstname","u.lastname", "u.email", "c.fullname", "qa.state", "qa.timestart", "qa.timefinish", "duration", "grade"), $this->get_filter_columns($params));
 
 		$sql_filter = $this->get_teacher_sql($params, "q.course", "courses");
 		$sql_having = $this->get_filter_sql($params, $columns);
@@ -784,7 +788,8 @@ class local_intelliboard_external extends external_api {
 				qa.state,
 				(qa.timefinish - qa.timestart) as duration,
 				(qa.sumgrades/q.sumgrades*100) as grade,
-				CONCAT(u.firstname, ' ', u.lastname) learner
+				u.firstname,
+				u.lastname
 				$sql_columns
 			FROM {quiz_attempts} qa
 				LEFT JOIN {quiz} q ON q.id = qa.quiz
@@ -797,7 +802,7 @@ class local_intelliboard_external extends external_api {
 	}
 	public function report11($params)
 	{
-		$columns = array_merge(array("learner", "course", "u.email", "enrolled", "complete", "grade", "complete"), $this->get_filter_columns($params));
+		$columns = array_merge(array("u.firstname", "u.lastname", "course", "u.email", "enrolled", "complete", "grade", "complete"), $this->get_filter_columns($params));
 
 		$sql_columns = $this->get_columns($params, "u.id");
 		$sql_having = $this->get_filter_sql($params, $columns);
@@ -821,7 +826,8 @@ class local_intelliboard_external extends external_api {
 				(g.finalgrade/g.rawgrademax)*100 AS grade,
 				u.id as uid,
 				u.email,
-				CONCAT(u.firstname, ' ', u.lastname) learner,
+				u.firstname,
+				u.lastname,
 				c.id as cid,
 				c.enablecompletion,
 				c.fullname as course
@@ -965,7 +971,9 @@ class local_intelliboard_external extends external_api {
 
 		return $this->get_report_data("
 			SELECT u.id, u.lastaccess,
-				CONCAT(u.firstname, ' ', u.lastname) name, u.email,
+				u.firstname,
+				u.lastname,
+				u.email,
 				COUNT(DISTINCT ctx.instanceid) as courses,
 				AVG( (g.finalgrade/g.rawgrademax)*100 ) AS grade
 				$sql_columns
@@ -1080,7 +1088,7 @@ class local_intelliboard_external extends external_api {
 
     public function report18($params)
     {
-        $columns = array_merge(array("f.name", "user","course", "discussions", "posts"), $this->get_filter_columns($params));
+        $columns = array_merge(array("f.name", "u.firstname","u.lastname","course", "discussions", "posts"), $this->get_filter_columns($params));
 
 
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1093,10 +1101,11 @@ class local_intelliboard_external extends external_api {
         return $this->get_report_data("
 			SELECT fd.id,
 				c.fullname as course,
-				CONCAT(u.firstname,' ',u.lastname) as user,
+				u.firstname,
+				u.lastname,
 				f.name,
-				count(distinct fp.id) as posts,
-				count(distinct fd.id) as discussions
+				COUNT(DISTINCT fp.id) AS posts,
+				COUNT(DISTINCT fd.id) AS discussions
 			FROM
 				{forum_discussions} fd
 				LEFT JOIN {user} u ON u.id = fd.userid
@@ -1160,7 +1169,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report21($params)
     {
-        $columns = array_merge(array("user", "u.email", "sc.name", "c.fullname", "attempts", "sm.duration","sv.starttime","cmc.timemodified", "score"), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "sc.name", "c.fullname", "attempts", "sm.duration","sv.starttime","cmc.timemodified", "score"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1179,7 +1188,9 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
 			SELECT u.id+st.scormid+st.timemodified as id,
-				CONCAT(u.firstname,' ',u.lastname) as user, u.email,
+				u.firstname,
+				u.lastname,
+				u.email,
 				st.userid,
 				st.scormid,
 				sc.name,
@@ -1387,7 +1398,7 @@ class local_intelliboard_external extends external_api {
 
     public function report28($params)
     {
-        $columns = array_merge(array("gi.itemname", "learner", "u.email", "graduated", "grade", "completionstate", "timespend", "visits","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
+        $columns = array_merge(array("gi.itemname", "u.firstname", "u.lastname", "u.email", "graduated", "grade", "completionstate", "timespend", "visits","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1420,7 +1431,8 @@ class local_intelliboard_external extends external_api {
 				u.address,
 				u.city,
 				u.country,
-				CONCAT(u.firstname, ' ', u.lastname) as learner,
+				u.firstname,
+				u.lastname,
 				gg.timemodified as graduated,
 				(gg.finalgrade/gg.rawgrademax)*100 as grade,
 				cm.completion,
@@ -1549,7 +1561,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report32($params)
     {
-        $columns = array_merge(array("user", "u.email", "courses","lit1.timesite","lit2.timecourses","lit3.timeactivities","u.timecreated"), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "courses","lit1.timesite","lit2.timecourses","lit3.timeactivities","u.timecreated"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1572,7 +1584,8 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
 			SELECT u.id,
-				CONCAT(u.firstname, ' ', u.lastname) as user,
+				u.firstname,
+				u.lastname,
 				u.email,
 				u.timecreated,
 				COUNT(DISTINCT ctx.instanceid) as courses,
@@ -1752,7 +1765,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report38($params)
     {
-        $columns = array_merge(array("c.startdate", "ccc.timeend", "course", "learner", "u.email", "enrols", "enrolstart", "enrolend", "complete", "complete"), $this->get_filter_columns($params));
+        $columns = array_merge(array("c.startdate", "ccc.timeend", "course", "u.firstname","u.lastname", "u.email", "enrols", "enrolstart", "enrolend", "complete", "complete"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1774,7 +1787,8 @@ class local_intelliboard_external extends external_api {
 				c.startdate,
 				c.enablecompletion,
 				cc.timecompleted as complete,
-				CONCAT(u.firstname, ' ', u.lastname) as learner,
+				u.firstname,
+				u.lastname,
 				u.email,
 				ue.userid,
 				e.courseid,
@@ -1797,7 +1811,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report39($params)
     {
-        $columns = array_merge(array("user","u.email","u.timecreated","u.firstaccess","u.lastaccess","lit1.timespend_site","lit2.timespend_courses","lit3.timespend_activities","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname","u.lastname","u.email","u.timecreated","u.firstaccess","u.lastaccess","lit1.timespend_site","lit2.timespend_courses","lit3.timespend_activities","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_teacher_sql($params, "u.id", "users");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
@@ -1814,7 +1828,8 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
 			SELECT u.id,
-				CONCAT(u.firstname, ' ', u.lastname) as user,
+				u.firstname,
+				u.lastname,
 				u.email,
 				u.phone1,
 				u.phone2,
@@ -1840,7 +1855,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report40($params)
     {
-        $columns = array("course", "learner", "email", "e.enrol", "ue.timecreated", "la.lastaccess", "gc.grade");
+        $columns = array("course", "u.firstname", "u.lastname", "email", "e.enrol", "ue.timecreated", "la.lastaccess", "gc.grade");
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_order = $this->get_order_sql($params, $columns);
@@ -1860,7 +1875,8 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
 			SELECT ue.id,
-				CONCAT(u.firstname, ' ', u.lastname) as learner,
+				u.firstname,
+				u.lastname,
 				u.email,
 				ue.timecreated as enrolled,
 				ue.userid,
@@ -1885,7 +1901,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report41($params)
     {
-        $columns = array("course", "learner","email", "certificate", "ci.timecreated", "ci.code","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","");
+        $columns = array("course", "u.firstname","u.lastname","email", "certificate", "ci.timecreated", "ci.code","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","");
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
@@ -1898,7 +1914,8 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
 			SELECT ci.id,
-				CONCAT(u.firstname, ' ', u.lastname) as learner,
+				u.firstname,
+				u.lastname,
 				u.email,
 				u.phone1,
 				u.phone2,
@@ -1988,7 +2005,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report45($params)
     {
-        $columns = array("user", "u.email", "all_att", "timespend", "highest_grade", "lowest_grade", "cmc.timemodified");
+        $columns = array("u.firstname", "u.lastname", "u.email", "all_att", "timespend", "highest_grade", "lowest_grade", "cmc.timemodified");
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_order = $this->get_order_sql($params, $columns);
@@ -2005,7 +2022,8 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
  			SELECT u.id,
-				CONCAT(u.firstname, ' ', u.lastname) as user,
+				u.firstname,
+				u.lastname,
 				u.email,
 				COUNT(DISTINCT qa.id) as all_att,
 				(MAX(qa.sumgrades)/q.sumgrades)*100 as highest_grade,
@@ -2024,7 +2042,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report42($params)
     {
-        $columns = array_merge(array("student","u.email", "c.fullname", "started", "grade", "grade", "cmc.completed", "grade", "complete", "lit.visits", "lit.timespend"), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname","u.lastname","u.email", "c.fullname", "started", "grade", "grade", "cmc.completed", "grade", "complete", "lit.visits", "lit.timespend"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -2064,7 +2082,8 @@ class local_intelliboard_external extends external_api {
 				git.average,
 				AVG((g.finalgrade/g.rawgrademax)*100) AS `grade`,
 				cmc.completed,
-				CONCAT(u.firstname, ' ', u.lastname) AS student,
+				u.firstname,
+				u.lastname,
 				lit.timespend,
 				lit.visits,
 				c.enablecompletion,
@@ -2122,7 +2141,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report47($params)
     {
-        $columns = array("user_related", "u_related.email", "course_name", "role", "lsl.all_count", "user_action", "action_role", "action", "timecreated");
+        $columns = array("u_related.firstname","u_related.lastname", "u_related.email", "course_name", "role", "lsl.all_count", "user_action", "action_role", "action", "timecreated");
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -2141,7 +2160,8 @@ class local_intelliboard_external extends external_api {
 				IF(lsl.all_count>1,log.timecreated,'-') as timecreated,
 				IF(lsl.all_count>1,CONCAT(u_action.firstname, ' ', u_action.lastname),'-') AS user_action,
 				u_action.id as user_action_id,
-				CONCAT(u_related.firstname, ' ', u_related.lastname) AS user_related,
+				u_related.firstname,
+				u_related.lastname,
 				u_related.email,
 				u_related.id as user_related_id
 				$sql_columns
@@ -2187,7 +2207,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report66($params)
     {
-        $columns = array("user", "u.email", "course", "assignment", "a.duedate", "s.status", "gc.grade", "cc.timecompleted", "ue.timecreated","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","");
+        $columns = array("u.firstname", "u.lastname", "u.email", "course", "assignment", "a.duedate", "s.status", "gc.grade", "cc.timecompleted", "ue.timecreated","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","");
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -2214,7 +2234,8 @@ class local_intelliboard_external extends external_api {
 				u.address,
 				u.city,
 				u.country,
-				CONCAT(u.firstname, ' ', u.lastname) as user
+				u.firstname,
+				u.lastname
 				$sql_columns
 			FROM (SELECT @x:= 0) AS x, {assign} a
 				LEFT JOIN (SELECT e.courseid, ue.userid FROM {user_enrolments} ue, {enrol} e WHERE e.id=ue.enrolid GROUP BY e.courseid, ue.userid) ue
@@ -2735,7 +2756,11 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filterdate_sql($params, "l1.timecreated");
         $sql_filter .= $this->get_filter_in_sql($params->users,'u.id');
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
-
+        $sql_join = "";
+        if($params->custom2){
+	        $sql = $this->get_filter_in_sql($params->custom2, 'roleid');
+	        $sql_filter .= " AND l1.userid IN (SELECT DISTINCT userid FROM mdl_role_assignments WHERE 1 $sql)";
+	    }
         return $this->get_report_data("
             SELECT l1.id,
                u.firstname,
@@ -3018,7 +3043,58 @@ class local_intelliboard_external extends external_api {
 
         return array("data" => $data, "timestart"=>$params->timestart, "timefinish"=>$params->timefinish);
     }
-    public function report93($params){
+    public function report92($params)
+    {
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.email",
+            "u.timecreated",
+            "u.firstaccess",
+            "u.lastaccess",
+            "u.lastlogin"),
+            $this->get_filter_columns($params)
+        );
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_filter = $this->get_teacher_sql($params, "u.id", "users");
+        $sql_filter .= $this->get_filterdate_sql($params, "u.timecreated");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+
+        if($params->custom2 == 6){
+        	$this->params['lsta'] = strtotime("-90 days");
+        }elseif($params->custom2 == 5){
+        	$this->params['lsta'] = strtotime("-30 days");
+        }elseif($params->custom2 == 4){
+        	$this->params['lsta'] = strtotime("-17 days");
+        }elseif($params->custom2 == 3){
+        	$this->params['lsta'] = strtotime("-5 days");
+        }elseif($params->custom2 == 2){
+        	$this->params['lsta'] = strtotime("-5 days");
+        }elseif($params->custom2 == 1){
+        	$this->params['lsta'] = strtotime("-3 days");
+        }else{
+        	$this->params['lsta'] = strtotime("-1 days");
+        }
+        $sql_filter .= " AND u.lastaccess < :lsta";
+
+        return $this->get_report_data("
+            SELECT u.id,
+                u.firstname,
+                u.lastname,
+                u.email,
+                u.timecreated,
+                u.firstaccess,
+                u.lastaccess,
+                u.lastlogin
+                $sql_columns
+            FROM {user} u
+            WHERE 1 $sql_filter $sql_having $sql_order", $params);
+    }
+
+    public function report93($params)
+    {
         $columns = array_merge(array(
             "u.firstname",
             "u.lastname",
@@ -3380,8 +3456,8 @@ class local_intelliboard_external extends external_api {
         $data2 = $DB->get_records_sql("
                   SELECT  floor(p.created / 86400) * 86400 as timepoint,
                           count(distinct p.id) as posts
-                  FROM {role_assignments} AS ra
-                    LEFT JOIN {context} AS ctx ON ctx.id = ra.contextid
+                  FROM {role_assignments} ra
+                    LEFT JOIN {context} ctx ON ctx.id = ra.contextid
                     LEFT JOIN {course} c ON c.id = ctx.instanceid
                     LEFT JOIN {forum_discussions} d ON d.course = c.id
                     LEFT JOIN {forum_posts} p ON p.userid = ra.userid AND p.discussion =d.id
@@ -3392,8 +3468,8 @@ class local_intelliboard_external extends external_api {
         $data3 = $DB->get_records_sql("
                   SELECT  floor(p.created / 86400) * 86400 as timepoint,
                           count(distinct p.id) as student_posts
-                  FROM {role_assignments} AS ra
-                    LEFT JOIN {context} AS ctx ON ctx.id = ra.contextid
+                  FROM {role_assignments} ra
+                    LEFT JOIN {context} ctx ON ctx.id = ra.contextid
                     LEFT JOIN {course} c ON c.id = ctx.instanceid
                     LEFT JOIN {forum_discussions} d ON d.course = c.id
                     LEFT JOIN {forum_posts} p ON p.userid = ra.userid AND p.discussion = d.id
@@ -4376,7 +4452,7 @@ class local_intelliboard_external extends external_api {
     public function analytic7table($params){
         global $DB;
 
-        $columns = array_merge(array("name", "u.email", "c.fullname", "u.country", "uid.data", "e.enrol", "l.visits", "l.timespend", "grade", "cc.timecompleted", "ue.timecreated"), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "c.fullname", "u.country", "uid.data", "e.enrol", "l.visits", "l.timespend", "grade", "cc.timecompleted", "ue.timecreated"), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_order = $this->get_order_sql($params, $columns);
@@ -4435,7 +4511,8 @@ class local_intelliboard_external extends external_api {
                        u.email,
                        u.country,
                        uid.data AS state,
-                       CONCAT(u.firstname, ' ', u.lastname) AS name,
+                       u.firstname,
+                       u.lastname,
                        GROUP_CONCAT( DISTINCT e.enrol) AS enrols,
                        l.timespend,
                        l.visits,

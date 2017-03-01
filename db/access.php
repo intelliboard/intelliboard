@@ -38,8 +38,18 @@ $capabilities = array(
             'teacher' => CAP_PROHIBIT,
             'editingteacher' => CAP_PROHIBIT,
             'coursecreator' => CAP_PROHIBIT,
-            'manager' => CAP_PROHIBIT,
+            'manager' => CAP_PROHIBIT
         )
+    ),
+    'local/intelliboard:instructors' => array(
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'coursecreator' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        ),
     ),
     'local/intelliboard:view' => array(
         'captype' => 'write',

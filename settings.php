@@ -51,6 +51,26 @@ if (!$ADMIN->locate('intelliboard') and $ADMIN->locate('localplugins')){
 }
 
 if($ADMIN->fulltree){
+        $settings->add(new admin_setting_heading('local_intelliboard/account_title', get_string('account', 'local_intelliboard'), ''));
+
+        $name = 'local_intelliboard/te12';
+        $title = get_string('te12', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configtext($name, $title, $description, '');
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/te13';
+        $title = get_string('te13', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configtext($name, $title, $description, '');
+        $settings->add($setting);
+
+         $name = 'local_intelliboard/te1';
+        $title = get_string('te1', 'local_intelliboard');
+        $description = get_string('te1_desc', 'local_intelliboard');
+        $setting = new admin_setting_configtext($name, $title, $description, '');
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/tracking_title', get_string('tracking_title', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/enabled';
@@ -183,18 +203,75 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configmultiselect($name, $title, '', array(5), $options);
         $settings->add($setting);
 
+        $settings->add(new admin_setting_heading('local_intelliboard/n0', get_string('n10', 'local_intelliboard'), ''));
+
+        $name = 'local_intelliboard/n11';
+        $title = get_string('n11', 'local_intelliboard');
+        $default = get_string('n10', 'local_intelliboard');
+        $setting = new admin_setting_configtext($name, $title, '', $default);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n10';
+        $title = get_string('n10', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n8';
+        $title = get_string('n8', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n9';
+        $title = get_string('n9', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n1';
+        $title = get_string('n1', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n2';
+        $title = get_string('n2', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n3';
+        $title = get_string('n3', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n4';
+        $title = get_string('n4', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n5';
+        $title = get_string('n5', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n6';
+        $title = get_string('n6', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/n7';
+        $title = get_string('n7', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
 
         $settings->add(new admin_setting_heading('local_intelliboard/ts1', get_string('ts1', 'local_intelliboard'), ''));
+
+        $name = 'local_intelliboard/t0';
+        $title = get_string('n11', 'local_intelliboard');
+        $default = get_string('ts1', 'local_intelliboard');
+        $setting = new admin_setting_configtext($name, $title, '', $default);
+        $settings->add($setting);
 
         $name = 'local_intelliboard/t1';
         $title = get_string('t1', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/te1';
-        $title = get_string('te1', 'local_intelliboard');
-        $description = get_string('te1_desc', 'local_intelliboard');
-        $setting = new admin_setting_configtext($name, $title, $description, '');
         $settings->add($setting);
 
         $name = 'local_intelliboard/t01';

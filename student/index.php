@@ -43,10 +43,6 @@ if(!get_config('local_intelliboard', 't1')){
 }
 $email = get_config('local_intelliboard', 'te1');
 $params = array(
-    'url'=>$CFG->wwwroot,
-    'email'=>s($email),
-    'firstname'=>s($USER->firstname),
-    'lastname'=>s($USER->lastname),
     'do'=>'learner',
     'mode'=> 1
 );

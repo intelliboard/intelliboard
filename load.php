@@ -63,10 +63,6 @@ $data  = array(
 );
 
 $params = array(
-	'url'=>$CFG->wwwroot,
-	'email'=>s($USER->email),
-	'firstname'=>s($USER->firstname),
-	'lastname'=>s($USER->lastname),
 	'reports'=>get_config('local_intelliboard', 'reports'),
 	'data'=>json_encode($data),
 	'type'=>'load',

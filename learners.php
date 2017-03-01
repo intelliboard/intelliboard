@@ -60,10 +60,6 @@ $data  = array(
 	1 => json_encode($plugin->get_users_count($params))
 );
 $params = array(
-	'url'=>$CFG->wwwroot,
-	'email'=>s($USER->email),
-	'firstname'=>s($USER->firstname),
-	'lastname'=>s($USER->lastname),
 	'reports'=>get_config('local_intelliboard', 'reports'),
 	'data'=>json_encode($data),
 	'type'=>'learners',

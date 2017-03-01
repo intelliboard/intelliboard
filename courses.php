@@ -60,10 +60,6 @@ $data  = array(
 	9 => json_encode($plugin->get_no_visited_courses($params))
 );
 $params = array(
-	'url'=>$CFG->wwwroot,
-	'email'=>s($USER->email),
-	'firstname'=>s($USER->firstname),
-	'lastname'=>s($USER->lastname),
 	'reports'=>get_config('local_intelliboard', 'reports'),
 	'data'=>json_encode($data),
 	'type'=>'courses',
