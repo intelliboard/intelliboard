@@ -69,7 +69,7 @@ function intelliboard_course_learners_total($courseid)
         LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
         LEFT JOIN {course} c ON c.id = e.instanceid
         LEFT JOIN {course_categories} ca ON ca.id = c.category
-        LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid
+        LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid AND cc.timecompleted > 0
         LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
         LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
         LEFT JOIN (SELECT course, COUNT(id) as sections FROM {course_sections} WHERE visible = 1 GROUP BY course) cs ON cs.course = c.id

@@ -86,7 +86,7 @@ echo $OUTPUT->header();
 <?php else: ?>
 <div class="intelliboard-page intelliboard-instructor">
 	<?php include("views/menu.php"); ?>
-		<div class="intelliboard-overflow grades-table">
+		<div class="grades-table">
 				<?php if(!empty($action)): ?>
 					<div class="intelliboard-course-header clearfix">
 						<?php if($action === 'learner'): ?>
