@@ -24,6 +24,12 @@
 
 @import url(ionicons.min.css);
 
+.clear{clear:both;float:none;}
+.clearfix {*zoom: 1;}
+.clearfix:before,
+.clearfix:after{display: table;line-height: 0;content: "";}
+.clearfix:after{clear: both;}
+
 .system{}
 .system-box{width:31.3%;float:left;margin:1%;}
 .system-header{border-bottom: 1px solid #C4C4C4;color: #000000;font: 600 14px "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif; margin: 0 0 5px;padding: 0 0 5px;}
@@ -47,6 +53,7 @@
 .intelliboard-search form input{float: left; margin: 0}
 .intelliboard-search form button{float: left; margin: 0 10px 0}
 .intelliboard-search form span{float: right}
+.intelliboard-search form span.pull-left{float: left}
 .intelliboard-search form span a{font-size: 24px;color:#ddd; margin-left: 6px;}
 .intelliboard-search form span a.active,
 .intelliboard-search form span a:hover{color:#666;}
@@ -196,7 +203,7 @@
 .intelli-instructor-header .summary h3{float: none;margin-bottom: 15px}
 .intelli-instructor-header .summary-chart{width: 100%;height: 200px;}
 .intelli-instructor-header .summary-chart-wrap{position: relative;}
-.intelli-instructor-header .summary-chart-label{position: absolute;top: 0;left: 0; right:0; bottom: 0;margin: auto; text-align: center;width: 100%; z-index: 9999; height: 30px;font-weight: 100; font-size: 42px;}
+.intelli-instructor-header .summary-chart-label{position: absolute;top: 0;left: 0; right:0; bottom: 0;margin: auto; text-align: center;width: 100%; z-index: 9999; height: 30px;font-weight: 100;line-height: 26px; font-size: 42px;}
 .intelli-instructor-header .summary-chart-label i{display: block;text-align: center;font-size: 11px;font-weight: 100; padding-top: 5px;font-style: normal;text-transform: uppercase;}
 .intelli-instructor-header .instructor-total{border-top: 1px solid #f6f6f6;  list-style: outside none none; margin: 10px 20px 0;  padding: 0;  text-align: center;  width: auto;font-weight: 100; }
 .intelli-instructor-header .instructor-total li{text-transform: uppercase; width:32%; color:#999; font-size: 12px; padding: 15px 0;margin: 0;display: inline-block;box-sizing: border-box;}
@@ -217,12 +224,13 @@
 
 .intelliboard-dropdown{position: relative;float: right;width: 135px;}
 .intelliboard-dropdown.disabled button{opacity: 0.4;}
-.intelliboard-dropdown button{width:100%;box-sizing: border-box; padding: 8px 15px;border: 1px solid #ddd; border-radius: 3px; cursor: pointer;margin: 0;background: #fff none repeat scroll 0 0;}
+.intelliboard-dropdown button{color: #333; width:100%;box-sizing: border-box; padding: 8px 15px;border: 1px solid #ddd; border-radius: 3px; cursor: pointer;margin: 0;background: #fff none repeat scroll 0 0;}
 .intelliboard-dropdown button:hover{border: 1px solid #ccc;background: #fff none repeat scroll 0 0;}
 .intelliboard-dropdown button span{float: left;}
 .intelliboard-dropdown button i{float: right;}
 .intelliboard-dropdown ul{width:100%;box-sizing: border-box; display: none;position: absolute;right: 0;top: 40px;background-color: #fff;border-radius: 3px; border: 1px solid #ddd; margin: 0;padding: 0;list-style: none; z-index: 2; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);}
 .intelliboard-dropdown ul li{ margin: 0;padding: 10px 14px;cursor: pointer;}
+.intelliboard-dropdown ul li a{color: #333}
 .intelliboard-dropdown ul li:hover{background-color: #f6f6f6; }
 
 .s-progress{float: right;width: 180px;}

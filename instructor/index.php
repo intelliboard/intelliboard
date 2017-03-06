@@ -165,17 +165,21 @@ echo $OUTPUT->header();
 		<?php if($n6): ?>
 		<div class="box<?php echo($n7)?'50':'100'; ?> pull-left h410">
 			<ul class="nav nav-tabs clearfix">
-	            <li role="presentation" class="active"><a href="#"><?php echo get_string('in9', 'local_intelliboard'); ?></a></li>
+	            <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('in9', 'local_intelliboard'); ?></a></li>
 	        </ul>
-	         <div id="chart4" class="chart-tab active"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
+	        <div class="card-block">
+	        	<div id="chart4" class="chart-tab active"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
+	        </div>
 		</div>
 		<?php endif; ?>
 		<?php if($n7): ?>
 		<div class="box<?php echo($n6)?'40':'100'; ?> pull-right h410">
 			<ul class="nav nav-tabs clearfix">
-	            <li role="presentation" class="active"><a href="#"><?php echo get_string('in10', 'local_intelliboard'); ?></a></li>
+	            <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('in10', 'local_intelliboard'); ?></a></li>
 	        </ul>
-	        <div id="chart2" class="chart-tab active"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
+	        <div class="card-block">
+	        	<div id="chart2" class="chart-tab active"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
+	        </div>
 		</div>
 		<?php endif; ?>
 	</div>

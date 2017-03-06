@@ -25,9 +25,6 @@
  */
 
 require('../../config.php');
-if ($CFG->version <= 2013051409) {
-	redirect($CFG->wwwroot.'/local/intelliboard/logs_legacy.php');
-}
 require_once($CFG->libdir . '/filelib.php');
 require_once($CFG->libdir.'/adminlib.php');
 
@@ -40,7 +37,7 @@ $start = optional_param('start', 0, PARAM_INT);
 $length = optional_param('length', 50, PARAM_INT);
 
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/logs.php"));
+$PAGE->set_url(new moodle_url("/local/intelliboard/logs_legacy.php"));
 $PAGE->set_pagetype('logs');
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
@@ -60,11 +57,13 @@ if($admins = get_admins()){
 	$ids = 2;
 }
 $html = '';
+
+
 if($action == 'totals'){
 	$html .= '<h2>'.get_string('importing_totals', 'local_intelliboard').'</h2>';
 	$r = '';
-	$query = "SELECT FROM_UNIXTIME(timecreated, '%Y%m%d') as timeday, COUNT(userid) as visits, COUNT(DISTINCT (userid)) as sessions, COUNT(DISTINCT (courseid)) as courses
-				FROM {logstore_standard_log}
+	$query = "SELECT FROM_UNIXTIME(time, '%Y%m%d') as timeday, COUNT(userid) as visits, COUNT(DISTINCT (userid)) as sessions, COUNT(DISTINCT (course)) as courses
+				FROM {log}
 					WHERE userid NOT IN ($ids)
 						GROUP BY timeday HAVING timeday NOT IN (SELECT FROM_UNIXTIME(timepoint, '%Y%m%d') as timepoint
 							FROM {local_intelliboard_totals})";
@@ -98,16 +97,19 @@ if($action == 'totals'){
 	$r = '';
 	$query = "SELECT
 			id,
-			component,
-			target,
-			contextinstanceid as cid,
+			module,
+			cmid,
 			userid,
 			count(id) as visits,
-			floor(timecreated / 86400) * 86400 as timecreated,
-			ip FROM {logstore_standard_log}
+			floor(time / 86400) * 86400 as timecreated,
+			ip FROM {log}
 		WHERE
-			contextinstanceid > 0 and userid NOT IN ($ids)
-		GROUP BY contextinstanceid, userid, component, target, floor(timecreated / 86400) * 86400";
+			action = 'view' and userid NOT IN ($ids)
+		GROUP BY course, userid, module, cmid, floor(time / 86400) * 86400";
+
+	$modules = $DB->get_records_menu("modules");
+
+
 	if($data = $DB->get_records_sql($query, array(), $start, $length)){
 
 			$size = $DB->count_records_sql("SELECT COUNT(*) FROM ($query) AS x", array());
@@ -116,16 +118,16 @@ if($action == 'totals'){
 			foreach($data as $item){
 				$item->timespend = 0;
 
-				if(strpos($item->component, 'mod_') !== false){
-					$item->page = 'module';
-				}elseif($item->component == 'core' and $item->target == 'course'){
+				if($item->module == 'course'){
 					$item->page = 'course';
-				}elseif(strpos($item->component, 'user_profile') !== false){
+				}elseif($item->module == 'user'){
 					$item->page = 'user';
+				}elseif(in_array($item->module, $modules)){
+					$item->page = 'module';
 				}else{
 					$item->page = 'site';
 				}
-				$item->key = "$item->cid-$item->userid-$item->component-$item->target";
+				$item->key = "$item->course-$item->cmid-$item->userid-$item->module";
 				if(isset($collector[$item->key])){
 					$obj = $collector[$item->key];
 					$obj->logs[] = $item;
@@ -141,8 +143,8 @@ if($action == 'totals'){
 					$obj->firstaccess = $item->timecreated;
 					$obj->lastaccess = $item->timecreated;
 					$obj->userid = $item->userid;
-					$obj->courseid = $item->cid;
-					$obj->param = $item->cid;
+					$obj->courseid = $item->course;
+					$obj->param = $item->cmid;
 					$obj->page = $item->page;
 					$obj->ip = $item->ip;
 					$collector[$item->key] = $obj;
@@ -150,12 +152,12 @@ if($action == 'totals'){
 			}
 
 			foreach($collector as $item){
-				if($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $item->userid, 'page' => $item->page, 'param' => $item->param), '*')){
+				if($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $item->userid,'courseid' => $item->courseid, 'page' => $item->page, 'param' => $item->param), '*')){
 				}else{
 					$data = new stdClass();
 					$data->userid = $item->userid;
 					$data->courseid = $item->courseid;
-					$data->param = $item->courseid;
+					$data->param = $item->param;
 					$data->page = $item->page;
 					$data->firstaccess = $item->firstaccess;
 					$data->lastaccess = $item->lastaccess;
@@ -206,7 +208,7 @@ if($action == 'totals'){
 }
 if(!$html){
 	$result = $DB->get_record_sql("SELECT
-		(SELECT count(*) FROM {logstore_standard_log}  WHERE userid NOT IN ($ids)) as logs,
+		(SELECT count(*) FROM {log}  WHERE userid NOT IN ($ids)) as logs,
 		(SELECT count(*) FROM {local_intelliboard_tracking}) as intelliboard_tracking,
 		(SELECT count(*) FROM {local_intelliboard_totals}) as intelliboard_totals,
 		(SELECT count(*) FROM {local_intelliboard_logs}) as intelliboard_logs,

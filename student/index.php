@@ -221,10 +221,10 @@ echo $OUTPUT->header();
                     <div class="<?php echo (!$t11)?'box100':'box45'; ?> pull-left">
                         <ul class="nav nav-tabs">
                             <?php if($t9): ?>
-                                <li role="presentation" class="active"><a href="assignment"><?php echo get_string('assignments', 'local_intelliboard'); ?></a></li>
+                                <li role="presentation" class="nav-item active"><a class="nav-link active" href="assignment"><?php echo get_string('assignments', 'local_intelliboard'); ?></a></li>
                             <?php endif; ?>
                             <?php if($t10): ?>
-                                <li role="presentation" class="<?php echo (!$t9)?'active':''; ?>"><a href="quiz"><?php echo get_string('quizzes', 'local_intelliboard'); ?></a></li>
+                                <li role="presentation" class="nav-item <?php echo (!$t9)?'active':''; ?>"><a class="nav-link" href="quiz"><?php echo get_string('quizzes', 'local_intelliboard'); ?></a></li>
                             <?php endif; ?>
                             <span>
 						<form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
@@ -385,7 +385,7 @@ echo $OUTPUT->header();
                 <?php if($t11): ?>
                     <div class="<?php echo (!$t9 and !$t10)?'box100':'box50'; ?>  pull-right">
                         <ul class="nav nav-tabs clearfix">
-                            <li role="presentation" class="active"><a href="#"><?php echo get_string('course_progress', 'local_intelliboard'); ?></a></li>
+                            <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('course_progress', 'local_intelliboard'); ?></a></li>
 
                             <span>
 						<form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
@@ -464,11 +464,11 @@ echo $OUTPUT->header();
                     <div class="<?php echo (!$t14 and !$t15)?'box100':'box40'; ?> pull-left h410">
                         <ul class="nav nav-tabs chart-tabs">
                             <?php if($t12): ?>
-                                <li role="presentation" class="active"><a href="#"><?php echo get_string('activity_participation', 'local_intelliboard'); ?></a></li>
+                                <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('activity_participation', 'local_intelliboard'); ?></a></li>
                             <?php endif; ?>
 
                             <?php if($t13): ?>
-                                <li role="presentation" class="<?php echo (!$t12)?'active':''; ?>"><a href="#"><?php echo get_string('learning', 'local_intelliboard'); ?></a></li>
+                                <li role="presentation" class="nav-item <?php echo (!$t12)?'active':''; ?>"><a class="nav-link" href="#"><?php echo get_string('learning', 'local_intelliboard'); ?></a></li>
                             <?php endif; ?>
                         </ul>
                         <?php if($t12): ?>
@@ -485,11 +485,11 @@ echo $OUTPUT->header();
                     <div class="<?php echo (!$t12 and !$t13)?'box100':'box50'; ?> pull-right h410">
                         <ul class="nav nav-tabs chart-tabs">
                             <?php if($t14): ?>
-                                <li role="presentation" class="active"><a href="#"><?php echo get_string('course_success', 'local_intelliboard'); ?></a></li>
+                                <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('course_success', 'local_intelliboard'); ?></a></li>
                             <?php endif; ?>
 
                             <?php if($t15): ?>
-                                <li role="presentation" class="<?php echo (!$t14)?'active':''; ?>"><a href="#"><?php echo get_string('correlations', 'local_intelliboard'); ?></a></li>
+                                <li role="presentation" class="nav-item <?php echo (!$t14)?'active':''; ?>"><a class="nav-link" href="#"><?php echo get_string('correlations', 'local_intelliboard'); ?></a></li>
                             <?php endif; ?>
                         </ul>
 
@@ -567,7 +567,6 @@ echo $OUTPUT->header();
                 jQuery('.cview-table').removeClass("list");
                 jQuery('.cview-table').addClass(m);
             });
-
             jQuery('.nav-tabs li a').click(function(e){
                 e.preventDefault();
                 jQuery(this).parent().parent().find('li').removeClass("active");

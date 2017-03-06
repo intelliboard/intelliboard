@@ -106,8 +106,8 @@ echo $OUTPUT->header();
 
 		<div class="intelliboard-search clearfix">
 			<form action="<?php echo $PAGE->url; ?>" method="GET">
-				<input name="search" type="text" value="<?php echo format_string($search); ?>" placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>" />
-				<button><?php echo get_string('search');?></button>
+				<span class="pull-left"><input class="form-control" name="search" type="text" value="<?php echo format_string($search); ?>" placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>" /></span>
+				<button class="btn btn-default"><?php echo get_string('search');?></button>
 				<span>
 					<a class="active" value="grid" href=""><i class="ion-android-apps"></i></a>
 					<a href="" value="list"><i class="ion-android-menu"></i></a>

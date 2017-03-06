@@ -77,28 +77,30 @@ class intelliboard_courses_grades_table extends table_sql {
         list($sql2, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter10')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
 
+        list($sql3, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
+        $params = array_merge($params,$sql_params);
+        list($sql4, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
+        $params = array_merge($params,$sql_params);
+        list($sql5, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
+        $params = array_merge($params,$sql_params);
+
         $fields = "c.id, c.fullname as course,
                 c.enablecompletion,
                 ca.name AS category,
-                x.learners,
-                cc.completed,
-                gc.grade,
-                cm.modules, cs.sections, x.timespend, x.visits, '' as 'Actions'";
-
+                (SELECT SUM(l.timespend) FROM {local_intelliboard_tracking} l WHERE l.courseid = c.id AND l.userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = c.id AND ctx.contextlevel = 50 AND ra.roleid $sql3)) AS timespend,
+                 (SELECT SUM(l.visits) FROM {local_intelliboard_tracking} l WHERE l.courseid = c.id AND l.userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = c.id AND ctx.contextlevel = 50 AND ra.roleid $sql4)) AS visits,
+                (SELECT COUNT(DISTINCT ra.userid) FROM {role_assignments} ra
+                    LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+                    WHERE ra.roleid $sql1 AND ctx.instanceid = c.id) AS learners,
+                (SELECT AVG((g.finalgrade/g.rawgrademax)*100)
+                    FROM {grade_items} gi, {grade_grades} g
+                    WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS grade,
+                (SELECT COUNT(DISTINCT userid) FROM {course_completions} WHERE timecompleted > 0 AND course = c.id AND userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = c.id AND ctx.contextlevel = 50 AND ra.roleid $sql5)) AS completed,
+                (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
+                (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
+                '' as 'Actions'";
         $from = "{course} c
-                LEFT JOIN {course_categories} ca ON ca.id = c.category
-                LEFT JOIN (SELECT gi.courseid, AVG((g.finalgrade/g.rawgrademax)*100) AS grade
-                            FROM {grade_items} gi, {grade_grades} g
-                            WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                            GROUP BY gi.courseid) AS gc ON gc.courseid = c.id
-                LEFT JOIN (SELECT ctx.instanceid, COUNT(DISTINCT ra.userid) as learners, sum(timespend) as timespend, sum(visits) as visits
-                            FROM {role_assignments} ra
-                                LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                                LEFT JOIN {local_intelliboard_tracking} l ON l.courseid = ctx.instanceid AND l.userid =  ra.userid
-                            WHERE ra.roleid $sql1 GROUP BY ctx.instanceid) AS x ON x.instanceid = c.id
-                LEFT JOIN (SELECT course, COUNT(DISTINCT userid) AS completed FROM {course_completions} WHERE timecompleted > 0 GROUP BY course) AS cc ON cc.course = c.id
-                LEFT JOIN (SELECT course, COUNT(id) as modules FROM {course_modules} WHERE visible = 1 GROUP BY course) cm ON cm.course = c.id
-                LEFT JOIN (SELECT course, COUNT(id) as sections FROM {course_sections} WHERE visible = 1 GROUP BY course) cs ON cs.course = c.id";
+                LEFT JOIN {course_categories} ca ON ca.id = c.category";
         $where = "c.id IN (SELECT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.roleid $sql2 AND ra.userid = :userid GROUP BY ctx.instanceid) $sql";
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -141,10 +143,10 @@ class intelliboard_courses_grades_table extends table_sql {
     function col_actions($values) {
         global  $PAGE;
 
-        $html = html_writer::start_tag("div",array("style"=>"width:170px; margin: 5px 0;"));
-        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'learners', 'id'=>$values->id)), 'Learners', array('class' =>'btn', 'title' => get_string('learners','local_intelliboard')));
+        $html = html_writer::start_tag("div",array("style"=>"width:200px; margin: 5px 0;"));
+        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'learners', 'id'=>$values->id)), 'Learners', array('class' =>'btn btn-default', 'title' => get_string('learners','local_intelliboard')));
         $html .= "&nbsp";
-        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->id)), 'Activities', array('class' =>'btn', 'title' => get_string('activities','local_intelliboard')));
+        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->id)), 'Activities', array('class' =>'btn btn-default', 'title' => get_string('activities','local_intelliboard')));
         $html .= html_writer::end_tag("div");
         return $html;
     }
@@ -247,7 +249,7 @@ class intelliboard_activities_grades_table extends table_sql {
     function col_actions($values) {
         global  $PAGE;
 
-        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'activity', 'cmid'=>$values->id, 'id'=>$values->course)), 'Grades', array('class' =>'btn', 'title' =>get_string('grades','local_intelliboard')));
+        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'activity', 'cmid'=>$values->id, 'id'=>$values->course)), 'Grades', array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
     }
 }
 
@@ -341,7 +343,7 @@ class intelliboard_activity_grades_table extends table_sql {
     function col_actions($values) {
         global  $PAGE;
 
-        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), 'Grades', array('class' =>'btn', 'title' =>get_string('grades','local_intelliboard')));
+        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), 'Grades', array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
     }
 }
 
@@ -453,7 +455,7 @@ class intelliboard_learners_grades_table extends table_sql {
         global  $PAGE;
 
 
-        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), 'Grades', array('class' =>'btn', 'title' =>get_string('grades','local_intelliboard')));
+        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), 'Grades', array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
     }
 }
 class intelliboard_learner_grades_table extends table_sql {

@@ -112,7 +112,7 @@ echo $OUTPUT->header();
 									<li><span><?php echo get_string('in18', 'local_intelliboard'); ?> </span><?php echo (int)$data->visits; ?></li>
 
 
-								<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php?search&action=learners&id='.$data->courseid; ?>" class="btn btn-back"><i class="ion-android-arrow-back"></i> <?php echo get_string('in20', 'local_intelliboard'); ?></a>
+								<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php?search&action=learners&id='.$data->courseid; ?>" class="btn btn-default btn-back"><i class="ion-android-arrow-back"></i> <?php echo get_string('in20', 'local_intelliboard'); ?></a>
 							</ul>
 						<?php elseif($action === 'activity'): ?>
 							<div class="activity"><?php echo substr($data->module, 0,1); ?></div>
@@ -131,7 +131,7 @@ echo $OUTPUT->header();
 								<li><span><?php echo get_string('in17', 'local_intelliboard'); ?> </span><?php echo seconds_to_time($data->timespend); ?></li>
 								<li><span><?php echo get_string('in18', 'local_intelliboard'); ?> </span><?php echo $data->visits; ?></li>
 
-								<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php?search&action=activities&id='.$data->courseid; ?>" class="btn btn-back"><i class="ion-android-arrow-back"></i> <?php echo get_string('in201', 'local_intelliboard'); ?></a>
+								<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php?search&action=activities&id='.$data->courseid; ?>" class="btn btn-default btn-back"><i class="ion-android-arrow-back"></i> <?php echo get_string('in201', 'local_intelliboard'); ?></a>
 							</ul>
 						<?php elseif($action === 'learners'): ?>
 							<div class="grade" title="<?php echo get_string('in21', 'local_intelliboard'); ?>">
@@ -182,14 +182,17 @@ echo $OUTPUT->header();
 			<div class="intelliboard-search clearfix">
 				<form action="<?php echo $PAGE->url; ?>" method="GET">
 					<input name="id" type="hidden" value="<?php echo $courseid; ?>" />
-					<input name="search" type="text" value="<?php echo $search; ?>" placeholder="<?php echo get_string('type_here','local_intelliboard'); ?>" />
-					<button><?php echo get_string('search'); ?></button>
+					<span class="pull-left">
+					<input class="form-control" name="search" type="text" value="<?php echo $search; ?>" placeholder="<?php echo get_string('type_here','local_intelliboard'); ?>" />
+					</span>
+					<button class="btn btn-default"><?php echo get_string('search'); ?></button>
 					<?php if(in_array($action, array('learners', 'activities'))): ?>
-					<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php'; ?>" class="btn">
+					<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php'; ?>" class="btn btn-default">
 					<i class="ion-android-arrow-back"></i> <?php echo get_string('return_to_courses','local_intelliboard'); ?></a>
 					<?php endif; ?>
 				</form>
 			</div>
+			<div class="clear"></div>
 			<div class="progress-table">
 				<?php $table->out(10, true); ?>
 			</div>

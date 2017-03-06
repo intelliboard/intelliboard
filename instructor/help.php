@@ -54,7 +54,7 @@ echo $OUTPUT->header();
 	<?php include("views/menu.php"); ?>
 		<div class="intelliboard-content">
 			<p><?php echo get_string('click_link_below_support_pages','local_intelliboard'); ?></p>
-			<p><a class="btn" target="_blank" href="https://support.intelliboard.net/hc/en-us/categories/200112249-Teacher-and-Learner-Dashboards"><?php echo get_string('support','local_intelliboard'); ?></a></p>
+			<p><a class="btn btn-default" target="_blank" href="https://support.intelliboard.net/hc/en-us/categories/200112249-Teacher-and-Learner-Dashboards"><?php echo get_string('support','local_intelliboard'); ?></a></p>
 		</div>
 	<?php include("../views/footer.php"); ?>
 </div>
