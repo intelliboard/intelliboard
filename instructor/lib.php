@@ -113,7 +113,7 @@ function intelliboard_learner_data($userid, $courseid)
         LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
         LEFT JOIN (SELECT courseid, userid, SUM(timespend) as timespend, SUM(visits) as visits FROM
             {local_intelliboard_tracking} WHERE courseid = :c1 AND userid = :u1) l ON l.courseid = c.id AND l.userid = ue.userid
-        LEFT JOIN (SELECT cmc.userid, COUNT(DISTINCT cmc.id) as progress FROM {course_modules_completion} cmc, {course_modules} cm WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id  AND cmc.completionstate = 1 AND cm.completion = 1 AND cm.course = :c2 AND cmc.userid = :u2) cmc ON cmc.userid = u.id
+        LEFT JOIN (SELECT cmc.userid, COUNT(DISTINCT cmc.id) as progress FROM {course_modules_completion} cmc, {course_modules} cm WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id  AND cmc.completionstate = 1 AND cm.completion > 0 AND cm.course = :c2 AND cmc.userid = :u2) cmc ON cmc.userid = u.id
     WHERE u.id = :u3 LIMIT 1", $params);
 }
 function intelliboard_activities_data($courseid)
@@ -375,7 +375,7 @@ function intelliboard_instructor_courses($view, $page, $length)
                 COUNT(DISTINCT cmc.id) as data1,
                 COUNT(DISTINCT cm.id) as data2
             FROM {course} c
-                LEFT JOIN {course_modules} cm ON cm.course = c.id AND cm.visible = 1 AND cm.completion = 1
+                LEFT JOIN {course_modules} cm ON cm.course = c.id AND cm.visible = 1 AND cm.completion > 0
                 LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1
             WHERE c.id IN (
                 SELECT DISTINCT ctx.instanceid

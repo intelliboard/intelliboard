@@ -118,8 +118,8 @@ function intelliboard_data($type, $userid) {
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid
                     LEFT JOIN {course} c ON c.id = e.courseid
                     LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ue.userid
-                    LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion = 1 GROUP BY course) m ON m.course = c.id
-                    LEFT JOIN (SELECT cm.course, cmc.userid, count(DISTINCT cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
+                    LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) m ON m.course = c.id
+                    LEFT JOIN (SELECT cm.course, cmc.userid, count(DISTINCT cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
                     LEFT JOIN (SELECT courseid, sum(timespend) AS duration FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid > 0 GROUP BY courseid ) l ON l.courseid = c.id
                     LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                     LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ue.userid
@@ -149,8 +149,8 @@ function intelliboard_data($type, $userid) {
                   FROM {user_enrolments} ue
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid LEFT JOIN {course} c ON c.id = e.courseid
                     LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ue.userid
-                    LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion = 1 GROUP BY course) m ON m.course = c.id
-                    LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion = 1 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
+                    LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) m ON m.course = c.id
+                    LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
                     LEFT JOIN (SELECT courseid, sum(timespend) AS duration FROM {local_intelliboard_tracking} WHERE userid = :userid2 AND courseid > 0 GROUP BY courseid ) l ON l.courseid = c.id
                     LEFT JOIN {course_categories} ca ON ca.id = c.category
                     LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'

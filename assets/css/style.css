@@ -391,7 +391,7 @@
 .green-color{color: #5cb85c}
 
 .progress-table tr{ }
-.progress-table tr td{overflow: auto; vertical-align: middle;}
+.progress-table tr td{overflow: visible; vertical-align: middle;}
 .progress-table tr td .intelliboard-progres{margin: 0}
 
 .intelliboard-course-header{margin-bottom: 20px;}
