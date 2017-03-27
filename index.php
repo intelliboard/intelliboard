@@ -39,7 +39,7 @@ $time = optional_param('time', 'monthly', PARAM_RAW);
 $filter = optional_param('filter', 0, PARAM_INT);
 
 if($url){
-	redirect("$url&confirm=".s($USER->email));
+	redirect("$url&confirm=".get_config('local_intelliboard', 'te1'));
 	return;
 }
 $params = array(

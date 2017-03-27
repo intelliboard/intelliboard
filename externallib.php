@@ -2047,7 +2047,7 @@ class local_intelliboard_external extends external_api {
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+        $sql_filter = $this->get_teacher_sql($params, "u.id", "users");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "e.courseid");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
