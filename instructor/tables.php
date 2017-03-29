@@ -498,7 +498,7 @@ class intelliboard_learner_grades_table extends table_sql {
         );
         $sql = "";
         if($search){
-            $sql .= " AND " . $DB->sql_like('activity', ":activity", false, false);
+            $sql .= " AND " . $DB->sql_like('m.name', ":activity", false, false);
             $params['activity'] = "%$search%";
         }
 

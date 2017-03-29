@@ -48,7 +48,7 @@ if($id){
 		case 5: $timestart = strtotime('-90 days'); $timefinish = time(); break;
 		default: $timestart = 0; $timefinish = time();
 	}
-
+	$page = ($page)?$page:1;
 	$params = (object) array(
 		'filter_user_deleted'=>get_config('local_intelliboard', 'filter1'),
 		'filter_user_suspended'=>get_config('local_intelliboard', 'filter2'),
@@ -67,7 +67,7 @@ if($id){
 		'custom2'=> '',
 		'custom3'=> '',
 		'length'=>$length,
-		'start'=>$page,
+		'start'=>(($page-1) * $length),
 		'users'=>0,
 		'userid'=>0,
 		'courseid'=>0,
