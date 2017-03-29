@@ -182,6 +182,8 @@ echo $OUTPUT->header();
 			<div class="intelliboard-search clearfix">
 				<form action="<?php echo $PAGE->url; ?>" method="GET">
 					<input name="id" type="hidden" value="<?php echo $courseid; ?>" />
+					<input name="action" type="hidden" value="<?php echo $action; ?>" />
+
 					<span class="pull-left">
 					<input class="form-control" name="search" type="text" value="<?php echo $search; ?>" placeholder="<?php echo get_string('type_here','local_intelliboard'); ?>" />
 					</span>

@@ -186,7 +186,7 @@ class intelliboard_activities_grades_table extends table_sql {
         $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3'=>$courseid, 'c4'=>$courseid);
         $sql = "";
         if($search){
-            $sql .= " AND " . $DB->sql_like('activity', ":activity", false, false);
+            $sql .= " AND " . $DB->sql_like('m.name', ":activity", false, false);
             $params['activity'] = "%$search%";
         }
 
@@ -391,7 +391,7 @@ class intelliboard_learners_grades_table extends table_sql {
         $params = array('c1'=>$courseid, 'c2'=>$courseid);
         $sql = "";
         if($search){
-            $sql .= " AND " . $DB->sql_like('learner', ":learner", false, false);
+            $sql .= " AND " . $DB->sql_like('u.firstname', ":learner", false, false);
             $params['learner'] = "%$search%";
         }
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
