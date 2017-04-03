@@ -76,7 +76,7 @@ if($ADMIN->fulltree){
         $name = 'local_intelliboard/enabled';
         $title = get_string('enabled', 'local_intelliboard');
         $description = get_string('enabled_desc', 'local_intelliboard');
-        $default = true;
+        $default = false;
         $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
         $settings->add($setting);
 
@@ -213,7 +213,7 @@ if($ADMIN->fulltree){
 
         $name = 'local_intelliboard/n10';
         $title = get_string('n10', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
         $name = 'local_intelliboard/n8';
@@ -271,7 +271,7 @@ if($ADMIN->fulltree){
 
         $name = 'local_intelliboard/t1';
         $title = get_string('t1', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
         $name = 'local_intelliboard/t01';
