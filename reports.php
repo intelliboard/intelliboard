@@ -31,13 +31,28 @@ require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 
 require_login();
 require_capability('local/intelliboard:view', context_system::instance());
-admin_externalpage_setup('intelliboardreports');
+
 
 $id = optional_param('id', 1, PARAM_INT);
 $page = optional_param('page', 0, PARAM_INT);
 $length = optional_param('length', 20, PARAM_INT);
 $filter = clean_raw(optional_param('filter', '', PARAM_RAW));
 $daterange = optional_param('daterange', 3, PARAM_INT);
+$download = optional_param('download', '', PARAM_ALPHA);
+$format = optional_param('format', 'html', PARAM_ALPHA);
+$custom = optional_param('custom', 0, PARAM_INT);
+$custom2 = optional_param('custom2', 0, PARAM_INT);
+$custom3 = optional_param('custom3', 0, PARAM_INT);
+$users = optional_param('users', 0, PARAM_INT);
+$userid = optional_param('userid', 0, PARAM_INT);
+$courseid = optional_param('courseid', 0, PARAM_INT);
+$cohortid = optional_param('cohortid', 0, PARAM_INT);
+
+if($download){
+	$length = 100000; //Max. records to export
+}else{
+	admin_externalpage_setup('intelliboardreports');
+}
 
 if($id){
 	switch ($daterange) {
@@ -85,6 +100,8 @@ if($id){
 }
 
 $params = array(
+	'download' => 1,
+    'output' => ($download)?1:0,
 	'reports'=>get_config('local_intelliboard', 'reports'),
 	'filter'=>s($filter),
 	'daterange'=>$daterange,
@@ -96,6 +113,9 @@ $params = array(
 	'do'=>'reports'
 );
 $intelliboard = intelliboard($params);
+if($download and isset($intelliboard->json) and isset($intelliboard->itemname)){
+	intelliboard_export_report($intelliboard->json, $intelliboard->itemname, $format);
+}
 $PAGE->set_url(new moodle_url("/local/intelliboard/reports.php", array('id'=>$id)));
 $PAGE->set_pagelayout('report');
 $PAGE->set_pagetype('reports');
