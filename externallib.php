@@ -398,17 +398,25 @@ class local_intelliboard_external extends external_api {
 		$columns = array_merge(array("course", "learners", "modules", "completed", "l.visits", "l.timespend", "grade", "c.timecreated"), $this->get_filter_columns($params));
 
 		$sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
-		$sql_filter .= $this->get_filterdate_sql($params, "c.timecreated");
 		$sql_filter .= $this->get_filter_course_sql($params, "c.");
 		$sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
 		$sql_filter .= $this->get_filter_enrol_sql($params, "e.");
 		$sql_having = $this->get_filter_sql($params, $columns);
 		$sql_order = $this->get_order_sql($params, $columns);
 
-		if($params->sizemode){
+		$sql_compl = "";
+		if ($params->custom == 1) {
+			$sql_compl = $this->get_filterdate_sql($params, "cc.timecompleted");
+		} elseif ($params->custom == 2) {
+			$sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+		} else {
+			$sql_filter .= $this->get_filterdate_sql($params, "c.timecreated");
+		}
+
+		if ($params->sizemode) {
 			$sql_columns = ", '0' AS timespend, '0' AS visits";
 			$sql_join = "";
-		}else{
+		} else {
 			$sql_columns = ", l.timespend, l.visits";
 			$sql_join = " LEFT JOIN (SELECT courseid, SUM(timespend) AS timespend, SUM(visits) AS visits FROM {local_intelliboard_tracking} GROUP BY courseid) l ON l.courseid = c.id";
 		}
@@ -426,7 +434,7 @@ class local_intelliboard_external extends external_api {
 			FROM {course} c
 				LEFT JOIN {enrol} e ON e.courseid = c.id
 				LEFT JOIN {user_enrolments} ue ON ue.enrolid=e.id
-				LEFT JOIN {course_completions} cc ON cc.timecompleted > 0 AND cc.course = c.id AND cc.userid = ue.userid
+				LEFT JOIN {course_completions} cc ON cc.timecompleted > 0 AND cc.course = c.id AND cc.userid = ue.userid $sql_compl
 				LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
 		        LEFT JOIN {grade_grades} g ON g.userid = ue.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
 		        LEFT JOIN (SELECT course, COUNT(id) AS modules FROM {course_modules} WHERE visible = 1 GROUP BY course) cm ON cm.course = c.id
