@@ -4064,8 +4064,8 @@ class local_intelliboard_external extends external_api {
               COUNT(DISTINCT cou_com.userid) as users_completed,
 
               GROUP_CONCAT(DISTINCT (SELECT $sql_modules
-                FROM mdl_course_modules cm
-                  LEFT JOIN mdl_modules m ON m.id=cm.module
+                FROM {course_modules} cm
+                  LEFT JOIN {modules} m ON m.id=cm.module
                 WHERE cm.id = comm.cmid
               )) as modules
 
@@ -4223,25 +4223,25 @@ class local_intelliboard_external extends external_api {
               ass_gl.grade AS grade_last_submission,
               sc.scale
               $sql_columns
-            FROM mdl_assign ass
-                LEFT JOIN mdl_assign_submission ass_s ON ass_s.assignment=ass.id AND ass_s.attemptnumber=0
-                LEFT JOIN mdl_assign_grades ass_g ON ass_g.userid=ass_s.userid AND ass_g.assignment=ass_s.assignment AND ass_g.attemptnumber=ass_s.attemptnumber
+            FROM {assign} ass
+                LEFT JOIN {assign_submission} ass_s ON ass_s.assignment=ass.id AND ass_s.attemptnumber=0
+                LEFT JOIN {assign_grades} ass_g ON ass_g.userid=ass_s.userid AND ass_g.assignment=ass_s.assignment AND ass_g.attemptnumber=ass_s.attemptnumber
 
-                LEFT JOIN mdl_assign_submission ass_sl ON ass_sl.assignment=ass.id AND ass_sl.latest=1 AND ass_sl.userid=ass_s.userid AND ass_sl.id <> ass_s.id
-                LEFT JOIN mdl_assign_grades ass_gl ON ass_gl.userid=ass_sl.userid AND ass_gl.assignment=ass_sl.assignment AND ass_gl.attemptnumber=ass_sl.attemptnumber
+                LEFT JOIN {assign_submission} ass_sl ON ass_sl.assignment=ass.id AND ass_sl.latest=1 AND ass_sl.userid=ass_s.userid AND ass_sl.id <> ass_s.id
+                LEFT JOIN {assign_grades} ass_gl ON ass_gl.userid=ass_sl.userid AND ass_gl.assignment=ass_sl.assignment AND ass_gl.attemptnumber=ass_sl.attemptnumber
 
-                JOIN mdl_modules m ON m.name='assign'
-                LEFT JOIN mdl_course_modules cm ON cm.course=ass.course AND cm.module=m.id AND cm.instance=ass.id
-                LEFT JOIN mdl_course_modules_completion cmc ON cmc.userid=ass_s.userid AND cmc.coursemoduleid=cm.id
+                JOIN {modules} m ON m.name='assign'
+                LEFT JOIN {course_modules} cm ON cm.course=ass.course AND cm.module=m.id AND cm.instance=ass.id
+                LEFT JOIN {course_modules_completion} cmc ON cmc.userid=ass_s.userid AND cmc.coursemoduleid=cm.id
 
-                LEFT JOIN mdl_grade_items gi ON gi.courseid=ass.course AND gi.itemtype='mod' AND gi.itemmodule='assign' AND gi.iteminstance=ass.id
-                LEFT JOIN mdl_scale sc ON sc.id=gi.scaleid
+                LEFT JOIN {grade_items} gi ON gi.courseid=ass.course AND gi.itemtype='mod' AND gi.itemmodule='assign' AND gi.iteminstance=ass.id
+                LEFT JOIN {scale} sc ON sc.id=gi.scaleid
 
-                LEFT JOIN mdl_course c ON c.id=ass.course
-                LEFT JOIN mdl_context con ON con.contextlevel=50 AND con.instanceid=c.id
-                LEFT JOIN mdl_role_assignments ra ON ra.contextid=con.id AND ra.userid=ass_s.userid $learner_roles
-                LEFT JOIN mdl_user u ON u.id=ra.userid
-                LEFT JOIN mdl_local_intelliboard_tracking lit ON lit.userid=u.id AND lit.page='module' AND lit.param=cm.id
+                LEFT JOIN {course} c ON c.id=ass.course
+                LEFT JOIN {context} con ON con.contextlevel=50 AND con.instanceid=c.id
+                LEFT JOIN {role_assignments} ra ON ra.contextid=con.id AND ra.userid=ass_s.userid $learner_roles
+                LEFT JOIN {user} u ON u.id=ra.userid
+                LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND lit.page='module' AND lit.param=cm.id
             WHERE u.id IS NOT NULL $sql_filter $sql_having $sql_order", $params);
     }
     function get_course_assignments($params)
