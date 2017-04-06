@@ -1039,51 +1039,91 @@ class local_intelliboard_external extends external_api {
 					LEFT JOIN (SELECT fd.course, count(*) posts FROM {forum_discussions} fd, {forum_posts} fp WHERE fp.discussion = fd.id group by fd.course) p ON p.course = c.id
 			WHERE 1 $sql_filter GROUP BY f.course $sql_having $sql_order", $params);
     }
-    public function report17($params)
+
+
+	public function report17($params)
     {
-        $columns = array_merge(array("c.fullname", "f.name ", "f.type ", "Discussions", "UniqueUsersDiscussions", "Posts", "UniqueUsersPosts", "Students", "Teachers", "UserCount", "StudentDissUsage", "StudentPostUsage"), $this->get_filter_columns($params));
+        global $DB;
+
+        $date = new DateTime('2000-01-01', new DateTimeZone(core_date::get_server_timezone()));
+        $date_params = array('timezone'=>$date->format('P'));
+        $DB->execute('SET @@session.time_zone = :timezone', $date_params);
+
+        $columns = array_merge(array("c.fullname", "f.name", "avg_month", "avg_week", "avg_day", "popular_hour.hour", "popular_week.week", "popular_day.day"), $this->get_filter_columns($params));
 
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
-        $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
-        $sql_filter .= $this->get_filter_course_sql($params, "c.");
-        $sql_learner_roles = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
-        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+        $sql_course1 = (!empty($params->courseid))?$this->get_filter_in_sql($params->courseid, "f.course",false):1;
+        $sql_course2 = (!empty($params->courseid))?$this->get_filter_in_sql($params->courseid, "f2.course",false):1;
+        $sql_course3 = (!empty($params->courseid))?$this->get_filter_in_sql($params->courseid, "f2.course",false):1;
+        $sql_course4 = (!empty($params->courseid))?$this->get_filter_in_sql($params->courseid, "f2.course",false):1;
 
         return $this->get_report_data("
-			SELECT f.id as forum,
-			       c.id,
-			       c.fullname,
-			       f.name,
-			       f.type,
-			       (SELECT COUNT(id) FROM {forum_discussions} AS fd WHERE f.id = fd.forum) AS Discussions,
-			       (SELECT COUNT(DISTINCT fd.userid) FROM {forum_discussions} AS fd WHERE fd.forum = f.id) AS UniqueUsersDiscussions,
-			       (SELECT COUNT(fp.id) FROM {forum_discussions} fd JOIN {forum_posts} AS fp ON fd.id = fp.discussion WHERE f.id = fd.forum) AS Posts,
-			       (SELECT COUNT(DISTINCT fp.userid) FROM {forum_discussions} fd JOIN {forum_posts} AS fp ON fd.id = fp.discussion WHERE f.id = fd.forum) AS UniqueUsersPosts,
-			       (SELECT COUNT( ra.userid ) AS Students
-                        FROM {role_assignments} AS ra
-                          JOIN {context} AS ctx ON ra.contextid = ctx.id
-                        WHERE ctx.instanceid = c.id $sql_learner_roles
-				    ) AS StudentsCount,
-				    (SELECT COUNT( ra.userid ) AS Teachers
-                        FROM {role_assignments} AS ra
-                          JOIN {context} AS ctx ON ra.contextid = ctx.id
-                        WHERE ctx.instanceid = c.id $sql_teacher_roles
-                    ) AS teacherscount,
-                    (SELECT COUNT( ra.userid ) AS Users
-                        FROM {role_assignments} AS ra
-                          JOIN {context} AS ctx ON ra.contextid = ctx.id
-                        WHERE  ctx.instanceid = c.id
-                    ) AS UserCount,
-                    (SELECT (UniqueUsersDiscussions / StudentsCount )) AS StudentDissUsage,
-                    (SELECT (UniqueUsersPosts /StudentsCount)) AS StudentPostUsage
-			FROM {forum} AS f
-				JOIN {course} c ON f.course = c.id
-		    WHERE 1 $sql_filter $sql_having $sql_order", $params);
-    }
+                SELECT
+                  f.id as fid,
+                  f.name,
+                  c.fullname,
+                  COUNT(DISTINCT fp.id) AS all_posts,
+                  COUNT(DISTINCT fp.id)/PERIOD_DIFF(DATE_FORMAT(NOW(), '%Y%m'),DATE_FORMAT(FROM_UNIXTIME(cm.added), '%Y%m')) as avg_month,
+                  COUNT(DISTINCT fp.id)/CEILING(DATEDIFF(DATE_FORMAT(NOW(), '%Y%m%d'),DATE_FORMAT(FROM_UNIXTIME(cm.added), '%Y%m%d'))/7) as avg_week,
+                  COUNT(DISTINCT fp.id)/DATEDIFF(DATE_FORMAT(NOW(), '%Y%m%d'),DATE_FORMAT(FROM_UNIXTIME(cm.added), '%Y%m%d')) as avg_day,
+                  popular_day.day AS popular_day,
+                  popular_hour.hour AS popular_hour,
+                  popular_week.week AS popular_week
+                FROM {forum} f
+                  JOIN {modules} m ON m.name='forum'
+                  LEFT JOIN {course_modules} cm ON cm.course=f.course AND cm.instance=f.id AND cm.module=m.id
 
+                  LEFT JOIN {course} c ON c.id=f.course
+                  LEFT JOIN {forum_discussions} fd ON fd.forum=f.id
+                  LEFT JOIN {forum_posts} fp ON fp.discussion=fd.id
+
+                  LEFT JOIN ( SELECT a.posts,a.day,a.id
+                                FROM ( SELECT
+                                          COUNT(DISTINCT fp2.id) as posts,
+                                          WEEKDAY(FROM_UNIXTIME(fp2.created,'%Y-%m-%d %T')) AS day,
+                                          f2.id
+                                        FROM {forum} f2
+                                          LEFT JOIN {forum_discussions} fd2 ON fd2.forum=f2.id
+                                          LEFT JOIN {forum_posts} fp2 ON fp2.discussion=fd2.id
+                                        WHERE $sql_course4
+                                        GROUP BY day,f2.id
+                                        ORDER BY posts DESC
+                                    ) AS a
+                            GROUP BY a.id) as popular_day ON popular_day.id=f.id
+
+                  LEFT JOIN ( SELECT a.posts,a.hour,a.id
+                                FROM ( SELECT
+                                          COUNT(DISTINCT fp2.id) as posts,
+                                          FROM_UNIXTIME(fp2.created,'%H') AS hour,
+                                          f2.id
+                                        FROM {forum} f2
+                                          LEFT JOIN {forum_discussions} fd2 ON fd2.forum=f2.id
+                                          LEFT JOIN {forum_posts} fp2 ON fp2.discussion=fd2.id
+                                        WHERE $sql_course3
+                                        GROUP BY hour,f2.id
+                                        ORDER BY posts DESC
+                                    ) AS a
+                            GROUP BY a.id) as popular_hour ON popular_hour.id=f.id
+
+                  LEFT JOIN ( SELECT a.posts,a.week,a.id
+                                FROM ( SELECT
+                                          COUNT(DISTINCT fp2.id) as posts,
+                                          CEILING(DAYOFMONTH(FROM_UNIXTIME(fp2.created,'%Y-%m-%d %T'))/7) AS week,
+                                          f2.id
+                                        FROM {forum} f2
+                                          LEFT JOIN {forum_discussions} fd2 ON fd2.forum=f2.id
+                                          LEFT JOIN {forum_posts} fp2 ON fp2.discussion=fd2.id
+                                        WHERE $sql_course2
+                                        GROUP BY week,f2.id
+                                        ORDER BY posts DESC
+                                    ) AS a
+                            GROUP BY a.id) as popular_week ON popular_week.id=f.id
+
+                WHERE $sql_course1
+                GROUP BY f.id $sql_having $sql_order", $params);
+    }
 
     public function report18($params)
     {
