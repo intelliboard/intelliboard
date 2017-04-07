@@ -222,7 +222,7 @@ function intelliboard_instructor_correlations($page, $length)
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                 LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                 LEFT JOIN (SELECT courseid, userid, sum(timespend) AS duration FROM {local_intelliboard_tracking} WHERE courseid > 0 GROUP BY courseid, userid) l ON l.courseid = c.id AND l.userid = g.userid
-            WHERE  c.id IN (
+            WHERE c.visible = 1 AND c.id IN (
                 SELECT DISTINCT ctx.instanceid
                 FROM {role_assignments} ra, {context} ctx
                 WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1)
@@ -279,7 +279,7 @@ function intelliboard_instructor_modules()
             LEFT JOIN {course_modules} cm ON cm.course = c.id
             LEFT JOIN {modules} m ON m.id = cm.module
             LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = ra.userid AND l.param = cm.id
-        WHERE c.id IN (
+        WHERE c.visible = 1 AND c.id IN (
             SELECT DISTINCT ctx.instanceid
             FROM {role_assignments} ra, {context} ctx
             WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql2
@@ -329,7 +329,7 @@ function intelliboard_instructor_stats()
                 LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
                 LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
                 LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-            WHERE c.id IN (
+            WHERE c.visible = 1 AND c.id IN (
                 SELECT DISTINCT ctx.instanceid
                 FROM {role_assignments} ra, {context} ctx
                 WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql2
@@ -361,7 +361,7 @@ function intelliboard_instructor_courses($view, $page, $length)
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                 LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                 LEFT JOIN {course_completion_criteria} cc ON cc.course = c.id AND cc.criteriatype = 6
-            WHERE  c.id IN (
+            WHERE c.visible = 1 AND c.id IN (
                 SELECT DISTINCT ctx.instanceid
                 FROM {role_assignments} ra, {context} ctx
                 WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1)
@@ -377,7 +377,7 @@ function intelliboard_instructor_courses($view, $page, $length)
             FROM {course} c
                 LEFT JOIN {course_modules} cm ON cm.course = c.id AND cm.visible = 1 AND cm.completion > 0
                 LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1
-            WHERE c.id IN (
+            WHERE c.visible = 1 AND c.id IN (
                 SELECT DISTINCT ctx.instanceid
                 FROM {role_assignments} ra, {context} ctx
                 WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1)
@@ -397,7 +397,7 @@ function intelliboard_instructor_courses($view, $page, $length)
                 LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                 LEFT JOIN {course} c ON c.id = ctx.instanceid
                 LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
-            WHERE c.id IN (
+            WHERE c.visible = 1 AND c.id IN (
                 SELECT DISTINCT ctx.instanceid
                 FROM {role_assignments} ra, {context} ctx
                 WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql2

@@ -101,7 +101,7 @@ class intelliboard_courses_grades_table extends table_sql {
                 '' as 'Actions'";
         $from = "{course} c
                 LEFT JOIN {course_categories} ca ON ca.id = c.category";
-        $where = "c.id IN (SELECT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.roleid $sql2 AND ra.userid = :userid GROUP BY ctx.instanceid) $sql";
+        $where = "c.visible = 1 AND c.id IN (SELECT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.roleid $sql2 AND ra.userid = :userid GROUP BY ctx.instanceid) $sql";
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
     }
