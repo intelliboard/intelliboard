@@ -207,9 +207,9 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 			if($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')){
 				if(!$ajaxRequest){
 					$data->visits = $data->visits + 1;
+					$data->lastaccess = time();
 				}
 				$data->timespend = $data->timespend + $intelliboardTime;
-				$data->lastaccess = time();
 				$data->useragent = $userDetails->useragent;
 				$data->useros = $userDetails->useros;
 				$data->userlang = $userDetails->userlang;
