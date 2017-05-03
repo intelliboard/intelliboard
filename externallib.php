@@ -3404,6 +3404,7 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array("u.id", "u.firstname", "u.lastname", "u.email", "c.fullname", "timespend", "visits"), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, "u.id", "users");
@@ -3418,6 +3419,7 @@ class local_intelliboard_external extends external_api {
 	           c.fullname,
 	           SUM(l.timespend) AS timespend,
 	           SUM(l.visits) AS visits
+	           $sql_columns
 			FROM  {user} u, {course} c, {local_intelliboard_tracking} t, {local_intelliboard_logs} l
 			WHERE l.trackid = t.id AND c.id = t.courseid AND u.id = t.userid $sql_filter
 			GROUP BY t.userid, t.courseid $sql_having $sql_order", $params);
