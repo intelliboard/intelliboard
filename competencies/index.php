@@ -167,10 +167,6 @@ echo $OUTPUT->header();
             }]
           }"></script>
 	<script type="text/javascript">
-		jQuery(document).ready(function(){
-
-		});
-
 		<?php if($n7): ?>
        	google.setOnLoadCallback(function() {
         	var data = google.visualization.arrayToDataTable([
@@ -181,7 +177,7 @@ echo $OUTPUT->header();
         	<?php foreach($compcourses as $row):  ?>
 			[
 				'<?php echo format_string($row->shortname); ?>',
-				{v:<?php echo (int)$row->courses; ?>, f:'<?php echo "Linked Courses: " .$row->courses; ?>'},
+				{v:<?php echo (int)$row->courses; ?>, f:'<?php echo get_string('a40', 'local_intelliboard') . ": " .$row->courses; ?>'},
 			],
 			<?php endforeach; ?>
 			]);
@@ -213,8 +209,7 @@ echo $OUTPUT->header();
         <?php endif; ?>
 
         <?php if($n5): ?>
-		google.setOnLoadCallback(progressChart);
-		function progressChart() {
+		google.setOnLoadCallback(function() {
 			var data = google.visualization.arrayToDataTable([
 				[
 					'<?php echo get_string('learners', 'local_intelliboard'); ?>',
@@ -235,10 +230,11 @@ echo $OUTPUT->header();
 			};
 			var chart = new google.visualization.PieChart(document.getElementById('summary-chart'));
 			chart.draw(data, options);
-		}
+		});
+
 		<?php endif; ?>
 
-		google.setOnLoadCallback(function drawInsructorChart() {
+		google.setOnLoadCallback(function() {
 			var options = {
 				title:'',
 				legend:{position: 'top', alignment: 'end'},

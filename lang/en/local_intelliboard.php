@@ -332,6 +332,7 @@ $string['a36'] = 'Competency Overview';
 $string['a37'] = 'A competency has not been created. Please contact your System Administrator.';
 $string['a38'] = 'Courses Linked to Competencies';
 $string['a39'] = 'Competency Totals';
+$string['a40'] = 'Linked Courses';
 
 
 $string['a0'] = 'Competency Dashboard';
