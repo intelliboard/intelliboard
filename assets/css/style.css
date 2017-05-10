@@ -199,7 +199,7 @@
 .intelli-instructor-header .instructor-chart{ height: 250px }
 .intelli-instructor-header h3{font-size: 21px;margin:0; float: left}
 .intelli-instructor-header .instructor-head .intelliboard-dropdown{width:160px; margin-right: 10px; margin-bottom: 10px;}
-.intelli-instructor-header .summary{width: 30%;float: right;box-sizing: border-box;padding-left: 20px; padding-top: 10px}
+.intelli-instructor-header .summary{width: 30%;float: right;box-sizing: border-box;padding-left: 20px; padding-top: 10px;box-shadow: -1px 0 0 0 #ddd;}
 .intelli-instructor-header .summary h3{float: none;margin-bottom: 15px}
 .intelli-instructor-header .summary-chart{width: 100%;height: 200px;}
 .intelli-instructor-header .summary-chart-wrap{position: relative;}
@@ -406,6 +406,10 @@
 .intelliboard-course-header p span{margin-right: 10px;color: rgba(0,0,0,0.4)}
 .intelliboard-course-header a{float: right;}
 
+.intelliboard-report-wrap{position: relative;}
+.intelliboard-report-wrap .dataformatselector{position: absolute; right: 0; top: 0px; margin: 0}
+.intelliboard-course-header ul.path{clear:both; margin: 0 0 0 100px;  padding: 5px 0;list-style: none; border-top: 1px solid #ccc;}
+.intelliboard-course-header ul.path li{float: left; font-size: 15px; font-weight: 400; display: inline-block; margin-right: 5px }
 
 .intelliboard-course-header ul.summary{clear:both; margin: 0 0 0 100px;  padding: 5px 0;list-style: none; border-top: 1px solid #ccc;}
 .intelliboard-course-header ul.summary li{display: block; font-size: 15px; font-weight: 400; display: inline-block; margin-right: 30px }

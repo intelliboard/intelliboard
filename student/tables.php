@@ -73,7 +73,7 @@ class intelliboard_courses_grades_table extends table_sql {
 
         $fields = "c.id, c.fullname as course, c.timemodified, c.startdate, c.enablecompletion, cri.gradepass, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, cc.timecompleted, m.modules, cm.completedmodules, '' as actions, '' as letter";
 
-        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, ue.timemodified, ue.userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.userid = :userid  AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid AND c.visible = 1) c
+        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, MIN(ue.timemodified) AS timemodified, ue.userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.userid = :userid  AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid AND c.visible = 1 GROUP BY c.id, ue.userid) c
 
             LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = c.userid
             LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) m ON m.course = c.id
@@ -82,7 +82,7 @@ class intelliboard_courses_grades_table extends table_sql {
             LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = c.userid
             LEFT JOIN (SELECT gi.courseid, AVG( (g.finalgrade/g.rawgrademax)*100) AS average FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id";
-        $where = "1 $sql";
+        $where = "c.id > 0 $sql";
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
     }
@@ -185,7 +185,8 @@ class intelliboard_activities_grades_table extends table_sql {
         $params['userid2'] = $userid;
         $params['courseid'] = $courseid;
 
-        $fields = "gi.id, gi.itemname, cm.id as cmid, gi.itemmodule, cmc.timemodified as timecompleted, (g.finalgrade/g.rawgrademax)*100 AS grade, IFNULL(g.timemodified, g.timecreated)  as timepoint";
+        $fields = "gi.id, gi.itemname, cm.id as cmid, gi.itemmodule, cmc.timemodified as timecompleted, (g.finalgrade/g.rawgrademax)*100 AS grade,
+            CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS timepoint";
         $from = "{grade_items} gi
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid1
             LEFT JOIN {modules} m ON m.name = gi.itemmodule

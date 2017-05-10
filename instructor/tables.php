@@ -98,7 +98,7 @@ class intelliboard_courses_grades_table extends table_sql {
                 (SELECT COUNT(DISTINCT userid) FROM {course_completions} WHERE timecompleted > 0 AND course = c.id AND userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = c.id AND ctx.contextlevel = 50 AND ra.roleid $sql5)) AS completed,
                 (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
                 (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
-                '' as 'Actions'";
+                '' as actions";
         $from = "{course} c
                 LEFT JOIN {course_categories} ca ON ca.id = c.category";
         $where = "c.visible = 1 AND c.id IN (SELECT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.roleid $sql2 AND ra.userid = :userid GROUP BY ctx.instanceid) $sql";
@@ -193,15 +193,12 @@ class intelliboard_activities_grades_table extends table_sql {
         list($sql1, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
 
-        $sql_cm_end = ""; $sql_cm_if = array(); $sql_columns = "";
+        $sql_columns = "";
         $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1");
         foreach($modules as $module){
-            $key = 'ac'.$module->id;
-            $params[$key] = $courseid;
-            $sql_cm_if[] = "IF(m.name='{$module->name}', (SELECT name FROM {".$module->name."} WHERE id = cm.instance AND course=:$key)";
-            $sql_cm_end .= ")";
+            $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
-        $sql_columns .=  ($sql_cm_if) ? ",".implode(",", $sql_cm_if).",'NONE'".$sql_cm_end." AS activity" : "'' AS activity";
+        $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
 
         $fields = "
                 cm.id,
@@ -293,10 +290,10 @@ class intelliboard_activity_grades_table extends table_sql {
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
 
-        $fields = "ra.id, ra.userid, c.id as courseid,
+        $fields = "ra.id, ra.userid, c.id AS courseid,
             ROUND(((g.finalgrade/g.rawgrademax)*100), 0) AS grade,
-            IFNULL(g.timemodified, g.timecreated)  as graded,
-            cc.timemodified as timecompleted,
+            CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS graded,
+            cc.timemodified AS timecompleted,
             cc.completionstate,
             u.email,
             CONCAT(u.firstname, ' ', u.lastname) as learner,
@@ -403,7 +400,7 @@ class intelliboard_learners_grades_table extends table_sql {
             ROUND(((g.finalgrade/g.rawgrademax)*100), 0) AS grade,
             cc.timecompleted,
             u.email,
-            CONCAT(u.firstname, ' ', u.lastname) as learner, l.timespend, l.visits, cmc.progress, '' as 'actions'";
+            CONCAT(u.firstname, ' ', u.lastname) as learner, l.timespend, l.visits, cmc.progress, '' as actions";
         $from = "{role_assignments} ra
                 LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
                 LEFT JOIN {user} u ON u.id = ra.userid
@@ -503,22 +500,19 @@ class intelliboard_learner_grades_table extends table_sql {
         }
 
 
-        $sql_cm_end = ""; $sql_cm_if = array(); $sql_columns = "";
+        $sql_columns = "";
         $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1");
         foreach($modules as $module){
-            $key = 'ac'.$module->id;
-            $params[$key] = $courseid;
-            $sql_cm_if[] = "IF(m.name='{$module->name}', (SELECT name FROM {".$module->name."} WHERE id = cm.instance AND course=:$key)";
-            $sql_cm_end .= ")";
+            $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
-        $sql_columns .=  ($sql_cm_if) ? ",".implode(",", $sql_cm_if).",'NONE'".$sql_cm_end." AS activity" : "'' AS activity";
+        $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
 
         $fields = "
             cm.id,
             m.name as module,
             cmc.timemodified as timecompleted,
             (g.finalgrade/g.rawgrademax)*100 AS grade,
-            IFNULL(g.timemodified, g.timecreated)  as graded,
+            CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS graded,
             l.visits,
             l.timespend
             $sql_columns";

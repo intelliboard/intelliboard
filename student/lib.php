@@ -113,20 +113,23 @@ function intelliboard_data($type, $userid) {
             $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
             $params['fullname'] = "%$search%";
         }
-        $query = "SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, c.fullname, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules
+        $params['userid1'] = $userid;
+        $params['userid2'] = $userid;
+        $params['userid3'] = $userid;
+        $params['userid4'] = $userid;
+        $params['userid5'] = $userid;
+
+        $query = "SELECT DISTINCT(c.id) AS id, c.fullname, MIN(ue.timemodified) AS timemodified,
+                    (SELECT (g.finalgrade/g.rawgrademax)*100 FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid1) AS grade,
+                    (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
+                    (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid3 AND courseid = c.id) AS duration,
+                    (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND completion > 0 AND course = c.id) AS modules,
+                    (SELECT COUNT(id) FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
                   FROM {user_enrolments} ue
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid
                     LEFT JOIN {course} c ON c.id = e.courseid
-                    LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ue.userid
-                    LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) m ON m.course = c.id
-                    LEFT JOIN (SELECT cm.course, cmc.userid, count(DISTINCT cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
-                    LEFT JOIN (SELECT courseid, sum(timespend) AS duration FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid > 0 GROUP BY courseid ) l ON l.courseid = c.id
-                    LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-                    LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ue.userid
                   WHERE ue.userid = :userid2 AND c.visible = 1 $sql GROUP BY c.id ORDER BY c.fullname";
 
-        $params['userid1'] = $userid;
-        $params['userid2'] = $userid;
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
     }elseif ($type == 'courses') {
         $sql = "";
@@ -145,21 +148,28 @@ function intelliboard_data($type, $userid) {
         }else{
             $sql_select = ",'' as certificates";
         }
-        $query = "SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, c.fullname, ca.name as category, ue.timemodified, cc.timecompleted, m.modules, cm.completedmodules, l.duration $sql_select
-                  FROM {user_enrolments} ue
-                    LEFT JOIN {enrol} e ON e.id = ue.enrolid LEFT JOIN {course} c ON c.id = e.courseid
-                    LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ue.userid
-                    LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) m ON m.course = c.id
-                    LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = ue.userid
-                    LEFT JOIN (SELECT courseid, sum(timespend) AS duration FROM {local_intelliboard_tracking} WHERE userid = :userid2 AND courseid > 0 GROUP BY courseid ) l ON l.courseid = c.id
-                    LEFT JOIN {course_categories} ca ON ca.id = c.category
-                    LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-                    LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ue.userid
-                    LEFT JOIN (SELECT gi.courseid, AVG( (g.finalgrade/g.rawgrademax)*100) AS average FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
-                    $sql_join
-                  WHERE ue.userid = :userid3 AND c.visible = 1 $sql GROUP BY c.id ORDER BY c.fullname";
+        $params['userid1'] = $userid;
         $params['userid2'] = $userid;
         $params['userid3'] = $userid;
+        $params['userid4'] = $userid;
+        $params['userid5'] = $userid;
+        $params['userid6'] = $userid;
+
+        $query = "SELECT c.id, c.fullname, MIN(ue.timemodified) AS timemodified,
+                (SELECT (g.finalgrade/g.rawgrademax)*100 FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid6) AS grade,
+                (SELECT AVG((g.finalgrade/g.rawgrademax)*100) FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
+                (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid2 AND courseid = c.id) AS duration,
+                (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
+                (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
+                (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND completion > 0 AND course = c.id) AS modules,
+                (SELECT COUNT(id) FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
+                $sql_select
+            FROM {user_enrolments} ue
+                LEFT JOIN {enrol} e ON e.id = ue.enrolid
+                LEFT JOIN {course} c ON c.id = e.courseid
+                    $sql_join
+                  WHERE ue.userid = :userid3 AND c.visible = 1 $sql GROUP BY c.id ORDER BY c.fullname";
+
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
     }
@@ -218,12 +228,12 @@ function intelliboard_learner_course_progress($courseid, $userid){
     $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
                                     FROM {grade_items} gi, {grade_grades} g
                                     WHERE gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid
-                                    GROUP BY floor(g.timemodified / 86400) * 86400 ORDER BY g.timemodified", $params);
+                                    GROUP BY timepoint ORDER BY timepoint", $params);
 
     $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
                                     FROM {grade_items} gi, {grade_grades} g
                                     WHERE gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid
-                                    GROUP BY floor(g.timemodified / 86400) * 86400 ORDER BY g.timemodified", $params);
+                                    GROUP BY timepoint ORDER BY timepoint", $params);
     return $data;
 }
 function intelliboard_learner_progress($time, $userid){
@@ -236,15 +246,15 @@ function intelliboard_learner_progress($time, $userid){
     $params['userid'] = $userid;
     $params['timestart'] = $timestart;
     $params['timefinish'] = $timefinish;
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
                                     FROM {grade_items} gi, {grade_grades} g
                                     WHERE gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish
-                                    GROUP BY floor(g.timemodified / 86400) * 86400 ORDER BY g.timemodified", $params);
+                                    GROUP BY timepoint ORDER BY timepoint", $params);
 
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, AVG((g.finalgrade/g.rawgrademax)*100) as grade
                                     FROM {grade_items} gi, {grade_grades} g
                                     WHERE gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish
-                                    GROUP BY floor(g.timemodified / 86400) * 86400 ORDER BY g.timemodified", $params);
+                                    GROUP BY timepoint ORDER BY timepoint", $params);
     return $data;
 }
 
@@ -254,15 +264,16 @@ function intelliboard_learner_courses($userid){
     $params = array();
     $params['userid1'] = $userid;
     $params['userid2'] = $userid;
-    $data = $DB->get_records_sql("SELECT c.id, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, c.fullname, l.duration, '0' AS duration_calc
-                                  FROM {user_enrolments} ue
-                                    LEFT JOIN {enrol} e ON e.id = ue.enrolid
-                                    LEFT JOIN {course} c ON c.id = e.courseid
-                                    LEFT JOIN (SELECT courseid, sum(timespend) AS duration FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid > 0 GROUP BY courseid ) l ON l.courseid = c.id
-                                    LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-                                    LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ue.userid
-                                    LEFT JOIN (SELECT gi.courseid, AVG( (g.finalgrade/g.rawgrademax)*100) AS average FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id
-                                  WHERE ue.userid = :userid2 AND c.visible = 1 GROUP BY c.id", $params);
+    $params['userid3'] = $userid;
+
+    $data = $DB->get_records_sql("
+        SELECT c.id, c.fullname, '0' AS duration_calc,
+            (SELECT (g.finalgrade/g.rawgrademax)*100 FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid3) AS grade,
+            (SELECT AVG((g.finalgrade/g.rawgrademax)*100) FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
+            (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
+        FROM {user_enrolments} ue, {enrol} e, {course} c
+        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND c.visible = 1 GROUP BY c.id", $params);
+
     $d = 0;
     foreach($data as $c){
         $d = ($c->duration > $d)?$c->duration:$d;

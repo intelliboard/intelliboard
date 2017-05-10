@@ -131,13 +131,13 @@ foreach($enrols as $enrol){
 
 $json_data = array();
 foreach($LineChart[2] as $item){
-	$d = date("j", $item->timepoint);
-	$m = date("n", $item->timepoint) - 1;
-	$y = date("Y", $item->timepoint);
+	$d = date("j", $item->timepointval);
+	$m = date("n", $item->timepointval) - 1;
+	$y = date("Y", $item->timepointval);
 
 	$l = $item->visits;
-	$v = (isset($LineChart[3][$item->timepoint])) ? $LineChart[3][$item->timepoint]->users : 0;
-	$t = (isset($LineChart[4][$item->timepoint])) ? $LineChart[4][$item->timepoint]->users : 0;
+	$v = (isset($LineChart[3][$item->timepointval])) ? $LineChart[3][$item->timepointval]->users : 0;
+	$t = (isset($LineChart[4][$item->timepointval])) ? $LineChart[4][$item->timepointval]->users : 0;
 	$json_data[] = "[new Date($y, $m, $d), $l, $t, $v]";
 }
 $PAGE->requires->jquery();

@@ -62,38 +62,62 @@ function local_intelliboard_extends_navigation(global_navigation $nav){
 }
 //call-back method to extend the navigation
 function local_intelliboard_extend_navigation(global_navigation $nav){
-	global $CFG, $DB, $USER;
+	global $CFG, $DB, $USER, $PAGE;
 
-	local_intelliboard_insert_tracking(false);
-	$context = context_system::instance();
-	if (isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)) {
-		$alt_name = get_config('local_intelliboard', 't0');
-		$def_name = get_string('ts1', 'local_intelliboard');
-		$name = ($alt_name) ? $alt_name : $def_name;
-		$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
-	}
-	if (isloggedin() and get_config('local_intelliboard', 'n10')){
-	    //Check if user is enrolled to any courses with "instructor" role(s)
-		$instructor_roles = get_config('local_intelliboard', 'filter10');
-	    if (!empty($instructor_roles)) {
-	    	$access = false;
-		    $roles = explode(',', $instructor_roles);
-		    if (!empty($roles)) {
-			    foreach ($roles as $role) {
-			    	if ($role and user_has_role_assignment($USER->id, $role)){
-			    		$access = true;
-			    		break;
-			    	}
-			    }
-				if ($access) {
-					$alt_name = get_config('local_intelliboard', 'n11');
-					$def_name = get_string('n10', 'local_intelliboard');
-					$name = ($alt_name) ? $alt_name : $def_name;
-					$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/instructor/index.php'));
+	try {
+		$mynode = $PAGE->navigation->find('myprofile', navigation_node::TYPE_ROOTNODE);
+		$mynode->collapse = true;
+		$mynode->make_inactive();
+
+		local_intelliboard_insert_tracking(false);
+		$context = context_system::instance();
+		if (isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)) {
+			$alt_name = get_config('local_intelliboard', 't0');
+			$def_name = get_string('ts1', 'local_intelliboard');
+			$name = ($alt_name) ? $alt_name : $def_name;
+			$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
+			$nav->add($name, $url);
+			$node = $mynode->add($name, $url, 0, null, 'intelliboard_student');
+			$node->showinflatnavigation = true;
+		}
+
+		if (isloggedin() and get_config('local_intelliboard', 'n10')) {
+		    //Check if user is enrolled to any courses with "instructor" role(s)
+			$instructor_roles = get_config('local_intelliboard', 'filter10');
+		    if (!empty($instructor_roles)) {
+		    	$access = false;
+			    $roles = explode(',', $instructor_roles);
+			    if (!empty($roles)) {
+				    foreach ($roles as $role) {
+				    	if ($role and user_has_role_assignment($USER->id, $role)){
+				    		$access = true;
+				    		break;
+				    	}
+				    }
+					if ($access) {
+						$alt_name = get_config('local_intelliboard', 'n11');
+						$def_name = get_string('n10', 'local_intelliboard');
+						$name = ($alt_name) ? $alt_name : $def_name;
+						$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/instructor/index.php');
+						$nav->add($name, $url);
+
+						$node = $mynode->add($name, $url, 0, null, 'intelliboard_instructor');
+						$node->showinflatnavigation = true;
+					}
 				}
 			}
 		}
-	}
+		if (isloggedin() and get_config('local_intelliboard', 'competency_dashboard') and has_capability('local/intelliboard:competency', $context)) {
+			$alt_name = get_config('local_intelliboard', 'a11');
+			$def_name = get_string('a0', 'local_intelliboard');
+			$name = ($alt_name) ? $alt_name : $def_name;
+			$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/competencies/index.php');
+			$nav->add($name, $url);
+
+			$node = $mynode->add($name, $url, 0, null, 'intelliboard_competency');
+			$node->showinflatnavigation = true;
+		}
+	} catch (Exception $e) {}
 }
 
 function local_intelliboard_user_details()
