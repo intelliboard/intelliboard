@@ -134,7 +134,7 @@ class local_intelliboard_external extends external_api {
 		}
 
 		//Available functions
-		$functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report18_graph','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','report86','get_competency','get_competency_templates','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report92','report93','report94','report95','report96','report97','report98','report99','report99_graph','report100','report101','report102','report103','report104','report105','report106','report107','report108','get_course_modules','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_course_instructors','get_course_discussions','get_cohort_users','get_users','get_grade_letters','get_questions','get_activity','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_module_timespend','get_users_count','get_most_visited_courses','get_no_visited_courses','get_active_users','get_enrollments_per_course','get_size_courses','get_active_ip_users','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_teacher_sql','get_learner','get_learners','get_learner_courses','get_course','get_activity_learners','get_learner_visits_per_day','get_course_visits_per_day','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_reportcard','get_dashboard_avg','get_dashboard_countries','get_dashboard_enrols','get_dashboard_info','get_dashboard_stats','set_notification_enrol','set_notification_auth','count_records','parseFeedbackAnswer','analytic9','get_course_sections','get_course_user_groups','get_all_system_info','get_course_assignments','get_data_question_answers','get_course_databases','get_databases_question');
+		$functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report18_graph','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','get_competency','get_competency_templates','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report92','report93','report94','report95','report96','report97','report98','report99','report99_graph','report100','report101','report102','report103','report104','report105','report106','report107','report108','get_course_modules','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_course_instructors','get_course_discussions','get_cohort_users','get_users','get_grade_letters','get_questions','get_activity','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_module_timespend','get_users_count','get_most_visited_courses','get_no_visited_courses','get_active_users','get_enrollments_per_course','get_size_courses','get_active_ip_users','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_teacher_sql','get_learner','get_learners','get_learner_courses','get_course','get_activity_learners','get_learner_visits_per_day','get_course_visits_per_day','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_reportcard','get_dashboard_avg','get_dashboard_countries','get_dashboard_enrols','get_dashboard_info','get_dashboard_stats','set_notification_enrol','set_notification_auth','count_records','parseFeedbackAnswer','analytic9','get_course_sections','get_course_user_groups','get_all_system_info','get_course_assignments','get_data_question_answers','get_course_databases','get_databases_question');
 
 		$function = (isset($params->function)) ? $params->function : '';
 		if(in_array($function, $functions)){
@@ -4088,8 +4088,8 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {competency_modulecomp} comm ON comm.competencyid=c.id
               LEFT JOIN {course} cou ON cou.id=cc.courseid
               LEFT JOIN {course_completions} cou_com ON cou_com.course=cc.courseid AND cou_com.timecompleted>0
-            WHERE $courseid $sql_having
-            GROUP BY c.id $sql_order", $params);
+            WHERE $courseid
+            GROUP BY c.id $sql_having $sql_order", $params);
     }
     function report86($params)
     {
@@ -4122,8 +4122,8 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {user} u ON u.id=ra.userid
               LEFT JOIN {competency_usercompcourse} comu ON comu.competencyid=com.id AND comu.userid=u.id
               LEFT JOIN {course} c ON c.id=comc.courseid
-            WHERE com.id=:competency_id AND u.id IS NOT NULL $sql_having
-            GROUP BY u.id,c.id $sql_order", $params,false);
+            WHERE com.id=:competency_id AND u.id IS NOT NULL
+            GROUP BY u.id,c.id $sql_having $sql_order", $params,false);
 
         return array('data'=>$data, 'scale'=>$scale->scale_items);
     }
@@ -4152,8 +4152,8 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {competency_plan} cp ON cp.templateid=ct.id
               LEFT JOIN {competency_usercomp} cu ON cu.competencyid=ctc.competencyid AND cu.userid=cp.userid
               LEFT JOIN {user} u ON u.id=cp.userid
-            WHERE ct.id=:template_id AND cp.id IS NOT NULL $sql_having
-            GROUP BY cp.id $sql_order", $params);
+            WHERE ct.id=:template_id AND cp.id IS NOT NULL
+            GROUP BY cp.id $sql_having $sql_order", $params);
     }
     function report101($params)
     {
@@ -4297,15 +4297,15 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {assign} a ON a.id = s.assignment
               LEFT JOIN {course} c ON c.id=a.course
               LEFT JOIN {user} u ON u.id = s.userid
-            
+
               JOIN {modules} m ON m.name='assign'
-              LEFT JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=a.id              
-              $sql1              
-            WHERE s.latest = 1 AND s.timemodified IS NOT NULL AND s.status = 'submitted' AND (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR g.grade IS NULL) 
+              LEFT JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=a.id
+              $sql1
+            WHERE s.latest = 1 AND s.timemodified IS NOT NULL AND s.status = 'submitted' AND (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR g.grade IS NULL)
             $sql_filter1 $sql_having2)
-            
+
             UNION ALL
-            
+
             (SELECT
               CONCAT(cm.id,u.id,quiza.id) AS uniqueid,
               cm.id AS cmid,
@@ -4329,11 +4329,11 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {quiz} qz ON qz.id = quiza.quiz
               LEFT JOIN {course} c ON c.id=qz.course
               LEFT JOIN {user} u ON u.id=quiza.userid
-            
+
               JOIN {modules} m ON m.name='quiz'
               LEFT JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=qz.id
               $sql2
-            WHERE quiza.preview = 0 AND quiza.state = 'finished' AND qas.state='needsgrading' 
+            WHERE quiza.preview = 0 AND quiza.state = 'finished' AND qas.state='needsgrading'
             $sql_filter2 $sql_having1)  $sql_order", $params);
     }
 
@@ -4359,7 +4359,7 @@ class local_intelliboard_external extends external_api {
               u.lastname
               $sql_select
               $sql_columns
-            
+
             FROM {context} ctx
               LEFT JOIN {role_assignments} ra ON ctx.id = ra.contextid AND ra.roleid=5
               LEFT JOIN {user} u ON u.id=ra.userid
@@ -4520,7 +4520,7 @@ class local_intelliboard_external extends external_api {
                   LEFT JOIN {data_fields} df ON df.id=dc.fieldid
                 WHERE df.type='menu' AND dr.dataid=d.id AND dc.content REGEXP '[0-9]' $sql_syb_where
               ) avg_answer
-            
+
             FROM {data} d
               LEFT JOIN {course} c ON c.id=d.course
               $sql_join
@@ -4560,14 +4560,14 @@ class local_intelliboard_external extends external_api {
                   AVG(dc2.content)
                 FROM {data_content} dc2
                 WHERE dc2.fieldid=df.id AND dc2.content REGEXP '[0-9]'
-              ) avg_answer 
+              ) avg_answer
               $sql
-            
+
             FROM {data} d
               LEFT JOIN {course} c ON c.id=d.course
               LEFT JOIN {data_fields} df ON df.dataid=d.id
               LEFT JOIN {data_content} dc ON dc.fieldid=df.id
-            WHERE df.type='menu' AND df.param1 REGEXP '[0-9]' $sql_filter 
+            WHERE df.type='menu' AND df.param1 REGEXP '[0-9]' $sql_filter
             GROUP BY df.id $sql_having $sql_order
             ", $params);
     }
@@ -4580,7 +4580,7 @@ class local_intelliboard_external extends external_api {
               dc.id,
               dc.content,
               COUNT(1) AS count_answers
-            
+
             FROM {data_content} dc
             WHERE $sql_filter
             GROUP BY dc.content", $params, false);
@@ -4595,12 +4595,12 @@ class local_intelliboard_external extends external_api {
             $sql .= " WHERE ".$this->get_filter_in_sql($params->courseid,'d.course',false);
         }
         return $DB->get_records_sql("
-                  SELECT 
-                      d.id, 
+                  SELECT
+                      d.id,
                       d.name,
                       c.fullname as course,
                       c.id as courseid
-                  FROM {data} d  
+                  FROM {data} d
                     LEFT JOIN {course} c ON c.id=d.course
                   $sql", $this->params);
     }
