@@ -6093,7 +6093,6 @@ class local_intelliboard_external extends external_api {
                 (SELECT ROUND(avg((g.finalgrade/g.rawgrademax)*100), 0)
 					FROM {grade_items} gi, {grade_grades} g
 					WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) as grade
-                $sql_columns
             FROM {local_intelliboard_tracking} l
                 LEFT JOIN {course} c ON c.id = l.courseid
             WHERE c.category > 0 AND l.courseid > 0 $sql
@@ -6439,7 +6438,17 @@ class local_intelliboard_external extends external_api {
         global $CFG;
         require_once($CFG->libdir.'/adminlib.php');
 
-        return array('version' => get_component_version('local_intelliboard'));
+        $data = array(
+        	'version' => get_component_version('local_intelliboard'),
+        	'moodle' => $CFG->version
+        );
+        if (get_capability_info('moodle/competency:competencyview')) {
+	        $data['competency'] = 1;
+	    } else {
+	    	$data['competency'] = 0;
+	    }
+
+        return $data;
     }
     public function get_courses($params){
         global $DB;

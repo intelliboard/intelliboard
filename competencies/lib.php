@@ -30,6 +30,9 @@ function intelliboard_competency_access()
 {
     global $USER;
 
+    if (!get_capability_info('moodle/competency:competencyview')) {
+        throw new moodle_exception('no_competency', 'local_intelliboard');
+    }
     if (!get_config('local_intelliboard', 'competency_dashboard')) {
         throw new moodle_exception('invalidaccess', 'error');
     }

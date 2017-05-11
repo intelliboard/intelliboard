@@ -75,7 +75,7 @@ $string['filter5_desc'] = 'Show not active enrollment methods';
 $string['filter6_desc'] = 'Show users with not active enrollment status';
 $string['filter7_desc'] = 'Show not visible Activities/Resourses';
 $string['filter8_desc'] = 'Show only enrolled users (not recommended)';
-$string['intelliboardaccess'] = 'You do not have permission to view Learner Dashboard. Please contact your Administrator for assistance.';
+$string['intelliboardaccess'] = 'You do not have permission to view this page. Please contact your Administrator for assistance.';
 $string['tex1'] = 'IntelliBoard Learner Dashboard is not enabled.';
 $string['account'] = 'Subscription Information';
 $string['te12'] = 'First Name';
@@ -333,6 +333,7 @@ $string['a37'] = 'A competency has not been created. Please contact your System 
 $string['a38'] = 'Courses Linked to Competencies';
 $string['a39'] = 'Competency Totals';
 $string['a40'] = 'Linked Courses';
+$string['no_competency'] = 'Looks like you do not have competencies enabled on your Moodle site.';
 
 
 $string['a0'] = 'Competency Dashboard';
