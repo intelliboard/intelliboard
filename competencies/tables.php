@@ -377,7 +377,8 @@ class intelliboard_learners_table extends table_sql {
             'courseid' => $courseid,
             'competencyid' => $competencyid
         );
-        $sql = "";
+        $learner_roles = get_config('local_intelliboard', 'filter11');
+        list($sql, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
         if($search){
             $sql .= " AND " . $DB->sql_like('u.firstname', ":firstname", false, false);
             $params['firstname'] = "%$search%";
@@ -392,7 +393,7 @@ class intelliboard_learners_table extends table_sql {
             LEFT JOIN {competency_usercompcourse} cu ON cu.courseid = ctx.instanceid AND cu.userid = u.id AND cu.competencyid = c.id
             LEFT JOIN {user} u2 ON u2.id = cu.usermodified
         ";
-        $where = "ctx.instanceid = :courseid AND ra.roleid = 5";
+        $where = "ctx.instanceid = :courseid $sql";
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -458,13 +459,12 @@ class intelliboard_proficient_table extends table_sql {
 
 
         $params = array('courseid' => $courseid);
-        $sql = "";
+        $learner_roles = get_config('local_intelliboard', 'filter11');
+        list($sql, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
         if($search){
             $sql .= " AND " . $DB->sql_like('u.firstname', ":firstname", false, false);
             $params['firstname'] = "%$search%";
         }
-        $learner_roles = get_config('local_intelliboard', 'filter11');
-        list($sql, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
 
         $fields = "u.id, u.firstname,  u.lastname, u.email, ctx.instanceid AS courseid, '' AS actions,
             (SELECT COUNT(DISTINCT comp.id)
