@@ -6496,7 +6496,7 @@ class local_intelliboard_external extends external_api {
         global $DB;
 
         if($params->filter){
-            $sql = "'guest', 'frontpage'";
+            $sql = "'none'";
         }else{
             $sql = "'student', 'guest', 'user', 'frontpage'";
         }
