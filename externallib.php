@@ -599,10 +599,9 @@ class local_intelliboard_external extends external_api {
 		$sql_order = $this->get_order_sql($params, $columns);
 		$sql_columns = $this->get_columns($params, "u.id");
 
-
 		$sql_join = "";
 		if($params->cohortid){
-			$sql_join = "LEFT JOIN {cohort_members} ch ON ch.userid = u.id";
+			$sql_join = " LEFT JOIN {cohort_members} ch ON ch.userid = u.id";
 			$sql_filter .= $this->get_filter_in_sql($params->cohortid, "ch.cohortid");
 		}
 
@@ -610,7 +609,7 @@ class local_intelliboard_external extends external_api {
 			$sql_columns .= ", '0' as timespend, '0' as visits";
 		}else{
 			$sql_columns .= ", MAX(lit.timespend) AS timespend, MAX(lit.visits) AS visits";
-			$sql_join .= "LEFT JOIN (SELECT userid, courseid, SUM(timespend) as timespend, SUM(visits) as visits
+			$sql_join .= " LEFT JOIN (SELECT userid, courseid, SUM(timespend) as timespend, SUM(visits) as visits
 						FROM {local_intelliboard_tracking} GROUP BY courseid, userid) lit ON lit.courseid = c.id AND lit.userid = u.id";
 		}
 
