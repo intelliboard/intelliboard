@@ -4366,6 +4366,7 @@ class local_intelliboard_external extends external_api {
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->custom,'ctx.instanceid');
         $sql_columns = $this->get_columns($params, "u.id");
+        $sql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
 
         $data = $this->get_report_data("
             SELECT
@@ -4376,7 +4377,7 @@ class local_intelliboard_external extends external_api {
               $sql_columns
 
             FROM {context} ctx
-              LEFT JOIN {role_assignments} ra ON ctx.id = ra.contextid AND ra.roleid=5
+              LEFT JOIN {role_assignments} ra ON ctx.id = ra.contextid $sql
               LEFT JOIN {user} u ON u.id=ra.userid
             WHERE ctx.contextlevel = 50 AND u.id IS NOT NULL $sql_filter $sql_having $sql_order", $params,false);
 
