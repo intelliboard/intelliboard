@@ -31,7 +31,11 @@ require_once($CFG->dirroot .'/local/intelliboard/lib.php');
 
 $action = optional_param('action', '', PARAM_TEXT);
 
+if (!isloggedin() or isguestuser()) {
+	return false;
+}
 require_login();
+
 $PAGE->set_context(context_system::instance());
 
 if($action == 'user_courses_list'){

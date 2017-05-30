@@ -35,6 +35,10 @@ $search = clean_raw(optional_param('search', '', PARAM_TEXT));
 require_login();
 require_capability('local/intelliboard:students', context_system::instance());
 
+if ($search) {
+	require_sesskey();
+}
+
 if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 't4')){
 	throw new moodle_exception('invalidaccess', 'error');
 }
@@ -50,7 +54,7 @@ if (isset($intelliboard->content)) {
 	$factorInfo = '';
 }
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>s($search), "id"=>$id)));
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>s($search), "id"=>$id, "sesskey"=> sesskey())));
 $PAGE->set_pagetype('grades');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -103,6 +107,7 @@ echo $OUTPUT->header();
 			<?php endif; ?>
 			<div class="intelliboard-search clearfix">
 				<form action="<?php echo $PAGE->url; ?>" method="GET">
+					<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
 					<input name="id" type="hidden" value="<?php echo $id; ?>" />
 					<span class="pull-left"><input class="form-control" name="search" type="text" value="<?php echo format_string($search); ?>" placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>" /></span>
 					<button class="btn btn-default"><?php echo get_string('search');?></button>

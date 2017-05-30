@@ -39,7 +39,11 @@ $download = optional_param('download', '', PARAM_ALPHA);
 require_login();
 intelliboard_competency_access();
 
-if(!get_config('local_intelliboard', 'competency_dashboard')){
+if ($search) {
+	require_sesskey();
+}
+
+if (!get_config('local_intelliboard', 'competency_dashboard')) {
 	throw new moodle_exception('invalidaccess', 'error');
 }
 
@@ -59,7 +63,8 @@ $params = array(
 	"userid"=>$userid,
 	"action"=>$action,
 	"search"=> $search,
-	'competencyid'=> $competencyid
+	'competencyid'=> $competencyid,
+	"sesskey"=>sesskey()
 );
 $PAGE->set_url(new moodle_url("/local/intelliboard/competencies/courses.php",$params));
 $PAGE->set_pagetype('competencies');
@@ -71,7 +76,7 @@ $PAGE->requires->jquery();
 $PAGE->requires->js('/local/intelliboard/assets/js/jquery.circlechart.js');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 
-if($action == 'learner'){
+if ($action == 'learner') {
 	$table = new intelliboard_learner_table('table', $courseid, $userid, $search);
 	$data = intelliboard_learner_total($userid, $courseid);
 	$user = $DB->get_record('user', array('id'=>$userid));
@@ -84,7 +89,7 @@ if($action == 'learner'){
 		"userid"=>$userid,
 		"action"=> 'learner'
 	)));
-}elseif($action == 'activities'){
+} elseif($action == 'activities') {
 	$table = new intelliboard_activities_table('table', $courseid, $competencyid, $search);
 	$data = intelliboard_learners_total($courseid, $competencyid);
 	$PAGE->navbar->add(get_string('a1','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
@@ -96,7 +101,7 @@ if($action == 'learner'){
 		'competencyid'=> $competencyid,
 		"action"=> 'activities'
 	)));
-}elseif($action == 'learners'){
+} elseif($action == 'learners') {
 	$table = new intelliboard_learners_table('table', $courseid, $competencyid, $search);
 	$data = intelliboard_learners_total($courseid, $competencyid);
 	$PAGE->navbar->add(get_string('a1','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
@@ -108,21 +113,21 @@ if($action == 'learner'){
 		'competencyid'=> $competencyid,
 		"action"=> 'learners'
 	)));
-}elseif($action == 'proficient'){
+} elseif ($action == 'proficient') {
 	$table = new intelliboard_proficient_table('table', $courseid, $search);
 	$course = intelliboard_course_total($courseid);
 	$PAGE->navbar->add(get_string('a12','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
 		"id"=>$courseid,
 		"action"=> 'proficient'
 	)));
-}elseif($action == 'competencies'){
+} elseif ($action == 'competencies') {
 	$table = new intelliboard_competencies_table('table', $courseid, $search);
 	$course = intelliboard_course_total($courseid);
 	$PAGE->navbar->add(get_string('a1','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
 		"id"=>$courseid,
 		"action"=> 'competencies'
 	)));
-}else{
+} else {
 	$table = new intelliboard_courses_table('table', $search);
 }
 
@@ -199,6 +204,7 @@ echo $OUTPUT->header();
 		<div class="intelliboard-report-wrap">
 			<div class="intelliboard-search clearfix">
 				<form action="<?php echo $PAGE->url; ?>" method="GET">
+					<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
 					<input name="id" type="hidden" value="<?php echo $courseid; ?>" />
 					<input name="userid" type="hidden" value="<?php echo $userid; ?>" />
 					<input name="competencyid" type="hidden" value="<?php echo $competencyid; ?>" />

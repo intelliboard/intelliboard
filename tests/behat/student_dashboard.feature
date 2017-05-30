@@ -1,4 +1,4 @@
-@local @intelliboard
+@local @local_intelliboard
 Feature: Student Dashboard link on Site Homepage
   In order to access the Student Dashboard
   As a student
@@ -10,4 +10,4 @@ Feature: Student Dashboard link on Site Homepage
       | student1 | Student1  | Student1 | student1@example.com |
     When I log in as "student1"
     And I am on homepage
-    Then I should see "IntelliBoard" in the "Navigation" "block"
+    Then I should not see "IntelliBoard" in the "Navigation" "block"

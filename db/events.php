@@ -35,5 +35,3 @@ $observers = array (
         'callback'  => 'local_intelliboard_observer::user_enrolment_created',
     )
 );
-
-?>

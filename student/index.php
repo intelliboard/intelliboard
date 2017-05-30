@@ -70,7 +70,11 @@ if($activity_setting){
     $USER->activity_time = (isset($USER->activity_time))?$USER->activity_time:-1;
 }
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/index.php", array("type"=>s($type), "search"=>s($search))));
+if ($search or $activity_setting) {
+    require_sesskey();
+}
+
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/index.php", array("type"=>s($type), "search"=>s($search), "sesskey"=> sesskey())));
 $PAGE->set_pagetype('home');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -228,6 +232,8 @@ echo $OUTPUT->header();
                             <?php endif; ?>
                             <span>
 						<form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
+                            <input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
+
 							<input class="intype" name="type" type="hidden" value="assignment" />
 							<input class="intsearch" name="search" placeholder="<?php echo get_string('search');?>" type="text" value="<?php echo ($type == 'assignment' or $type == 'quiz')?$search:''; ?>" />
 							<button type="submit"><i class="ion-ios-search-strong"></i></button>
@@ -247,8 +253,8 @@ echo $OUTPUT->header();
                                     </thead>
                                     <tbody>
                                     <?php if(!count($assignments['data'])): ?>
-                                        <tr colspan="3">
-                                            <td><?php echo get_string('no_data', 'local_intelliboard'); ?></td>
+                                        <tr>
+                                            <td colspan="4"><?php echo get_string('no_data', 'local_intelliboard'); ?></td>
                                         </tr>
                                     <?php endif; ?>
 
@@ -352,6 +358,8 @@ echo $OUTPUT->header();
 
                             <div class="tab intsettings-box settings-tab">
                                 <form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
+                                    <input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
+
                                     <input name="activity_setting" type="hidden" value="1" />
 
                                     <div class="form-group">
@@ -389,6 +397,8 @@ echo $OUTPUT->header();
 
                             <span>
 						<form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
+                            <input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
+
 							<input name="type" type="hidden" value="course" />
 							<input class="intsearch" name="search" placeholder="<?php echo get_string('search');?>" type="text" value="<?php echo ($type == 'course')?format_string($search):''; ?>" />
 							<button type="submit"><i class="ion-ios-search-strong"></i></button>

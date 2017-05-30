@@ -343,7 +343,7 @@
 .intelliboard-upgrade button{margin-left:80px;margin-bottom:0;}
 
 .intelloboard-btn{border:1px solid #333;padding:6px 10px;color:#333;border-radius:3px;text-decoration:none;}
-.intelloboard-btn:hover{color:#00;}
+.intelloboard-btn:hover{color:#000;}
 
 .intelloboard-alert{width:500px;border:1px solid #eee;border-radius:1px;padding:20px;padding-left:80px;position:relative;margin:0 auto 30px;}
 .intelloboard-alert i{position:absolute;top:20px;left:20px;font-size:56px; }

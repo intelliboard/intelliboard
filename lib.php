@@ -223,8 +223,8 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 			return false;
 		}
 		$intelliboardPage = (isset($_COOKIE['intelliboardPage'])) ? clean_param($_COOKIE['intelliboardPage'], PARAM_ALPHANUMEXT) : '';
-		$intelliboardParam = (isset($_COOKIE['intelliboardParam'])) ? clean_param($_COOKIE['intelliboardParam'], 0, PARAM_INT) : 0;
-		$intelliboardTime = (isset($_COOKIE['intelliboardTime'])) ? clean_param($_COOKIE['intelliboardTime'], 0, PARAM_INT) : 0;
+		$intelliboardParam = (isset($_COOKIE['intelliboardParam'])) ? clean_param($_COOKIE['intelliboardParam'], PARAM_INT) : 0;
+		$intelliboardTime = (isset($_COOKIE['intelliboardTime'])) ? clean_param($_COOKIE['intelliboardTime'], PARAM_INT) : 0;
 
 		if(!empty($intelliboardPage)){
 			$userDetails = (object)local_intelliboard_user_details();
@@ -359,7 +359,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 		$params->intelliboardPeriod = 1000;
 
 		$PAGE->requires->js('/local/intelliboard/module.js', false);
-		$PAGE->requires->js_function_call('intelliboardInit', array($params), false);
+		$PAGE->requires->js_init_call('intelliboardInit', array($params), false);
 
 		return true;
 	}

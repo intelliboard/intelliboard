@@ -38,6 +38,10 @@ $search = clean_raw(optional_param('search', '', PARAM_TEXT));
 require_login();
 intelliboard_instructor_access();
 
+if ($search) {
+	require_sesskey();
+}
+
 $params = array(
 	'do'=>'instructor',
 	'mode'=> 2
@@ -50,7 +54,7 @@ if (isset($intelliboard->content)) {
 }
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/instructor/courses.php",
-			array("search"=>$search,"action"=>$action,"id"=>$courseid,"userid"=>$userid,"cmid"=>$cmid)));
+			array("search"=>$search, "action"=>$action, "id"=>$courseid, "userid"=>$userid, "cmid"=>$cmid, "sesskey"=> sesskey())));
 $PAGE->set_pagetype('courses');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -147,7 +151,6 @@ echo $OUTPUT->header();
 							<?php endif; ?>
 							<span class="intelliboard-tooltip" title='<?php echo get_string('total_time_spent_enrolled_learners','local_intelliboard'); ?>'><i class='ion-ios-clock-outline'></i> <?php echo seconds_to_time($course->timespend); ?> </span>
 							<span class="intelliboard-tooltip" title='<?php echo get_string('total_visits_enrolled_learners','local_intelliboard'); ?>'><i class='ion-log-in'></i> <?php echo (int)$course->visits; ?></span>
-							</p>
 							</div>
 							<ul class="totals">
 								<li><?php echo (int)$course->learners; ?> <span><?php echo get_string('learners_enrolled','local_intelliboard'); ?></span></li>
@@ -166,7 +169,6 @@ echo $OUTPUT->header();
 								<?php endif; ?>
 								<span class="intelliboard-tooltip" title='<?php echo get_string('total_time_spent_enrolled_learners','local_intelliboard'); ?>'><i class='ion-ios-clock-outline'></i> <?php echo seconds_to_time($course->timespend); ?></span>
 								<span class="intelliboard-tooltip" title='<?php echo get_string('total_visits_enrolled_learners','local_intelliboard'); ?>'><i class='ion-log-in'></i> <?php echo (int)$course->visits; ?></span>
-								</p>
 							</div>
 							<ul class="totals">
 								<li><?php echo (int)$course->sections; ?><span><?php echo get_string('sections','local_intelliboard'); ?></span></li>
@@ -181,6 +183,8 @@ echo $OUTPUT->header();
 
 			<div class="intelliboard-search clearfix">
 				<form action="<?php echo $PAGE->url; ?>" method="GET">
+					<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
+
 					<input name="id" type="hidden" value="<?php echo $courseid; ?>" />
 					<input name="action" type="hidden" value="<?php echo $action; ?>" />
 

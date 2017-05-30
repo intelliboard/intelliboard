@@ -1050,12 +1050,6 @@ class local_intelliboard_external extends external_api {
 
 	public function report17($params)
     {
-        global $DB;
-
-        $date = new DateTime('2000-01-01', new DateTimeZone(core_date::get_server_timezone()));
-        $date_params = array('timezone'=>$date->format('P'));
-        $DB->execute('SET @@session.time_zone = :timezone', $date_params);
-
         $columns = array_merge(array("c.fullname", "f.name", "avg_month", "avg_week", "avg_day", "popular_hour.hour", "popular_week.week", "popular_day.day"), $this->get_filter_columns($params));
 
 
@@ -2320,7 +2314,7 @@ class local_intelliboard_external extends external_api {
 				LEFT JOIN {user} u ON u.id = ue.userid
 				LEFT JOIN {assign_submission} s ON s.assignment = a.id AND s.userid = u.id
 				LEFT JOIN {course} c ON c.id = a.course
-				LEFT JOIN {course_modules} cm ON cm.instance = a.id
+				LEFT JOIN {course_modules} cm ON cm.instance = a.id AND cm.module = 1
 			WHERE (s.timemodified > a.duedate or s.timemodified IS NULL) $sql_filter $sql_having $sql_order", $params);
     }
 

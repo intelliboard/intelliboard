@@ -34,7 +34,7 @@ var intelliboardPage = '';
 var intelliboardParam = '';
 var intelliboardTime = 0;
 
-function intelliboardInit(options){
+function intelliboardInit(Y, options){
 	options = options || {};
 	intelliboardAjax = options.intelliboardAjax || intelliboardAjax;
 	intelliboardAjaxUrl = options.intelliboardAjaxUrl || intelliboardAjaxUrl;

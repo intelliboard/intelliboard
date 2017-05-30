@@ -35,6 +35,10 @@ $search = optional_param('search', '', PARAM_ALPHANUMEXT);
 require_login();
 require_capability('local/intelliboard:students', context_system::instance());
 
+if ($search) {
+	require_sesskey();
+}
+
 if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 't3')){
 	throw new moodle_exception('invalidaccess', 'error');
 }
@@ -74,7 +78,7 @@ if($courseid and $action == 'details'){
 	exit;
 }
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/courses.php", array("search"=>s($search))));
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/courses.php", array("search"=>s($search), "sesskey"=> sesskey())));
 $PAGE->set_pagetype('courses');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -106,6 +110,8 @@ echo $OUTPUT->header();
 
 		<div class="intelliboard-search clearfix">
 			<form action="<?php echo $PAGE->url; ?>" method="GET">
+				<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
+
 				<span class="pull-left"><input class="form-control" name="search" type="text" value="<?php echo format_string($search); ?>" placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>" /></span>
 				<button class="btn btn-default"><?php echo get_string('search');?></button>
 				<span>

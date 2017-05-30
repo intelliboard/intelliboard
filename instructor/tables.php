@@ -246,7 +246,7 @@ class intelliboard_activities_grades_table extends table_sql {
     function col_actions($values) {
         global  $PAGE;
 
-        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'activity', 'cmid'=>$values->id, 'id'=>$values->course)), 'Grades', array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
+        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'activity', 'cmid'=>$values->id, 'id'=>$values->course)), get_string('grades','local_intelliboard'), array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
     }
 }
 
@@ -340,7 +340,7 @@ class intelliboard_activity_grades_table extends table_sql {
     function col_actions($values) {
         global  $PAGE;
 
-        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), 'Grades', array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
+        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), get_string('grades','local_intelliboard'), array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
     }
 }
 
@@ -452,7 +452,7 @@ class intelliboard_learners_grades_table extends table_sql {
         global  $PAGE;
 
 
-        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), 'Grades', array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
+        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), get_string('grades','local_intelliboard'), array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
     }
 }
 class intelliboard_learner_grades_table extends table_sql {

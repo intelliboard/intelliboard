@@ -26,8 +26,11 @@
 
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/competencies/lib.php');
 
 require_login();
+intelliboard_competency_access();
+
 $params = array(
 	'do'=>'help',
 	'mode'=> 3

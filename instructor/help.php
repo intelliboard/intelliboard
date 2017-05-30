@@ -26,8 +26,10 @@
 
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 
 require_login();
+intelliboard_instructor_access();
 
 $email = get_config('local_intelliboard', 'te1');
 $params = array(

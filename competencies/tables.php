@@ -257,7 +257,7 @@ class intelliboard_learner_table extends table_sql {
             $grade = $scale->scale_items[(int)$values->grade-1];
             return html_writer::tag("div", $grade, array("class" => "label"));
         } else {
-            return 'Not rated';
+            return get_string('a35','local_intelliboard');
         }
 
     }
@@ -412,7 +412,7 @@ class intelliboard_learners_table extends table_sql {
             $grade = $scale->scale_items[(int)$values->grade-1];
             return html_writer::tag("div", $grade, array("class" => "label"));
         } else {
-            return 'Not rated';
+            return get_string('a35','local_intelliboard');
         }
 
     }
