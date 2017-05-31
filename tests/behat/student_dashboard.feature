@@ -16,10 +16,3 @@ Feature: Student Dashboard link on Site Homepage
     And I enrol "Teacher 1" user as "Teacher"
     And I enrol "Student 1" user as "Student"
     And I log out
-    When I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    Then I should see "Instructor Dashboard"
-    And I log out
-    And I log in as "student1"
-    And I am on "Course 1" course homepage
-    Then I should see "Learner Dashboard"
