@@ -171,7 +171,11 @@ class local_intelliboard_external extends external_api {
 	}
 	private function get_filter_enrolled_users_sql($params, $column)
 	{
-		return ($params->filter_enrolled_users) ? " AND {$column} IN (SELECT DISTINCT userid FROM {user_enrolments})" : "";
+		$sql = $this->get_filter_course_sql($params, 'c.');
+		$sql .= $this->get_filter_enrol_sql($params, 'e.');
+		$sql .= $this->get_filter_enrol_sql($params, 'ue.');
+
+		return ($params->filter_enrolled_users) ? " AND {$column} IN (SELECT DISTINCT userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.enrolid = e.id AND c.id = e.courseid $sql)" : "";
 	}
 	private function get_filter_module_sql($params, $prefix)
 	{
@@ -2314,7 +2318,8 @@ class local_intelliboard_external extends external_api {
 				LEFT JOIN {user} u ON u.id = ue.userid
 				LEFT JOIN {assign_submission} s ON s.assignment = a.id AND s.userid = u.id
 				LEFT JOIN {course} c ON c.id = a.course
-				LEFT JOIN {course_modules} cm ON cm.instance = a.id AND cm.module = 1
+				LEFT JOIN {modules} m ON m.name = 'assign'
+				LEFT JOIN {course_modules} cm ON cm.instance = a.id AND cm.module = m.id
 			WHERE (s.timemodified > a.duedate or s.timemodified IS NULL) $sql_filter $sql_having $sql_order", $params);
     }
 
