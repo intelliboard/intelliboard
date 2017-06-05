@@ -124,7 +124,7 @@ function intelliboard_data($type, $userid) {
                     (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
                     (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid3 AND courseid = c.id) AS duration,
                     (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND completion > 0 AND course = c.id) AS modules,
-                    (SELECT COUNT(id) FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
+                    (SELECT timecompleted FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
                   FROM {user_enrolments} ue
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid
                     LEFT JOIN {course} c ON c.id = e.courseid
@@ -162,7 +162,7 @@ function intelliboard_data($type, $userid) {
                 (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
                 (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
                 (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND completion > 0 AND course = c.id) AS modules,
-                (SELECT COUNT(id) FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
+                (SELECT timecompleted FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
                 $sql_select
             FROM {user_enrolments} ue
                 LEFT JOIN {enrol} e ON e.id = ue.enrolid
