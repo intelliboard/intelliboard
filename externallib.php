@@ -225,7 +225,7 @@ class local_intelliboard_external extends external_api {
 		if($params->filter and !empty($columns)){
 			$sql_arr = array(); $filter_columns = explode(",", $params->filter_columns);
 			foreach($columns as $i => $column){
-				if(in_array($i, $filter_columns)){
+				if($column and in_array($i, $filter_columns)){
                     $this->prfx = $this->prfx + 1;
 					$key = clean_param($column, PARAM_ALPHANUMEXT).$this->prfx;
 					$sql_arr[] = $DB->sql_like($column, ":$key", false, false);
