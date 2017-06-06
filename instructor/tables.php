@@ -321,7 +321,15 @@ class intelliboard_activity_grades_table extends table_sql {
         return $html;
     }
     function col_timecompleted($values) {
-      return ($values->timecompleted and $values->completionstate) ? get_string('completed_on','local_intelliboard', date('m/d/Y', $values->timecompleted)) : get_string('incomplete','local_intelliboard');
+        if ($values->completionstate == 3) {
+            return get_string('failed','local_intelliboard');
+        } elseif ($values->completionstate == 2) {
+           return get_string('passed','local_intelliboard');
+        } elseif ($values->timecompleted and $values->completionstate == 1) {
+            return get_string('completed_on','local_intelliboard', date('m/d/Y', $values->timecompleted));
+        } else {
+            return get_string('incomplete','local_intelliboard');
+        }
     }
     function col_visits($values) {
         return html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));

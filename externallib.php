@@ -1640,11 +1640,13 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
 
-        $sql_join_filter = "";
+        $sql_join_filter1 = "";
+        $sql_join_filter2 = "";
+        $sql_join_filter3 = "";
         if(isset($params->custom) and $params->custom == 1){
-            $sql_join_filter1 .= $this->get_filterdate_sql($params, "l.timepoint");
-            $sql_join_filter2 .= $this->get_filterdate_sql($params, "l.timepoint");
-            $sql_join_filter3 .= $this->get_filterdate_sql($params, "l.timepoint");
+            $sql_join_filter1 = $this->get_filterdate_sql($params, "l.timepoint");
+            $sql_join_filter2 = $this->get_filterdate_sql($params, "l.timepoint");
+            $sql_join_filter3 = $this->get_filterdate_sql($params, "l.timepoint");
         }else{
             $sql_filter .= $this->get_filterdate_sql($params, "u.timecreated");
         }

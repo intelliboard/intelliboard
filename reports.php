@@ -37,7 +37,7 @@ $id = optional_param('id', 1, PARAM_INT);
 $page = optional_param('page', 0, PARAM_INT);
 $length = optional_param('length', 20, PARAM_INT);
 $filter = clean_raw(optional_param('filter', '', PARAM_RAW));
-$daterange = optional_param('daterange', 3, PARAM_INT);
+$daterange = clean_raw(optional_param('daterange', '', PARAM_RAW));
 $download = optional_param('download', '', PARAM_ALPHA);
 $format = optional_param('format', 'html', PARAM_ALPHA);
 $custom = optional_param('custom', 0, PARAM_INT);
@@ -48,21 +48,31 @@ $userid = optional_param('userid', 0, PARAM_INT);
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $cohortid = optional_param('cohortid', 0, PARAM_INT);
 
-if($download){
+if ($download) {
 	$length = 100000; //Max. records to export
-}else{
+} else {
 	admin_externalpage_setup('intelliboardreports');
 }
 
+if (!$daterange) {
+	$timestart = strtotime('-7 days');
+	$timefinish = time();
+
+	$timestart_date = date("Y-m-d", $timestart);
+	$timefinish_date = date("Y-m-d", $timefinish);
+
+	$daterange = $timestart_date . ' to ' . $timefinish_date;
+} else {
+	$range = explode(" to ", $daterange);
+
+	$timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
+	$timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
+
+	$timestart_date = date("Y-m-d", $timestart);
+	$timefinish_date = date("Y-m-d", $timefinish);
+}
+
 if($id){
-	switch ($daterange) {
-		case 1: $timestart = strtotime('today'); $timefinish = time(); break;
-		case 2: $timestart = strtotime('yesterday'); $timefinish = strtotime('today'); break;
-		case 3: $timestart = strtotime('-7 days'); $timefinish = time(); break;
-		case 4: $timestart = strtotime('-30 days'); $timefinish = time(); break;
-		case 5: $timestart = strtotime('-90 days'); $timefinish = time(); break;
-		default: $timestart = 0; $timefinish = time();
-	}
 	$page = ($page)?$page:1;
 	$params = (object) array(
 		'filter_user_deleted'=>get_config('local_intelliboard', 'filter1'),
@@ -122,11 +132,30 @@ $PAGE->set_pagetype('reports');
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
+$PAGE->requires->jquery();
+$PAGE->requires->js('/local/intelliboard/assets/js/flatpickr.min.js');
+$PAGE->requires->css('/local/intelliboard/assets/css/flatpickr.min.css');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 echo $OUTPUT->header();
 ?>
 <div class="intelliboard-page">
 	<?php include("views/menu.php"); ?>
+	<script type="text/javascript">
+		jQuery(document).ready(function(){
+			$("#daterange").flatpickr({
+			    mode: "range",
+			    dateFormat: "Y-m-d",
+			    defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
+			    onReady: function(selectedDates, dateStr, instance){
+					jQuery('<div/>', {
+					    class: 'flatpickr-calendar-title',
+					    text: $("#daterange").attr('title')
+					}).appendTo('.flatpickr-calendar');
+
+    			}
+			});
+		});
+	</script>
 	<div class="intelliboard-content"><?php echo intelliboard_clean($intelliboard->content); ?></div>
 	<?php include("views/footer.php"); ?>
 </div>

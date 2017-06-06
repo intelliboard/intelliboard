@@ -34,7 +34,7 @@ $trigger = optional_param('trigger', 1, PARAM_INT);
 $page = optional_param('page', 0, PARAM_INT);
 $length = optional_param('length', 20, PARAM_INT);
 $filter = optional_param('filter', '', PARAM_RAW);
-$daterange = optional_param('daterange', 3, PARAM_INT);
+$daterange = clean_raw(optional_param('daterange', '', PARAM_RAW));
 
 $custom = optional_param('custom', 0, PARAM_INT);
 $custom2 = optional_param('custom2', 0, PARAM_INT);
@@ -51,6 +51,24 @@ if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 
 	throw new moodle_exception('invalidaccess', 'error');
 }
 $email = get_config('local_intelliboard', 'te1');
+
+if (!$daterange) {
+	$timestart = strtotime('-7 days');
+	$timefinish = time();
+
+	$timestart_date = date("Y-m-d", $timestart);
+	$timefinish_date = date("Y-m-d", $timefinish);
+
+	$daterange = $timestart_date . ' to ' . $timefinish_date;
+} else {
+	$range = explode(" to ", $daterange);
+
+	$timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
+	$timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
+
+	$timestart_date = date("Y-m-d", $timestart);
+	$timefinish_date = date("Y-m-d", $timefinish);
+}
 
 $mode_filter = true;
 if($trigger){
@@ -69,15 +87,7 @@ if($trigger){
 }
 
 if($mode_filter){
-	switch ($daterange) {
-		case 1: $timestart = strtotime('today'); $timefinish = time(); break;
-		case 2: $timestart = strtotime('yesterday'); $timefinish = strtotime('today'); break;
-		case 3: $timestart = strtotime('-7 days'); $timefinish = time(); break;
-		case 4: $timestart = strtotime('-30 days'); $timefinish = time(); break;
-		case 5: $timestart = strtotime('-90 days'); $timefinish = time(); break;
-		case 6: $timestart = 0; $timefinish = time(); break;
-	}
-
+	$page = ($page)?$page:1;
 	$params = (object) array(
 		'filter_user_deleted'=>get_config('local_intelliboard', 'filter1'),
 		'filter_user_suspended'=>get_config('local_intelliboard', 'filter2'),
@@ -96,7 +106,7 @@ if($mode_filter){
 		'custom2'=> $custom2,
 		'custom3'=> $custom3,
 		'length'=>$length,
-		'start'=>$page,
+		'start'=>(($page-1) * $length),
 		'userid'=>$userid,
 		'courseid'=>$courseid,
 		'cohortid'=>$cohortid,
@@ -141,7 +151,9 @@ $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->requires->jquery();
+$PAGE->requires->js('/local/intelliboard/assets/js/flatpickr.min.js');
 $PAGE->requires->js('/local/intelliboard/assets/js/jquery.circlechart.js');
+$PAGE->requires->css('/local/intelliboard/assets/css/flatpickr.min.css');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 echo $OUTPUT->header();
 ?>
@@ -151,6 +163,22 @@ echo $OUTPUT->header();
 <?php else: ?>
 <div class="intelliboard-page intelliboard-student">
 	<?php include("views/menu.php"); ?>
+		<script type="text/javascript">
+		jQuery(document).ready(function(){
+			$("#daterange").flatpickr({
+			    mode: "range",
+			    dateFormat: "Y-m-d",
+			    defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
+			    onReady: function(selectedDates, dateStr, instance){
+					jQuery('<div/>', {
+					    class: 'flatpickr-calendar-title',
+					    text: $("#daterange").attr('title')
+					}).appendTo('.flatpickr-calendar');
+
+    			}
+			});
+		});
+	</script>
 	<div class="intelliboard-content"><?php echo intelliboard_clean($intelliboard->content); ?></div>
 	<?php include("../views/footer.php"); ?>
 </div>
