@@ -317,10 +317,11 @@ class intelliboard_activities_table extends table_sql {
             $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
+        $grade_avg = intelliboard_grade_sql(true);
 
         $fields = "cm.id, m.name AS module,
             (SELECT COUNT(cmc.id) FROM {course_modules_completion} cmc WHERE cmc.completionstate=1 AND cmc.coursemoduleid = cm.id) AS completed,
-            (SELECT AVG((g.finalgrade/g.rawgrademax)*100) FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name) AS grade
+            (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name) AS grade
             $sql_columns";
         $from = "{modules} m, {competency_modulecomp} cym, {course_modules} cm";
         $where = "m.id = cm.module AND cm.visible = 1 AND cm.course = :courseid AND cym.cmid = cm.id AND cym.competencyid = :competencyid $sql";

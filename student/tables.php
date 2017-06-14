@@ -70,8 +70,10 @@ class intelliboard_courses_grades_table extends table_sql {
             $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
             $params['fullname'] = "%$search%";
         }
+        $grade_single = intelliboard_grade_sql();
+        $grade_avg = intelliboard_grade_sql(true);
 
-        $fields = "c.id, c.fullname as course, c.timemodified, c.startdate, c.enablecompletion, cri.gradepass, (g.finalgrade/g.rawgrademax)*100 AS grade, gc.average, cc.timecompleted, m.modules, cm.completedmodules, '' as actions, '' as letter";
+        $fields = "c.id, c.fullname as course, c.timemodified, c.startdate, c.enablecompletion, cri.gradepass, $grade_single AS grade, gc.average, cc.timecompleted, m.modules, cm.completedmodules, '' as actions, '' as letter";
 
         $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, MIN(ue.timemodified) AS timemodified, ue.userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.userid = :userid  AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid AND c.visible = 1 GROUP BY c.id, ue.userid) c
 
@@ -81,7 +83,7 @@ class intelliboard_courses_grades_table extends table_sql {
             LEFT JOIN {course_completion_criteria} as cri ON cri.course = c.id AND cri.criteriatype = 6
             LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = c.userid
-            LEFT JOIN (SELECT gi.courseid, AVG( (g.finalgrade/g.rawgrademax)*100) AS average FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id";
+            LEFT JOIN (SELECT gi.courseid, $grade_avg AS average FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id";
         $where = "c.id > 0 $sql";
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -185,7 +187,9 @@ class intelliboard_activities_grades_table extends table_sql {
         $params['userid2'] = $userid;
         $params['courseid'] = $courseid;
 
-        $fields = "gi.id, gi.itemname, cm.id as cmid, gi.itemmodule, cmc.timemodified as timecompleted, (g.finalgrade/g.rawgrademax)*100 AS grade,
+        $grade_single = intelliboard_grade_sql();
+
+        $fields = "gi.id, gi.itemname, cm.id as cmid, gi.itemmodule, cmc.timemodified as timecompleted, $grade_single AS grade,
             CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS timepoint";
         $from = "{grade_items} gi
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid1

@@ -49,6 +49,14 @@ function intelliboard_url(){
 	}
 	return 'https://'.$domain.'intelliboard.net';
 }
+function intelliboard_grade_sql($avg = false, $round = 0, $alias = 'g.')
+{
+    if ($avg) {
+        return "ROUND(AVG(CASE WHEN {$alias}rawgrademax > 0 THEN ({$alias}finalgrade/{$alias}rawgrademax)*100 ELSE {$alias}finalgrade END), $round)";
+    } else {
+        return "ROUND((CASE WHEN {$alias}rawgrademax > 0 THEN ({$alias}finalgrade/{$alias}rawgrademax)*100 ELSE {$alias}finalgrade END), $round)";
+    }
+}
 function intelliboard_filter_in_sql($sequence, $column, $params = array(), $prfx = 0, $sep = true, $equal = true)
 {
 	global $DB;

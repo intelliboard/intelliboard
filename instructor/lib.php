@@ -57,6 +57,7 @@ function intelliboard_course_learners_total($courseid)
     $params = array('courseid' => $courseid);
     list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
     $params = array_merge($params,$sql_params);
+    $grade_avg = intelliboard_grade_sql(true);
 
     return $DB->get_record_sql("
         SELECT c.id,c.fullname, c.startdate, c.enablecompletion,
@@ -65,7 +66,7 @@ function intelliboard_course_learners_total($courseid)
             COUNT(DISTINCT ra.userid) as learners,
             COUNT(DISTINCT g.userid) as learners_graduated,
             COUNT(DISTINCT cc.id) as learners_completed,
-            AVG((g.finalgrade/g.rawgrademax)*100) AS grade,
+            $grade_avg AS grade,
             SUM(l.timespend) as timespend,
             SUM(l.visits) as visits
         FROM {role_assignments} ra
@@ -91,17 +92,18 @@ function intelliboard_learner_data($userid, $courseid)
         'u2' => $userid,
         'u3' => $userid
     );
+    $grade_single = intelliboard_grade_sql();
 
     return  $DB->get_record_sql("SELECT
-        DISTINCT(u.id) as userid,
+        DISTINCT(u.id) AS userid,
         u.email,
         ul.timeaccess,
         ue.timemodified as enrolled,
-        CONCAT(u.firstname, ' ', u.lastname) as learner,
+        CONCAT(u.firstname, ' ', u.lastname) AS learner,
         e.courseid,
-        c.fullname as course,
+        c.fullname AS course,
         cc.timecompleted,
-        (g.finalgrade/g.rawgrademax)*100 as grade, cmc.progress,
+        $grade_single AS grade, cmc.progress,
         l.timespend, l.visits
      FROM
         {user_enrolments} ue
@@ -130,6 +132,7 @@ function intelliboard_activities_data($courseid)
 
     list($sql1, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
     $params = array_merge($params,$sql_params);
+    $grade_avg = intelliboard_grade_sql(true);
 
     return $DB->get_record_sql("
         SELECT
@@ -143,7 +146,7 @@ function intelliboard_activities_data($courseid)
             (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
             (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc
                 WHERE cm.visible = 1 AND cm.course = c.id AND cmc.completionstate=1 AND cmc.coursemoduleid = cm.id) AS completed,
-            (SELECT AVG((g.finalgrade/g.rawgrademax)*100) FROM {grade_items} gi, {grade_grades} g
+            (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g
                 WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS grade
         FROM {course} c
             LEFT JOIN (
@@ -169,6 +172,7 @@ function intelliboard_activity_data($cmid, $courseid)
     $params['courseid'] = $courseid;
     $params['cmid2'] = $cmid;
     $params['cmid3'] = $cmid;
+    $grade_avg = intelliboard_grade_sql(true);
 
     return $DB->get_record_sql("
         SELECT
@@ -179,7 +183,7 @@ function intelliboard_activity_data($cmid, $courseid)
             cs.section,
             m.name as module, l.visits, l.timespend,
             (SELECT COUNT(id) FROM {course_modules_completion} WHERE completionstate=1 AND coursemoduleid=:cmid) AS completed,
-            (SELECT AVG((g.finalgrade/g.rawgrademax)*100) FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.itemmodule = :module AND gi.iteminstance = :instance2) AS grade
+            (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.itemmodule = :module AND gi.iteminstance = :instance2) AS grade
         FROM {course_modules} cm
             LEFT JOIN {modules} m ON m.id = cm.module
             LEFT JOIN {course} c ON c.id = cm.course
@@ -204,12 +208,13 @@ function intelliboard_instructor_correlations($page, $length)
     );
     list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+    $grade_avg = intelliboard_grade_sql(true);
 
     $items = $DB->get_records_sql("
             SELECT
                 c.id,
                 c.fullname,
-                AVG((g.finalgrade/g.rawgrademax)*100) AS grade,
+                $grade_avg AS grade,
                 SUM(l.duration) as duration, '0' AS duration_calc
             FROM {course} c
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
@@ -300,6 +305,7 @@ function intelliboard_instructor_stats()
     );
     list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+    $grade_avg = intelliboard_grade_sql(true);
 
     return $DB->get_record_sql("
         SELECT
@@ -315,7 +321,7 @@ function intelliboard_instructor_stats()
                 COUNT(DISTINCT ra.userid) as enrolled,
                 COUNT(DISTINCT cc.userid) as completed,
                 COUNT(DISTINCT g.id) as grades,
-                AVG((g.finalgrade/g.rawgrademax)*100) as grade
+                $grade_avg AS grade
             FROM {role_assignments} ra
                 LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                 LEFT JOIN {course} c ON c.id = ctx.instanceid
@@ -343,13 +349,14 @@ function intelliboard_instructor_courses($view, $page, $length)
     );
     list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+    $grade_avg = intelliboard_grade_sql(true);
 
     if($view == 'grades'){
         $courses = $DB->get_records_sql("
             SELECT
                 c.id,
                 c.fullname,
-                AVG((g.finalgrade/g.rawgrademax)*100) AS data1,
+                $grade_avg AS data1,
                 (SELECT cc.gradepass FROM {course_completion_criteria} cc WHERE cc.course = c.id AND cc.criteriatype = 6 ) as data2
             FROM {course} c
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'

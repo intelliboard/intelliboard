@@ -83,6 +83,7 @@ class intelliboard_courses_grades_table extends table_sql {
         $params = array_merge($params,$sql_params);
         list($sql5, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
+        $grade_avg = intelliboard_grade_sql(true);
 
         $fields = "c.id, c.fullname as course,
                 c.enablecompletion,
@@ -92,7 +93,7 @@ class intelliboard_courses_grades_table extends table_sql {
                 (SELECT COUNT(DISTINCT ra.userid) FROM {role_assignments} ra
                     LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                     WHERE ra.roleid $sql1 AND ctx.instanceid = c.id) AS learners,
-                (SELECT AVG((g.finalgrade/g.rawgrademax)*100)
+                (SELECT $grade_avg
                     FROM {grade_items} gi, {grade_grades} g
                     WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS grade,
                 (SELECT COUNT(DISTINCT userid) FROM {course_completions} WHERE timecompleted > 0 AND course = c.id AND userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = c.id AND ctx.contextlevel = 50 AND ra.roleid $sql5)) AS completed,
@@ -199,6 +200,7 @@ class intelliboard_activities_grades_table extends table_sql {
             $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
+        $grade_avg = intelliboard_grade_sql(true);
 
         $fields = "
                 cm.id,
@@ -213,7 +215,7 @@ class intelliboard_activities_grades_table extends table_sql {
 
         $from = "{course_modules} cm
                 LEFT JOIN {modules} m ON m.id = cm.module
-                LEFT JOIN (SELECT gi.iteminstance, gi.itemmodule, AVG((g.finalgrade/g.rawgrademax)*100) AS grade FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = :c1 GROUP BY gi.iteminstance, gi.itemmodule) as g ON g.iteminstance = cm.instance AND g.itemmodule = m.name
+                LEFT JOIN (SELECT gi.iteminstance, gi.itemmodule, $grade_avg AS grade FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = :c1 GROUP BY gi.iteminstance, gi.itemmodule) as g ON g.iteminstance = cm.instance AND g.itemmodule = m.name
                 LEFT JOIN (SELECT coursemoduleid, COUNT(id) AS completed FROM {course_modules_completion} WHERE completionstate=1 GROUP BY coursemoduleid) cmc ON cmc.coursemoduleid = cm.id
                 LEFT JOIN (SELECT param, SUM(visits) AS visits, SUM(timespend) AS timespend FROM {local_intelliboard_tracking} WHERE page='module' AND courseid = :c2 AND userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :c4 AND ctx.contextlevel = 50 AND ra.roleid $sql1) GROUP BY param) l ON l.param=cm.id";
         $where = "cm.visible = 1 AND cm.course = :c3 $sql";
@@ -289,9 +291,10 @@ class intelliboard_activity_grades_table extends table_sql {
         }
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
+        $grade_single = intelliboard_grade_sql();
 
         $fields = "ra.id, ra.userid, c.id AS courseid,
-            ROUND(((g.finalgrade/g.rawgrademax)*100), 0) AS grade,
+            $grade_single AS grade,
             CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS graded,
             cc.timemodified AS timecompleted,
             cc.completionstate,
@@ -401,11 +404,12 @@ class intelliboard_learners_grades_table extends table_sql {
         }
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
+        $grade_single = intelliboard_grade_sql();
 
         $fields = "ra.id, ra.userid, c.id as courseid,
             ra.timemodified as enrolled,
             ul.timeaccess,
-            ROUND(((g.finalgrade/g.rawgrademax)*100), 0) AS grade,
+            $grade_single AS grade,
             cc.timecompleted,
             u.email,
             CONCAT(u.firstname, ' ', u.lastname) as learner, l.timespend, l.visits, cmc.progress, '' as actions";
@@ -514,12 +518,13 @@ class intelliboard_learner_grades_table extends table_sql {
             $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
+        $grade_single = intelliboard_grade_sql();
 
         $fields = "
             cm.id,
             m.name as module,
             cmc.timemodified as timecompleted,
-            (g.finalgrade/g.rawgrademax)*100 AS grade,
+            $grade_single AS grade,
             CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS graded,
             l.visits,
             l.timespend
