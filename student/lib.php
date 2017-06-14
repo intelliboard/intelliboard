@@ -147,9 +147,7 @@ function intelliboard_data($type, $userid) {
         $sql_select = "";
         $sql_join = "";
         if($res->certificates){
-            $sql_select = ", ce.certificates";
-            $sql_join = "LEFT JOIN (SELECT c.course, COUNT(ci.id) AS certificates FROM {certificate} c, {certificate_issues} ci WHERE c.id = ci.certificateid AND ci.userid = :userid1 GROUP BY c.course) ce ON ce.course = c.id";
-            $params['userid1'] = $userid;
+            $sql_select = ", (SELECT COUNT(ci.id) FROM {certificate} c, {certificate_issues} ci WHERE c.id = ci.certificateid AND ci.userid = :userid1 AND c.course = c.id) AS certificates";
         }else{
             $sql_select = ",'' as certificates";
         }
