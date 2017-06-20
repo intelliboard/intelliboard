@@ -28,6 +28,7 @@ define('AJAX_SCRIPT', true);
 
 require('../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/lib.php');
+require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 
 $action = optional_param('action', '', PARAM_TEXT);
 
@@ -85,6 +86,8 @@ if($action == 'user_courses_list'){
 	die($html);
 }elseif($action == 'cm_completions'){
 	$id = optional_param('id', 0, PARAM_INT);
+	$timestart = optional_param('timestart', 0, PARAM_INT);
+	$timefinish = optional_param('timefinish', 0, PARAM_INT);
 	$cm = $DB->get_record('course_modules', array('id'=>$id), '*', MUST_EXIST);
 	$module = $DB->get_record('modules', array('id'=>$cm->module), '*', MUST_EXIST);
 	$instance = $DB->get_record($module->name, array('id'=>$cm->instance), '*', MUST_EXIST);
@@ -92,6 +95,8 @@ if($action == 'user_courses_list'){
 
 	require_capability('moodle/course:manageactivities', context_module::instance($cm->id));
 	$params = array(
+		'timestart'=>$timestart,
+		'timefinish'=>$timefinish,
 		'coursemoduleid'=>$id,
 		'courseid'=>$cm->course
 	);
@@ -99,14 +104,16 @@ if($action == 'user_courses_list'){
 	$rsql = ($rsql) ? " AND ra.roleid $rsql " : "";
 	$params = is_array($rparams)?array_merge($params,$rparams):$params;
 
-	$items = $DB->get_records_sql("SELECT c.id, c.completionstate, c.timemodified, c.userid, u.firstname, u.lastname, u.email, (g.finalgrade/g.rawgrademax)*100 as grade
+	$grade_single = intelliboard_grade_sql();
+
+	$items = $DB->get_records_sql("SELECT c.id, c.completionstate, c.timemodified, c.userid, u.firstname, u.lastname, u.email, $grade_single as grade
 		FROM {course_modules_completion} c
 			LEFT JOIN {course_modules} cm ON cm.id = c.coursemoduleid
 		    LEFT JOIN {modules} m ON m.id = cm.module
 			LEFT JOIN {user} u ON u.id = c.userid
-		    LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = m.name AND gi.iteminstance = cm.instance
+		    LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = m.name AND gi.iteminstance = cm.instance AND gi.gradetype = 1
 			LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id AND g.finalgrade IS NOT NULL
-		    WHERE c.coursemoduleid = :coursemoduleid AND c.userid IN (SELECT ra.userid FROM {role_assignments} AS ra JOIN {context} AS ctx ON ra.contextid = ctx.id WHERE ctx.instanceid = :courseid $rsql)", $params);
+		    WHERE c.coursemoduleid = :coursemoduleid AND c.userid IN (SELECT ra.userid FROM {role_assignments} AS ra JOIN {context} AS ctx ON ra.contextid = ctx.id WHERE c.timemodified BETWEEN :timestart AND :timefinish AND ctx.instanceid = :courseid $rsql)", $params);
 
 	$html = '<h2>'.get_string('x_completions', 'local_intelliboard', s($instance->name)).'</h2>';
 	$html .= '<table class="table table-hover table-striped">';

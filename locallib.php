@@ -49,8 +49,37 @@ function intelliboard_url(){
 	}
 	return 'https://'.$domain.'intelliboard.net';
 }
-function intelliboard_grade_sql($avg = false, $round = 0, $alias = 'g.')
+function intelliboard_grade_sql($avg = false, $params = null, $alias = 'g.', $round = 2)
 {
+    $scales = get_config('local_intelliboard', 'scales');
+    $raw = get_config('local_intelliboard', 'scale_raw');
+    $total = get_config('local_intelliboard', 'scale_total');
+    $value = get_config('local_intelliboard', 'scale_value');
+    $percentage = get_config('local_intelliboard', 'scale_percentage');
+
+    if ((isset($params->scale_raw) and $params->scale_raw) or ($raw and !isset($params->scale_raw))) {
+         if ($avg) {
+            return "ROUND(AVG({$alias}finalgrade), $round)";
+        } else {
+            return "ROUND({$alias}finalgrade, $round)";
+        }
+    } elseif (isset($params->scales) and $params->scales) {
+        $total = $params->scale_total;
+        $value = $params->scale_value;
+        $percentage = $params->scale_percentage;
+        $scales = true;
+    } elseif (isset($params->scales) and !$params->scales) {
+        $scales = false;
+    }
+
+    if ($scales and $total and $value and $percentage) {
+        $dif = $total - $value;
+        if ($avg) {
+            return "ROUND(AVG(CASE WHEN ({$alias}finalgrade - $value) < 0 THEN ((({$alias}finalgrade / $value) * 100) / 100) * $percentage ELSE ((((({$alias}finalgrade - $value) / $dif) * 100) / 100) * $percentage) + $percentage END), $round)";
+        } else {
+            return "ROUND((CASE WHEN ({$alias}finalgrade - $value) < 0 THEN ((({$alias}finalgrade / $value) * 100) / 100) * $percentage ELSE ((((({$alias}finalgrade - $value) / $dif) * 100) / 100) * $percentage) + $percentage END), $round)";
+        }
+    }
     if ($avg) {
         return "ROUND(AVG(CASE WHEN {$alias}rawgrademax > 0 THEN ({$alias}finalgrade/{$alias}rawgrademax)*100 ELSE {$alias}finalgrade END), $round)";
     } else {

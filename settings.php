@@ -244,6 +244,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/n12';
+        $title = new lang_string('n12', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
         $name = 'local_intelliboard/n4';
         $title = new lang_string('n4', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
@@ -596,5 +601,36 @@ if($ADMIN->fulltree){
         $name = 'local_intelliboard/a31';
         $title = new lang_string('a31', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+
+        $settings->add(new admin_setting_heading('local_intelliboard/scalesettings', new lang_string('scalesettings', 'local_intelliboard'), ''));
+
+        $name = 'local_intelliboard/scale_raw';
+        $title = new lang_string('scale_raw', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/scales';
+        $title = new lang_string('scales', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/scale_total';
+        $title = new lang_string('scale_total', 'local_intelliboard');
+        $default = 0;
+        $setting = new admin_setting_configtext($name, $title, '', $default);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/scale_value';
+        $title = new lang_string('scale_value', 'local_intelliboard');
+        $default = 0;
+        $setting = new admin_setting_configtext($name, $title, '', $default);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/scale_percentage';
+        $title = new lang_string('scale_percentage', 'local_intelliboard');
+        $default = 0;
+        $setting = new admin_setting_configtext($name, $title, '', $default);
         $settings->add($setting);
 }
