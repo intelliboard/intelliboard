@@ -1790,8 +1790,8 @@ class local_intelliboard_external extends external_api {
 				gi.itemname,
 				gi.courseid,
 				cm.completionexpected,
-				gg.userid,
-				gg.timemodified as graduated,
+				g.userid,
+				g.timemodified as graduated,
 				$grade_single as grade,
 				cm.completion,
 				cmc.completionstate,
@@ -1799,7 +1799,7 @@ class local_intelliboard_external extends external_api {
 				l.visits
 			FROM {grade_items} gi
 				LEFT JOIN {user} u ON u.id = :userid
-				LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = u.id
+				LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id
 				LEFT JOIN {modules} m ON m.name = gi.itemmodule
 				LEFT JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
 				LEFT JOIN {course} c ON c.id=cm.course
@@ -2219,6 +2219,8 @@ class local_intelliboard_external extends external_api {
     {
         $this->params['userid'] = intval($params->userid);
 
+        $grade_single = intelliboard_grade_sql(false, $params);
+
         return $this->get_report_data("
 			SELECT gi.id,
 				IF(gi.itemname <> '', gi.itemname,
@@ -2231,20 +2233,20 @@ class local_intelliboard_external extends external_api {
 			   gc.parent as cat_parent,
 			   gc.depth,
 			   gc.path,
-			   ((gg.finalgrade-gg.rawgrademin)/(gg.rawgrademax-gg.rawgrademin))*100 as grade,
-			   gg.rawgrademax as max_grade,
+			   $grade_single as grade,
+			   g.rawgrademax as max_grade,
 			   cc.timecompleted as course_completed,
-			   gg.timemodified as timegraded,
+			   g.timemodified as timegraded,
 			   IF(gi.itemmodule='assign',MAX(ass.timecreated),
 				 IF(gi.itemmodule='quiz',MAX(qa.timefinish),NULL)) as lastsubmit
 			FROM {grade_items} gi
 				LEFT JOIN {grade_categories} gc ON IF(gi.itemtype='category' OR gi.itemtype='course' ,gc.id=gi.iteminstance,gc.id=gi.categoryid)
-				LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id
+				LEFT JOIN {grade_grades} g ON g.itemid=gi.id
 				LEFT JOIN {course} c ON c.id=gi.courseid
-				LEFT JOIN {quiz_attempts} qa ON qa.quiz=gi.iteminstance AND qa.userid=gg.userid AND qa.state='finished'
-				LEFT JOIN {assign_submission} ass ON ass.assignment=gi.iteminstance AND ass.userid=gg.userid AND ass.status='submitted'
-				LEFT JOIN {course_completions} cc ON cc.course=gi.courseid AND cc.userid=gg.userid
-			WHERE gg.userid = :userid AND gi.id IS NOT NULL
+				LEFT JOIN {quiz_attempts} qa ON qa.quiz=gi.iteminstance AND qa.userid=g.userid AND qa.state='finished'
+				LEFT JOIN {assign_submission} ass ON ass.assignment=gi.iteminstance AND ass.userid=g.userid AND ass.status='submitted'
+				LEFT JOIN {course_completions} cc ON cc.course=gi.courseid AND cc.userid=g.userid
+			WHERE g.userid = :userid AND gi.id IS NOT NULL
 			GROUP BY gi.id
 			ORDER BY gc.depth desc, gc.id ASC", $params);
     }
@@ -3174,15 +3176,15 @@ class local_intelliboard_external extends external_api {
 				ca.name as category,
 				c.startdate,
 				$grade_avg AS average_grade,
-				COUNT(DISTINCT gg.id) AS grades
+				COUNT(DISTINCT g.id) AS grades
             FROM {grade_outcomes} o
                 LEFT JOIN {course} c ON c.id = o.courseid
                 LEFT JOIN {course_categories} ca ON ca.id = c.category
                 LEFT JOIN {scale} sci ON sci.id = o.scaleid
                 LEFT JOIN {grade_items} gi ON gi.outcomeid = o.id
-                LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id
+                LEFT JOIN {grade_grades} g ON g.itemid = gi.id
             WHERE gi.itemtype = 'mod' $sql_filter
-            GROUP BY gg.itemid $sql_having $sql_order", $params, false);
+            GROUP BY g.itemid $sql_having $sql_order", $params, false);
 
         foreach($data as $k=>$v){
             $scale = explode(',', $v->scale);
@@ -4837,12 +4839,13 @@ class local_intelliboard_external extends external_api {
             $join_sql = $select_sql = $where_sql = '';
             $where = array();
             $coll = array("u.firstname", "u.lastname", "u.email");
+            $grade_avg_sql = intelliboard_grade_sql(true,$params);
             $enabled_tracking = false;
             foreach($fields as $field){
                 if($field == 'average_grade'){
                     $join_sql .= " JOIN {grade_items} gi ON gi.itemtype = 'course'
                                       LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id ";
-                    $select_sql .= " round(((g.finalgrade/gi.grademax)*100), 0) AS average_grade, ";
+                    $select_sql .= " $grade_avg_sql AS average_grade, ";
                     $coll[] = "average_grade";
                 }elseif($field == 'courses_enrolled'){
                     $join_sql .= " JOIN {user_enrolments} ue ON ue.userid=u.id
@@ -4983,18 +4986,19 @@ class local_intelliboard_external extends external_api {
                      ORDER BY time_of_day, day
                     ", $this->params);
 
+            $grade_single_sql = intelliboard_grade_sql(false,$params);
             $grades = $DB->get_records_sql("
-                        SELECT gg.id,
+                        SELECT g.id,
                                q.id AS quiz_id,
                                q.name AS quiz_name,
                                ROUND(((gi.gradepass - gi.grademin)/(gi.grademax - gi.grademin))*100,0) AS gradepass,
-                               COUNT(DISTINCT gg.userid) AS users,
-                               ROUND(((gg.rawgrade - gi.grademin)/(gi.grademax - gi.grademin))*100,0) AS grade
+                               COUNT(DISTINCT g.userid) AS users,
+                               $grade_single_sql AS grade
                         FROM {quiz} q
                            LEFT JOIN {grade_items} gi ON gi.itemtype='mod' AND gi.itemmodule='quiz' AND gi.iteminstance=q.id
-                           LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid != 2 AND gg.rawgrade IS NOT NULL
-                        WHERE gg.rawgrade IS NOT NULL $where
-                        GROUP BY ROUND(((gg.rawgrade - gg.rawgrademin)/(gg.rawgrademax - gg.rawgrademin))*100,0),quiz_id
+                           LEFT JOIN {grade_grades} g ON g.itemid=gi.id AND g.userid != 2 AND g.rawgrade IS NOT NULL
+                        WHERE g.rawgrade IS NOT NULL $where
+                        GROUP BY $grade_single_sql,quiz_id
                        ", $this->params);
         }
 
@@ -5043,8 +5047,9 @@ class local_intelliboard_external extends external_api {
                 $order_sql = $this->get_order_sql($params, $columns);
                 $limit_sql = $this->get_limit_sql($params);
                 $sql_columns = $this->get_columns($params, "u.id");
+                $grade_single_sql = intelliboard_grade_sql(false,$params);
                 $sql = "SELECT ue.id,
-                               ROUND(((g.finalgrade/gi.grademax)*100), 0) AS grade,
+                               $grade_single_sql AS grade,
                                c.enablecompletion,
                                cc.timecompleted AS complete,
                                u.id AS uid,
@@ -5354,18 +5359,19 @@ class local_intelliboard_external extends external_api {
                          WHERE c.contextlevel=50 $sql_enabled_courseid AND u.id IS NOT NULL
                         ", $this->params);
 
+        $grade_single_sql = intelliboard_grade_sql(false,$params);
         $grade_range = $DB->get_records_sql("
-                         SELECT CONCAT(10*FLOOR((((gg.finalgrade-gi.grademin)/(gi.grademax-gi.grademin))*100)/10),
+                         SELECT CONCAT(10*FLOOR($grade_single_sql/10),
                                          '-',
-                                         10*FLOOR((((gg.finalgrade-gi.grademin)/(gi.grademax-gi.grademin))*100)/10) + 10,
+                                         10*FLOOR($grade_single_sql/10) + 10,
                                          '%'
                                   ) as `range`,
-                                COUNT(DISTINCT gg.userid) AS users
+                                COUNT(DISTINCT g.userid) AS users
                          FROM {context} c
                             LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
                             LEFT JOIN {grade_items} gi ON gi.courseid=c.instanceid AND gi.itemtype='course'
-                            LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=ra.userid
-                         WHERE c.contextlevel=50 $sql_enabled_courseid AND gg.rawgrademax IS NOT NULL
+                            LEFT JOIN {grade_grades} g ON g.itemid=gi.id AND g.userid=ra.userid
+                         WHERE c.contextlevel=50 $sql_enabled_courseid AND g.rawgrademax IS NOT NULL
                          GROUP BY `range`
                         ", $this->params);
 
@@ -5389,6 +5395,7 @@ class local_intelliboard_external extends external_api {
         $where = array($sql_enabled);
         $where_str = '';
         $custom = unserialize($params->custom);
+        $grade_single_sql = intelliboard_grade_sql(false,$params);
         if(!empty($custom['country']) && $custom['country'] != 'world'){
             $this->params['country'] = clean_param($custom['country'],PARAM_ALPHANUMEXT);
             $where[] = "u.country=:country";
@@ -5409,18 +5416,18 @@ class local_intelliboard_external extends external_api {
             $custom['grades'] = clean_param($custom['grades'],PARAM_ALPHANUMEXT);
             $grades = explode('-',$custom['grades']);
             $grades[1] = (empty($grades[1]))?110:$grades[1];
-            $where[] = "ROUND(((g.finalgrade/gi.grademax)*100), 0) BETWEEN :grade_min AND :grade_max";
+            $where[] = "$grade_single_sql BETWEEN :grade_min AND :grade_max";
             $this->params['grade_min'] = $grades[0];
             $this->params['grade_max'] = $grades[1]-0.001;
         }
         if(isset($custom['user_status']) && !empty($custom['user_status'])){
             $custom['user_status'] = clean_param($custom['user_status'],PARAM_INT);
             if($custom['user_status'] == 1){
-                $where[] = "(round(((g.finalgrade/gi.grademax)*100), 0)>0 AND (cc.timecompleted=0 OR cc.timecompleted IS NULL))";
+                $where[] = "($grade_single_sql>0 AND (cc.timecompleted=0 OR cc.timecompleted IS NULL))";
             }elseif($custom['user_status'] == 2){
                 $where[] = "cc.timecompleted>0";
             }elseif($custom['user_status'] == 3){
-                $where[] = "(cc.timestarted>0 AND (ROUND(((g.finalgrade/gi.grademax)*100), 0)=0 OR g.finalgrade IS NULL) AND (cc.timecompleted=0 OR cc.timecompleted IS NULL))";
+                $where[] = "(cc.timestarted>0 AND ($grade_single_sql=0 OR g.finalgrade IS NULL) AND (cc.timecompleted=0 OR cc.timecompleted IS NULL))";
             }
         }
         if(!empty($where))
@@ -5430,7 +5437,7 @@ class local_intelliboard_external extends external_api {
 
         $sql = "SELECT ue.id,
                        ue.timecreated AS enrolled,
-                       round(((g.finalgrade/gi.grademax)*100), 0) AS grade,
+                       $grade_single_sql AS grade,
                        c.enablecompletion,
                        cc.timecompleted AS complete,
                        u.id AS uid,
@@ -5496,13 +5503,14 @@ class local_intelliboard_external extends external_api {
         $this->params['custom'] = ($params->custom)?$params->custom:time();
         $this->params['timestart'] = $params->timestart;
         $this->params['timefinish'] = $params->timefinish;
+        $grade_avg_sql = intelliboard_grade_sql(true,$params);
 
         $sql = "SELECT ue.id,
                        c.id AS courseid,
                        c.fullname AS coursename,
                        cm.cohortid,
                        coh.name AS cohortname,
-                       round(AVG(((g.finalgrade/gi.grademax)*100)), 0) AS avg_grade,
+                       $grade_avg_sql AS avg_grade,
                        COUNT(DISTINCT IF(cr.completion IS NOT NULL AND cc.timecompleted>0,cc.id,NULL )) AS learners_completed,
                        COUNT(DISTINCT IF(cr.completion IS NOT NULL AND (cc.timecompleted=0 OR cc.timecompleted IS NULL),cc.id,NULL)) AS learners_not_completed,
                        COUNT(DISTINCT IF(cr.completion IS NOT NULL AND cc.timecompleted>:custom ,cc.id,NULL)) AS learners_overdue,
@@ -5575,13 +5583,14 @@ class local_intelliboard_external extends external_api {
             $this->params['firstname'] = "%$params->filter%";
             $this->params['lastname'] = "%$params->filter%";
         }
+        $grade_single_sql = intelliboard_grade_sql(false,$params);
 
         $sql = "SELECT ue.id,
                        c.id AS courseid,
                        c.fullname AS coursename,
                        cm.cohortid,
                        coh.name AS cohortname,
-                       ROUND(((g.finalgrade/gi.grademax)*100), 0) AS grade,
+                       $grade_single_sql AS grade,
                        l.timespend,
                        CONCAT(u.firstname, ' ', u.lastname) AS learnername,
                        u.email,
