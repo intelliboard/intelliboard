@@ -387,37 +387,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0)
             $course->data1 = ($course->data2) ? ($course->data1 / ($course->learners * $course->data2)) * 100 : 0;
         }
     }elseif($view == 'course_overview'){
-        if(!$courseid){
-            return array();
-        }
-
-        $sql_columns = "";
-        $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1");
-        foreach($modules as $module){
-            $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
-        }
-        $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
-
-        $params = array(
-            'courseid1'=>$courseid,
-            'courseid2'=>$courseid,
-            'courseid3'=>$courseid
-        );
-        list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
-
-        $courses = $DB->get_records_sql("
-                SELECT
-                  cm.id,
-                  (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE courseid=:courseid1 AND param=cm.id AND page='module' AND userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50 $sql1)) AS timespend
-                  $sql_columns
-                FROM {course_modules} cm
-                  LEFT JOIN {modules} m ON m.id = cm.module
-                WHERE cm.course=:courseid2",$params);
-
-        foreach($courses as &$value){
-            $value->timespend_str = seconds_to_time($value->timespend);
-            $value->activity = str_replace("'",'`',$value->activity);
-        }
+        return array();
     }else{
         $courses = $DB->get_records_sql("
             SELECT

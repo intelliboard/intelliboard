@@ -111,7 +111,7 @@
 .intelliboard-courses-grid li.f5 .course-more{background-color: #d9534f; } /* red */
 
 
-.intelliboard-origin .avg{margin:20px 0 box-sizing: border-box;border: 1px solid #ddd;border-radius: 5px;}
+.intelliboard-origin .avg{margin:20px 0; box-sizing: border-box;border: 1px solid #ddd;border-radius: 5px;}
 .intelliboard-origin p{font-size:17px;font-weight:600; margin:0;padding:15px; display: inline-block;width: 49.7%; box-sizing: border-box; text-align: center;}
 .intelliboard-origin p span{font-size:13px;font-weight:400; color: #999; display: block;margin-top: 3px;}
 .intelliboard-origin p.site{color: #1d7fb3;}
@@ -435,6 +435,13 @@
 .intelliboard-course-header ul.totals li{}
 .intelliboard-course-header ul.totals li:first-child{padding-left: 0}
 .intelliboard-course-header ul.totals li span{display: block; font-size: 13px; opacity: 0.8; font-weight: 400;margin-top: 5px;}
+
+
+.intelliboard-additional-form .switcher{ float: right;margin-bottom: 10px;margin-right: 10px;}
+.intelliboard-additional-form .switcher a {border: 1px solid #ddd;box-sizing: border-box;color: #333;display: block;float: left;height: 100%;transition: all 0.3s ease-out 0s; width: 50%; padding:8px 15px;text-decoration: none;box-shadow:0 1px 2px rgba(0, 0, 0, 0.05);}
+.intelliboard-additional-form .switcher a:first-child {border-radius: 3px 0 0 3px;}
+.intelliboard-additional-form .switcher a:last-child {border-radius: 0 3px 3px 0;}
+.intelliboard-additional-form .switcher a.active {background-color: #ddd;}
 
 .info-progress{width:150px;height:14px;background-color:#fff;box-shadow: 0 0 10px #DDDDDD inset;position:relative;}
 .info-progress span{display:block;height:100%;position:absolute;top:0;left:0;text-indent: -9999px;}

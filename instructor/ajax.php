@@ -29,8 +29,10 @@ define('AJAX_SCRIPT', true);
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
+require_once($CFG->dirroot .'/course/lib.php');
 
 $action = optional_param('action', '', PARAM_TEXT);
+$view = optional_param('view', '', PARAM_TEXT);
 $daterange = clean_raw(optional_param('daterange', '', PARAM_RAW));
 $course = optional_param('course', 0, PARAM_INT);
 
@@ -221,7 +223,11 @@ if($action == 'get_total_students'){
             $empty_data = false;
         }
         $tooltip = '<strong>'.$item->activity.'</strong><br>'.get_string('time_spent', 'local_intelliboard').': <strong>'.seconds_to_time($item->timespend).'</strong>';
-        $modules[] = array($item->activity, (int)$item->timespend,$tooltip);
+        $inner = new stdClass();
+        $inner->v = (int)$item->timespend;
+        $inner->f = seconds_to_time(intval($item->timespend));
+
+        $modules[] = array($item->activity, $inner,$tooltip);
     }
 
     if($empty_data){
@@ -229,4 +235,160 @@ if($action == 'get_total_students'){
     }else{
         die(json_encode($modules));
     }
+}elseif($action == 'get_topic_utilization'){
+    if(!$course){
+        die(json_encode(array()));
+    }
+
+    if (!$daterange) {
+        $timestart = strtotime('-7 days');
+        $timefinish = time();
+    } else {
+        $range = explode(" to ", $daterange);
+
+        $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
+        $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
+    }
+
+    $learner_roles = get_config('local_intelliboard', 'filter11');
+    $params = array('course'=>$course,'timestart'=>$timestart, 'timefinish'=>$timefinish);
+    list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+
+    $data = $DB->get_records_sql("
+                SELECT
+                  cs.id,
+                  cs.section,
+                  sum(lil.timespend) as timespend
+                FROM {role_assignments} ra
+                    LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+                    LEFT JOIN {course} c ON c.id = ctx.instanceid
+                    LEFT JOIN {course_modules} cm ON cm.course = c.id
+                    LEFT JOIN {course_sections} cs ON cs.id = cm.section
+                    LEFT JOIN {modules} m ON m.id = cm.module
+                    LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = ra.userid AND l.param = cm.id
+                    LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=l.id AND lil.timepoint BETWEEN :timestart AND :timefinish
+                WHERE c.id = :course $sql1
+                GROUP BY cs.id",$params);
+
+    $tooltip = new stdClass();
+    $tooltip->type = 'string';
+    $tooltip->role = 'tooltip';
+    $tooltip->p = new stdClass();
+    $tooltip->p->html = true;
+
+    $modules = array([get_string('s45', 'local_intelliboard'), get_string('time_spent', 'local_intelliboard'), $tooltip]);
+    $empty_data = true;
+    foreach($data as $item){
+        if($item->timespend>0){
+            $empty_data = false;
+        }
+        $name = str_replace("'", '`', get_section_name($course,$item->section));
+        $tooltip = '<strong>'.$name.'</strong><br>'.get_string('time_spent', 'local_intelliboard').': <strong>'.seconds_to_time($item->timespend).'</strong>';
+        $inner = new stdClass();
+        $inner->v = (int)$item->timespend;
+        $inner->f = seconds_to_time(intval($item->timespend));
+
+        $modules[] = array($name, $inner,$tooltip);
+    }
+
+    if($empty_data){
+        die(json_encode(array()));
+    }else{
+        die(json_encode($modules));
+    }
+}elseif($action == 'get_course_overview'){
+
+
+    if($view == 'topic'){
+
+        $params = array(
+            'courseid1' => $course,
+            'courseid2' => $course,
+            'courseid3' => $course
+        );
+        $learner_roles = get_config('local_intelliboard', 'filter11');
+        list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+
+        $courses = $DB->get_records_sql("
+                SELECT
+                  cs.id,
+                  cs.section,
+                  SUM(lit.timespend) AS timespend
+                FROM {course_modules} cm
+                  LEFT JOIN {modules} m ON m.id = cm.module
+                  LEFT JOIN {course_sections} cs ON cs.id = cm.section
+				  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=:courseid1 AND lit.param=cm.id AND lit.page='module' AND lit.userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50 $sql1)
+                WHERE cm.course=:courseid2
+                GROUP BY cs.id", $params);
+
+        $tooltip = new stdClass();
+        $tooltip->type = 'string';
+        $tooltip->role = 'tooltip';
+        $tooltip->p = new stdClass();
+        $tooltip->p->html = true;
+
+        $data = array([get_string('s47', 'local_intelliboard'), get_string('s48', 'local_intelliboard'), $tooltip]);
+
+        foreach($courses as $value){
+            $value->timespend_str = seconds_to_time($value->timespend);
+
+            $inner = new stdClass();
+            $inner->v = (int)$value->timespend;
+            $inner->f = seconds_to_time(intval($value->timespend));
+
+            $section = str_replace("'", '`', get_section_name($course,$value->section));
+
+            $tooltip = "<strong>$section</strong><br>".get_string('s48', 'local_intelliboard')." <strong>$value->timespend_str</strong>";
+
+            $data[] = array($section,$inner,$tooltip);
+        }
+
+    }else{
+        $sql_columns = "";
+        $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1");
+        foreach($modules as $module){
+            $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {" . $module->name . "} WHERE id = cm.instance)";
+        }
+        $sql_columns = ($sql_columns)?", CASE $sql_columns ELSE 'none' END AS activity":"'' AS activity";
+
+        $params = array(
+            'courseid1' => $course,
+            'courseid2' => $course,
+            'courseid3' => $course
+        );
+        $learner_roles = get_config('local_intelliboard', 'filter11');
+        list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+
+        $courses = $DB->get_records_sql("
+                SELECT
+                  cm.id,
+                  (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE courseid=:courseid1 AND param=cm.id AND page='module' AND userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50 $sql1)) AS timespend
+                  $sql_columns
+                FROM {course_modules} cm
+                  LEFT JOIN {modules} m ON m.id = cm.module
+                WHERE cm.course=:courseid2", $params);
+
+        $tooltip = new stdClass();
+        $tooltip->type = 'string';
+        $tooltip->role = 'tooltip';
+        $tooltip->p = new stdClass();
+        $tooltip->p->html = true;
+
+        $data = array([get_string('s45', 'local_intelliboard'), get_string('s25', 'local_intelliboard'), $tooltip]);
+
+        foreach($courses as $value){
+            $value->timespend_str = seconds_to_time($value->timespend);
+            $value->activity = str_replace("'", '`', $value->activity);
+
+            $inner = new stdClass();
+            $inner->v = (int)$value->timespend;
+            $inner->f = seconds_to_time(intval($value->timespend));
+
+            $tooltip = "<strong>$value->activity</strong><br>".get_string('s25', 'local_intelliboard')." <strong>$value->timespend_str</strong>";
+
+            $data[] = array($value->activity,$inner,$tooltip);
+        }
+    }
+
+    die(json_encode($data));
 }

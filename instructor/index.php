@@ -106,6 +106,10 @@ $n5 = get_config('local_intelliboard', 'n5');
 $n6 = get_config('local_intelliboard', 'n6');
 $n7 = get_config('local_intelliboard', 'n7');
 $n12 = get_config('local_intelliboard', 'n12');
+$n13 = get_config('local_intelliboard', 'n13');
+$n14 = get_config('local_intelliboard', 'n14');
+$n15 = get_config('local_intelliboard', 'n15');
+$n16 = get_config('local_intelliboard', 'n16');
 
 $menu = array();
 if($n1){
@@ -125,8 +129,13 @@ if(empty($view)){
     $view = key($menu);
 }
 
-$summary_menu = array('curent_progress'=>get_string('in2', 'local_intelliboard'), 'total_student'=>get_string('in27', 'local_intelliboard'));
-
+$summary_menu = array();
+if($n5){
+    $summary_menu['curent_progress'] = get_string('in2', 'local_intelliboard');
+}
+if($n13){
+    $summary_menu['total_student'] = get_string('in27', 'local_intelliboard');
+}
 
 $stats = intelliboard_instructor_stats();
 $courses = intelliboard_instructor_courses($view, $page, $length, $course);
@@ -140,7 +149,7 @@ echo $OUTPUT->header();
 	<?php include("views/menu.php"); ?>
 	<?php if(isset($stats->courses) and isset($stats->enrolled) and $stats->courses > 0 and $stats->enrolled > 0): ?>
 	<div class="intelli-instructor-header clearfix">
-		<div class="instructor-head <?php echo($n5)?'':'full'; ?>">
+		<div class="instructor-head <?php echo($n5 || $n13)?'':'full'; ?>">
 			<?php if($n1 or $n2 or $n3 or $n12): ?>
 				<h3><?php echo get_string('in1', 'local_intelliboard'); ?></h3>
 	            <div class="intelliboard-dropdown">
@@ -173,6 +182,10 @@ echo $OUTPUT->header();
                                 <?php endforeach; ?>
                             </ul>
                         </div>
+                        <div class="switcher clearfix">
+                            <a href="#" data-view="activity" class="active"><?php echo get_string('s45', 'local_intelliboard'); ?></a>
+                            <a href="#" data-view="topic" class=""><?php echo get_string('topics', 'local_intelliboard'); ?></a>
+                        </div>
                     </div>
                 <?php endif; ?>
 	            <div class="clearfix"></div>
@@ -195,7 +208,7 @@ echo $OUTPUT->header();
 			</ul>
 			<?php endif; ?>
 		</div>
-		<?php if($n5): ?>
+		<?php if($n5 || $n13): ?>
 		<div class="summary clearfix">
             <div class="intelliboard-dropdown">
                 <button><i class="ion-android-arrow-dropdown"></i></button>
@@ -205,6 +218,7 @@ echo $OUTPUT->header();
                     <?php endforeach; ?>
                 </ul>
             </div>
+            <?php if($n5): ?>
             <div class="summary-item curent_progress">
                 <h3><?php echo get_string('in2', 'local_intelliboard'); ?></h3>
 
@@ -229,7 +243,9 @@ echo $OUTPUT->header();
                     </li>
                 </ul>
             </div>
+            <?php endif;?>
 
+            <?php if($n13): ?>
             <div class="summary-item total_student" style="display: none;">
                 <h3><?php echo get_string('in27', 'local_intelliboard'); ?></h3>
 
@@ -253,19 +269,27 @@ echo $OUTPUT->header();
                     </li>
                 </ul>
             </div>
+            <?php endif;?>
 		</div>
 		<?php endif; ?>
 	</div>
 
 	<div class="intelliboard-box">
-		<?php if($n6): ?>
-		<div class="box<?php echo($n7)?'50':'100'; ?> pull-left h410">
+		<?php if($n6 || $n14): ?>
+		<div class="box<?php echo($n7 || $n15 || $n16)?'50':'100'; ?> pull-left h410">
 			<ul class="nav nav-tabs clearfix">
-	            <li role="presentation" class="nav-item active" data-tab="chart4"><a class="nav-link active" href="#"><?php echo get_string('in9', 'local_intelliboard'); ?></a></li>
+                <?php if($n6): ?>
+	            <li role="presentation" class="nav-item" data-tab="chart4"><a class="nav-link active" href="#"><?php echo get_string('in9', 'local_intelliboard'); ?></a></li>
+                <?php endif; ?>
+                <?php if($n14): ?>
 	            <li role="presentation" class="nav-item" data-tab="chart5"><a class="nav-link" href="#"><?php echo get_string('in26', 'local_intelliboard'); ?></a></li>
+                <?php endif; ?>
 	        </ul>
 	        <div class="card-block">
+                <?php if($n6): ?>
 	        	<div id="chart4" class="chart-tab active"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
+                <?php endif; ?>
+                <?php if($n14): ?>
 	        	<div id="chart5" class="chart-tab" style="display: none;">
                     <div class="filter-box clearfix">
                         <input type="text" class="form-control daterange flatpickr-input" name="daterange" title="<?php echo get_string('filter_dates','local_intelliboard');?>" readonly="readonly" placeholder="<?php echo get_string('select_date','local_intelliboard');?>">
@@ -285,17 +309,28 @@ echo $OUTPUT->header();
                     </div>
                     <div id="chart5_area" class="area"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
                 </div>
+                <?php endif; ?>
 	        </div>
 		</div>
 		<?php endif; ?>
-		<?php if($n7): ?>
-		<div class="box<?php echo($n6)?'40':'100'; ?> pull-right h410">
+		<?php if($n7 || $n15 || $n16): ?>
+		<div class="box<?php echo($n6 || $n14)?'40':'100'; ?> pull-right h410">
 			<ul class="nav nav-tabs clearfix">
-	            <li role="presentation" class="nav-item active" data-tab="chart2"><a class="nav-link active" href="#"><?php echo get_string('in10', 'local_intelliboard'); ?></a></li>
+                <?php if($n7): ?>
+	            <li role="presentation" class="nav-item" data-tab="chart2"><a class="nav-link active" href="#"><?php echo get_string('in10', 'local_intelliboard'); ?></a></li>
+                <?php endif; ?>
+                <?php if($n15): ?>
 	            <li role="presentation" class="nav-item" data-tab="chart3"><a class="nav-link" href="#"><?php echo get_string('in31', 'local_intelliboard'); ?></a></li>
+                <?php endif; ?>
+                <?php if($n16): ?>
+	            <li role="presentation" class="nav-item" data-tab="chart6"><a class="nav-link" href="#"><?php echo get_string('in33', 'local_intelliboard'); ?></a></li>
+                <?php endif; ?>
 	        </ul>
 	        <div class="card-block">
+                <?php if($n7): ?>
 	        	<div id="chart2" class="chart-tab active"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
+                <?php endif; ?>
+                <?php if($n15): ?>
 	        	<div id="chart3" class="chart-tab" style="display: none;">
                     <div class="filter-box clearfix">
                         <input type="text" class="daterange form-control flatpickr-input" name="daterange" title="<?php echo get_string('filter_dates','local_intelliboard');?>" readonly="readonly" placeholder="<?php echo get_string('select_date','local_intelliboard');?>">
@@ -315,6 +350,28 @@ echo $OUTPUT->header();
                     </div>
                     <div id="chart3_area" class="area"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
                 </div>
+                <?php endif; ?>
+                <?php if($n16): ?>
+	        	<div id="chart6" class="chart-tab" style="display: none;">
+                    <div class="filter-box clearfix">
+                        <input type="text" class="daterange form-control flatpickr-input" name="daterange" title="<?php echo get_string('filter_dates','local_intelliboard');?>" readonly="readonly" placeholder="<?php echo get_string('select_date','local_intelliboard');?>">
+
+                        <div class="intelliboard-dropdown">
+                            <?php foreach($list_of_my_courses as $key=>$value): ?>
+                                <?php if($key == $course): ?>
+                                    <button value="<?php echo $key; ?>"><span><?php echo format_string($value); ?></span> <i class="ion-android-arrow-dropdown"></i></button>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                            <ul>
+                                <?php foreach($list_of_my_courses as $key=>$value): ?>
+                                    <li><a href="#" dava-value="<?php echo $key; ?>"><?php echo format_string($value); ?></a></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    </div>
+                    <div id="chart6_area" class="area"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
+                </div>
+                <?php endif; ?>
 	        </div>
 		</div>
 		<?php endif; ?>
@@ -369,6 +426,7 @@ echo $OUTPUT->header();
 
                 summary_student_daterange_change();
             });
+            jQuery('.summary .intelliboard-dropdown ul li:first-child a').click();
 
             jQuery("#chart5 .daterange").flatpickr({
                 mode: "range",
@@ -408,6 +466,37 @@ echo $OUTPUT->header();
                 load_module_utilization_chart();
             });
 
+            jQuery("#chart6 .daterange").flatpickr({
+                mode: "range",
+                dateFormat: "Y-m-d",
+                defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
+                onClose: function(selectedDates, dateStr, instance) {
+                    load_topic_utilization_chart();
+                }
+            });
+            jQuery('#chart6 .intelliboard-dropdown a').click(function (e) {
+                e.preventDefault();
+                jQuery('#chart6 .intelliboard-dropdown button span').html(jQuery(this).html());
+                jQuery('#chart6 .intelliboard-dropdown button').val(jQuery(this).attr('dava-value'));
+                jQuery('#chart6 .intelliboard-dropdown ul').hide();
+                load_topic_utilization_chart();
+            });
+            jQuery('.nav-item[data-tab="chart6"]').click(function (e) {
+                load_topic_utilization_chart();
+            });
+
+
+            jQuery('.nav-tabs .nav-item:first-child').click();
+
+            <?php if($view == 'course_overview'): ?>
+                jQuery('.intelliboard-additional-form .switcher a').click(function (e) {
+                    jQuery('.intelliboard-additional-form .switcher a').removeClass('active');
+                    jQuery(this).addClass('active');
+
+                    drawInsructorChart();
+                });
+            <?php endif; ?>
+
 		});
 
 		<?php if($n7): ?>
@@ -433,7 +522,6 @@ echo $OUTPUT->header();
 				dataType: "json"
 			}).done(function( response ) {
 				//response = JSON.parse(response)
-				console.log(response);
 				var data = new google.visualization.DataTable();
 	            data.addColumn('number', '<?php echo get_string('grade', 'local_intelliboard'); ?>');
 	            data.addColumn('number', '<?php echo get_string('in13', 'local_intelliboard'); ?>');
@@ -502,21 +590,30 @@ echo $OUTPUT->header();
 				<?php endforeach; ?>
 				]);
 	        <?php elseif($view == 'course_overview'): ?>
-	        	options.vAxis.title = "<?php echo get_string('s25', 'local_intelliboard'); ?>";
-	        	options.hAxis.title = "<?php echo get_string('s45', 'local_intelliboard'); ?>";
+                jQuery('#instructor-chart<?php echo ($view)?"-".$view:""; ?>').html('<?php echo get_string('loading', 'local_intelliboard'); ?>');
+	        	options.vAxis.textPosition = 'none';
 	        	options.tooltip = {isHtml: true};
-	        	options.chartArea.width = '96%';
+	        	options.chartArea.width = '95%';
 
+                //var course = jQuery('#chart5 .intelliboard-dropdown button').val();
+                var chart = new google.visualization.ComboChart(document.getElementById('instructor-chart<?php echo ($view)?"-".$view:""; ?>'));
+                var view = jQuery('.intelliboard-additional-form .switcher a.active').attr('data-view');
+                jQuery.ajax({
+                    url: "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?action=get_course_overview&view="+view+"&course=<?php echo $course;?>",
+                    dataType: "json"
+                }).done(function( response ) {
+                    if(view == 'activity'){
+                        options.vAxis.title = "<?php echo get_string('s25', 'local_intelliboard'); ?>";
+                        options.hAxis.title = "<?php echo get_string('s45', 'local_intelliboard'); ?>";
+                    }else{
+                        options.vAxis.title = "<?php echo get_string('s48', 'local_intelliboard'); ?>";
+                        options.hAxis.title = "<?php echo get_string('s47', 'local_intelliboard'); ?>";
+                    }
+                    var data = google.visualization.arrayToDataTable(response);
 
-                var data = [
-                    ['<?php echo get_string('s45', 'local_intelliboard'); ?>', '<?php echo get_string('s25', 'local_intelliboard'); ?>', { type: 'string', role: 'tooltip', 'p': {'html': true}}],
-                ];
-
-                <?php foreach($courses as $row):  ?>
-                    data.push(['<?php echo $row->activity; ?>', <?php echo $row->timespend; ?>, '<strong><?php echo $row->activity; ?></strong><br><?php echo get_string('s25', 'local_intelliboard'); ?> <strong><?php echo $row->timespend_str; ?></strong>']);
-                <?php endforeach; ?>
-
-                data = google.visualization.arrayToDataTable(data);
+                    chart.draw(data, options);
+                });
+                return;
 	        <?php else: ?>
 	        	var data = google.visualization.arrayToDataTable([
 	        	['<?php echo get_string('course'); ?>', '<?php echo get_string('enrolled', 'local_intelliboard'); ?>', '<?php echo get_string('completed', 'local_intelliboard'); ?>'],
@@ -557,12 +654,32 @@ echo $OUTPUT->header();
                 if(response.length > 0) {
                     var data = google.visualization.arrayToDataTable(response);
                     var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
-                    options.height = 300;
+                    options.height = 270;
                     options.tooltip = {isHtml: true};
                     var chart = new google.visualization.PieChart(document.getElementById('chart3_area'));
                     chart.draw(data, options);
                 }else{
                     jQuery('#chart3_area').html('<?php echo $OUTPUT->box(get_string('no_data', 'local_intelliboard'), 'generalbox alert');?>');
+                }
+            });
+        }
+
+		function load_topic_utilization_chart() {
+            var daterange = jQuery('#chart6 .daterange').val();
+            var course = jQuery('#chart6 .intelliboard-dropdown button').val();
+            jQuery.ajax({
+                url: "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?action=get_topic_utilization&daterange="+daterange+"&course="+course,
+                dataType: "json"
+            }).done(function( response ) {
+                if(response.length > 0) {
+                    var data = google.visualization.arrayToDataTable(response);
+                    var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
+                    options.height = 270;
+                    options.tooltip = {isHtml: true};
+                    var chart = new google.visualization.PieChart(document.getElementById('chart6_area'));
+                    chart.draw(data, options);
+                }else{
+                    jQuery('#chart6_area').html('<?php echo $OUTPUT->box(get_string('no_data', 'local_intelliboard'), 'generalbox alert');?>');
                 }
             });
         }
