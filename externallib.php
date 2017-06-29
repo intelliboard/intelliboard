@@ -1495,7 +1495,7 @@ class local_intelliboard_external extends external_api {
 
     public function report28($params)
     {
-        $columns = array_merge(array("gi.itemname", "u.firstname", "u.lastname", "u.email", "graduated", "grade", "completionstate", "timespend", "visits","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
+        $columns = array_merge(array("c.fullname","gi.itemname", "u.firstname", "u.lastname", "u.email", "graduated", "grade", "completionstate", "timespend", "visits","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1531,6 +1531,7 @@ class local_intelliboard_external extends external_api {
 				u.country,
 				u.firstname,
 				u.lastname,
+				c.fullname,
 				g.timemodified as graduated,
 				$grade_single AS grade,
 				cm.completion,
