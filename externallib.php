@@ -1282,7 +1282,7 @@ class local_intelliboard_external extends external_api {
         }
 
         return $this->get_report_data("
-			SELECT u.id+st.scormid+st.timemodified as id,
+			SELECT @x:=@x+1 as id,
 				u.firstname,
 				u.lastname,
 				u.email,
@@ -1299,7 +1299,7 @@ class local_intelliboard_external extends external_api {
 				sm.timemodified as lastaccess,
 				round(sg.score, 0) as score
 				$sql_columns
-			FROM {scorm_scoes_track} AS st
+			FROM (SELECT @x:= 0) AS x, {scorm_scoes_track} AS st
 				LEFT JOIN {user} u ON st.userid=u.id
 				LEFT JOIN {scorm} AS sc ON sc.id=st.scormid
 				LEFT JOIN {course} c ON c.id = sc.course
@@ -2159,6 +2159,8 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
         $sql_filter .= $this->get_filterdate_sql($params, "ra.timemodified");
         $sql_filter .= $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
         $grade_avg = intelliboard_grade_sql(true, $params);
@@ -2203,6 +2205,8 @@ class local_intelliboard_external extends external_api {
 				JOIN {user} u ON ra.userid = u.id
 				JOIN {context} AS ctx ON ctx.id = ra.contextid
 				JOIN {course} c ON c.id = ctx.instanceid
+				JOIN {enrol} e ON e.courseid = c.id
+				JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
 				LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = u.id
 				LEFT JOIN {course_completion_criteria} cri ON cri.course = c.id AND cri.criteriatype = 6
 				LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
@@ -4288,7 +4292,7 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
             SELECT
-              CONCAT(c.id,u.id) AS uniqueid,
+              @x:=@x+1 AS uniqueid,
               ass_s.id,
               c.fullname AS course,
               u.firstname,
@@ -4306,7 +4310,7 @@ class local_intelliboard_external extends external_api {
               ass_s.attemptnumber,
               sc.scale
               $sql_columns
-            FROM {course} c
+            FROM (SELECT @x:= 0) AS x,{course} c
                 LEFT JOIN {context} con ON con.contextlevel=50 AND con.instanceid=c.id
                 LEFT JOIN {role_assignments} ra ON ra.contextid=con.id $learner_roles
                 LEFT JOIN {user} u ON u.id=ra.userid
@@ -4652,7 +4656,7 @@ class local_intelliboard_external extends external_api {
     		"u.firstname",
     		"u.lastname",
     		"u.idnumber",
-    		"attempts",
+    		"s.attemptnumber",
     		"s.timemodified",
     		"s.status",
     		"g.timemodified",

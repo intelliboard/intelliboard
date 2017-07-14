@@ -165,7 +165,7 @@ if($action == 'totals'){
 					$data->visits = $item->visits;
 					$data->timespend = $item->timespend;
 
-					$data->id =$DB->insert_record("local_intelliboard_tracking", $data);
+					$data->id =$DB->insert_record("local_intelliboard_tracking", $data, true);
 					$r .= "<p class='log'>".get_string('total_numbers2', 'local_intelliboard', $data)."</p>";
 				}
 				if($data->id and !empty($item->logs)){

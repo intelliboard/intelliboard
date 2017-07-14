@@ -259,7 +259,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 				$data->useros = $userDetails->useros;
 				$data->userlang = $userDetails->userlang;
 				$data->userip = $userDetails->userip;
-				$data->id = $DB->insert_record('local_intelliboard_tracking', $data);
+				$data->id = $DB->insert_record('local_intelliboard_tracking', $data, true);
 			}
 			if($version >= 2016011300){
 				$currentstamp  = strtotime('today');
