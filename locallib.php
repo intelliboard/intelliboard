@@ -49,6 +49,17 @@ function intelliboard_url(){
 	}
 	return 'https://'.$domain.'intelliboard.net';
 }
+function intelliboard_compl_sql($prefix = "", $sep = true)
+{
+    $completions = get_config('local_intelliboard', 'completions');
+    $prefix = ($sep) ? " AND ".$prefix : $prefix;
+    if(!empty($completions)){
+        return $prefix . "completionstate IN($completions)";
+    }else{
+
+        return $prefix . "completionstate IN(1,2)"; //Default completed and passed
+    }
+}
 function intelliboard_grade_sql($avg = false, $params = null, $alias = 'g.', $round = 2)
 {
     $scales = get_config('local_intelliboard', 'scales');

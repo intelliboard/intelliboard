@@ -172,6 +172,8 @@ $string['completion'] = 'Completion';
 $string['class_average'] = 'Class average';
 $string['time_spent'] = 'Time Spent';
 $string['completed_on'] = 'Completed on {$a}';
+$string['passed_on'] = 'Completed (pass) on {$a}';
+$string['failed_on'] = 'Completed (fail) on {$a}';
 $string['last_access_on_course'] = 'Last access on course: {$a}';
 $string['you_have_certificates'] = 'You have {$a} certificates';
 $string['close'] = 'Close';
@@ -398,3 +400,11 @@ $string['s45'] = 'Activity';
 $string['s46'] = 'Percent of students attempting';
 $string['s47'] = 'Topic';
 $string['s48'] = 'Time spent on topic';
+
+$string['completions'] = 'Activity completion status';
+$string['completions_completed'] = 'Completion status (completed)';
+$string['completions_pass'] = 'Completion status (pass)';
+$string['completions_fail'] = 'Completion status (fail)';
+$string['completions_desc'] = '1) The user has completed this activity. It is not specified whether they have passed or failed it. <br>
+2) The user has completed this activity with a grade above the pass mark. <br>
+3) The user has completed this activity but their grade is less than the pass mark.';

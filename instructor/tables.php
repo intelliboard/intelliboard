@@ -201,6 +201,7 @@ class intelliboard_activities_grades_table extends table_sql {
         }
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
         $grade_avg = intelliboard_grade_sql(true);
+        $completion = intelliboard_compl_sql("", false);
 
         $fields = "
                 cm.id,
@@ -216,7 +217,7 @@ class intelliboard_activities_grades_table extends table_sql {
         $from = "{course_modules} cm
                 LEFT JOIN {modules} m ON m.id = cm.module
                 LEFT JOIN (SELECT gi.iteminstance, gi.itemmodule, $grade_avg AS grade FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = :c1 GROUP BY gi.iteminstance, gi.itemmodule) as g ON g.iteminstance = cm.instance AND g.itemmodule = m.name
-                LEFT JOIN (SELECT coursemoduleid, COUNT(id) AS completed FROM {course_modules_completion} WHERE completionstate=1 GROUP BY coursemoduleid) cmc ON cmc.coursemoduleid = cm.id
+                LEFT JOIN (SELECT coursemoduleid, COUNT(id) AS completed FROM {course_modules_completion} WHERE $completion GROUP BY coursemoduleid) cmc ON cmc.coursemoduleid = cm.id
                 LEFT JOIN (SELECT param, SUM(visits) AS visits, SUM(timespend) AS timespend FROM {local_intelliboard_tracking} WHERE page='module' AND courseid = :c2 AND userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :c4 AND ctx.contextlevel = 50 AND ra.roleid $sql1) GROUP BY param) l ON l.param=cm.id";
         $where = "cm.visible = 1 AND cm.course = :c3 $sql";
 
@@ -405,6 +406,7 @@ class intelliboard_learners_grades_table extends table_sql {
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
         $grade_single = intelliboard_grade_sql();
+        $completion = intelliboard_compl_sql("cmc.");
 
         $fields = "ra.id, ra.userid, c.id as courseid,
             ra.timemodified as enrolled,
@@ -421,7 +423,7 @@ class intelliboard_learners_grades_table extends table_sql {
                 LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid
                 LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
                 LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                LEFT JOIN (SELECT cmc.userid, COUNT(DISTINCT cmc.id) as progress FROM {course_modules_completion} cmc, {course_modules} cm WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id  AND cmc.completionstate = 1 AND cm.completion > 0 AND cm.course = :c1 GROUP BY cmc.userid) cmc ON cmc.userid = u.id
+                LEFT JOIN (SELECT cmc.userid, COUNT(DISTINCT cmc.id) as progress FROM {course_modules_completion} cmc, {course_modules} cm WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id $completion AND cm.completion > 0 AND cm.course = :c1 GROUP BY cmc.userid) cmc ON cmc.userid = u.id
 
                 LEFT JOIN (SELECT t.userid,t.courseid, sum(t.timespend) as timespend, sum(t.visits) as visits FROM
                     {local_intelliboard_tracking} t GROUP BY t.courseid, t.userid) l ON l.courseid = c.id AND l.userid = u.id";
@@ -519,6 +521,7 @@ class intelliboard_learner_grades_table extends table_sql {
         }
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
         $grade_single = intelliboard_grade_sql();
+        $completion = intelliboard_compl_sql("cmc.");
 
         $fields = "
             cm.id,
@@ -534,7 +537,7 @@ class intelliboard_learner_grades_table extends table_sql {
             LEFT JOIN {modules} m ON m.id = cm.module
             LEFT JOIN {grade_items} gi ON gi.iteminstance = cm.instance AND gi.itemmodule = m.name AND gi.itemtype = 'mod'
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :u1
-            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1 AND cmc.userid = :u2
+            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :u2
             LEFT JOIN {local_intelliboard_tracking} l ON l.param=cm.id AND l.page='module' AND l.courseid=:c1 AND l.userid= :u3";
         $where = "cm.visible = 1 AND cm.course = :c2 $sql";
 

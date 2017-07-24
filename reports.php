@@ -86,6 +86,7 @@ if($id){
 		'filter_columns'=>get_config('local_intelliboard', 'filter9'),
 		'teacher_roles'=>get_config('local_intelliboard', 'filter10'),
 		'learner_roles'=>get_config('local_intelliboard', 'filter11'),
+		'completion'=>get_config('local_intelliboard', 'completions'),
 		'filter_profile'=>0,
 		'sizemode'=>0,
 		'custom'=> '',

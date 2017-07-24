@@ -124,9 +124,12 @@ function intelliboard_data($type, $userid) {
 
         $grade_single = intelliboard_grade_sql();
 
+        $completion = intelliboard_compl_sql("cmc.");
+
+
         $query = "SELECT DISTINCT(c.id) AS id, c.fullname, MIN(ue.timemodified) AS timemodified,
                     (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid1) AS grade,
-                    (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
+                    (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
                     (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid3 AND courseid = c.id) AS duration,
                     (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND completion > 0 AND course = c.id) AS modules,
                     (SELECT timecompleted FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
@@ -160,13 +163,14 @@ function intelliboard_data($type, $userid) {
 
         $grade_single = intelliboard_grade_sql();
         $grade_avg = intelliboard_grade_sql(true);
+        $completion = intelliboard_compl_sql("cmc.");
 
         $query = "SELECT c.id, c.fullname, MIN(ue.timemodified) AS timemodified,
                 (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid6) AS grade,
                 (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
                 (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid2 AND courseid = c.id) AS duration,
                 (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
-                (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
+                (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
                 (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND completion > 0 AND course = c.id) AS modules,
                 (SELECT timecompleted FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
                 $sql_select
@@ -356,9 +360,11 @@ function intelliboard_learner_modules($userid){
     $params['userid1'] = $userid;
     $params['userid2'] = $userid;
     $params['userid3'] = $userid;
+    $completion = intelliboard_compl_sql("cmc.");
+
     return $DB->get_records_sql("SELECT m.id, m.name, count(distinct cm.id) as modules , count(distinct cmc.id) as completed_modules, count(distinct l.id) as start_modules, sum(l.timespend) as duration
                                   FROM {modules} m, {course_modules} cm
-                                    LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid1 AND cmc.completionstate = 1
+                                    LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid1 $completion
                                     LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = :userid2 AND l.param = cm.id
                                   WHERE cm.visible = 1 AND cm.module = m.id and cm.course IN (
                                     SELECT distinct e.courseid FROM {enrol} e, {user_enrolments} ue WHERE ue.userid = :userid3 AND e.id = ue.enrolid) GROUP BY m.id", $params);

@@ -395,7 +395,7 @@
 .grades-table table{margin-top: 20px}
 .grades-table tr td{overflow: hidden;}
 .grades-table tr td .info-progress{margin: 13px 0;}
-.grades-table .paging{float: right;}
+.grades-table .paging{float: none; margin: 20px 0 0}
 .grades-table .intelliboard-search{margin: 0; float: left;}
 
 .orange-color{color: #f0ad4e}

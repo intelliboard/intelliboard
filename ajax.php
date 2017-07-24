@@ -128,7 +128,19 @@ if($action == 'user_courses_list'){
 		$html .= '<tr>';
 		$html .= '<td>'.fullname($item).'</td>';
 		$html .= '<td>'. $item->email .'</td>';
-		$html .= '<td>'. (($item->completionstate==1)?get_string('completed_on', 'local_intelliboard', date('m/d/Y', $item->timemodified)):get_string('incomplete', 'local_intelliboard')) .'</td>';
+
+		if ($item->completionstate == 1) {
+			$status = get_string('completed_on', 'local_intelliboard', date('m/d/Y', $item->timemodified));
+		} elseif ($item->completionstate == 2) {
+			$status = get_string('passed_on', 'local_intelliboard', date('m/d/Y', $item->timemodified));
+		} elseif ($item->completionstate == 3) {
+			$status = get_string('failed_on', 'local_intelliboard', date('m/d/Y', $item->timemodified));
+		} else {
+			$status = get_string('incomplete', 'local_intelliboard');
+		}
+
+		$html .= '<td>'. $status .'</td>';
+
 		$html .= '<td>'. round($item->grade, 2) .'</td>';
 		$html .= '</tr>';
 	}

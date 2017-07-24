@@ -394,3 +394,13 @@ $string["s45"] = "Actividad";
 $string["s46"] = "Porcentaje de estudiantes que intentaron";
 $string["s47"] = "Tema";
 $string["s48"] = "Tiempo dedicado al tema";
+
+$string['passed_on'] = 'Completado (aprobado) {$a}';
+$string['failed_on'] = 'Completado (fallado) en {$a}';
+$string['completions'] = 'Estado de finalización de la actividad';
+$string['completions_completed'] = 'Estado de finalización (completado)';
+$string['completions_pass'] = 'Estado de finalización (pasar)';
+$string['completions_fail'] = 'Estado de finalización (falla)';
+$string['completions_desc'] = '1) El usuario ha completado esta actividad. No se especifica si han pasado o fallado. <br>
+2) El usuario ha completado esta actividad con un grado por encima de la calificación de aprobado. <br>
+3) El usuario ha completado esta actividad, pero su calificación es menor que la calificación de aprobado.';

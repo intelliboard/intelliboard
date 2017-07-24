@@ -176,6 +176,19 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
+        $options = array(
+            1=>new lang_string('completions_completed', 'local_intelliboard'),
+            2=>new lang_string('completions_pass', 'local_intelliboard'),
+            3=>new lang_string('completions_fail', 'local_intelliboard')
+        );
+        $defaultdisplayoptions = array(1,2);
+
+        $name = 'local_intelliboard/completions';
+        $title = new lang_string('completions', 'local_intelliboard');
+        $desc = new lang_string('completions_desc', 'local_intelliboard');
+        $setting = new admin_setting_configmultiselect($name, $title, $desc, $defaultdisplayoptions, $options);
+        $settings->add($setting);
+
         $options = array();
         $defaultdisplayoptions = array();
         for($i=0;$i<20;$i++){

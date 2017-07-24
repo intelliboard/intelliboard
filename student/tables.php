@@ -72,6 +72,7 @@ class intelliboard_courses_grades_table extends table_sql {
         }
         $grade_single = intelliboard_grade_sql();
         $grade_avg = intelliboard_grade_sql(true);
+        $completion = intelliboard_compl_sql("cmc.");
 
         $fields = "c.id, c.fullname as course, c.timemodified, c.startdate, c.enablecompletion, cri.gradepass, $grade_single AS grade, gc.average, cc.timecompleted, m.modules, cm.completedmodules, '' as actions, '' as letter";
 
@@ -79,7 +80,7 @@ class intelliboard_courses_grades_table extends table_sql {
 
             LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = c.userid
             LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) m ON m.course = c.id
-            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid AND cmc.completionstate = 1 AND cm.visible = 1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = c.userid
+            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = c.userid
             LEFT JOIN {course_completion_criteria} as cri ON cri.course = c.id AND cri.criteriatype = 6
             LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = c.userid
@@ -188,6 +189,7 @@ class intelliboard_activities_grades_table extends table_sql {
         $params['courseid'] = $courseid;
 
         $grade_single = intelliboard_grade_sql();
+        $completion = intelliboard_compl_sql("cmc.");
 
         $fields = "gi.id, gi.itemname, cm.id as cmid, gi.itemmodule, cmc.timemodified as timecompleted, $grade_single AS grade,
             CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS timepoint";
@@ -195,7 +197,7 @@ class intelliboard_activities_grades_table extends table_sql {
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid1
             LEFT JOIN {modules} m ON m.name = gi.itemmodule
             LEFT JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
-            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1 AND cmc.userid = :userid2";
+            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :userid2";
         $where = "gi.courseid = :courseid AND gi.itemtype = 'mod' AND cm.visible = 1 $sql";
 
         $this->set_sql($fields, $from, $where, $params);
