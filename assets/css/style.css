@@ -450,6 +450,23 @@
 .info-progress .goal{border-right:3px solid #686868; z-index:3;}
 .info-hidden{opacity:0;text-indent:-9999px;height: 1px;width:1px;}
 
+#daterange.disabled{
+	opacity: 0.4;
+	cursor: default;
+}
+#daterange{
+	margin-left: 5px;
+	min-width: 200px;
+}
+.daterange-wrap{position: relative;}
+.daterange-wrap i:hover{color: #000;}
+.daterange-wrap i{color: rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+    font-size: 17px;
+    position: absolute;
+    right: 13px;
+    top: -4px;}
+
 /*Bootstrap v3.3.5 (http://getbootstrap.com)*/
 .pagination-info{float:right; line-height: 34px;}
 .pagination {
@@ -566,9 +583,7 @@
     right: 0;
     width: 37%;
 }
-#daterange{
-	margin-left: 5px;
-}
+
 .flatpickr-calendar-title {
     color: #999;
     font-size: 11px;

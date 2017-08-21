@@ -114,7 +114,7 @@ function intelliboard_filter_in_sql($sequence, $column, $params = array(), $prfx
 	return array($sql, $params);
 }
 function intelliboard($params){
-	global $CFG;
+	global $CFG, $SESSION;
 
 	require_once($CFG->libdir . '/filelib.php');
 
@@ -122,7 +122,8 @@ function intelliboard($params){
 	$params['firstname'] = get_config('local_intelliboard', 'te12');
 	$params['lastname'] = get_config('local_intelliboard', 'te13');
 	$params['email'] = get_config('local_intelliboard', 'te1');
-	$params['url'] = $CFG->wwwroot;
+    $params['url'] = $CFG->wwwroot;
+	$params['lang'] = $SESSION->lang;
 
 	if($tls12){
 		$options = array('CURLOPT_SSL_CIPHER_LIST'=>'ECDHE_ECDSA_AES_128_GCM_SHA_256');

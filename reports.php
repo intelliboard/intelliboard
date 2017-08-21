@@ -62,6 +62,12 @@ if (!$daterange) {
 	$timefinish_date = date("Y-m-d", $timefinish);
 
 	$daterange = $timestart_date . ' to ' . $timefinish_date;
+} elseif($daterange == 'disabled') {
+	$timestart = 0;
+	$timefinish = time();
+
+	$timestart_date = date("Y-m-d", strtotime('-7 days'));
+	$timefinish_date = date("Y-m-d", $timefinish);
 } else {
 	$range = explode(" to ", $daterange);
 
@@ -143,6 +149,19 @@ echo $OUTPUT->header();
 	<?php include("views/menu.php"); ?>
 	<script type="text/javascript">
 		jQuery(document).ready(function(){
+			$("#daterange").wrap("<span class='daterange-wrap'></span>");
+			$("#daterange").after('<i class="daterange-trigger ion-android-checkbox-outline"></i>');
+			$(".daterange-trigger").click(function(){
+				$(".hidden-daterange").remove();
+				if ($(this).hasClass('ion-android-checkbox-outline')) {
+					$(this).attr('class', 'daterange-trigger ion-android-checkbox-outline-blank');
+					$("#daterange").addClass('disabled').prop( "disabled", true ).val('');
+					$(".daterange-wrap").append('<input type="hidden" class="hidden-daterange" name="daterange" value="disabled"/>');
+				} else {
+					$(this).attr('class', 'daterange-trigger ion-android-checkbox-outline');
+					$("#daterange").removeClass('disabled').prop( "disabled", false ).val('');
+				}
+			});
 			$("#daterange").flatpickr({
 			    mode: "range",
 			    dateFormat: "Y-m-d",
@@ -155,6 +174,9 @@ echo $OUTPUT->header();
 
     			}
 			});
+			<?php if ($daterange == 'disabled'): ?>
+				$(".daterange-trigger").trigger('click');
+			<?php endif; ?>
 		});
 	</script>
 	<div class="intelliboard-content"><?php echo intelliboard_clean($intelliboard->content); ?></div>

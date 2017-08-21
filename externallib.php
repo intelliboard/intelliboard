@@ -7126,12 +7126,11 @@ class local_intelliboard_external extends external_api {
         global $DB;
 
         if($params->userid){
-            $sql_params = $this->params;
-            $sql_params['userid1'] = $params->userid;
-            $sql_params['userid2'] = $params->userid;
-            $sql_params['userid3'] = $params->userid;
-            $sql_params['userid4'] = $params->userid;
-            $sql_params['userid5'] = $params->userid;
+            $this->params['userid1'] = $params->userid;
+            $this->params['userid2'] = $params->userid;
+            $this->params['userid3'] = $params->userid;
+            $this->params['userid4'] = $params->userid;
+            $this->params['userid5'] = $params->userid;
             $grade_avg = intelliboard_grade_sql(true, $params);
 
             $user = $DB->get_record_sql("
@@ -7152,14 +7151,14 @@ class local_intelliboard_external extends external_api {
                     LEFT JOIN (SELECT userid, SUM(timespend) AS timespend_courses, SUM(visits) AS visits_courses FROM {local_intelliboard_tracking} WHERE courseid > 0 AND userid = :userid3) lit2 ON lit2.userid = u.id
                     LEFT JOIN (SELECT userid, SUM(timespend) AS timespend_modules, SUM(visits) AS visits_modules FROM {local_intelliboard_tracking} WHERE page = 'module' AND userid = :userid4) lit3 ON lit3.userid = u.id
                  WHERE u.id = :userid5
-                ", $sql_params);
+                ", $this->params);
 
             if($user->id){
                 $filter1 = $this->get_filter_in_sql($params->learner_roles, 'roleid', false);
                 $filter2 = $this->get_filter_in_sql($params->learner_roles, 'roleid', false);
-                $sql_params2 = $this->params;
-                $sql_params2['userid1'] = $user->id;
-                $sql_params2['userid2'] = $user->id;
+
+                $this->params['userid1'] = $user->id;
+                $this->params['userid2'] = $user->id;
                 $grade_avg = intelliboard_grade_sql(true, $params);
 
                 $user->avg = $DB->get_record_sql("SELECT a.timespend_site, a.visits_site, c.grade_site
@@ -7174,17 +7173,16 @@ class local_intelliboard_external extends external_api {
                                                         FROM {grade_items} gi, {grade_grades} g
                                                         WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND g.userid NOT IN (
                                                           SELECT distinct userid FROM {role_assignments} WHERE $filter2) AND g.userid != :userid2 GROUP BY g.userid) b) c
-                                                ",$sql_params2);
+                                                ",$this->params);
 
 
-                $sql_params = $this->params;
-                $sql_params['userid'] = $user->id;
+                $this->params['userid'] = $user->id;
                 $user->data = $DB->get_records_sql("SELECT uif.id, uif.name, uid.data
                                                     FROM {user_info_field} uif,
                                                          {user_info_data} uid
                                                     WHERE uif.id = uid.fieldid AND uid.userid = :userid
                                                     ORDER BY uif.name
-                                                   ",$sql_params);
+                                                   ",$this->params);
 
                 $user->grades = $DB->get_records_sql("SELECT g.id, gi.itemmodule, $grade_avg AS grade
                                                       FROM {grade_items} gi,
@@ -7192,7 +7190,7 @@ class local_intelliboard_external extends external_api {
                                                       WHERE  gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND g.userid = :userid
                                                       GROUP BY gi.itemmodule
                                                       ORDER BY g.timecreated DESC
-                                                     ", $sql_params);
+                                                     ",$this->params);
 
                 $completion = $this->get_completion($params, "cmc.");
                 $user->courses = $DB->get_records_sql("SELECT ue.id,
@@ -7209,7 +7207,7 @@ class local_intelliboard_external extends external_api {
                                                        WHERE ue.userid = :userid
                                                        GROUP BY e.courseid
                                                        ORDER BY c.fullname
-                                                      ",$sql_params, 0, 100);
+                                                      ",$this->params, 0, 100);
             }else{
                 return false;
             }
