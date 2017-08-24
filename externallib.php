@@ -4705,8 +4705,10 @@ class local_intelliboard_external extends external_api {
         return $this->get_report_data("
 			SELECT l.id,
 				a.name as assignment,
+				a.id as assignmentid,
 				a.duedate,
 				c.fullname as course,
+				c.id as courseid,
 				s.status,
 				s.userid,
 				s.timemodified,
