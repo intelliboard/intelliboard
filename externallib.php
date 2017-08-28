@@ -2973,16 +2973,6 @@ class local_intelliboard_external extends external_api {
 	        $sql = $this->get_filter_in_sql($params->custom2, 'roleid');
 	        $sql_filter .= " AND l1.userid IN (SELECT DISTINCT userid FROM {role_assignments} WHERE userid > 0 $sql)";
 	    }
-	    if ($params->sizemode) {
-	    	$sql_columns .= ", '' AS loggedout";
-            $sql_join = "";
-        } else {
-            $sql_columns .= ", l2.timecreated AS loggedout";
-            $sql_join = "LEFT JOIN {logstore_standard_log} l2 ON l2.id = (
-                    SELECT MIN(l3.id)
-                    FROM {logstore_standard_log} l3
-                    WHERE l3.action = 'loggedout' AND l3.id > l1.id AND l3.userid = l1.userid)";
-        }
 
         return $this->get_report_data("
             SELECT l1.id,
@@ -2990,11 +2980,11 @@ class local_intelliboard_external extends external_api {
                u.lastname,
                u.timecreated AS registered,
                l1.userid,
-               l1.timecreated AS loggedin
+               l1.timecreated AS loggedin,
+               (SELECT l2.timecreated FROM {logstore_standard_log} l2 WHERE l2.userid = l1.userid and l2.action = 'loggedout' and l2.id > l1.id LIMIT 1) AS loggedout
                $sql_columns
 			FROM {logstore_standard_log} l1
-                LEFT JOIN {user} u ON u.id = l1.userid
-                $sql_join
+                INNER JOIN {user} u ON u.id = l1.userid
 			WHERE l1.action = 'loggedin' $sql_filter $sql_having $sql_order", $params);
     }
 
