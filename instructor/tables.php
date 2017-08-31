@@ -400,7 +400,7 @@ class intelliboard_learners_grades_table extends table_sql {
         $params = array('c1'=>$courseid, 'c2'=>$courseid);
         $sql = "";
         if($search){
-            $sql .= " AND " . $DB->sql_like('u.firstname', ":learner", false, false);
+            $sql .= " AND " . $DB->sql_like("CONCAT(u.firstname, ' ', u.lastname)", ":learner", false, false);
             $params['learner'] = "%$search%";
         }
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
@@ -466,7 +466,7 @@ class intelliboard_learners_grades_table extends table_sql {
         global  $PAGE;
 
 
-        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), get_string('grades','local_intelliboard'), array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
+        return html_writer::link(new moodle_url($PAGE->url, array('search'=>'','action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), get_string('grades','local_intelliboard'), array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
     }
 }
 class intelliboard_learner_grades_table extends table_sql {
