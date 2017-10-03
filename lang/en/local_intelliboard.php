@@ -341,6 +341,13 @@ $string['learner_name'] = 'Learner Name';
 $string['completed_activities_resources'] = 'Completed Activities/Resources';
 $string['filter_dates'] = 'Filter dates:';
 $string['select_date'] = 'Select Date';
+$string['select'] = 'Select';
+$string['selectall'] = 'Select All';
+$string['ok'] = 'OK';
+$string['moodle'] = 'Moodle';
+$string['totara'] = 'Totara';
+$string['monitors'] = 'Monitors';
+$string['cohorts'] = 'Cohorts';
 $string['course_overview'] = 'Course Overview';
 $string['topics'] = 'Topics';
 
@@ -408,3 +415,11 @@ $string['completions_fail'] = 'Completion status (fail)';
 $string['completions_desc'] = '1) The user has completed this activity. It is not specified whether they have passed or failed it. <br>
 2) The user has completed this activity with a grade above the pass mark. <br>
 3) The user has completed this activity but their grade is less than the pass mark.';
+
+$string['widget_name27'] = "Cumulative Signups";
+$string['widget_name28'] = "Engagement";
+$string['widget_name29'] = "Unique Logins";
+$string['widget_name30'] = "Enrollments by Course";
+$string['widget_name31'] = "Registrars & Supervisor up take";
+$string['role1'] = "First Role";
+$string['role2'] = "Second Role";

@@ -37,10 +37,10 @@ class intelliboard_courses_grades_table extends table_sql {
         $headers = array('Course Name');
         $columns = array('course');
         if(get_config('local_intelliboard', 't23')){
-            $columns[] =  'timemodified';
+            $columns[] =  'startdate';
             $headers[] =  get_string('course_start_date', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't24')){
-           $columns[] =  'startdate';
+           $columns[] =  'timemodified';
            $headers[] =  get_string('enrolled_date', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't25')){
            $columns[] =  'average';

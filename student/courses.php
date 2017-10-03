@@ -135,12 +135,8 @@ echo $OUTPUT->header();
 						<div class="title">
 							<strong><?php echo format_string($item->fullname); ?></strong>
 							<?php if($t16): ?>
-								<?php if($teachers = get_users_by_capability(context_course::instance($item->id), 'moodle/course:update', '', '', '', '', '', null, false)): ?>
-
-									<?php $teachers = sort_by_roleassignment_authority($teachers, context_course::instance($item->id)); ?>
-									<?php foreach($teachers as $teacher): ?>
-										<p title="<?php echo get_string('teacher','local_intelliboard');?>"><?php echo $OUTPUT->user_picture($teacher, array('size'=>20)); ?> <?php echo fullname($teacher); ?></p>
-									<?php break; endforeach; ?>
+								<?php if($item->teacher and $teacher = core_user::get_user($item->teacher)): ?>
+									<p title="<?php echo get_string('teacher','local_intelliboard');?>"><?php echo $OUTPUT->user_picture($teacher, array('size'=>20)); ?> <?php echo fullname($teacher); ?></p>
 								<?php endif; ?>
 							<?php endif; ?>
 							<?php if($t17): ?>

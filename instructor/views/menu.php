@@ -45,5 +45,6 @@
 		</ul>
 	</li>
 	<?php endif; ?>
+	<li><a href="monitors.php" <?php echo ($PAGE->pagetype == 'monitors')?'class="active"':''; ?>><?php echo get_string('monitors', 'local_intelliboard');?></a></li>
 	<li><a href="help.php" <?php echo ($PAGE->pagetype == 'help')?'class="active"':''; ?>><?php echo get_string('help', 'local_intelliboard');?></a></li>
 </ul>

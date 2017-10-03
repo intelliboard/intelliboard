@@ -108,7 +108,7 @@ if($mode_filter){
 		'custom3'=> $custom3,
 		'length'=>$length,
 		'start'=>(($page-1) * $length),
-		'userid'=>$userid,
+		'userid'=>0,
 		'courseid'=>$courseid,
 		'cohortid'=>$cohortid,
 		'filter'=> s($filter),

@@ -123,6 +123,13 @@ if($t11){
 if($t5){
     $progress = intelliboard_learner_progress($time, $USER->id);
     $json_data = array();
+
+    if (count($progress[0]) < 2){
+        $obj = new stdClass();
+        $obj->timepoint = strtotime('+1 day');
+        $obj->grade = 0;
+        $progress[0][] = $obj;
+    }
     foreach($progress[0] as $item){
         $l = 0;
         if(isset($progress[1][$item->timepoint])){
@@ -140,6 +147,7 @@ if($t5){
         $item->timepoint = $item->timepoint*1000;
         $json_data[] = "[new Date($item->timepoint), ".round($item->grade, 2).", '$tooltip', $l, '$tooltip']";
     }
+
 }
 $json_data2 = array();
 foreach($courses as $item){

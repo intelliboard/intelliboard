@@ -82,6 +82,26 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 		upgrade_plugin_savepoint(true, 2016011300, 'local', 'intelliboard');
 	}
 
+	if ($oldversion < 2017072304) {
+		$table = new xmldb_table('local_intelliboard_details');
+		$table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+		$table->add_field('logid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+		$table->add_field('visits', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+		$table->add_field('timespend', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+		$table->add_field('timepoint', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0');
+		$table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+		if (!$dbman->table_exists($table)) {
+			$dbman->create_table($table);
+		}
+
+		// Add index to local_intelliboard_details
+		$table = new xmldb_table('local_intelliboard_details');
+		$index = new xmldb_index('logid_timepoint_idx', XMLDB_INDEX_NOTUNIQUE, array('logid', 'timepoint'));
+		if (!$dbman->index_exists($table, $index)) {
+			$dbman->add_index($table, $index);
+		}
+		upgrade_plugin_savepoint(true, 2017072304, 'local', 'intelliboard');
+	}
 	if ($oldversion < 2016030700) {
 		$table = new xmldb_table('local_intelliboard_tracking');
 

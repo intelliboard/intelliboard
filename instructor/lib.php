@@ -339,7 +339,7 @@ function intelliboard_instructor_stats()
             GROUP BY c.id, u.id) x
         GROUP BY x.id", $params);
 }
-function intelliboard_instructor_courses($view, $page, $length, $courseid = 0)
+function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $daterange = '')
 {
     global $DB, $USER;
 
@@ -356,6 +356,16 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0)
     $completion = intelliboard_compl_sql("cmc.");
 
     if($view == 'grades'){
+        $timerange_sql = '';
+        if (!empty($daterange)) {
+            $range = explode(" to ", $daterange);
+
+            if($range[0] && $range[1]){
+                $timerange_sql .= ' AND g.timemodified BETWEEN :timestart AND :timefinish';
+                $params['timestart'] = strtotime(trim($range[0]));
+                $params['timefinish'] = strtotime(trim($range[1]));
+            }
+        }
         $courses = $DB->get_records_sql("
             SELECT
                 c.id,
@@ -364,13 +374,22 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0)
                 (SELECT cc.gradepass FROM {course_completion_criteria} cc WHERE cc.course = c.id AND cc.criteriatype = 6 ) as data2
             FROM {course} c
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-                LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL $timerange_sql
             WHERE c.visible = 1 AND c.id IN (
                 SELECT DISTINCT ctx.instanceid
                 FROM {role_assignments} ra, {context} ctx
                 WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1)
             GROUP BY c.id", $params, $page, $length);
     }elseif($view == 'activities'){
+        if (!empty($daterange)) {
+            $range = explode(" to ", $daterange);
+
+            if($range[0] && $range[1]){
+                $completion .= ' AND cmc.timemodified BETWEEN :timestart AND :timefinish';
+                $params['timestart'] = strtotime(trim($range[0]));
+                $params['timefinish'] = strtotime(trim($range[1]));
+            }
+        }
         $courses = $DB->get_records_sql("
             SELECT
                 c.id,
@@ -393,6 +412,18 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0)
     }elseif($view == 'course_overview'){
         return array();
     }else{
+        if (!empty($daterange)) {
+            $range = explode(" to ", $daterange);
+
+            if($range[0] && $range[1]){
+                $sql2 .= ' AND (cc.timecompleted BETWEEN :timestart1 AND :timefinish1 OR ra.timemodified BETWEEN :timestart2 AND :timefinish2)';
+                $params['timestart1'] = strtotime(trim($range[0]));
+                $params['timefinish1'] = strtotime(trim($range[1]));
+                $params['timestart2'] = strtotime(trim($range[0]));
+                $params['timefinish2'] = strtotime(trim($range[1]));
+            }
+        }
+
         $courses = $DB->get_records_sql("
             SELECT
                 c.id,
@@ -408,6 +439,16 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0)
                 FROM {role_assignments} ra, {context} ctx
                 WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql2
             GROUP BY c.id", $params, $page, $length);
+
+        if(empty($courses)){
+            $row = new stdClass();
+            $row->id = 0;
+            $row->fullname = get_string('no_data','local_intelliboard');
+            $row->data1 = 0;
+            $row->data2 = 0;
+
+            $courses = array($row);
+        }
     }
     return $courses;
 }
@@ -425,4 +466,358 @@ function intelliboard_instructor_get_my_courses(){
                 FROM {role_assignments} ra, {context} ctx, {course} c
                 WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid AND c.id=ctx.instanceid $sql
                 ORDER BY c.fullname", $params);
+}
+
+
+function intelliboard_get_widget($id, $data, $params) {
+    global $DB;
+
+    $error = false;
+    $widget_name = get_string('widget_name'.$id, 'local_intelliboard');
+    $no_data = get_string('no_data', 'local_intelliboard');
+
+    if($id == 27){
+        if (isset($data->data) and $data->data) {
+            $json_data = array();
+            $data = explode(',', $data->data);
+            foreach($data as $key => $item){
+                if($item) {
+                    $item = explode('.',  $item);
+                    $item[0] = strtotime(date('m/d/Y 00:00:00', $item[0]));
+                    $d = date("j", $item[0]);
+                    $m = date("n", $item[0]) - 1;
+                    $y = date("Y", $item[0]);
+                    $l = $item[1];
+                    $json_data[] = "[new Date($y, $m, $d), $l]";
+                }
+            }
+            if (count($json_data) < 2) {
+                    $d = date("j", strtotime('+1 day'));
+                    $m = date("n") - 1;
+                    $y = date("Y");
+                    $json_data[] = "[new Date($y, $m, $d), 0]";
+            }
+        }else{
+            $error = true;
+        }
+        $html = getWidgetFilters($id, array('daterange', 'cohort'), $params);
+        if (!$error){
+            $html .= lineWidgetSetup($json_data, array("date"=>get_string('time', 'local_intelliboard'),"number"=>get_string('users', 'local_intelliboard')), array('id'=>$id, 'format'=>'MMMM'), 300);
+        }else{
+            $html .= '<div class="alert alert-warning">'.$no_data.'</div>';
+        }
+        return htmlWidgetSetup($html, array('style'=>'grid', 'name'=> $widget_name));
+    }elseif($id == 28){
+        if (isset($data->data) and $data->data) {
+            $json_data = array();
+            $data = explode(',', $data->data);
+            foreach($data as $key => $item){
+                $item = explode('.',  $item);
+                $item[0] = strtotime(date('m/d/Y 00:00:00', $item[0]));
+                $d = date("j", $item[0]);
+                $m = date("n", $item[0]) - 1;
+                $y = date("Y", $item[0]);
+                $l = $item[1];
+                $json_data[] = "[new Date($y, $m, $d), $l]";
+            }
+            if (count($json_data) < 2) {
+                    $d = date("j", strtotime('+1 day'));
+                    $m = date("n") - 1;
+                    $y = date("Y");
+                    $json_data[] = "[new Date($y, $m, $d), 0]";
+            }
+        }else{
+            $error = true;
+        }
+
+       $html = getWidgetFilters($id, array('daterange', 'profilefields'), $params);
+        if (!$error){
+            $html .= lineWidgetSetup($json_data, array("date"=>get_string('time', 'local_intelliboard'),"number"=>get_string('users', 'local_intelliboard')), array( 'id'=>$id, 'format'=>'MMMM'), 300);
+        }else{
+            $html .= '<div class="alert alert-warning">'.$no_data.'</div>';
+        }
+        return htmlWidgetSetup($html, array('style'=>'grid', 'name'=>$widget_name));
+    }elseif($id == 29){
+        $json_data = array();
+        if (isset($data->data) and $data->data) {
+            $data = explode(',', $data->data);
+            foreach($data as $key => $item){
+                $item = explode('.',  $item);
+                $time = date('M', $item[0]);
+                $users = (int)$item[1];
+                $json_data[] = "['".$time."', $users]";
+            }
+        }else{
+            $error = true;
+        }
+        $html = getWidgetFilters($id, array('daterange', 'profilefields'), $params);
+        if (!$error){
+            $html .= barWidgetSetup($json_data, array( 'id'=>$id, 'labels'=>'["'.get_string('time', 'local_intelliboard').'", "'.get_string('users', 'local_intelliboard').'"]', 'options'=>''), 300);
+        }else{
+            $html .= '<div class="alert alert-warning">'.$no_data.'</div>';
+        }
+        return htmlWidgetSetup($html, array('style'=>'grid', 'name'=>$widget_name));
+    }elseif($id == 30){
+        $json_data = array();
+        $month4 = date("F", strtotime("-4 month"));
+        $month3 = date("F", strtotime("-2 month"));
+        $month2 = date("F", strtotime("-1 month"));
+        $month1 = date("F");
+
+        if($data){
+            $courses = array();
+            foreach($data as $item){
+                $courses[str_replace('"',"'", $item->fullname)][$item->timepointval] = $item;
+            }
+            foreach ($courses as $key => $value) {
+                $month_val1 = 0;
+                $month_val2 = 0;
+                $month_val3 = 0;
+                $month_val4 = 0;
+
+                foreach ($value as $time => $course) {
+                    if ($month1 == date("F", $time)) {
+                        $month_val1 = $course->enrolled;
+                    }if ($month2 == date("F", $time)) {
+                        $month_val2 = $course->enrolled;
+                    }if ($month3 == date("F", $time)) {
+                        $month_val3 = $course->enrolled;
+                    }if ($month4 == date("F", $time)) {
+                        $month_val4 = $course->enrolled;
+                    }
+                }
+                $json_data[] = "['".$key."', $month_val1, $month_val2, $month_val3, $month_val4]";
+            }
+        }else{
+            $error = true;
+        }
+        $html = getWidgetFilters($id, array('enrols', 'system'), $params);
+        if (!$error){
+            $html .= barHWidgetSetup($json_data, array( 'id'=>$id, 'labels'=>'["'.get_string('course').'","'.$month1.'","'.$month2.'","'.$month3.'","'.$month4.'"]', 'options'=>''), 300);
+        }else{
+            $html .= '<div class="alert alert-warning">'.$no_data.'</div>';
+        }
+        return htmlWidgetSetup($html, array('style'=>'grid', 'name'=>$widget_name));
+    }elseif($id == 31){
+        $json_data = array();
+        if($data){
+            $times = array();
+            foreach($data as $item){
+                $times[$item->timepointval][] = $item;
+            }
+            ksort($times);
+
+            $role11 = 0;
+            $role22 = 0;
+            list($param1, $param2) = (isset($params->custom2) and !empty($params->custom2)) ? explode(",", $params->custom2) : array();
+            $result = $DB->get_records_sql("SELECT id, data FROM {user_info_data} WHERE id IN (?, ?)",
+                array(
+                    intval($param1),
+                    intval($param2)
+                )
+            );
+            foreach ($result as $item){
+                if ($param1 == $item->id) {
+                    $role11 = $item->data;
+                }
+                if ($param2 == $item->id) {
+                    $role22 = $item->data;
+                }
+            }
+
+            foreach($times as $key => $val){
+                $role1 = 0;
+                $role2 = 0;
+                foreach ($val as $time) {
+                    if ($time->data == $role11) {
+                        $role1 = $time->users;
+                    }
+                    if ($time->data == $role22) {
+                        $role2 = $time->users;
+                    }
+                }
+                $json_data[] = "['".date('M/d', $key)."', $role1, $role2]";
+            }
+        }else{
+            $error = true;
+        }
+        $html = getWidgetFilters($id, array('profilefields'), $params);
+        if (!$error){
+            $html .= barWidgetSetup($json_data, array( 'id'=>$id, 'labels'=>'["'.get_string('date').'", "'.get_string('role1', 'local_intelliboard').'", "'.get_string('role2', 'local_intelliboard').'"]', 'options'=>''), 300);
+        }else{
+            $html .= '<div class="alert alert-warning">'.$no_data.'</div>';
+        }
+        return htmlWidgetSetup($html, array('style'=>'grid', 'name'=> $widget_name));
+    }
+}
+function htmlWidgetSetup($data, $params = array())
+{
+    return '<div class="'.$params['style'].'">
+        <h3>'.$params['name'].'</h3>
+        '.(($params['wrap'])? "<div class='scroly'>$data</div>" : $data).'
+    </div>';
+}
+function barWidgetSetup($data, $params = array(), $height = 300){
+    return '<script type="text/javascript">
+        function drawChart'.$params['id'].'() {
+            var data = google.visualization.arrayToDataTable(['.$params['labels'].', '.implode(",", $data).']);
+            var options = {backgroundColor:{fill:"transparent"},title: "", '.$params['options'].' chartArea: {width: "99%",left:40}};
+            var chart = new google.visualization.ColumnChart(document.getElementById("widget'.$params['id'].'"));
+            chart.draw(data, options);
+        }
+        drawChart'.$params['id'].'();
+    </script>
+    <div id="widget'.$params['id'].'" style="width: 100%; height:'.$height.'px;"></div>';
+}
+function barHWidgetSetup($data, $params = array(), $height = 300){
+    return '<script type="text/javascript">
+        function drawChart'.$params['id'].'() {
+            var data = google.visualization.arrayToDataTable(['.$params['labels'].', '.implode(",", $data).']);
+            var options = {backgroundColor:{fill:"transparent"},title: "", '.$params['options'].' legend: { position: "bottom" }, chartArea:  {width: "99%",left:100}, bars: "horizontal", hAxis: {format: "decimal"}, colors: ["#a0b757", "#577bbb", "#93615f", "#10971d"]};
+            var chart = new google.visualization.BarChart(document.getElementById("widget'.$params['id'].'"));
+            chart.draw(data, options);
+        }
+       drawChart'.$params['id'].'();
+    </script>
+    <div id="widget'.$params['id'].'" style="width: 100%; height:'.$height.'px;"></div>';
+}
+
+function lineWidgetSetup($data, $colums, $params = array(), $height = 250){
+    $options = '';
+    foreach($colums as $key=>$val){
+        $options .= 'data.addColumn("'.$key.'", "'.$val.'");';
+    }
+    return '<script type="text/javascript">
+            function drawChart'.$params['id'].'() {
+                var data = new google.visualization.DataTable();
+                '.$options.'
+                data.addRows(['.implode(",", $data).']);
+
+                var options = {
+                    chartArea: {width: "99%",left:40},
+                    height: '.$height.',
+                    hAxis: {format: "'.$params['format'].'",gridlines: {color: "none"}},
+                    vAxis: {gridlines: {count: 5},minValue: 0},
+                    backgroundColor:{fill:"transparent"},
+                    legend: { position: "bottom" }
+                };
+                var chart = new google.visualization.LineChart(document.getElementById("widget'.$params['id'].'"));
+                chart.draw(data, options);
+            }
+            drawChart'.$params['id'].'();
+            </script><div id="widget'.$params['id'].'"></div>';
+}
+function getWidgetFilters($id, $filters = array(), $params)
+{
+    global $DB;
+
+    $html = '<form class="widget-filters clearfix" id="widgetform'.$id.'">';
+    $html .= '<input type="hidden" name="widget" value="'.$id.'"/>';
+    $html .= '<input type="hidden" name="trigger" value="1"/>';
+
+    foreach ($filters as $filter) {
+        if($filter == 'daterange'){
+            if($params->timestart and $params->timefinish){
+                $daterange = ', defaultDate: ["'.date("Y-m-d", $params->timestart).'", "'.date("Y-m-d", $params->timefinish).'"]';
+                $daterange_text = date("Y-m-d", $params->timestart) . ' to ' . date("Y-m-d", $params->timefinish);
+            } else{
+                $daterange_text = '';
+            }
+
+            $html .= '<input class="widget-daterange" name="daterange" id="widget-daterange'.$id.'" type="text" value="'.$daterange_text.'" placeholder="'.get_string('select_date', 'local_intelliboard').'" />';
+            $html .= '<script type="text/javascript">';
+            $html .= '$("#widget-daterange'.$id.'").flatpickr({ mode: "range", dateFormat: "Y-m-d", onClose: function(selectedDates, dateStr, instance){ updatewidget('.$id.'); }'.$daterange.'});';
+            $html .= '</script>';
+        }
+        if($filter == 'system'){
+            $html .= '<select name="custom2[]" id="custom2'.$id.'" class="widget-select custom2'.$id.'" multiple="multiple">';
+            $html .= '<option value="0" '.((!$params->custom2) ? 'selected="selected"' : "").'>'.get_string('moodle', 'local_intelliboard').'</option>';
+            $html .= '<option value="1" '.(($params->custom2) ? 'selected="selected"' : "").'>'.get_string('totara', 'local_intelliboard').'</option>';
+            $html .= '</select>';
+            $html .= '<script type="text/javascript">';
+            $html .= '$("#custom2'.$id.'").multipleSelect({minimumCountSelected:1, filter:true, placeholder:"'.get_string('select', 'local_intelliboard').'", selectAllText:"'.get_string('selectall', 'local_intelliboard').'", single:true, onClose: function() {updatewidget('.$id.');}});';
+            $html .= 'jQuery(".custom2'.$id.' .ms-drop").append(\'<div class="actions"><button type="button" class="custom2-close'.$id.'">'.get_string('ok', 'local_intelliboard').'</button></div>\');';
+            $html .= 'jQuery(".custom2-close'.$id.'").click(function(){updatewidget('.$id.'); jQuery("#custom2'.$id.'").multipleSelect("close"); });';
+            $html .= '</script>';
+        }
+        if($filter == 'enrols'){
+            $enrolments = $DB->get_records_sql("SELECT e.id, e.enrol FROM {enrol} e GROUP BY e.enrol");
+
+            $html .= '<select name="custom[]" id="custom'.$id.'" class="widget-select custom'.$id.'" multiple="multiple">';
+            foreach($enrolments as $enrol){
+                $custom = (isset($params->custom) and !empty($params->custom)) ? explode(",", $params->custom) : array();
+                $html .= '<option value="'.$enrol->id.'" '.((in_array($enrol->id, $custom)) ? 'selected="selected"' : "").'>'.$enrol->enrol .'</option>';
+            }
+            $html .= '</select>';
+            $html .= '<script type="text/javascript">';
+            $html .= '$("#custom'.$id.'").multipleSelect({minimumCountSelected:1, filter:true, placeholder:"'.get_string('select', 'local_intelliboard').'", selectAllText:"'.get_string('selectall', 'local_intelliboard').'", onClose: function() {}});';
+            $html .= 'jQuery(".custom'.$id.' .ms-drop").append(\'<div class="actions"><button type="button" class="custom-close'.$id.'">'.get_string('ok', 'local_intelliboard').'</button></div>\');';
+            $html .= 'jQuery(".custom-close'.$id.'").click(function(){updatewidget('.$id.'); jQuery("#custom'.$id.'").multipleSelect("close"); });';
+            $html .= '</script>';
+        }
+        if($filter == 'profilefields'){
+            $fields = $DB->get_records_sql("SELECT uif.id, uif.name FROM {user_info_field} uif ORDER BY uif.name");
+            $custom = (isset($params->custom) and !empty($params->custom)) ? explode(",", $params->custom) : array();
+            $custom2 = (isset($params->custom2) and !empty($params->custom2)) ? explode(",", $params->custom2) : array();
+
+            $html .= '<select name="custom[]" id="custom'.$id.'" class="widget-select  custom'.$id.'" multiple="multiple">';
+            foreach($fields as $item){
+                $html .= '<option value="'.$item->id.'" '.((in_array($item->id, $custom)) ? 'selected="selected"' : "").'>'.$item->name .'</option>';
+            }
+            $html .= '</select>';
+            $html .= '<select name="custom2[]" id="custom2'.$id.'" class="widget-select custom2'.$id.'" multiple="multiple">';
+
+            if($custom){
+                $result = $DB->get_records_sql("
+                    SELECT id, fieldid, data, count(id) as items
+                    FROM {user_info_data}
+                    WHERE fieldid = ?
+                    GROUP BY data
+                    ORDER BY data ASC", array($params->custom));
+
+                foreach($result as $item){
+                    if(!empty($item->data)){
+                        $html .= '<option value="'.$item->id.'"  '.((in_array($item->id, $custom2)) ? 'selected="selected"' : "").'>'. $item->data .'</option>';
+                    }
+                }
+            }
+            $html .= '</select>';
+            $html .= '<script type="text/javascript">';
+            $html .= '$("#custom'.$id.'").multipleSelect({minimumCountSelected:1, filter:true, placeholder:"'.get_string('select', 'local_intelliboard').'", selectAllText:"'.get_string('selectall', 'local_intelliboard').'", single:true, onClose: function() { info_fields('.$id.'); }});';
+
+            $html .= '$("#custom2'.$id.'").multipleSelect({minimumCountSelected:1, filter:true, placeholder:"'.get_string('select', 'local_intelliboard').'", selectAllText:"'.get_string('selectall', 'local_intelliboard').'", onClose: function() { }});';
+
+            $html .= 'jQuery(".custom'.$id.' .ms-drop").append(\'<div class="actions"><button type="button" class="custom-close'.$id.'">'.get_string('ok', 'local_intelliboard').'</button></div>\');';
+            $html .= 'jQuery(".custom-close'.$id.'").click(function(){jQuery("#custom'.$id.'").multipleSelect("close"); });';
+
+            $html .= 'jQuery(".custom2'.$id.' .ms-drop").append(\'<div class="actions"><button type="button" class="custom2-close'.$id.'">'.get_string('ok', 'local_intelliboard').'</button></div>\');';
+            $html .= 'jQuery(".custom2-close'.$id.'").click(function(){updatewidget('.$id.'); jQuery("#custom2'.$id.'").multipleSelect("close"); });';
+
+            $html .= '</script>';
+        }
+        if($filter == 'cohort'){
+            $cohorts = $DB->get_records_sql("SELECT id, name FROM {cohort} ORDER BY name");
+
+            $html .= '<select name="cohortid[]" id="cohort'.$id.'" class="widget-select cohort'.$id.'" multiple="multiple">';
+            foreach($cohorts as $cohort){
+                if(!empty($cohort->name)){
+                    $cohortids = (isset($params->cohortid) and !empty($params->cohortid)) ? explode(",", $params->cohortid) : array();
+                    $name = preg_replace("/[^\w_ ]+/u", "", $cohort->name);
+                    $html .= '<option value="'.$cohort->id.'" '.((in_array($cohort->id, $cohortids)) ? 'selected="selected"' : "").'>'.$name .'</option>';
+                }
+            }
+            $html .= '</select>';
+            $html .= '<script type="text/javascript">';
+            $html .= '$("#cohort'.$id.'").multipleSelect({minimumCountSelected:1, filter:true, placeholder:"'.get_string('cohorts', 'local_intelliboard').'", selectAllText:"'.get_string('selectall', 'local_intelliboard').'", onClose: function() {}});';
+            $html .= 'jQuery(".cohort'.$id.' .ms-drop").append(\'<div class="actions"><button type="button" class="cohort-close'.$id.'">'.get_string('ok', 'local_intelliboard').'</button></div>\');';
+            $html .= 'jQuery(".cohort-close'.$id.'").click(function(){updatewidget('.$id.'); jQuery("#cohort'.$id.'").multipleSelect("close"); });';
+            $html .= '</script>';
+        }
+
+    }
+    $html .= '</form>';
+    $html .= '<div class="clear"></div>';
+
+
+    return $html;
 }

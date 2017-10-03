@@ -40,11 +40,11 @@ function intelliboard_clean($content){
 }
 function intelliboard_url(){
 	$server = get_config('local_intelliboard', 'server');
-	if($server == 2){
+	if ($server == 2) {
 		$domain = 'eu.';
-	}elseif($server == 1){
+	} elseif($server == 1) {
 		$domain = 'au.';
-	}else{
+	} else {
 		$domain = '';
 	}
 	return 'https://'.$domain.'intelliboard.net';
@@ -53,10 +53,9 @@ function intelliboard_compl_sql($prefix = "", $sep = true)
 {
     $completions = get_config('local_intelliboard', 'completions');
     $prefix = ($sep) ? " AND ".$prefix : $prefix;
-    if(!empty($completions)){
+    if (!empty($completions)) {
         return $prefix . "completionstate IN($completions)";
-    }else{
-
+    } else {
         return $prefix . "completionstate IN(1,2)"; //Default completed and passed
     }
 }

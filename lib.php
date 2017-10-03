@@ -276,9 +276,28 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 						$log->visits = 1;
 						$log->timespend = $intelliboardTime;
 						$log->timepoint = $currentstamp;
-						$DB->insert_record('local_intelliboard_logs', $log);
+						$log->id = $DB->insert_record('local_intelliboard_logs', $log, true);
+					}
+
+					if($version >= 2017072300 and isset($log->id)){
+						$currenthour  = date('G');
+						if($detail = $DB->get_record('local_intelliboard_details', array('logid' => $log->id, 'timepoint' => $currenthour))){
+							if(!$ajaxRequest){
+								$detail->visits = $detail->visits + 1;
+							}
+							$detail->timespend = $detail->timespend + $intelliboardTime;
+							$DB->update_record('local_intelliboard_details', $detail);
+						}else{
+							$detail = new stdClass();
+							$detail->logid = $log->id;
+							$detail->visits = 1;
+							$detail->timespend = $intelliboardTime;
+							$detail->timepoint = $currenthour;
+							$detail->id = $DB->insert_record('local_intelliboard_details', $detail, true);
+						}
 					}
 				}
+
 				$sessions = false; $courses = false;
 				if($trackpoint != $currentstamp){
 					set_config("trackpoint", $currentstamp, "local_intelliboard");

@@ -138,7 +138,7 @@ if($n13){
 }
 
 $stats = intelliboard_instructor_stats();
-$courses = intelliboard_instructor_courses($view, $page, $length, $course);
+$courses = intelliboard_instructor_courses($view, $page, $length, $course, $daterange);
 
 echo $OUTPUT->header();
 ?>
@@ -188,7 +188,10 @@ echo $OUTPUT->header();
                         </div>
                     </div>
                 <?php endif; ?>
-	            <div class="clearfix"></div>
+                <div class="intelliboard-additional-form">
+                    <input type="text" id="chart-daterange" class="daterange flatpickr-input form-control" name="daterange" title="<?php echo get_string('filter_dates','local_intelliboard');?>" readonly="readonly" placeholder="<?php echo get_string('select_date','local_intelliboard');?>">
+                </div>
+                <div class="clearfix"></div>
 	            <div id="instructor-chart<?php echo ($view)?"-".$view:""; ?>" class="instructor-chart area"></div>
             <?php endif; ?>
             <?php if($n4): ?>
@@ -497,6 +500,30 @@ echo $OUTPUT->header();
                 });
             <?php endif; ?>
 
+            jQuery("#chart-daterange").flatpickr({
+                mode: "range",
+                dateFormat: "Y-m-d",
+                <?php if(!empty($daterange)):?>
+                defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
+                <?php endif;?>
+                onClose: function(selectedDates, dateStr, instance) {
+                    if(jQuery('#chart-daterange').val() == ''){
+                        return;
+                    }
+                    <?php if($view == 'course_overview'): ?>
+                        drawInsructorChart();
+                    <?php else: ?>
+                        var href = new URLSearchParams(window.location.search);
+                        if(href.has('daterange')){
+                            href.delete('daterange');
+                        }
+                        href.append('daterange',jQuery('#chart-daterange').val());
+                        var url = href.toString();
+                        window.location = window.location.pathname+'?'+url;
+                    <?php endif; ?>
+                }
+            });
+
 		});
 
 		<?php if($n7): ?>
@@ -598,8 +625,9 @@ echo $OUTPUT->header();
                 //var course = jQuery('#chart5 .intelliboard-dropdown button').val();
                 var chart = new google.visualization.ComboChart(document.getElementById('instructor-chart<?php echo ($view)?"-".$view:""; ?>'));
                 var view = jQuery('.intelliboard-additional-form .switcher a.active').attr('data-view');
+                var daterange = jQuery('#chart-daterange').val();
                 jQuery.ajax({
-                    url: "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?action=get_course_overview&view="+view+"&course=<?php echo $course;?>",
+                    url: "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?action=get_course_overview&view="+view+"&course=<?php echo $course;?>&daterange="+daterange,
                     dataType: "json"
                 }).done(function( response ) {
                     if(view == 'activity'){

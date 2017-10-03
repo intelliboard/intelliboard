@@ -165,6 +165,9 @@ function intelliboard_data($type, $userid) {
         $grade_avg = intelliboard_grade_sql(true);
         $completion = intelliboard_compl_sql("cmc.");
 
+        $teacher_roles = get_config('local_intelliboard', 'filter10');
+        list($sql_teacher_roles, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
+
         $query = "SELECT c.id, c.fullname, MIN(ue.timemodified) AS timemodified,
                 (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid6) AS grade,
                 (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
@@ -172,7 +175,13 @@ function intelliboard_data($type, $userid) {
                 (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
                 (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
                 (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND completion > 0 AND course = c.id) AS modules,
-                (SELECT timecompleted FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
+                (SELECT timecompleted FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted,
+                (SELECT DISTINCT u.id
+                    FROM {role_assignments} AS ra
+                        JOIN {user} u ON ra.userid = u.id
+                        JOIN {context} AS ctx ON ctx.id = ra.contextid
+                    WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles LIMIT 1
+                ) AS teacher
                 $sql_select
             FROM {user_enrolments} ue
                 LEFT JOIN {enrol} e ON e.id = ue.enrolid

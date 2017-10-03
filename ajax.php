@@ -93,7 +93,12 @@ if($action == 'user_courses_list'){
 	$instance = $DB->get_record($module->name, array('id'=>$cm->instance), '*', MUST_EXIST);
 	$learner_roles = get_config('local_intelliboard', 'filter11');
 
-	require_capability('moodle/course:manageactivities', context_module::instance($cm->id));
+	//require_capability('moodle/course:manageactivities', context_module::instance($cm->id));
+
+	require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
+
+	intelliboard_instructor_access();
+
 	$params = array(
 		'timestart'=>$timestart,
 		'timefinish'=>$timefinish,
@@ -106,27 +111,31 @@ if($action == 'user_courses_list'){
 
 	$grade_single = intelliboard_grade_sql();
 
-	$items = $DB->get_records_sql("SELECT c.id, c.completionstate, c.timemodified, c.userid, u.firstname, u.lastname, u.email, $grade_single as grade
+	$items = $DB->get_records_sql("SELECT c.id, c.completionstate, c.timemodified, cm.id AS cmid, c.userid, u.firstname, u.lastname, u.email, $grade_single as grade, l.timespend as timespend, l.visits as visits
 		FROM {course_modules_completion} c
 			LEFT JOIN {course_modules} cm ON cm.id = c.coursemoduleid
 		    LEFT JOIN {modules} m ON m.id = cm.module
 			LEFT JOIN {user} u ON u.id = c.userid
 		    LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = m.name AND gi.iteminstance = cm.instance AND gi.gradetype = 1
 			LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id AND g.finalgrade IS NOT NULL
+			LEFT JOIN (SELECT userid, param, SUM(timespend) as timespend, SUM(visits) as visits FROM {local_intelliboard_tracking} WHERE page = 'module' GROUP BY userid, param) l ON l.param = cm.id AND l.userid = u.id
+
 		    WHERE c.coursemoduleid = :coursemoduleid AND c.userid IN (SELECT ra.userid FROM {role_assignments} AS ra JOIN {context} AS ctx ON ra.contextid = ctx.id WHERE c.timemodified BETWEEN :timestart AND :timefinish AND ctx.instanceid = :courseid $rsql)", $params);
 
-	$html = '<h2>'.get_string('x_completions', 'local_intelliboard', s($instance->name)).'</h2>';
-	$html .= '<table class="table table-hover table-striped">';
+	$html = '<h2><span>'.get_string('x_completions', 'local_intelliboard', s($instance->name)).'</span> <a class="btn" style="float: right; margin-top: 6px;" href="#" id="exportcsv">Export to csv</a></h2>';
+	$html .= '<table class="table table-hover table-striped" id="exportcsvtable">';
 	$html .= '<thead><tr>';
 	$html .= '<th>'.get_string('username').'</th>';
 	$html .= '<th>'.get_string('email').'</th>';
 	$html .= '<th>'.get_string('completion_status', 'local_intelliboard').'</th>';
 	$html .= '<th>'.get_string('score', 'local_intelliboard').'</th>';
+	$html .= '<th>'.get_string('time_spent', 'local_intelliboard').'</th>';
+	$html .= '<th>'.get_string('visits', 'local_intelliboard').'</th>';
 	$html .= '<th></th>';
 	$html .= '</tr></thead>';
 	foreach($items as $item){
 		$html .= '<tr>';
-		$html .= '<td>'.fullname($item).'</td>';
+		$html .= '<td><a target="_blank" href="'.$CFG->wwwroot.'/local/intelliboard/instructor/courses.php?search&action=learner&id=2&userid='.$item->userid.'&cmid='.$item->cmid.'">'.fullname($item).'</td>';
 		$html .= '<td>'. $item->email .'</td>';
 
 		if ($item->completionstate == 1) {
@@ -142,6 +151,8 @@ if($action == 'user_courses_list'){
 		$html .= '<td>'. $status .'</td>';
 
 		$html .= '<td>'. round($item->grade, 2) .'</td>';
+		$html .= '<td>'. seconds_to_time($item->timespend) .'</td>';
+		$html .= '<td>'. $item->visits .'</td>';
 		$html .= '</tr>';
 	}
 	$html .= '</table>';

@@ -347,7 +347,7 @@ class intelliboard_activity_grades_table extends table_sql {
     function col_learner($values) {
         global $CFG, $PAGE;
 
-        return html_writer::link(new moodle_url("$CFG->wwwroot/user/profile.php", array('id'=>$values->userid)), $values->learner, array("target"=>"_blank"));
+        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), $values->learner);
     }
     function col_actions($values) {
         global  $PAGE;
@@ -359,7 +359,7 @@ class intelliboard_activity_grades_table extends table_sql {
 
 class intelliboard_learners_grades_table extends table_sql {
 
-    function __construct($uniqueid, $courseid = 0, $search = '') {
+    function __construct($uniqueid, $courseid = 0, $search = '') { 
         global $CFG, $PAGE, $DB;
 
         parent::__construct($uniqueid);
@@ -460,7 +460,7 @@ class intelliboard_learners_grades_table extends table_sql {
     function col_learner($values) {
         global $CFG, $PAGE;
 
-        return html_writer::link(new moodle_url("$CFG->wwwroot/user/profile.php", array('id'=>$values->userid)), $values->learner, array("target"=>"_blank"));
+        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), $values->learner);
     }
     function col_actions($values) {
         global  $PAGE;
