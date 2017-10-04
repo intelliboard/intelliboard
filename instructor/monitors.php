@@ -87,9 +87,9 @@ if ($action == 'get_widget_data') {
 	$params = new stdClass();
 	$params->timestart = $timestart;
 	$params->timefinish = $timefinish;
-	$params->cohortid = implode(",", array_map('intval', $cohortid));
-	$params->custom = implode(",", array_map('intval', $custom));
-	$params->custom2 = implode(",", array_map('intval', $custom2));
+	$params->cohortid = ($cohortid) ? implode(",", array_map('intval', $cohortid)) : $cohortid;
+	$params->custom = ($cohortid) ? implode(",", array_map('intval', $custom)) : $custom;
+	$params->custom2 = ($cohortid) ? implode(",", array_map('intval', $custom2)) : $custom2;
 
 	$html = intelliboard_get_widget($id, $data, $params);
 	die($html);

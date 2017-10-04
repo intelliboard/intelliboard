@@ -654,7 +654,7 @@ function htmlWidgetSetup($data, $params = array())
 {
     return '<div class="'.$params['style'].'">
         <h3>'.$params['name'].'</h3>
-        '.(($params['wrap'])? "<div class='scroly'>$data</div>" : $data).'
+        <div class="scroly">'.$data.'</div>
     </div>';
 }
 function barWidgetSetup($data, $params = array(), $height = 300){
