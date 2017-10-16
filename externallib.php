@@ -8498,7 +8498,7 @@ class local_intelliboard_external extends external_api {
     public function get_user_info_fields($params){
         global $DB;
 
-        return $DB->get_records_sql("SELECT uif.id, uif.name, uic.name AS category
+        return $DB->get_records_sql("SELECT uif.id, uif.name, uif.shortname, uic.name AS category
                                      FROM {user_info_field} uif, {user_info_category} uic
                                      WHERE uif.categoryid = uic.id
                                      ORDER BY uif.name");
