@@ -513,18 +513,38 @@ echo $OUTPUT->header();
                     <?php if($view == 'course_overview'): ?>
                         drawInsructorChart();
                     <?php else: ?>
-                        var href = new URLSearchParams(window.location.search);
-                        if(href.has('daterange')){
-                            href.delete('daterange');
-                        }
-                        href.append('daterange',jQuery('#chart-daterange').val());
-                        var url = href.toString();
-                        window.location = window.location.pathname+'?'+url;
+                        var href = removeParam('daterange', window.location.search);
+						if(href == '?'){
+							href = '';
+						}
+						if(href != ''){
+							href = href+'&';
+						}
+						href = href+'daterange='+jQuery('#chart-daterange').val();
+                        window.location = window.location.pathname+'?'+href;
                     <?php endif; ?>
                 }
             });
 
 		});
+		
+		function removeParam(key, sourceURL) {
+			var rtn = sourceURL.split("?")[0],
+				param,
+				params_arr = [],
+				queryString = (sourceURL.indexOf("?") !== -1) ? sourceURL.split("?")[1] : "";
+			if (queryString !== "") {
+				params_arr = queryString.split("&");
+				for (var i = params_arr.length - 1; i >= 0; i -= 1) {
+					param = params_arr[i].split("=")[0];
+					if (param === key) {
+						params_arr.splice(i, 1);
+					}
+				}
+				rtn = rtn + "?" + params_arr.join("&");
+			}
+			return rtn;
+		}
 
 		<?php if($n7): ?>
        	google.setOnLoadCallback(LearningProgress);
@@ -601,7 +621,7 @@ echo $OUTPUT->header();
 				var data = google.visualization.arrayToDataTable([
 				['Course', '<?php echo get_string('in19', 'local_intelliboard'); ?>', '<?php echo get_string('in25', 'local_intelliboard'); ?>'],
 				<?php foreach($courses as $row):  ?>
-				['<?php echo format_string($row->fullname); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
+				['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
 				<?php endforeach; ?>
 				]);
 	        <?php elseif($view == 'activities'): ?>
@@ -613,7 +633,7 @@ echo $OUTPUT->header();
 	        	var data = google.visualization.arrayToDataTable([
 	        	['<?php echo get_string('course'); ?>', '<?php echo get_string('in15', 'local_intelliboard'); ?>'],
 	        	<?php foreach($courses as $row):  ?>
-				['<?php echo format_string($row->fullname); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
+				['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
 				<?php endforeach; ?>
 				]);
 	        <?php elseif($view == 'course_overview'): ?>
@@ -646,7 +666,7 @@ echo $OUTPUT->header();
 	        	var data = google.visualization.arrayToDataTable([
 	        	['<?php echo get_string('course'); ?>', '<?php echo get_string('enrolled', 'local_intelliboard'); ?>', '<?php echo get_string('completed', 'local_intelliboard'); ?>'],
 	        	<?php foreach($courses as $row):  ?>
-				['<?php echo format_string($row->fullname); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
+				['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
 				<?php endforeach; ?>
 				]);
 	        <?php endif; ?>
