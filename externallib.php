@@ -2616,19 +2616,23 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
 
+		for($i = 1; $i < 16; $i++){
+			$sql_columns .= " WHEN o.name = 'program_number$i' THEN (SELECT value FROM {course_format_options} WHERE name = 'credit_hours$i' AND courseid = c.id)";
+		}
+		$sql_columns .= ($sql_columns) ? ", CASE $sql_columns ELSE 'NONE' END AS credits" : ", '' AS credits";
+
         return $this->get_report_data("
         	SELECT
-				cc.id,
+				CONCAT(cc.id, '-', o.id) AS id,
 				u.firstname,
 				u.lastname,
 				u.email,
 				c.fullname,
 				cc.timecompleted,
-				(SELECT GROUP_CONCAT(value) FROM mdl_course_format_options WHERE name like '%program_%' AND courseid = c.id) AS programs,
-				(SELECT GROUP_CONCAT(value) FROM mdl_course_format_options WHERE name like '%credit_%' AND courseid = c.id) AS credits
+				o.value AS programs
 				$sql_columns
-			FROM {course_completions} cc, {course} c, {user} u
-			WHERE cc.timecompleted > 0 AND u.id = cc.userid AND c.id = cc.course $sql_filter $sql_having $sql_order", $params);
+			FROM {course_completions} cc, {course} c, {user} u, {course_format_options} o
+			WHERE cc.timecompleted > 0 AND u.id = cc.userid AND c.id = cc.course AND o.courseid = c.id AND o.name like '%program_%' $sql_filter $sql_having $sql_order", $params);
     }
 
     public function report79($params)
@@ -5977,6 +5981,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
 
+        $sql_join = "";
         $sql_filter1 = "";
         $sql_filter2 = "";
         $sql_select1 = "'0' AS grade1,";
@@ -5985,24 +5990,26 @@ class local_intelliboard_external extends external_api {
         	$date = explode(",", $params->custom);
         	$params->timestart = $date[0];
         	$params->timefinish = $date[1];
-        	$sql = $this->get_filterdate_sql($params, "g1.timemodified");
-
-        	$grade = intelliboard_grade_sql(true, $params, 'g1.');
-        	$sql_select1 = "$grade AS grade1,";
-        	$sql_filter1 = "
-        		JOIN {grade_items_history} i1 ON i1.itemtype = 'course' AND i1.courseid = c.id
-				JOIN {grade_grades_history} g1 ON g1.userid = u.id AND g1.itemid = i1.id AND g1.finalgrade IS NOT NULL $sql";
+        	if ($params->timestart and $params->timefinish) {
+	        	$sql = $this->get_filterdate_sql($params, "g1.timemodified");
+	        	$grade = intelliboard_grade_sql(true, $params, 'g1.');
+	        	$sql_select1 = "$grade AS grade1,";
+	        	$sql_filter1 = "LEFT JOIN {grade_grades_history} g1 ON g1.userid = u.id AND g1.itemid = i.oldid AND g1.finalgrade IS NOT NULL $sql";
+			}
         }
         if ($params->custom2) {
         	$date = explode(",", $params->custom2);
         	$params->timestart = $date[0];
         	$params->timefinish = $date[1];
-        	$sql = $this->get_filterdate_sql($params, "g2.timemodified");
-        	$grade = intelliboard_grade_sql(true, $params, 'g2.');
-        	$sql_select2 = "$grade AS grade2,";
-        	$sql_filter2 = "
-        		JOIN {grade_items_history} i2 ON i2.itemtype = 'course' AND i2.courseid = c.id
-				JOIN {grade_grades_history} g2 ON g2.userid = u.id AND g2.itemid = i2.id AND g2.finalgrade IS NOT NULL $sql";
+        	if ($params->timestart and $params->timefinish) {
+	        	$sql = $this->get_filterdate_sql($params, "g2.timemodified");
+	        	$grade = intelliboard_grade_sql(true, $params, 'g2.');
+	        	$sql_select2 = "$grade AS grade2,";
+	        	$sql_filter2 = "LEFT JOIN {grade_grades_history} g2 ON g2.userid = u.id AND g2.itemid = i.oldid AND g2.finalgrade IS NOT NULL $sql";
+			}
+        }
+        if ($sql_filter1 or $sql_filter2) {
+        	$sql_join = "LEFT JOIN {grade_items_history} i ON i.itemtype = 'course' AND i.courseid = c.id";
         }
 
         return $this->get_report_data("
@@ -6021,6 +6028,7 @@ class local_intelliboard_external extends external_api {
 				JOIN {enrol} e ON e.id = ue.enrolid
 				JOIN {course} c ON c.id = e.courseid
 				JOIN {user} u ON u.id = ue.userid
+				$sql_join
 				$sql_filter1
 				$sql_filter2
 			WHERE u.id > 0 $sql_filter
@@ -6047,32 +6055,35 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
 
+        $sql_join = "";
         $sql_filter1 = "";
         $sql_filter2 = "";
-        $sql_select1 = "'0' AS grade1";
-        $sql_select2 = "'0' AS grade2";
+        $sql_select1 = "'0' AS grade1,";
+        $sql_select2 = "'0' AS grade2,";
         if ($params->custom) {
         	$date = explode(",", $params->custom);
         	$params->timestart = $date[0];
         	$params->timefinish = $date[1];
-        	$sql = $this->get_filterdate_sql($params, "g1.timemodified");
-
-        	$grade = intelliboard_grade_sql(true, $params, 'g1.');
-        	$sql_select1 = "$grade AS grade1,";
-        	$sql_filter1 = "
-        		JOIN {grade_items_history} i1 ON i1.itemtype = 'course' AND i1.courseid = c.id
-				JOIN {grade_grades_history} g1 ON g1.userid = u.id AND g1.itemid = i1.id AND g1.finalgrade IS NOT NULL $sql";
+        	if ($params->timestart and $params->timefinish) {
+	        	$sql = $this->get_filterdate_sql($params, "g1.timemodified");
+	        	$grade = intelliboard_grade_sql(true, $params, 'g1.');
+	        	$sql_select1 = "$grade AS grade1,";
+	        	$sql_filter1 = "JOIN {grade_grades_history} g1 ON g1.userid = u.id AND g1.itemid = i.oldid AND g1.finalgrade IS NOT NULL $sql";
+	        }
         }
         if ($params->custom2) {
         	$date = explode(",", $params->custom2);
         	$params->timestart = $date[0];
         	$params->timefinish = $date[1];
-        	$sql = $this->get_filterdate_sql($params, "g2.timemodified");
-        	$grade = intelliboard_grade_sql(true, $params, 'g2.');
-        	$sql_select2 = "$grade AS grade2,";
-        	$sql_filter2 = "
-        		JOIN {grade_items_history} i2 ON i2.itemtype = 'course' AND i2.courseid = c.id
-				JOIN {grade_grades_history} g2 ON g2.userid = u.id AND g2.itemid = i2.id AND g2.finalgrade IS NOT NULL $sql";
+        	if ($params->timestart and $params->timefinish) {
+	        	$sql = $this->get_filterdate_sql($params, "g2.timemodified");
+	        	$grade = intelliboard_grade_sql(true, $params, 'g2.');
+	        	$sql_select2 = "$grade AS grade2,";
+	        	$sql_filter2 = "JOIN {grade_grades_history} g2 ON g2.userid = u.id AND g2.itemid = i.oldid AND g2.finalgrade IS NOT NULL $sql";
+	        }
+        }
+        if ($sql_filter1 or $sql_filter2) {
+        	$sql_join = "LEFT JOIN {grade_items_history} i ON i.itemtype = 'course' AND i.courseid = c.id";
         }
 
         return $this->get_report_data("
@@ -6098,6 +6109,7 @@ class local_intelliboard_external extends external_api {
 						JOIN {enrol} e ON e.id = ue.enrolid
 						JOIN {course} c ON c.id = e.courseid
 						JOIN {user} u ON u.id = ue.userid
+						$sql_join
 						$sql_filter1
 						$sql_filter2
 					WHERE u.id > 0 $sql_filter
@@ -6255,7 +6267,7 @@ class local_intelliboard_external extends external_api {
     {
         global $DB;
 
-        $sql = $this->get_filter_in_sql($params->custom, 'userid');
+        $sql = $this->get_filter_in_sql($params->custom, 'itemid');
 
         return $this->get_report_data("SELECT id, oldid, timemodified, itemid, userid, finalgrade FROM {grade_grades_history} WHERE id > 0 $sql", $params);
     }
