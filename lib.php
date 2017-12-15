@@ -365,17 +365,15 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 			$intelliboardPage = 'site';
 			$intelliboardParam = 0;
 		}
-		if(!headers_sent()){
-			SetCookie('intelliboardPage', $intelliboardPage, time()+3600, "/");
-			SetCookie('intelliboardParam', $intelliboardParam, time()+3600, "/");
-			SetCookie('intelliboardTime', 0, time()+3600, "/");
-		}
 
 		$params = new stdClass();
 		$params->intelliboardAjax = $ajax;
 		$params->intelliboardAjaxUrl = $ajax ? "$CFG->wwwroot/local/intelliboard/ajax.php" : "";
 		$params->intelliboardInactivity = $inactivity;
 		$params->intelliboardPeriod = 1000;
+		$params->intelliboardPage = $intelliboardPage;
+		$params->intelliboardParam = $intelliboardParam;
+		$params->intelliboardTime = 0;
 
 		$PAGE->requires->js('/local/intelliboard/module.js', false);
 		$PAGE->requires->js_init_call('intelliboardInit', array($params), false);

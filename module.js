@@ -42,8 +42,9 @@ function intelliboardInit(Y, options){
 	intelliboardPeriod = options.intelliboardPeriod || intelliboardPeriod;
 	intelliboardInterval = setInterval(intelliboardProgress, intelliboardPeriod);
 
-	intelliboardPage = getIntelliboardCookie('intelliboardPage');
-	intelliboardParam = getIntelliboardCookie('intelliboardParam');
+	intelliboardPage = options.intelliboardPage || intelliboardPage;
+	intelliboardParam = options.intelliboardParam || intelliboardParam;
+	intelliboardTime = options.intelliboardTime || intelliboardTime;
 }
 
 function intelliboardProgress(){
