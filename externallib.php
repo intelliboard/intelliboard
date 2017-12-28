@@ -3131,7 +3131,9 @@ class local_intelliboard_external extends external_api {
             "tr.behaviors_effective_com",
             "tr.behaviors_gets_result",
             "tr.behaviors_integrative",
-            "tr.behaviors_intelligent"),
+            "tr.behaviors_intelligent",
+            "form_name",
+            "form_jde"),
             $this->get_filter_columns($params)
         );
         $sql_columns = $this->get_columns($params, "u.id");
