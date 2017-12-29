@@ -3118,7 +3118,7 @@ class local_intelliboard_external extends external_api {
             "overal_rating",
             "overal_perfomance_rating",
             "behaviors_rating",
-            "promotability",
+            "tr.promotability_hp1",
             "mobility",
             "tr.behaviors_growth",
             "tr.behaviors_accountability",
@@ -3167,15 +3167,12 @@ class local_intelliboard_external extends external_api {
 				tr.behaviors_integrative,
 				tr.behaviors_intelligent,
 				tr.complited_date,
-                if(promotability_hp1 = 1, 1,
-                  if(promotability_hp2 = 1, 2,
-                      if(promotability_trusted = 1, 3,
-                        if(promotability_placement = 1, 4,
-                           if(promotability_too_new = 1, 5, 0)
-                        )
-                      )
-                  	)
-                  ) as promotability, relocatability as mobility
+                tr.promotability_hp1,
+				tr.promotability_hp2,
+				tr.promotability_trusted,
+				tr.promotability_placement,
+				tr.promotability_too_new,
+                relocatability as mobility
 				$sql_columns
 			FROM {local_talentreview} tr
 				LEFT JOIN {user} u ON u.id = tr.user_id
