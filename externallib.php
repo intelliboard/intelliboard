@@ -266,9 +266,10 @@ class local_intelliboard_external extends external_api {
 				$fields_filter = array();
 				foreach($fields as $i => $field){
 					if(in_array($field->fieldid, $cols)){
+						$this->prfx = $this->prfx + 1;
 						$field->fieldid = (int)$field->fieldid; //fieldid -> int
 						$key = "field$field->fieldid";
-						$unickey = "field{$field->fieldid}_{$i}";
+						$unickey = "field{$this->prfx}_{$field->fieldid}_{$i}";
 						$fields_filter[] = $DB->sql_like($key, ":$unickey", false, false);
 						$this->params[$unickey] = "%$field->data%";
 					}
@@ -4315,7 +4316,7 @@ class local_intelliboard_external extends external_api {
         	"ass_s.timecreated",
         	"ass_g.grade",
         	"cmc.completionstate",
-        	"ass_s.attemptnumber"), $this->get_filter_columns($params));
+        	"ass_sl.timemodified"), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
@@ -4341,9 +4342,10 @@ class local_intelliboard_external extends external_api {
               ass_s.timecreated AS date_first_submission,
               ass_g.grade AS grade_first_submission,
               cmc.completionstate,
-              ass_sl.timecreated AS date_last_submission,
+              ass_sl.timemodified AS date_last_submission,
               ass_gl.grade AS grade_last_submission,
               ass_s.attemptnumber,
+              ass_sl.attemptnumber2,
               sc.scale
               $sql_columns
             FROM (SELECT @x:= 0) AS x,{course} c
@@ -4368,13 +4370,15 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {scale} sc ON sc.id=gi.scaleid
             WHERE u.id IS NOT NULL $sql_filter $sql_having $sql_order", $params);
     }
-    function report103($params)
+     function report103($params)
     {
-        $columns = array("fullname","name","activity","u.firstname","u.lastname");
+        $columns = array_merge(array("fullname","name","activity","u.firstname","u.lastname", "time_on", "userid"), $this->get_filter_columns($params));
 
         $sql_having1 = $this->get_filter_sql($params, $columns);
         $sql_having2 = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
+        $sql_columns1 = $this->get_columns($params, "u.id");
+        $sql_columns2 = $this->get_columns($params, "u.id");
         $sql_filter1 = $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter1 .= $this->get_filter_user_sql($params, "u.");
 		$sql_filter1 .= $this->get_filter_course_sql($params, "c.");
@@ -4396,7 +4400,8 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {role_assignments} ra ON ra.contextid=con.id AND ra.userid=:userid2 '.$this->get_filter_in_sql($params->teacher_roles,'ra.roleid');
             $this->params['userid1'] = $this->params['userid2'] = $params->userid;
 
-            $sql_filter1 = $sql_filter2 = ' AND ra.id IS NOT NULL';
+            $sql_filter1 .= ' AND ra.id IS NOT NULL';
+            $sql_filter2 .= ' AND ra.id IS NOT NULL';
         }
 
         return $this->get_report_data("
@@ -4409,10 +4414,11 @@ class local_intelliboard_external extends external_api {
               u.firstname,
               u.lastname,
               c.fullname,
-              s.timecreated as time_on,
+              MAX(s.timemodified) as time_on,
               'assignment' AS activity,
               '' as slot,
               '' as attempt
+              $sql_columns1
             FROM {assign_submission} s
               LEFT JOIN {assign_grades} g ON s.assignment = g.assignment AND s.userid = g.userid AND g.attemptnumber = s.attemptnumber
               LEFT JOIN {assign} a ON a.id = s.assignment
@@ -4442,6 +4448,7 @@ class local_intelliboard_external extends external_api {
               'quiz' AS activity,
               qa.slot,
               quiza.id as attempt
+              $sql_columns2
             FROM {quiz_attempts} quiza
               LEFT JOIN {question_attempts} qa ON qa.questionusageid = quiza.uniqueid
               LEFT JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id AND qas.sequencenumber = (
