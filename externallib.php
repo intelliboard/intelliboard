@@ -4345,7 +4345,7 @@ class local_intelliboard_external extends external_api {
               ass_sl.timemodified AS date_last_submission,
               ass_gl.grade AS grade_last_submission,
               ass_s.attemptnumber,
-              ass_sl.attemptnumber2,
+              ass_sl.attemptnumber AS attemptnumber2,
               sc.scale
               $sql_columns
             FROM (SELECT @x:= 0) AS x,{course} c
