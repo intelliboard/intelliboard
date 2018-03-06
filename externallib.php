@@ -2800,7 +2800,7 @@ class local_intelliboard_external extends external_api {
         $sql1 = $this->get_filterdate_sql($params, "lit.lastaccess");
 
         return $this->get_report_data("
-			SELECT DISTINCT @x:=@x+1 as id, u.firstname,u.lastname, u.email, c.fullname, c.shortname, lit.visits, lit.timespend, lit.firstaccess,lit.lastaccess, cm.instance, m.name as module $sql_columns
+			SELECT DISTINCT @x:=@x+1 as id, lit.id AS lid, u.firstname,u.lastname, u.email, c.fullname, c.shortname, lit.visits, lit.timespend, lit.firstaccess,lit.lastaccess, cm.instance, m.name as module $sql_columns
 			FROM (SELECT @x:= 0) AS x,{role_assignments} AS ra
 				JOIN {user} u ON ra.userid = u.id
 				JOIN {context} AS ctx ON ctx.id = ra.contextid
