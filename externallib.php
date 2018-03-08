@@ -4353,7 +4353,7 @@ class local_intelliboard_external extends external_api {
 
                 LEFT JOIN {assign} ass ON c.id=ass.course
 
-                LEFT JOIN {assign_submission} ass_s ON ass_s.assignment=ass.id AND ass_s.attemptnumber=0 AND ass_s.userid = u.id AND ass_s.status<>'new'
+                LEFT JOIN {assign_submission} ass_s ON ass_s.assignment=ass.id AND ass_s.attemptnumber=0 AND ass_s.userid = u.id AND ass_s.status = 'submitted'
                 LEFT JOIN {assign_grades} ass_g ON ass_g.userid=ass_s.userid AND ass_g.assignment=ass_s.assignment AND ass_g.attemptnumber=ass_s.attemptnumber
 
                 LEFT JOIN {assign_submission} ass_sl ON ass_sl.assignment=ass.id AND ass_sl.latest=1 AND ass_sl.userid=ass_s.userid AND ass_sl.id <> ass_s.id

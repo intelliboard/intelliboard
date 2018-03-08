@@ -46,5 +46,14 @@
 	</li>
 	<?php endif; ?>
 	<li><a href="monitors.php" <?php echo ($PAGE->pagetype == 'monitors')?'class="active"':''; ?>><?php echo get_string('monitors', 'local_intelliboard');?></a></li>
+
+    <?php if(get_config('local_intelliboard', 'n17')): ?>
+        <li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'analytics')?'class="active"':''; ?>><?php echo get_string('analytics', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
+            <ul>
+               <li><a href="analytics.php?id=3" <?php echo ($id == 3)?'class="active"':''; ?>><?php echo get_string('analityc_3_name', 'local_intelliboard');?></a></li>
+            </ul>
+        </li>
+    <?php endif; ?>
+
 	<li><a href="help.php" <?php echo ($PAGE->pagetype == 'help')?'class="active"':''; ?>><?php echo get_string('help', 'local_intelliboard');?></a></li>
 </ul>

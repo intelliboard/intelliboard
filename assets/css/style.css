@@ -628,7 +628,8 @@ position: relative;
 
 .intelliboard-analytics .pie-box{margin-top: 15px;margin-bottom: 15px;border-bottom: 1px solid #ccc;border-top: 1px solid #ccc;padding-top: 5px;}
 .intelliboard-analytics .pie-chart-box {margin-bottom: 15px;}
-.intelliboard-analytics .pie-chart-box div{float: left;width: 50%;}
+.intelliboard-analytics .pie-chart-box > div{float: left;width: 50%;}
+.intelliboard-analytics .pie-box .chart{height: 400px;width: 100%;}
 .intelliboard-analytics .info-box{padding:0 10px;}
 .intelliboard-analytics .info-box h3{border-bottom: 1px solid #ccc;margin-bottom: 5px;}
 .intelliboard-analytics .highcharts-credits{display: none;}
@@ -636,3 +637,4 @@ position: relative;
 .intelliboard-analytics .head-box .export-box{float: right;}
 .intelliboard-analytics .head-box .export-box .btn{margin-left: 5px;}
 .intelliboard-content h4 {font-size: 19px;font-weight: 400;}
+.intelliboard-analytics div.google-visualization-tooltip { padding: 5px;height: auto!important;}
