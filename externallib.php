@@ -3818,7 +3818,8 @@ class local_intelliboard_external extends external_api {
                     u.email,
                     u.firstname,
 					u.lastname,
-                    l.timecreated
+                    l.timecreated,
+                    (CASE WHEN l.objecttable = 'forum_discussions' THEN (SELECT name FROM {forum_discussions} WHERE id = l.objectid) ELSE (CASE WHEN l.objecttable = 'forum_posts' THEN (SELECT subject FROM {forum_posts} WHERE id = l.objectid) ELSE '' END) END) AS forumitem
                     $sql_columns
 				FROM {logstore_standard_log} l
                     LEFT JOIN {course} c ON c.id = l.courseid
