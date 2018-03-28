@@ -37,9 +37,8 @@ class local_intelliboard_observer
 		$auth_subject = get_config('local_intelliboard','auth_subject');
 		$auth_message = get_config('local_intelliboard','auth_message');
 
-		$user = $DB->get_record('user', array('id'=>$event->objectid));
-
 		if($auth and $auth_email and $auth_subject and $auth_message) {
+			$user = $DB->get_record('user', array('id' => $event->objectid));
 			$auth = explode(",", $auth);
 			if(!in_array($user->auth, $auth)){
 				return;
@@ -58,9 +57,6 @@ class local_intelliboard_observer
     {
         global $DB;
 
-		$user = $DB->get_record('user', array('id'=>$event->relateduserid));
-		$course = $DB->get_record('course', array('id'=>$event->contextinstanceid));
-
 		$enrol = get_config('local_intelliboard','enrol');
 		$enrol_email = get_config('local_intelliboard','enrol_email');
 		$enrol_subject = get_config('local_intelliboard','enrol_subject');
@@ -74,6 +70,9 @@ class local_intelliboard_observer
 			$sender = get_admin();
 			$manager = get_admin();
 			$manager->email = $enrol_email;
+
+			$user = $DB->get_record('user', array('id' => $event->relateduserid));
+			$course = $DB->get_record('course', array('id' => $event->contextinstanceid));
 
 			$subject = str_replace(array('[[user]]', '[[course]]'), array(fullname($user), $course->fullname), $enrol_subject);
 			$message = str_replace(array('[[user]]', '[[course]]'), array(fullname($user), $course->fullname), $enrol_message);
