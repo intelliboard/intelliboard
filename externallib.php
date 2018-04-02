@@ -4368,9 +4368,9 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {scale} sc ON sc.id=gi.scaleid
             WHERE u.id IS NOT NULL $sql_filter $sql_having $sql_order", $params);
     }
-    function report103($params)
+	function report103($params)
     {
-        $columns = array_merge(array("fullname","name","activity","u.firstname","u.lastname", "time_on", "userid"), $this->get_filter_columns($params));
+        $columns = array_merge(array("t.fullname","t.name","t.activity","t.firstname","t.lastname", "t.time_on"), $this->get_filter_columns($params));
 
         $sql_having1 = $this->get_filter_sql($params, $columns);
         $sql_having2 = $this->get_filter_sql($params, $columns);
@@ -4403,7 +4403,7 @@ class local_intelliboard_external extends external_api {
         }
 
         return $this->get_report_data("
-            (SELECT
+            SELECT t.* FROM ((SELECT
               CONCAT(cm.id,u.id,s.id) AS uniqueid,
               cm.id AS cmid,
               a.id,
@@ -4424,12 +4424,12 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {user} u ON u.id = s.userid
 
               JOIN {modules} m ON m.name='assign'
-              JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=a.id
+              JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=a.id AND cm.visible=1
               JOIN {enrol} e ON e.courseid=c.id
               JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ue.userid=u.id
               $sql1
             WHERE s.latest = 1 AND s.timemodified IS NOT NULL AND s.status = 'submitted' AND (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR g.grade IS NULL)
-            $sql_filter1 $sql_having2 $sql_order)
+            $sql_filter1 $sql_having2)
 
             UNION ALL
 
@@ -4459,12 +4459,12 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {user} u ON u.id=quiza.userid
 
               JOIN {modules} m ON m.name='quiz'
-              JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=qz.id
+              JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=qz.id AND cm.visible=1
               JOIN {enrol} e ON e.courseid=c.id
               JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ue.userid=u.id
               $sql2
             WHERE quiza.preview = 0 AND quiza.state = 'finished' AND qas.state='needsgrading'
-            $sql_filter2 $sql_having1 $sql_order)", $params);
+            $sql_filter2 $sql_having1)) t $sql_order", $params);
     }
 
     function report104($params)
