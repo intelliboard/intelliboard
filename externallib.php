@@ -2546,7 +2546,10 @@ class local_intelliboard_external extends external_api {
             "question",
             "answer",
             "feedback_time",
-            "course_name", "cc.timecompleted", "grade"),
+            "course_name",
+            "course_shortname",
+            "course_idnumber",
+            "cc.timecompleted", "grade"),
             $this->get_filter_columns($params)
         );
         $sql_columns = $this->get_columns($params, "u.id");
@@ -2575,6 +2578,8 @@ class local_intelliboard_external extends external_api {
 				mfv.value as answer,
 				mf.name as feedback,
 				c.fullname as course_name,
+				c.shortname as course_shortname,
+				c.idnumber as course_idnumber,
 				$grade_single AS grade
 				$sql_columns
 			FROM (SELECT @x:= 0) AS x, {feedback} AS mf
@@ -6371,6 +6376,73 @@ class local_intelliboard_external extends external_api {
         }
 
         return array('data'=>$data);
+    }
+
+    public function report129($params)
+    {
+        $columns = array_merge( array(
+        					"registrar",
+        					"course",
+        					"activities_completed",
+        					"total_activities",
+        					"module_grade",
+        					"module_max_grade",
+        					"program_grade"), $this->get_filter_columns($params));
+
+        if (!$params->custom or !$params->custom2) {
+        	return [];
+        }
+        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, "c.id", "courses");
+        $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
+        $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_in_sql($params->custom,'ra.roleid');
+        $sql_filter .= $this->get_filter_in_sql($params->custom2,'u.id');
+
+        return $this->get_report_data("
+        	SELECT u.id,
+			  CONCAT(REG.firstname, ' ', REG.lastname) as registrar,
+			  c.fullname AS course,
+			  IFNULL((SELECT COUNT(gg.finalgrade) FROM {grade_grades} AS gg
+			  JOIN {grade_items} AS gi ON gg.itemid = gi.id WHERE gi.courseid = c.id
+			  AND gg.userid=REG.id AND gi.itemtype='mod' GROUP BY gg.userid,gi.courseid), 0) AS activities_completed,
+			  IFNULL((SELECT COUNT(gi.itemname) FROM {grade_items} AS gi WHERE gi.courseid = c.id AND gi.itemtype='mod'), 0) AS total_activities,
+			  IFNULL(gc.grade,0) AS module_grade,
+			  ROUND(gc_category_max.grademax,0) as module_max_grade,
+			  MIN(t_category.grade) as program_grade
+			FROM {user} u
+			  JOIN {role_assignments} ra ON ra.userid = u.id
+			  JOIN {context} ctx ON ctx.id = ra.contextid
+			  JOIN {role} R on ra.roleid = R.id
+			  JOIN {user} REG on ctx.instanceid = REG.id
+			  JOIN {user_enrolments} ue on ue.userid = REG.id
+			  JOIN {enrol} e ON e.id = ue.enrolid
+			  JOIN {course} c ON c.id = e.courseid
+			  LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ue.userid
+			  LEFT JOIN {context} REGctx ON c.id = REGctx.instanceid
+			  LEFT JOIN {role_assignments} AS REGlra ON REGlra.contextid = REGctx.id and u.id = REGlra.userid AND REGlra.roleid=5
+			  LEFT JOIN (SELECT course, COUNT(id) AS cmnums FROM {course_modules} WHERE visible = 1 GROUP BY course) AS cm ON cm.course = c.id
+			  LEFT JOIN (SELECT course, COUNT(id) AS cmnumx FROM {course_modules} WHERE visible = 1 AND completion = 1 GROUP BY course) cmx ON cmx.course = c.id
+			  LEFT JOIN (SELECT  course, COUNT(id) AS cmnuma FROM {course_modules} WHERE visible = 1 AND module = 1 GROUP BY course) cma ON cma.course = c.id
+			  LEFT JOIN (SELECT  cm.course,  cmc.userid,  COUNT(cmc.id) AS cmcnums FROM {course_modules} cm, {course_modules_completion} cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible = 1 AND cmc.completionstate = 1 GROUP BY cm.course, cmc.userid) cmc ON cmc.course = c.id AND cmc.userid = REG.id
+			  LEFT JOIN ( SELECT cm.course,  cmc.userid,  COUNT(cmc.id) AS cmcnuma FROM {course_modules} cm, {course_modules_completion} cmc WHERE  cmc.coursemoduleid = cm.id AND cm.module = 1 AND cm.visible = 1 AND cmc.completionstate = 1 GROUP BY  cm.course, cmc.userid) AS cmca ON cmca.course = c.id AND cmca.userid = REG.id
+			  LEFT JOIN (SELECT gi.courseid, g.userid, ROUND(((SUM(g.finalgrade) / SUM(g.rawgrademax)) * 100), 2) AS grade
+			  FROM {grade_items} gi, {grade_grades} g
+			  WHERE  gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
+			  GROUP BY gi.courseid, g.userid) AS gc ON gc.courseid = c.id AND gc.userid = REG.id
+
+			  LEFT JOIN (SELECT gi.courseid, SUM(gi.grademax) grademax FROM {grade_items} gi WHERE gi.itemtype = 'course' GROUP BY gi.courseid) AS gc_category_max ON gc_category_max.courseid = c.id
+
+			  JOIN (SELECT px.category, g.userid, ROUND(((SUM(g.finalgrade))), 1) AS grade FROM {grade_items} gi, {grade_grades} g, {course} px
+			  WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND gi.courseid = px.id AND g.finalgrade IS NOT NULL GROUP BY px.category, g.userid) AS t_category ON c.category = t_category.category AND REG.id = t_category.userid
+
+			WHERE ctx.contextlevel = 30 $sql_filter $sql_having $sql_order
+			GROUP BY REGlra.roleid,REG.email, REG.ID , c.id, c.fullname,e.roleid , ue.id, ue.userid, u.email, cma.cmnuma, c.fullname, u.firstname, u.lastname,
+			cmca.cmcnuma, c.id, c.category, gc_category_max.grademax", $params);
     }
 
     function get_course_grade_categories($params)
