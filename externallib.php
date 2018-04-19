@@ -7990,7 +7990,7 @@ class local_intelliboard_external extends external_api {
         $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles,'roleid',false);
         $completion = $this->get_completion($params, "", false);
 
-        return $DB->get_record_sql("
+        $data = $DB->get_record_sql("
         	SELECT
 				(SELECT COUNT(*) FROM {course_completions} WHERE timecompleted > 0 $sql1) AS graduates,
 				(SELECT COUNT(*) FROM {course_modules} WHERE visible = 1 $sql1) AS modules,
@@ -8003,6 +8003,10 @@ class local_intelliboard_external extends external_api {
 				(SELECT COUNT(DISTINCT (param)) FROM {local_intelliboard_tracking} WHERE page = 'module' $sql4) AS reviewed,
 				(SELECT COUNT(cm.id) FROM {course_modules} cm, {modules} m WHERE m.name = 'certificate' AND cm.module = m.id $sql3) AS certificates
 				", $this->params);
+        if ($data->certificates) {
+        	$data->certificates_issued = $DB->count_records('certificate_issues');
+        }
+        return $data;
     }
 
     public function get_system_load($params){
