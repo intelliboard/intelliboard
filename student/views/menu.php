@@ -23,9 +23,14 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    http://intelliboard.net/
  */
+
+$id = optional_param('id', 0, PARAM_INT);
+$alt_name = get_config('local_intelliboard', 'grades_alt_text');
+$def_name = get_string('grades', 'local_intelliboard');
+$grade_name = ($alt_name) ? $alt_name : $def_name;
+
 ?>
 
-<?php $id = optional_param('id', 0, PARAM_INT); ?>
 <div class="sheader clearfix">
 	<div class="avatar">
 		<?php echo $OUTPUT->user_picture($USER, array('size'=>75)); ?>
@@ -64,7 +69,7 @@
 		<li><a href="courses.php" <?php echo ($PAGE->pagetype == 'courses')?'class="active"':''; ?>><?php echo get_string('courses', 'local_intelliboard');?></a></li>
 	<?php endif; ?>
 	<?php if(get_config('local_intelliboard', 't4')): ?>
-		<li><a href="grades.php" <?php echo ($PAGE->pagetype == 'grades')?'class="active"':''; ?>><?php echo get_string('grades', 'local_intelliboard');?></a></li>
+		<li><a href="grades.php" <?php echo ($PAGE->pagetype == 'grades')?'class="active"':''; ?>><?php echo $grade_name;?></a></li>
 	<?php endif; ?>
 
 	<?php if(get_config('local_intelliboard', 't48') and isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>

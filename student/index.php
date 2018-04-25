@@ -174,6 +174,13 @@ if(get_config('local_intelliboard', 't02')){
 if(get_config('local_intelliboard', 't03')){
     array_push($menu, get_string('last_semester','local_intelliboard'));
 }
+if(get_config('local_intelliboard', 'this_year')){
+    array_push($menu, get_string('this_year','local_intelliboard'));
+}
+if(get_config('local_intelliboard', 'last_year')){
+    array_push($menu, get_string('last_year','local_intelliboard'));
+}
+
 
 echo $OUTPUT->header();
 ?>
@@ -230,7 +237,7 @@ echo $OUTPUT->header();
         <?php if($t9 or $t10 or $t11): ?>
             <div class="intelliboard-box">
                 <?php if($t9 or $t10): ?>
-                    <div class="<?php echo (!$t11)?'box100':'box45'; ?> pull-left">
+                    <div class="<?php echo (!$t11)?'box100':'box45'; ?> pull-right">
                         <ul class="nav nav-tabs">
                             <?php if($t9): ?>
                                 <li role="presentation" class="nav-item active"><a class="nav-link active" href="assignment"><?php echo get_string('assignments', 'local_intelliboard'); ?></a></li>
@@ -399,7 +406,7 @@ echo $OUTPUT->header();
 
 
                 <?php if($t11): ?>
-                    <div class="<?php echo (!$t9 and !$t10)?'box100':'box50'; ?>  pull-right">
+                    <div class="<?php echo (!$t9 and !$t10)?'box100':'box50'; ?>  pull-left">
                         <ul class="nav nav-tabs clearfix">
                             <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('course_progress', 'local_intelliboard'); ?></a></li>
 
@@ -440,8 +447,16 @@ echo $OUTPUT->header();
                                         <a href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo s($item->id); ?>"><?php echo format_string($item->fullname); ?></a>
                                     </td>
                                     <?php if($t35): ?>
+                                    <?php
+                                        $completion = 0;
+                                        if ($item->timecompleted) {
+                                            $completion = 100;
+                                        } elseif ($item->completedmodules) {
+                                            $completion = ($item->completedmodules / $item->modules) * 100;
+                                        }
+                                        ?>
                                         <td width="100">
-                                            <div class="intelliboard-progress g1 xl intelliboard-tooltip"  title="<?php echo "Activities: ".s($item->modules).", Completed: ".s($item->completedmodules); ?>"><span style="width:<?php echo ($item->completedmodules) ? (($item->completedmodules / $item->modules) * 100) : 0; ?>%"></span></div>
+                                            <div class="intelliboard-progress g1 xl intelliboard-tooltip"  title="<?php echo "Activities: ".s($item->modules).", Completed: ".s($item->completedmodules); ?>"><span style="width:<?php echo $completion; ?>%"></span></div>
                                         </td>
                                     <?php endif; ?>
 

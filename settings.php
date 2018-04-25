@@ -335,6 +335,16 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/this_year';
+        $title = new lang_string('this_year', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/last_year';
+        $title = new lang_string('last_year', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
         $name = 'local_intelliboard/t04';
         $title = new lang_string('t04', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
@@ -505,7 +515,22 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/course_chart';
+        $title = new lang_string('course_chart', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/course_activities';
+        $title = new lang_string('course_activities', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/ts4', new lang_string('ts4', 'local_intelliboard'), ''));
+
+        $name = 'local_intelliboard/grades_alt_text';
+        $title = new lang_string('grades_alt_text', 'local_intelliboard');
+        $setting = new admin_setting_configtext($name, $title, '', '');
+        $settings->add($setting);
 
         $name = 'local_intelliboard/t4';
         $title = new lang_string('t4', 'local_intelliboard');

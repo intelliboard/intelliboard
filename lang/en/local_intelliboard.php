@@ -138,7 +138,7 @@ $string['t24'] = 'Enable [Enrolled date] column';
 $string['t25'] = 'Enable [Progress] column';
 $string['t26'] = 'Enable [Letter] column';
 $string['t27'] = 'Enable [Completed Activities] column';
-$string['t28'] = 'Enable [Score] column';
+$string['t28'] = 'Enable [Grade] column';
 $string['t29'] = 'Enable [Course Completion Status] column';
 $string['t30'] = 'Enable [Activity Grades] column';
 $string['t31'] = 'Enable [Assignments][Grade] widget column';
@@ -154,7 +154,7 @@ $string['t40'] = 'Enable [Progress][Class Avg.] option';
 $string['t41'] = 'Enable [Activity Grades header] Completed on';
 $string['t42'] = 'Enable [Activity Grades header] Last access on course';
 $string['t43'] = 'Enable [Activity Grades] Type column';
-$string['t44'] = 'Enable [Activity Grades] Score column';
+$string['t44'] = 'Enable [Activity Grades] Grade column';
 $string['t45'] = 'Enable [Activity Grades] Graded column';
 $string['t46'] = 'Enable [Activity Grades] Completed column';
 $string['t47'] = 'Courses [grid] background color';
@@ -208,7 +208,7 @@ $string['correlations'] = 'Correlations';
 $string['course_start_date'] = 'Course start date';
 $string['letter'] = 'Letter';
 $string['completed_activities'] = 'Completed Activities';
-$string['score'] = 'Score';
+$string['score'] = 'Grade';
 $string['course_completion_status'] = 'Course Completion Status';
 $string['activity_grades'] = 'Activity Grades';
 $string['completion_is_not_enabled'] = 'Completion is not enabled for this course';
@@ -450,7 +450,7 @@ $string['time_1'] = "Morning";
 $string['time_2'] = "Afternoon";
 $string['time_3'] = "Evening";
 $string['time_4'] = "Off Hours";
-$string['passing_score_for'] = 'Passing score for {$a}';
+$string['passing_score_for'] = 'Passing grade for {$a}';
 $string['name'] = 'Name';
 $string['answers'] = 'Answers';
 $string['ques_breakdown'] = 'Question Breakdown';
@@ -459,3 +459,17 @@ $string['analytics'] = 'Analytics';
 $string['pdf'] = 'PDF';
 $string['csv'] = 'CSV';
 $string['excel'] = 'Excel';
+
+$string['grades_alt_text'] = 'Alternative text for navigation menu';
+$string['course_chart'] = 'Enable course chart';
+$string['course_activities'] = 'Enable course activities';
+$string['this_year'] = 'Time filter: This Year';
+$string['last_year'] = 'Time filter: Last Year';
+
+
+
+
+
+
+
+

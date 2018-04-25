@@ -99,6 +99,8 @@ $t20 = get_config('local_intelliboard', 't20');
 $t21 = get_config('local_intelliboard', 't21');
 $t22 = get_config('local_intelliboard', 't22');
 $t47 = get_config('local_intelliboard', 't47');
+$course_chart = get_config('local_intelliboard', 'course_chart');
+$course_activities = get_config('local_intelliboard', 'course_activities');
 
 echo $OUTPUT->header();
 ?>
@@ -175,11 +177,15 @@ echo $OUTPUT->header();
 					<div class="course-more clearfix">
 						<span>
 							<?php if($item->timecompleted): ?><a title="<?php echo get_string('completed_on','local_intelliboard',date("m/d/Y", $item->timecompleted));?>" href="#completed"><i class="ion-android-done-all"></i></a><?php endif; ?>
-							<?php //<a href=""><i class="ion-alert-circled"></i></a> ?>
+
 							<?php if($item->certificates): ?><a title="<?php echo get_string('you_have_certificates','local_intelliboard',s($item->certificates));?>" href="#certificates"><i class="ion-ribbon-b"></i></a><?php endif; ?>
-							<a class="course-details" href="" value="<?php echo $item->id; ?>"><i class="ion-podium"></i>
+
+
+							<?php if($item->certificates): ?><a class="course-details" href="" value="<?php echo $item->id; ?>"><i class="ion-podium"></i>
 								<strong><?php echo get_string('close','local_intelliboard');?></strong>
-							</a>
+							</a><?php endif; ?>
+
+							<?php if($item->certificates): ?><a href="<?php echo $CFG->wwwroot; ?>/local/intelliboard/student/grades.php?search&id=<?php echo $item->id; ?>&sesskey=<?php echo sesskey(); ?>"><i class="ion-clipboard"></i></a><?php endif; ?>
 						</span>
 						<a class="more" href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo $item->id; ?>"><?php echo get_string('view_course_details','local_intelliboard');?></a>
 					</div>

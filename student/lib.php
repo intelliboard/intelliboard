@@ -68,7 +68,7 @@ function intelliboard_data($type, $userid) {
                         LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid2
                         LEFT JOIN {grade_items} gi ON gi.itemmodule = m.name AND gi.iteminstance = a.id
                         LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid3
-                    WHERE c.id = a.course AND cm.visible = 1 AND c.visible = 1 $sql ORDER BY a.duedate DESC";
+                    WHERE c.id = a.course AND cm.visible = 1 AND c.visible = 1 $sql ORDER BY cm.added ASC";
         $params['userid2'] = $userid;
         $params['userid3'] = $userid;
 
@@ -105,7 +105,7 @@ function intelliboard_data($type, $userid) {
                     LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid2
                     LEFT JOIN {grade_items} gi ON gi.itemmodule = m.name AND gi.iteminstance = a.id
                     LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid3
-                  WHERE c.id = a.course AND cm.visible = 1 AND c.visible = 1 $sql ORDER BY a.timeclose DESC";
+                  WHERE c.id = a.course AND cm.visible = 1 AND c.visible = 1 $sql ORDER BY cm.added ASC";
         $params['userid2'] = $userid;
         $params['userid3'] = $userid;
 
@@ -136,7 +136,7 @@ function intelliboard_data($type, $userid) {
                   FROM {user_enrolments} ue
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid
                     LEFT JOIN {course} c ON c.id = e.courseid
-                  WHERE ue.userid = :userid2 AND c.visible = 1 $sql GROUP BY c.id ORDER BY c.fullname";
+                  WHERE ue.userid = :userid2 AND c.visible = 1 $sql GROUP BY c.id ORDER BY c.sortorder";
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
     }elseif ($type == 'courses') {
@@ -187,7 +187,7 @@ function intelliboard_data($type, $userid) {
                 LEFT JOIN {enrol} e ON e.id = ue.enrolid
                 LEFT JOIN {course} c ON c.id = e.courseid
                     $sql_join
-                  WHERE ue.userid = :userid3 AND c.visible = 1 $sql GROUP BY c.id ORDER BY c.fullname";
+                  WHERE ue.userid = :userid3 AND c.visible = 1 $sql GROUP BY c.id ORDER BY c.sortorder";
 
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
@@ -213,8 +213,11 @@ function get_timerange($time){
         $timestart = strtotime('-6 month');
         $timefinish = time();
     }elseif($time == 4){
-        $timestart = strtotime('-1 year');
+        $timestart = strtotime(date('01/01/Y'));
         $timefinish = time();
+    }elseif($time == 5){
+        $timestart = strtotime(date('01/01/Y', strtotime('-1 year')));
+        $timefinish = strtotime(date('01/01/Y'));
     }else{
         $timestart = strtotime('-14 days');
         $timefinish = strtotime('+14 days');
@@ -300,7 +303,7 @@ function intelliboard_learner_courses($userid){
             (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
             (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
         FROM {user_enrolments} ue, {enrol} e, {course} c
-        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND c.visible = 1 GROUP BY c.id", $params);
+        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND c.visible = 1 GROUP BY c.id ORDER BY c.sortorder ASC", $params);
 
     $d = 0;
     foreach($data as $c){
@@ -360,7 +363,7 @@ function intelliboard_learner_course($userid, $courseid){
                                   LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = :userid2
                                   LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                                   LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid3
-                                WHERE c.id = :courseid", $params);
+                                WHERE c.id = :courseid ORDER BY c.sortorder ASC", $params);
 }
 function intelliboard_learner_modules($userid){
     global $DB;
@@ -371,7 +374,7 @@ function intelliboard_learner_modules($userid){
     $params['userid3'] = $userid;
     $completion = intelliboard_compl_sql("cmc.");
 
-    return $DB->get_records_sql("SELECT m.id, m.name, count(distinct cm.id) as modules , count(distinct cmc.id) as completed_modules, count(distinct l.id) as start_modules, sum(l.timespend) as duration
+    return $DB->get_records_sql("SELECT m.id, m.name, count(distinct cm.id) as modules, count(distinct cmc.id) as completed_modules, count(distinct l.id) as start_modules, sum(l.timespend) as duration
                                   FROM {modules} m, {course_modules} cm
                                     LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid1 $completion
                                     LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = :userid2 AND l.param = cm.id

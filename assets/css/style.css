@@ -625,7 +625,6 @@ position: relative;
     100% { transform: rotate(359deg); } }
 .ion-load-a.ion-spin-animation { -webkit-animation-timing-function: steps(8, start); -moz-animation-timing-function: steps(8, start); animation-timing-function: steps(8, start); }
 
-
 .intelliboard-analytics .pie-box{margin-top: 15px;margin-bottom: 15px;border-bottom: 1px solid #ccc;border-top: 1px solid #ccc;padding-top: 5px;}
 .intelliboard-analytics .pie-chart-box {margin-bottom: 15px;}
 .intelliboard-analytics .pie-chart-box > div{float: left;width: 50%;}
@@ -638,3 +637,21 @@ position: relative;
 .intelliboard-analytics .head-box .export-box .btn{margin-left: 5px;}
 .intelliboard-content h4 {font-size: 19px;font-weight: 400;}
 .intelliboard-analytics div.google-visualization-tooltip { padding: 5px;height: auto!important;}
+
+@media screen and (max-width: 600px) {
+	body .intelliboard-origin p{
+		border: 0 !important;
+		width: 100%;
+	}
+}
+@media screen and (max-width: 800px) {
+
+}
+@media screen and (max-width: 1000px) {
+	body .intelliboard-courses-grid{width: 100%; margin-right: 0;}
+	body .intelliboard-courses-grid li{width: 100%; margin-right: 0;}
+	body .intelliboard-box .box40,
+	body .intelliboard-box .box45,
+	body .intelliboard-box .box60,
+	body .intelliboard-box .box50{width: 100%;}
+}
