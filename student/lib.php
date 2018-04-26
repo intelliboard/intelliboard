@@ -98,7 +98,7 @@ function intelliboard_data($type, $userid) {
         }
         $grade_single = intelliboard_grade_sql();
 
-        $query = "SELECT a.id, a.name, a.timeclose, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
+        $query = "SELECT gi.id, a.name, a.timeclose, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
                   FROM {course} c, {quiz} a
                     LEFT JOIN {modules} m ON m.name = 'quiz'
                     LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = a.id
