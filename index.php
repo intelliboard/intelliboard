@@ -130,6 +130,7 @@ foreach($enrols as $enrol){
 }
 
 $json_data = array();
+ksort($LineChart[2]);
 foreach($LineChart[2] as $item){
 	$d = date("j", $item->timepointval);
 	$m = date("n", $item->timepointval) - 1;
