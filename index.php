@@ -38,33 +38,10 @@ $url = optional_param('url', '', PARAM_URL);
 $time = optional_param('time', 'monthly', PARAM_RAW);
 $filter = optional_param('filter', 0, PARAM_INT);
 
-if($url){
-	redirect("$url&confirm=".get_config('local_intelliboard', 'te1'));
-	return;
-}
-$params = array(
-	'reports'=>get_config('local_intelliboard', 'reports'),
-	'filter'=>$filter
-);
-if($action == 'enable_report_time'){
-	set_config("report_time", 0, "local_intelliboard");
-}
-if($action == 'disable_report_time'){
-	set_config("report_time", 1, "local_intelliboard");
-}
-$report_time = get_config('local_intelliboard', 'report_time');
-$sizemode = get_config('local_intelliboard', 'sizemode');
-
 if($action == 'noalert'){
 	$USER->noalert = true;
-}elseif($action == 'signup' or $action == 'setup'){
-	$webservice = $DB->get_record_sql("SELECT token FROM {external_services} exs, {external_tokens} ext WHERE exs.component='local_intelliboard' AND ext.externalserviceid = exs.id");
-	$params['token'] = (isset($webservice->token)) ? $webservice->token : 'none';
-	$params['site'] = format_string($SITE->fullname);
-	$params['do'] = $action;
-	$params['agreement'] = true;
 }
-$intelliboard = intelliboard($params);
+
 $params = (object) array(
 	'filter_user_deleted'=>get_config('local_intelliboard', 'filter1'),
 	'filter_user_suspended'=>get_config('local_intelliboard', 'filter2'),
@@ -74,33 +51,30 @@ $params = (object) array(
 	'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
 	'filter_enrolled_users'=>get_config('local_intelliboard', 'filter8'),
 	'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
+	'filter_user_active'=> 0,
 	'filter_columns'=>get_config('local_intelliboard', 'filter9'),
 	'teacher_roles'=>get_config('local_intelliboard', 'filter10'),
 	'learner_roles'=>get_config('local_intelliboard', 'filter11'),
 	'filter_profile'=>0,
-	'sizemode'=>$sizemode,
+	'sizemode'=> false,
+	'debug'=>0,
 	'start'=>0,
 	'userid'=>0,
 	'length'=>10,
 	'courseid'=>0,
+	'externalid'=>0,
 	'filter'=>'',
 	'custom'=> s($time),
 	'custom2'=> '',
 	'custom3'=> '',
-	'timestart'=>strtotime('-6 month'),
+	'timestart'=>strtotime('-2 month'),
 	'timefinish'=>time()
 );
 $plugin = new local_intelliboard_external();
 
 if($action == 'report43'){
-	if(!$sizemode){
-		$avg = $plugin->get_dashboard_avg($params);
-	}else{
-		$avg = null;
-	}
-
+	$avg = $plugin->get_dashboard_avg($params);
 	$params->timestart = 0;
-	$params->sizemode = $report_time;
 	$report43 = $plugin->report43($params);
 	include("views/report43.php");
 	exit;
@@ -111,13 +85,12 @@ if($action == 'report43'){
 	exit;
 }
 
-
-
+$intelliboard = intelliboard(['task'=>'dashboard']);
 $stat = $plugin->get_dashboard_stats($params);
-$LineChart = $plugin->get_dashboard_info($params);
-$countries = $plugin->get_dashboard_countries($params);
-$enrols = $plugin->get_dashboard_enrols($params);
-$params->sizemode = 1;
+$LineChart = $plugin->get_site_activity($params);
+$countries = $plugin->get_countries($params);
+$enrols = $plugin->get_enrols($params);
+$params->sizemode = 0;
 $totals = $plugin->get_total_info($params);
 
 $json_countries = array();
@@ -130,15 +103,16 @@ foreach($enrols as $enrol){
 }
 
 $json_data = array();
-ksort($LineChart[2]);
-foreach($LineChart[2] as $item){
+ksort($LineChart->sessions);
+
+foreach($LineChart->sessions as $item){
 	$d = date("j", $item->timepointval);
 	$m = date("n", $item->timepointval) - 1;
 	$y = date("Y", $item->timepointval);
 
-	$l = $item->visits;
-	$v = (isset($LineChart[3][$item->timepointval])) ? $LineChart[3][$item->timepointval]->users : 0;
-	$t = (isset($LineChart[4][$item->timepointval])) ? $LineChart[4][$item->timepointval]->users : 0;
+	$l = $item->pointval;
+	$v = (isset($LineChart->enrolments[$item->timepointval])) ? $LineChart->enrolments[$item->timepointval]->pointval : 0;
+	$t = (isset($LineChart->completions[$item->timepointval])) ? $LineChart->completions[$item->timepointval]->pointval : 0;
 	$json_data[] = "[new Date($y, $m, $d), $l, $t, $v]";
 }
 $PAGE->requires->jquery();
@@ -199,7 +173,7 @@ echo $OUTPUT->header();
 
 <div class="intelliboard-box">
 	<div class="box60 pull-left">
-		<h3><?php echo get_string('users_overview', 'local_intelliboard');?> <a href="<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=<?php echo ($report_time)?'enable_report_time':'disable_report_time'; ?>" style="opacity: 0.4; font-size: 19px;" title="<?php echo ($report_time)?get_string('enable_time_and_visits_users_overview', 'local_intelliboard'):get_string('disable_time_and_visits_users_overview', 'local_intelliboard'); ?>"><i class="<?php echo ($report_time)?'ion-android-radio-button-off':'ion-android-checkmark-circle'; ?>"></i></a></h3>
+		<h3><?php echo get_string('users_overview', 'local_intelliboard');?></h3>
 
 		<div class="ajax-widget" id="report43"><?php echo get_string('loading', 'local_intelliboard');?></div>
 	</div>
@@ -247,7 +221,7 @@ echo $OUTPUT->header();
 			},
 			height: 280,
 			hAxis: {
-				format: '<?php echo s($LineChart[0]); ?>',
+				format: 'dd MMM',
 				gridlines: {color: 'none'}
 			},
 			vAxis: {

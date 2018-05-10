@@ -154,5 +154,26 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 		upgrade_plugin_savepoint(true, 2017072304, 'local', 'intelliboard');
 	}
 
+	if ($oldversion < 2017112801) {
+		$table = new xmldb_table('local_intelliboard_assign');
+		$table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+		$table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+		$table->add_field('rel', XMLDB_TYPE_CHAR, '64', null, null, null, null);
+		$table->add_field('type', XMLDB_TYPE_CHAR, '64', null, null, null, null);
+		$table->add_field('instance', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+		$table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+		$table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+		if (!$dbman->table_exists($table)) {
+			$dbman->create_table($table);
+		}
+		// Add index to local_intelliboard_assign
+		$index = new xmldb_index('type_instance_idx', XMLDB_INDEX_NOTUNIQUE, array('type', 'instance'));
+		if (!$dbman->index_exists($table, $index)) {
+			$dbman->add_index($table, $index);
+		}
+		upgrade_plugin_savepoint(true, 2017112801, 'local', 'intelliboard');
+	}
+
 	return true;
 }

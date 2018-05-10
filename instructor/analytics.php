@@ -53,11 +53,7 @@ $params = array(
     'mode'=> 2
 );
 $intelliboard = intelliboard($params);
-if (isset($intelliboard->content)) {
-    $factorInfo = json_decode($intelliboard->content);
-} else {
-    $factorInfo = '';
-}
+$factorInfo = chart_options();
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/instructor/analytics.php"));
 $PAGE->set_pagetype('analytics');

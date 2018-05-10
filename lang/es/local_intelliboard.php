@@ -52,8 +52,8 @@ $string['intelliboard:manage'] = 'IntelliBoard [Administrar]';
 $string['intelliboard:competency'] = 'IntelliBoard [Competencia]';
 $string['tls12'] = 'TLS v1.2';
 $string['tls12_desc'] = 'Ajustes avanzados:TLS v1.2';
-$string['sizemode'] = 'Modo gran tamaño';
-$string['sizemode_desc'] = 'Grande (>5000 usuarios)';
+$string['sso'] = 'SSO link';
+$string['sso_desc'] = 'SSO Link to IntelliBoard.net';
 $string['server'] = 'Servidor IntelliBoard';
 $string['server_usa'] = 'IntelliBoard USA';
 $string['server_au'] = 'IntelliBoard Australia';
@@ -81,7 +81,7 @@ $string['account'] = 'Información de suscripción';
 $string['te12'] = 'Nombre';
 $string['te13'] = 'Apellido';
 $string['te1'] = 'Correo';
-$string['te1_desc'] = 'Ingrese su nombre, apellido y correo utilizado con suscripción IntelliBoard.net.Si no tiene una suscripción activa, por favor regístrese en <a target="_blank" href="https://intelliboard.net">IntelliBoard.net</a>.Learner and Instructor Dashboard están disponibles con una suscripción de Nivel 3 y superior.';
+$string['te1_desc'] = 'Ingrese su nombre, apellido y correo utilizado con suscripción IntelliBoard.net.Si no tiene una suscripción activa, por favor regístrese en <a target="_blank" href="https://intelliboard.net">IntelliBoard.net</a>.Learner and Instructor Dashboard están disponibles con una suscripción de Nivel 4 y superior.';
 $string['n1'] = 'Información [Progreso del Aprendiz]';
 $string['n2'] = 'Información [Progreso de Notas]';
 $string['n3'] = 'Información [Progreso de Actividad]';
@@ -404,3 +404,6 @@ $string['completions_fail'] = 'Estado de finalización (falla)';
 $string['completions_desc'] = '1) El usuario ha completado esta actividad. No se especifica si han pasado o fallado. <br>
 2) El usuario ha completado esta actividad con un grado por encima de la calificación de aprobado. <br>
 3) El usuario ha completado esta actividad, pero su calificación es menor que la calificación de aprobado.';
+
+$string['reportselect'] = 'Please select at least one Report from the drop down menu in the Admin Dashboard before proceeding.';
+$string['monitorselect'] = 'Please select at least one Monitor from the drop down menu in the Admin Dashboard before proceeding.';

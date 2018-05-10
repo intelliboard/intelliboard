@@ -30,9 +30,17 @@
 ?>
 <ul class="intelliboard-menu">
 	<li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
-	<li><a href="learners.php" <?php echo ($PAGE->pagetype == 'learners')?'class="active"':''; ?>><?php echo get_string('learners', 'local_intelliboard');?></a></li>
-	<li><a href="courses.php" <?php echo ($PAGE->pagetype == 'courses')?'class="active"':''; ?>><?php echo get_string('courses', 'local_intelliboard');?></a></li>
-	<li><a href="load.php" <?php echo ($PAGE->pagetype == 'load')?'class="active"':''; ?>><?php echo get_string('load', 'local_intelliboard');?></a></li>
+
+    <?php if(isset($intelliboard->sets) and !empty($intelliboard->sets)): ?>
+    <li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'monitors')?'class="active"':''; ?>><?php echo get_string('monitors', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
+        <ul>
+            <?php foreach($intelliboard->sets as $key=>$val): ?>
+                <li><a href="monitors.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val); ?></a></li>
+            <?php endforeach; ?>
+        </ul>
+    </li>
+    <?php endif; ?>
+
 	<?php if(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
 	<li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'reports')?'class="active"':''; ?>><?php echo get_string('reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
 		<ul>
@@ -42,10 +50,10 @@
 		</ul>
 	</li>
 	<?php endif; ?>
-	<li><a href="config.php" <?php echo ($PAGE->pagetype == 'settings')?'class="active"':''; ?>><?php echo get_string('settings', 'local_intelliboard');?></a></li>
-	<li class="sso">
-		<?php if($intelliboard->token): ?>
-			<a target="_blank" href="<?php echo intelliboard_url(); ?>/dashboard/api?do=signin&view=<?php echo $PAGE->pagetype; ?>&param=<?php echo format_string($id); ?>&token=<?php echo format_string($intelliboard->token); ?>" class="ion-log-in"> <?php echo get_string('intelliboardnet', 'local_intelliboard');?></a>
-		<?php endif; ?>
+    <li><a href="help.php" <?php echo ($PAGE->pagetype == 'help')?'class="active"':''; ?>><?php echo get_string('help', 'local_intelliboard');?></a></li>
+	<?php if($intelliboard->token and get_config('local_intelliboard', 'sso')): ?>
+	<li class="sso" >
+		<a target="_blank" href="<?php echo intelliboard_url(); ?>auth/sso/<?php echo format_string($intelliboard->db); ?>/<?php echo format_string($intelliboard->token); ?>" class="ion-log-in"> <?php echo get_string('intelliboardnet', 'local_intelliboard');?></a>
 	</li>
+	<?php endif; ?>
 </ul>

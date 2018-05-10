@@ -29,119 +29,12 @@ require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/externallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
 
-$id = required_param('id', PARAM_INT);
-$trigger = optional_param('trigger', 1, PARAM_INT);
-$page = optional_param('page', 0, PARAM_INT);
-$length = optional_param('length', 20, PARAM_INT);
-$filter = optional_param('filter', '', PARAM_RAW);
-$daterange = clean_raw(optional_param('daterange', '', PARAM_RAW));
-
-$custom = optional_param('custom', 0, PARAM_INT);
-$custom2 = optional_param('custom2', 0, PARAM_INT);
-$custom3 = optional_param('custom3', 0, PARAM_INT);
-$users = optional_param('users', 0, PARAM_INT);
-$userid = optional_param('userid', 0, PARAM_INT);
-$courseid = optional_param('courseid', 0, PARAM_INT);
-$cohortid = optional_param('cohortid', 0, PARAM_INT);
-
 require_login();
 require_capability('local/intelliboard:students', context_system::instance());
 
-if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 't48')){
-	throw new moodle_exception('invalidaccess', 'error');
-}
-$email = get_config('local_intelliboard', 'te1');
-
-if (!$daterange) {
-	$timestart = strtotime('-7 days');
-	$timefinish = time();
-
-	$timestart_date = date("Y-m-d", $timestart);
-	$timefinish_date = date("Y-m-d", $timefinish);
-
-	$daterange = $timestart_date . ' to ' . $timefinish_date;
-} else {
-	$range = explode(" to ", $daterange);
-
-	$timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
-	$timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
-
-	$timestart_date = date("Y-m-d", $timestart);
-	$timefinish_date = date("Y-m-d", $timefinish);
-}
-
-$mode_filter = true;
-if($trigger){
-	$params = array(
-		'id'=> $id,
-		'reports'=>get_config('local_intelliboard', 'reports'),
-		'type'=>'reports',
-		'do'=>'reportform',
-		'mode'=> 1
-	);
-	$intelliboard = intelliboard($params);
-
-	if(!empty($intelliboard->content)){
-		$mode_filter = false;
-	}
-}
-
-if($mode_filter){
-	$page = ($page)?$page:1;
-	$params = (object) array(
-		'filter_user_deleted'=>get_config('local_intelliboard', 'filter1'),
-		'filter_user_suspended'=>get_config('local_intelliboard', 'filter2'),
-		'filter_user_guest'=>get_config('local_intelliboard', 'filter3'),
-		'filter_course_visible'=>get_config('local_intelliboard', 'filter4'),
-		'filter_enrolmethod_status'=>get_config('local_intelliboard', 'filter5'),
-		'filter_enrol_status'=>get_config('local_intelliboard', 'filter6'),
-		'filter_module_visible'=>get_config('local_intelliboard', 'filter7'),
-		'filter_columns'=>get_config('local_intelliboard', 'filter9'),
-		'teacher_roles'=>get_config('local_intelliboard', 'filter10'),
-		'learner_roles'=>get_config('local_intelliboard', 'filter11'),
-		'completion'=>get_config('local_intelliboard', 'completions'),
-		'filter_profile'=>0,
-		'sizemode'=> get_config('local_intelliboard', 'sizemode'),
-		'users'=> $USER->id,
-		'custom'=> $custom,
-		'custom2'=> $custom2,
-		'custom3'=> $custom3,
-		'length'=>$length,
-		'start'=>(($page-1) * $length),
-		'userid'=>0,
-		'courseid'=>$courseid,
-		'cohortid'=>$cohortid,
-		'filter'=> s($filter),
-		'timestart'=> $timestart,
-		'timefinish'=>$timefinish
-	);
-
-	$function = "report$id";
-	$plugin = new local_intelliboard_external();
-	$data = json_encode($plugin->{$function}($params));
-
-	$params = array(
-		'url'=>$CFG->wwwroot,
-        'email'=>s($email),
-        'firstname'=>s($USER->firstname),
-        'lastname'=>s($USER->lastname),
-		'reports'=>get_config('local_intelliboard', 'reports'),
-		'filter'=>s($filter),
-		'daterange'=>$daterange,
-		'data'=>$data,
-		'users'=> $USER->id,
-		'id'=> $id,
-		'length'=>$length,
-		'page'=>$page,
-		'type'=>'reports',
-		'do'=>'reports',
-		'mode'=> 1
-	);
-
-	$intelliboard = intelliboard($params);
-}else{
-	$data = '';
-}
+$report = optional_param('id', '', PARAM_RAW);
+$intelliboard = intelliboard(['task'=>'reports', 'mode' => 1]);
+$params = http_build_query(['users'=>$USER->id ]);
 
 $totals = intelliboard_learner_totals($USER->id);
 
@@ -158,31 +51,21 @@ $PAGE->requires->css('/local/intelliboard/assets/css/flatpickr.min.css');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 echo $OUTPUT->header();
 ?>
-
-<?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-	<div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
-<?php else: ?>
 <div class="intelliboard-page intelliboard-student">
 	<?php include("views/menu.php"); ?>
-		<script type="text/javascript">
-		jQuery(document).ready(function(){
-			$("#daterange").flatpickr({
-			    mode: "range",
-			    dateFormat: "Y-m-d",
-			    defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
-			    onReady: function(selectedDates, dateStr, instance){
-					jQuery('<div/>', {
-					    class: 'flatpickr-calendar-title',
-					    text: $("#daterange").attr('title')
-					}).appendTo('.flatpickr-calendar');
+	<div class="intelliboard-content">
+		<?php if ($intelliboard->alerts): ?>
+			<?php foreach ($intelliboard->alerts as $text => $alert): ?>
+				<div class="alert alert-block alert-<?php echo format_string($alert); ?>" role="alert"><?php echo format_text($text); ?></div>
+			<?php endforeach; ?>
+		<?php endif; ?>
 
-    			}
-			});
-		});
-	</script>
-	<div class="intelliboard-content"><?php echo intelliboard_clean($intelliboard->content); ?></div>
-	<?php include("../views/footer.php"); ?>
+		<div id="iframe">
+			<iframe id="iframe" src="<?php echo intelliboard_url(); ?>reports/share/<?php echo $intelliboard->db . '/' . $report; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1&<?php echo $params; ?>" width="100%" height="800" frameborder="0"></iframe>
+			<span id="iframe-loading"><?php echo get_string('loading2', 'local_intelliboard'); ?></span>
+		</div>
+	</div>
+	<?php include("views/footer.php"); ?>
 </div>
-<?php endif; ?>
 <?php
 echo $OUTPUT->footer();

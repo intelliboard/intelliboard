@@ -33,7 +33,7 @@
 		<li><a href="courses.php" <?php echo ($PAGE->pagetype == 'competencies')?'class="active"':''; ?>>Competencies</a></li>
 	<?php endif; ?>
 
-	<?php if(get_config('local_intelliboard', 'competency_reports')): ?>
+	<?php if(get_config('local_intelliboard', 'competency_reports') and isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
 		<li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'reports')?'class="active"':''; ?>><?php echo get_string('reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
 		<ul>
 			<?php if(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>

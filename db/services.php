@@ -32,13 +32,95 @@ $functions = array(
                 'classpath'   => 'local/intelliboard/externallib.php',
                 'description' => 'Return JSON db records',
                 'type'        => 'read',
-        )
+        ),
+        'local_intelliboard_save_assigns' => array(
+                'classname'   => 'local_intelliboard_assign',
+                'methodname'  => 'save_assigns',
+                'classpath'   => 'local/intelliboard/classes/assignlib.php',
+                'description' => 'Save intelliboard assigns',
+                'type'        => 'write',
+        ),
+        'local_intelliboard_delete_assigns' => array(
+                'classname'   => 'local_intelliboard_assign',
+                'methodname'  => 'delete_assigns',
+                'classpath'   => 'local/intelliboard/classes/assignlib.php',
+                'description' => 'Delete intelliboard assigns',
+                'type'        => 'write',
+        ),
+        'local_intelliboard_get_param_values' => array(
+            'classname'   => 'local_intelliboard_search',
+            'methodname'  => 'get_param_values',
+            'classpath'   => 'local/intelliboard/classes/searchlib.php',
+            'description' => 'Get field values from DB that match condition',
+            'type'        => 'read',
+        ),
+        'local_intelliboard_get_data_by_query' => array(
+            'classname'   => 'local_intelliboard_search',
+            'methodname'  => 'get_data_by_query',
+            'classpath'   => 'local/intelliboard/classes/searchlib.php',
+            'description' => 'Get scenario and return db data',
+            'type'        => 'read',
+        ),
+        'local_intelliboard_extract_db_params_from_sentence' => array(
+            'classname'   => 'local_intelliboard_search',
+            'methodname'  => 'extract_db_params_from_sentence',
+            'classpath'   => 'local/intelliboard/classes/searchlib.php',
+            'description' => 'Get sentence and extract all db parameters which it has',
+            'type'        => 'read',
+        ),
+        'local_intelliboard_process_auto_complete_db' => array(
+            'classname'   => 'local_intelliboard_search',
+            'methodname'  => 'process_auto_complete_db',
+            'classpath'   => 'local/intelliboard/classes/searchlib.php',
+            'description' => 'Get sentence, remove given parameter from it, and return word count of parameter',
+            'type'        => 'read',
+        ),
+        'local_intelliboard_check_installed_plugins' => array(
+            'classname'   => 'local_intelliboard_search',
+            'methodname'  => 'check_installed_plugins',
+            'classpath'   => 'local/intelliboard/classes/searchlib.php',
+            'description' => 'Check, if required plugins has been installed',
+            'type'        => 'read',
+        ),
+        'local_intelliboard_get_gradebook_fields' => array(
+            'classname'   => 'local_intelliboard_search',
+            'methodname'  => 'get_gradebook_fields',
+            'classpath'   => 'local/intelliboard/classes/searchlib.php',
+            'description' => 'Return gradebook fields',
+            'type'        => 'read',
+        ),
+        'local_intelliboard_transform_to_placeholder' => array(
+            'classname'   => 'local_intelliboard_search',
+            'methodname'  => 'transform_to_placeholder',
+            'classpath'   => 'local/intelliboard/classes/searchlib.php',
+            'description' => 'Transform values in sentence to placeholders',
+            'type'        => 'read',
+        ),
+        'local_intelliboard_send_notifications' => array(
+            'classname'   => 'local_intelliboard_notificationlib',
+            'methodname'  => 'send_notifications',
+            'classpath'   => 'local/intelliboard/classes/notificationlib.php',
+            'description' => 'Work with notifications;',
+            'type'        => 'read',
+        ),
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
 $services = array(
         'IntelliBoard service' => array(
-                'functions' => array ('local_intelliboard_database_query'),
+                'functions' => array (
+                        'local_intelliboard_database_query',
+                        'local_intelliboard_save_assigns',
+                        'local_intelliboard_delete_assigns',
+                        'local_intelliboard_get_param_values',
+                        'local_intelliboard_get_data_by_query',
+                        'local_intelliboard_extract_db_params_from_sentence',
+                        'local_intelliboard_process_auto_complete_db',
+                        'local_intelliboard_check_installed_plugins',
+                        'local_intelliboard_get_gradebook_fields',
+                        'local_intelliboard_transform_to_placeholder',
+                        'local_intelliboard_send_notifications'
+                ),
                 'restrictedusers' => 1,
                 'enabled'=>1,
         )

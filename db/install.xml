@@ -77,5 +77,25 @@
           <INDEX NAME="timepoint_idx" UNIQUE="false" FIELDS="timepoint"/>
         </INDEXES>
       </TABLE>
+
+
+      <TABLE NAME="local_intelliboard_assign" COMMENT="intelliboard assign">
+        <FIELDS>
+          <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+          <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" />
+          <FIELD NAME="rel" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" />
+          <FIELD NAME="type" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" />
+          <FIELD NAME="instance" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" />
+          <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" />
+        </FIELDS>
+        <KEYS>
+          <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        </KEYS>
+        <INDEXES>
+          <INDEX NAME="type_instance_idx" UNIQUE="false" FIELDS="type, instance"/>
+        </INDEXES>
+      </TABLE>
+
+
     </TABLES>
   </XMLDB>

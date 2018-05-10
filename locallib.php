@@ -38,17 +38,7 @@ function clean_raw($value, $mode = true)
 function intelliboard_clean($content){
 	return trim($content);
 }
-function intelliboard_url(){
-	$server = get_config('local_intelliboard', 'server');
-	if ($server == 2) {
-		$domain = 'eu.';
-	} elseif($server == 1) {
-		$domain = 'au.';
-	} else {
-		$domain = '';
-	}
-	return 'https://'.$domain.'intelliboard.net';
-}
+
 function intelliboard_compl_sql($prefix = "", $sep = true)
 {
     $completions = get_config('local_intelliboard', 'completions');
@@ -112,33 +102,61 @@ function intelliboard_filter_in_sql($sequence, $column, $params = array(), $prfx
 	}
 	return array($sql, $params);
 }
-function intelliboard($params){
+
+function intelliboard_url()
+{
+    return 'https://app.intelliboard.net/';
+}
+function intelliboard($params, $function = 'sso'){
 	global $CFG;
 
 	require_once($CFG->libdir . '/filelib.php');
 
-	$tls12 = get_config('local_intelliboard', 'tls12');
-	$params['firstname'] = get_config('local_intelliboard', 'te12');
-	$params['lastname'] = get_config('local_intelliboard', 'te13');
-	$params['email'] = get_config('local_intelliboard', 'te1');
+    $params['email'] = get_config('local_intelliboard', 'te1');
+	$params['apikey'] = get_config('local_intelliboard', 'apikey');
     $params['url'] = $CFG->wwwroot;
 	$params['lang'] = current_language();
 
-	if($tls12){
-		$options = array('CURLOPT_SSL_CIPHER_LIST'=>'ECDHE_ECDSA_AES_128_GCM_SHA_256');
-	}else{
-		$options = array();
-	}
-	$url = intelliboard_url();
 	$curl = new curl;
-	$json = $curl->post($url.'/dashboard/api', $params, $options);
+	$json = $curl->post(intelliboard_url() . 'moodleApi/' . $function, $params, []);
+
 	$data = (object)json_decode($json);
-	$data->content = (isset($data->content))?$data->content:'';
+	$data->status = (isset($data->status))?$data->status:'';
 	$data->token = (isset($data->token))?$data->token:'';
-	$data->reports = (isset($data->reports))?$data->reports:null;
+    $data->reports = (isset($data->reports))?(array)$data->reports:null;
+    $data->sets = (isset($data->reports))?(array)$data->sets:null;
+	$data->alerts = (isset($data->alerts))?(array)$data->alerts:null;
 	$data->alert = (isset($data->alert))?$data->alert:'';
+    $data->data = (isset($data->data))? (array) $data->data : null;
+	$data->shoppingcartkey = (isset($data->shoppingcartkey))? (array) $data->shoppingcartkey : null;
 
 	return $data;
+}
+function chart_options(){
+    $res = array();
+    $res['CourseProgressCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',title:'',legend:{position:'none'},vAxis: {title:'Grade'},hAxis:{title:''},seriesType:'bars',series:{1:{type:'line'}},chartArea:{width:'92%',height: '76%',right:10,top:10},colors:['#1d7fb3', '#1db34f'],backgroundColor:{fill:'transparent'}}";
+
+    $res['ActivityProgressCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chartArea: {width: '95%',height: '76%',right:10,top:10},height: 250,hAxis: {format: 'dd MMM',gridlines: {},baselineColor: '#ccc',gridlineColor: '#ccc',},vAxis: {baselineColor: '#CCCCCC',gridlines: {count: 5,color: 'transparent',},minValue: 0},pointSize: 6,lineWidth: 2,colors: ['#1db34f', '#1d7fb3'],backgroundColor:{fill:'transparent'},tooltip: {isHtml: true},legend: { position: 'none' }}";
+
+    $res['LearningProgressCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:{position:'bottom',alignment:'center' },title: '',height: '350', pieHole: 0.4, pieSliceText:'value',chartArea:{width: '95%',height: '85%',right:10, top:10 },backgroundColor:{fill:'transparent'}}";
+
+    $res['ActivityParticipationCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:{ position:'bottom', alignment:'center' },title:'',height:'350',chartArea: {width: '85%',height: '85%',right:10,top:10 },backgroundColor:{fill:'transparent'}}";
+
+    $res['CorrelationsCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:'none',colors:['#1d7fb3', '#1db34f'],pointSize:16,tooltip:{isHtml: true},title:'',height:'350',chartArea:{ width: '85%', height:'70%',right:10, top:10 },backgroundColor:{fill:'transparent'},hAxis:{ticks: [], baselineColor: 'none', title:'------ Time Spent ----'},vAxis:{title:'Grade'}}";
+
+    $res['CourseSuccessCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:{ position:'bottom',alignment:'center' },title: '',height:'350',chartArea:{width:'95%',height: '85%',right:10,top:10},backgroundColor:{fill:'transparent'}}";
+
+    $res['GradesCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:40,guage:1,coverBg: '#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'11px',percentWeight:'normal'}";
+
+    $res['GradesFCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:80,guage:2,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'15px',percentWeight:'normal'}";
+
+    $res['GradesXCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:40,guage:1,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'11px',percentWeight:'normal'}";
+
+    $res['GradesZCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:80,guage:2,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'15px',percentWeight:'normal'}";
+
+    $res['CoursesCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chartArea:{width:'90%',height:'76%',right:20,top:10},height:200,hAxis:{format:'dd MMM',gridlines: {},baselineColor:'#ccc',gridlineColor:'#ccc',},vAxis:{baselineColor:'#CCCCCC',gridlines:{count:5,color:'transparent',},minValue:0},pointSize:6,lineWidth:2,colors:['#1db34f','#1d7fb3'],backgroundColor:{fill:'transparent'},tooltip:{isHtml:true},legend:{position:'bottom'}}";
+
+    return (object) $res;
 }
 function seconds_to_time($t,$f=':'){
 	if($t < 0){
@@ -151,22 +169,23 @@ function seconds_to_time($t,$f=':'){
 function intelliboard_csv_quote($value) {
 	return '"'.str_replace('"',"'",$value).'"';
 }
-function intelliboard_export_report($json, $itemname, $format = 'csv')
+function intelliboard_export_report($json, $itemname, $format = 'csv', $output_type = 1)
 {
-	$name =  clean_filename($itemname . '-' . gmdate("Y-m-d"));
+
+    $name =  clean_filename($itemname . '-' . gmdate("Y-m-d"));
 
 	if($format == 'csv'){
-		intelliboard_export_csv($json, $name);
+		return intelliboard_export_csv($json, $name, $output_type);
 	}elseif($format == 'xls'){
-		intelliboard_export_xls($json, $name);
+        return intelliboard_export_xls($json, $name, $output_type);
 	}elseif($format == 'pdf'){
-		intelliboard_export_pdf($json, $name);
+        return intelliboard_export_pdf($json, $name, $output_type);
 	}else{
-        intelliboard_export_html($json, $name);
+        return intelliboard_export_html($json, $name, $output_type);
 	}
 }
 
-function intelliboard_export_html($json, $filename)
+function intelliboard_export_html($json, $filename, $type = 1)
 {
     $html = '<h2>'.$filename.'</h2>';
     $html .= '<table width="100%">';
@@ -187,9 +206,14 @@ function intelliboard_export_html($json, $filename)
     $html .= '</table>';
     $html .= '<style>table{border-collapse: collapse; width: 100%;} table tr th {font-weight: bold;} table th, table td {border:1px solid #aaaaaa; padding: 7px 10px; font: 13px/13px Arial;} table tr:nth-child(odd) td {background-color: #f5f5f5;}</style>';
 
-    die($html);
+    switch ($type) {
+        case 2:
+            return $html;
+        default:
+            die($html);
+    }
 }
-function intelliboard_export_csv($json, $filename)
+function intelliboard_export_csv($json, $filename, $type = 1)
 {
 	global $CFG;
     require_once($CFG->libdir . '/csvlib.class.php');
@@ -210,10 +234,18 @@ function intelliboard_export_csv($json, $filename)
 		$line++;
 	}
     $delimiters = array('comma'=>',', 'semicolon'=>';', 'colon'=>':', 'tab'=>'\\t');
-    csv_export_writer::download_array($filename, $data, $delimiters['tab']);
+
+    switch ($type) {
+        case 1:
+            return csv_export_writer::download_array($filename, $data, $delimiters['tab']);
+        case 2:
+            return csv_export_writer::print_array($data, $delimiters['tab'], '"', true);
+        default:
+            return csv_export_writer::print_array($data, $delimiters['tab']);
+    }
 }
 
-function intelliboard_export_xls($json, $filename)
+function intelliboard_export_xls($json, $filename, $type = 1)
 {
     global $CFG;
     require_once("$CFG->libdir/excellib.class.php");
@@ -240,10 +272,23 @@ function intelliboard_export_xls($json, $filename)
         }
         $rowno++;
     }
-    $workbook->close();
-    exit;
+
+    switch ($type) {
+        case 1:
+            $workbook->close();
+            exit;
+        case 2:
+            ob_start();
+            $workbook->close();
+            $data = ob_get_contents();
+            ob_end_clean();
+            return $data;
+        default:
+            return $workbook->close();
+    }
+
 }
-function intelliboard_export_pdf($json, $name)
+function intelliboard_export_pdf($json, $name, $type = 1)
 {
     global $CFG, $SITE;
 
@@ -289,6 +334,49 @@ function intelliboard_export_pdf($json, $name)
     $html .= 'td{border:0.1px solid #000; padding:10px;}';
     $html .= '</style>';
     $doc->writeHTML($html);
-    $doc->Output($name);
-    exit();
+
+    switch ($type) {
+        case 1:
+            $doc->Output($name);
+            die();
+        case 2:
+            return $doc->Output($name, 'S');
+        default:
+            die($doc->Output($name, 'S'));
+    }
+
+
+}
+function get_modules_names() {
+    global $DB;
+
+    $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1");
+    $nameColumn = array_reduce($modules, function($carry, $module) {
+        return $carry . " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
+    }, '');
+
+    return $nameColumn?  "CASE $nameColumn ELSE 'NONE' END" : "''";
+}
+
+function exclude_not_owners($params) {
+
+    global $DB;
+
+    $ids = $DB->get_records_sql("SELECT DISTINCT(lia.userid) as id
+                    FROM {local_intelliboard_assign} lia
+                    WHERE
+                    lia.userid NOT IN(
+                      SELECT lia.userid FROM {local_intelliboard_assign} lia WHERE
+                      (lia.type = 'users' AND lia.instance = ?) OR
+                      (lia.type = 'courses' AND lia.instance = ?) OR
+                      (lia.type = 'cohorts' AND lia.instance IN(
+                        SELECT chm.userid FROM {cohort_members} chm WHERE lia.instance = chm.cohortid AND chm.userid = ?
+                      ))
+                    )", $params);
+    $ids = array_map(function ($id) {
+        return $id->id;
+    }, $ids);
+
+    return $ids;
+
 }

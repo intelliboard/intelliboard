@@ -52,12 +52,7 @@ $params = array(
 	'mode'=> 3
 );
 $intelliboard = intelliboard($params);
-
-if (isset($intelliboard->content)) {
-    $factorInfo = json_decode($intelliboard->content);
-} else {
-	$factorInfo = '';
-}
+$factorInfo = chart_options();
 $params = array(
 	"id"=>$courseid,
 	"userid"=>$userid,

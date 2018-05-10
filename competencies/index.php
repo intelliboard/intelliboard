@@ -49,11 +49,7 @@ if(!$action){
 		'mode'=> 3
 	);
 	$intelliboard = intelliboard($params);
-	if (isset($intelliboard->content)) {
-	    $factorInfo = json_decode($intelliboard->content);
-	} else {
-		$factorInfo = '';
-	}
+	$factorInfo = chart_options();
 }
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/competencies/index.php", array("type"=>$type, "search"=>$search)));

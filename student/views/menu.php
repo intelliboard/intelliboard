@@ -28,7 +28,6 @@ $id = optional_param('id', 0, PARAM_INT);
 $alt_name = get_config('local_intelliboard', 'grades_alt_text');
 $def_name = get_string('grades', 'local_intelliboard');
 $grade_name = ($alt_name) ? $alt_name : $def_name;
-
 ?>
 
 <div class="sheader clearfix">

@@ -45,11 +45,7 @@ intelliboard_instructor_access();
 if(!$action){
 	$params = array('do'=>'instructor','mode'=> 2);
 	$intelliboard = intelliboard($params);
-	if (isset($intelliboard->content)) {
-	    $factorInfo = json_decode($intelliboard->content);
-	} else {
-		$factorInfo = '';
-	}
+	$factorInfo = chart_options();
 }
 
 if (!$daterange) {
@@ -527,7 +523,7 @@ echo $OUTPUT->header();
             });
 
 		});
-		
+
 		function removeParam(key, sourceURL) {
 			var rtn = sourceURL.split("?")[0],
 				param,

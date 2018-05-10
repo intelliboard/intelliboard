@@ -48,11 +48,7 @@ $params = array(
 	'mode'=> 1
 );
 $intelliboard = intelliboard($params);
-if (isset($intelliboard->content)) {
-    $factorInfo = json_decode($intelliboard->content);
-} else {
-	$factorInfo = '';
-}
+$factorInfo = chart_options();
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>s($search), "id"=>$id, "sesskey"=> sesskey())));
 $PAGE->set_pagetype('grades');

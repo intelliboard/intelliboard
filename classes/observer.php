@@ -26,60 +26,107 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+
 class local_intelliboard_observer
 {
-    public static function user_created(\core\event\user_created $event)
+
+    protected $event_queue_table = 'logstore_standart_log';
+
+    public static function role_assigned(core\event\role_assigned $event)
+    {
+        $data = $event->get_data();
+        $relatedUser = $data['relateduserid'];
+
+        $excluded = exclude_not_owners(array($relatedUser, $data['courseid'], $relatedUser));
+
+        self::process_event(2, $event, array(), $excluded);
+    }
+
+    public static function role_unassigned(core\event\role_unassigned $event)
+    {
+        $data = $event->get_data();
+        $relatedUser = $data['relateduserid'];
+
+        $excluded = exclude_not_owners(array($relatedUser, $data['courseid'], $relatedUser));
+
+        self::process_event(2, $event, array(), $excluded);
+    }
+
+    public static function post_created(mod_forum\event\post_created $event)
+    {
+
+        $eventData = $event->get_data();
+
+        $excluded = exclude_not_owners(array($eventData['userid'], $eventData['courseid'], $eventData['userid']));
+
+        $data = array(
+            'forums' => $eventData['other']['forumid'],
+            'course' => $eventData['courseid']
+        );
+
+        self::process_event(12, $event, $data, $excluded);
+    }
+
+    public static function user_graded(\core\event\user_graded $event)
     {
         global $DB;
 
-		$auth = get_config('local_intelliboard','auth');
-		$auth_email = get_config('local_intelliboard','auth_email');
-		$auth_subject = get_config('local_intelliboard','auth_subject');
-		$auth_message = get_config('local_intelliboard','auth_message');
+        $allowedTypes = array('assign', 'quiz');
+        $eventData = $event->get_data();
 
-		$user = $DB->get_record('user', array('id'=>$event->objectid));
+        $itemid = $eventData['other']['itemid'];
+        $item = $DB->get_record('grade_items', array('id' => $itemid), "itemmodule");
 
-		if($auth and $auth_email and $auth_subject and $auth_message) {
-			$auth = explode(",", $auth);
-			if(!in_array($user->auth, $auth)){
-				return;
-			}
-			$sender = get_admin();
-			$manager = get_admin();
-			$manager->email = $auth_email;
+        if (in_array($item->itemmodule, $allowedTypes)) {
+            $excluded = exclude_not_owners(array($eventData['userid'], $eventData['courseid'], $eventData['userid']));
+            $data = array(
+                'course' => $eventData['courseid']
+            );
 
-			$subject = str_replace('[[user]]', fullname($user), $auth_subject);
-			$message = str_replace('[[user]]', fullname($user), $auth_message);
+            self::process_event(13, $event, $data, $excluded);
+        }
 
-			email_to_user($manager,$sender,$subject,$message,$message);
-		}
     }
-    public static function user_enrolment_created(\core\event\user_enrolment_created $event)
+
+    public static function quiz_attempt_submitted(\mod_quiz\event\attempt_submitted $event)
     {
         global $DB;
 
-		$user = $DB->get_record('user', array('id'=>$event->relateduserid));
-		$course = $DB->get_record('course', array('id'=>$event->contextinstanceid));
+        $eventData = $event->get_data();
 
-		$enrol = get_config('local_intelliboard','enrol');
-		$enrol_email = get_config('local_intelliboard','enrol_email');
-		$enrol_subject = get_config('local_intelliboard','enrol_subject');
-		$enrol_message = get_config('local_intelliboard','enrol_message');
+        $isNeededGrading = $DB->get_record_sql("SELECT 
+            COUNT(qas.id) AS checking 
+            FROM {question_attempt_steps} qas
+            INNER JOIN {question_attempts} qa ON qa.id = qas.questionattemptid
+            INNER JOIN {quiz_attempts} q ON q.uniqueid = qa.questionusageid
+            WHERE q.id = ? AND qas.state = 'needsgrading'
+        ", array($eventData['objectid']))->checking;
+        
+        if (!$isNeededGrading) {
+            return;
+        }
 
-		if($enrol and $enrol_email and $enrol_subject and $enrol_message) {
-			$enrol = explode(",", $enrol);
-			if(!in_array($event->other['enrol'], $enrol)){
-				return;
-			}
-			$sender = get_admin();
-			$manager = get_admin();
-			$manager->email = $enrol_email;
+        $excluded = exclude_not_owners(array($eventData['userid'], $eventData['courseid'], $eventData['userid']));
 
-			$subject = str_replace(array('[[user]]', '[[course]]'), array(fullname($user), $course->fullname), $enrol_subject);
-			$message = str_replace(array('[[user]]', '[[course]]'), array(fullname($user), $course->fullname), $enrol_message);
-
-			email_to_user($manager,$sender,$subject,$message,$message);
-		}
-		return true;
+        self::process_event(15, $event, array(), $excluded);
     }
+
+    public static function assign_attempt_submitted(\mod_assign\event\assessable_submitted $event)
+    {
+        $eventData = $event->get_data();
+        $excluded = exclude_not_owners(array($eventData['userid'], $eventData['courseid'], $eventData['userid']));
+
+        self::process_event(15, $event, array(), $excluded);
+    }
+
+    protected static function process_event($type, $event, $filter = array(), $excluded = null)
+    {
+        $notification = new local_intelliboard_notification();
+
+        $notifications = $notification->get_instant_notifications($type, $filter, $excluded);
+
+        $notification->send_notifications($notifications, $event);
+    }
+
 }

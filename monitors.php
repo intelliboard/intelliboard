@@ -26,28 +26,18 @@
 
 require('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
-require_once($CFG->dirroot .'/local/intelliboard/externallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+
 
 require_login();
 require_capability('local/intelliboard:view', context_system::instance());
-admin_externalpage_setup('intelliboardsettings');
 
-$reports = optional_param_array('report', array(), PARAM_INT);
+$set = optional_param('id', '', PARAM_RAW);
+$intelliboard = intelliboard(['task'=>'monitors']);
 
-if($reports){
-	set_config("reports", implode(",", $reports), "local_intelliboard");
-}
-
-$params = array(
-	'reports'=>get_config('local_intelliboard', 'reports'),
-	'type'=>'settings',
-	'do'=>'reportslist'
-);
-$intelliboard = intelliboard($params);
-$PAGE->set_url(new moodle_url("/local/intelliboard/settings.php"));
+$PAGE->set_url(new moodle_url("/local/intelliboard/monitors.php", array('id'=>$set)));
 $PAGE->set_pagelayout('report');
-$PAGE->set_pagetype('settings');
+$PAGE->set_pagetype('monitors');
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
@@ -56,8 +46,22 @@ echo $OUTPUT->header();
 ?>
 <div class="intelliboard-page">
 	<?php include("views/menu.php"); ?>
-	<div class="intelliboard-content"><?php echo intelliboard_clean($intelliboard->content); ?></div>
-	<a href="<?php echo $CFG->wwwroot; ?>/admin/settings.php?section=local_intelliboard"><?php echo get_string('adv_settings','local_intelliboard');?></a>
+	<div class="intelliboard-content">
+		<?php if ($intelliboard->alerts): ?>
+			<?php foreach ($intelliboard->alerts as $text => $alert): ?>
+				<div class="alert alert-block alert-<?php echo format_string($alert); ?>" role="alert"><?php echo format_text($text); ?></div>
+			<?php endforeach; ?>
+		<?php endif; ?>
+
+		<?php if ($set): ?>
+		<div id="iframe">
+		<iframe src="<?php echo intelliboard_url(); ?>monitors/share/<?php echo $intelliboard->db . '/' . $set; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1" width="100%" height="800" frameborder="0"></iframe>
+		<span id="iframe-loading"><?php echo get_string('loading2', 'local_intelliboard'); ?></span>
+		</div>
+		<?php else: ?>
+			<div class="alert alert-block alert-info" role="alert"><?php echo get_string('monitorselect', 'local_intelliboard'); ?></div>
+		<?php endif; ?>
+	</div>
 	<?php include("views/footer.php"); ?>
 </div>
 <?php

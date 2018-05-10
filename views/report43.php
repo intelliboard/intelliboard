@@ -61,12 +61,12 @@
 			</td>
 			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo get_string('user_visit_avg', 'local_intelliboard', $row);} ?>">
 				<span class='<?php if($avg){echo ($avg->visits_site > $row->visits)?"down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left";} ?>'>
-					 <?php echo ($report_time)?get_string('disabled', 'local_intelliboard'):$row->visits; ?>
+					 <?php echo $row->visits; ?>
 				</span>
 			</td>
 			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo get_string('user_time_avg', 'local_intelliboard', $row);} ?>">
 				<span class='<?php if($avg){echo ($avg->timespend_site > $row->timespend)?"down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left";} ?>'>
-					 <?php echo ($report_time)?get_string('disabled', 'local_intelliboard'):$row->timespend; ?>
+					 <?php echo $row->timespend; ?>
 				</span>
 			</td>
 			<td><?php echo date("m/d/Y", $row->timecreated); ?></td>

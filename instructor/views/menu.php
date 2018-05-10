@@ -24,7 +24,7 @@
  * @website    https://intelliboard.net/
  */
 
-	$id = optional_param('id', 0, PARAM_INT);
+$id = optional_param('id', 0, PARAM_INT);
 ?>
 <ul class="intelliboard-menu">
 	<li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
@@ -34,25 +34,24 @@
 	<?php endif; ?>
 
 
-	<?php if(get_config('local_intelliboard', 'n9')): ?>
+	<?php if(get_config('local_intelliboard', 'n9') and isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
 	<li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'reports')?'class="active"':''; ?>><?php echo get_string('reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
 		<ul>
-			<?php if(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
-				<?php foreach($intelliboard->reports as $key=>$val): ?>
-					<li><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val); ?></a></li>
-				<?php endforeach; ?>
-			<?php endif; ?>
+			<?php foreach($intelliboard->reports as $key=>$val): ?>
+				<li><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val); ?></a></li>
+			<?php endforeach; ?>
 		</ul>
 	</li>
 	<?php endif; ?>
-	<li><a href="monitors.php" <?php echo ($PAGE->pagetype == 'monitors')?'class="active"':''; ?>><?php echo get_string('monitors', 'local_intelliboard');?></a></li>
 
-    <?php if(get_config('local_intelliboard', 'n17')): ?>
-        <li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'analytics')?'class="active"':''; ?>><?php echo get_string('analytics', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
-            <ul>
-               <li><a href="analytics.php?id=3" <?php echo ($id == 3)?'class="active"':''; ?>><?php echo get_string('analityc_3_name', 'local_intelliboard');?></a></li>
-            </ul>
-        </li>
+	<?php if(isset($intelliboard->sets) and !empty($intelliboard->sets)): ?>
+    <li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'monitors')?'class="active"':''; ?>><?php echo get_string('monitors', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
+        <ul>
+            <?php foreach($intelliboard->sets as $key=>$val): ?>
+                <li><a href="monitors.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val); ?></a></li>
+            <?php endforeach; ?>
+        </ul>
+    </li>
     <?php endif; ?>
 
 	<li><a href="help.php" <?php echo ($PAGE->pagetype == 'help')?'class="active"':''; ?>><?php echo get_string('help', 'local_intelliboard');?></a></li>

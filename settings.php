@@ -31,44 +31,25 @@ $settings = new admin_settingpage('local_intelliboard', new lang_string('setting
 $ADMIN->add('root', new admin_category('intelliboardroot', new lang_string('intelliboardroot', 'local_intelliboard')));
 $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcontrolpanel', new lang_string('dashboard', 'local_intelliboard'),
         $CFG->wwwroot.'/local/intelliboard/index.php', 'local/intelliboard:manage'));
-$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardlearners', new lang_string('learners', 'local_intelliboard'),
-        $CFG->wwwroot.'/local/intelliboard/learners.php', 'local/intelliboard:manage'));
-$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcourses', new lang_string('courses', 'local_intelliboard'),
-        $CFG->wwwroot.'/local/intelliboard/courses.php', 'local/intelliboard:manage'));
-$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardload', new lang_string('load', 'local_intelliboard'),
-        $CFG->wwwroot.'/local/intelliboard/load.php', 'local/intelliboard:manage'));
+
+$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardmonitors', new lang_string('monitors', 'local_intelliboard'),
+        $CFG->wwwroot.'/local/intelliboard/monitors.php', 'local/intelliboard:manage'));
+
 $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardreports', new lang_string('reports', 'local_intelliboard'),
         $CFG->wwwroot.'/local/intelliboard/reports.php', 'local/intelliboard:manage'));
 $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcompetency', new lang_string('a1', 'local_intelliboard'),
         $CFG->wwwroot.'/local/intelliboard/competencies/index.php', 'local/intelliboard:competency'));
-$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardsettings', new lang_string('settings'),
-        $CFG->wwwroot.'/local/intelliboard/config.php', 'local/intelliboard:manage'));
 
 
 if (!$ADMIN->locate('intelliboard') and $ADMIN->locate('localplugins')){
 	$ADMIN->add('localplugins', new admin_category('intelliboard', new lang_string('pluginname', 'local_intelliboard')));
 	$ADMIN->add('intelliboard', $settings);
-
-	$ADMIN->add('intelliboard', new admin_externalpage('intelliboardlogs', new lang_string('logs', 'local_intelliboard'),
-        $CFG->wwwroot.'/local/intelliboard/logs.php'));
 }
 
 if($ADMIN->fulltree){
         $settings->add(new admin_setting_heading('local_intelliboard/account_title', new lang_string('account', 'local_intelliboard'), ''));
 
-        $name = 'local_intelliboard/te12';
-        $title = new lang_string('te12', 'local_intelliboard');
-        $description = '';
-        $setting = new admin_setting_configtext($name, $title, $description, '');
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/te13';
-        $title = new lang_string('te13', 'local_intelliboard');
-        $description = '';
-        $setting = new admin_setting_configtext($name, $title, $description, '');
-        $settings->add($setting);
-
-         $name = 'local_intelliboard/te1';
+        $name = 'local_intelliboard/te1';
         $title = new lang_string('te1', 'local_intelliboard');
         $description = new lang_string('te1_desc', 'local_intelliboard');
         $setting = new admin_setting_configtext($name, $title, $description, '');
@@ -110,20 +91,10 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
-        $name = 'local_intelliboard/sizemode';
-        $title = new lang_string('sizemode', 'local_intelliboard');
-        $description = new lang_string('sizemode_desc', 'local_intelliboard');
+        $name = 'local_intelliboard/sso';
+        $title = new lang_string('sso', 'local_intelliboard');
+        $description = new lang_string('sso_desc', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-        $settings->add($setting);
-
-        $options = array(
-                new lang_string('server_usa', 'local_intelliboard'),
-                new lang_string('server_au', 'local_intelliboard'),
-                new lang_string('server_eu', 'local_intelliboard')
-        );
-        $name = 'local_intelliboard/server';
-        $title = new lang_string('server', 'local_intelliboard');
-        $setting = new admin_setting_configselect($name, $title,'',0,$options);
         $settings->add($setting);
 
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));
@@ -228,7 +199,7 @@ if($ADMIN->fulltree){
         $settings->add($setting);
 
         $name = 'local_intelliboard/n10';
-        $title = new lang_string('n10', 'local_intelliboard');
+        $title = new lang_string('n101', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
@@ -336,12 +307,12 @@ if($ADMIN->fulltree){
         $settings->add($setting);
 
         $name = 'local_intelliboard/this_year';
-        $title = new lang_string('this_year', 'local_intelliboard');
+        $title = new lang_string('filter_this_year', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
         $name = 'local_intelliboard/last_year';
-        $title = new lang_string('last_year', 'local_intelliboard');
+        $title = new lang_string('filter_last_year', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
