@@ -48,12 +48,17 @@ class local_intelliboard_notificationlib extends external_api {
                             'frequency'  => new external_value(PARAM_INT, 'Notification frequency'),
                         )
                     )
+                ),
+                'params' => new external_single_structure(
+                    array(
+                        'learner_roles'         => new external_value(PARAM_SEQUENCE, 'Learner Roles', VALUE_OPTIONAL, ''),
+                    )
                 )
             )
         );
     }
 
-    public static function send_notifications($notifications) {
+    public static function send_notifications($notifications, $params) {
         $notifications = array_map(function($notification) {
             $notification['params'] = json_decode($notification['params'], true);
             $notification['tags'] = json_decode($notification['tags'], true);
@@ -61,7 +66,7 @@ class local_intelliboard_notificationlib extends external_api {
         }, $notifications);
 
         $notification = new local_intelliboard_notification();
-        $notification->send_notifications($notifications);
+        $notification->send_notifications($notifications, array(), $params);
 
         return array('state' => true);
     }

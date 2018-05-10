@@ -38,7 +38,7 @@ class local_intelliboard_notification {
         return json_decode(json_encode($response), true)['notifications'];
     }
 
-    public function send_notifications($notifications, $event = array())
+    public function send_notifications($notifications, $event = array(), $params = array())
     {
 
         foreach ($notifications as $notification) {
@@ -47,10 +47,10 @@ class local_intelliboard_notification {
             if ($event) {
                 $events[] = $event->get_data();
             } else {
-                $events = $this->get_events_from_queue($notification);
+                $events = $this->get_events_from_queue($notification, $params);
             }
 
-            list($recipients, $results) = $this->{'notification' . $notification['type']}($notification, $events);
+            list($recipients, $results) = $this->{'notification' . $notification['type']}($notification, $events, $params);
             $this->notify($recipients, $results, $notification);
         }
 
@@ -102,7 +102,7 @@ class local_intelliboard_notification {
         $this->history = array();
     }
 
-    protected function notification2(&$notification, $events)
+    protected function notification2(&$notification, $events = array())
     {
         global $DB;
 
@@ -123,7 +123,7 @@ class local_intelliboard_notification {
         return array(array($recipient), array($result));
     }
 
-    protected function notification12(&$notification, $events)
+    protected function notification12(&$notification, $events = array())
     {
         global $DB, $CFG;
 
@@ -145,7 +145,7 @@ class local_intelliboard_notification {
         return array(array($recipient), array($result));
     }
 
-    protected function notification13(&$notification, $events)
+    protected function notification13(&$notification, $events = array())
     {
         global $DB;
 
@@ -177,7 +177,7 @@ class local_intelliboard_notification {
         return array($recipients, $notifications);
     }
 
-    protected function notification14(&$notification, $events)
+    protected function notification14(&$notification, $events = array())
     {
         global $DB;
 
@@ -253,7 +253,7 @@ class local_intelliboard_notification {
         return array($users, $notifications);
     }
 
-    protected function notification15(&$notification, $events)
+    protected function notification15(&$notification, $events = array())
     {
         global $DB;
 
@@ -291,7 +291,7 @@ class local_intelliboard_notification {
 
     }
 
-    protected function notification17(&$notification, $events)
+    protected function notification17(&$notification, $events = array(), $request_params = array())
     {
         global $DB;
 
@@ -300,13 +300,12 @@ class local_intelliboard_notification {
         $gradesql = intelliboard_grade_sql();
         $params = array($from, $to);
 
-        $filterUser = $this->filter_owners($notification['userid'], array(
+        $filterUser = $this->filter_by_owner($notification['userid'], array(
             'users' => 'u.id',
             'courses' => 'c.id'
-        ));
+        ), $request_params);
 
-        $params = array_merge($params, $filterUser['params']);
-        $filterUser = $filterUser['sql'];
+        $filterUser = $filterUser? ' AND ' . $filterUser : '';
 
         $users = $DB->get_records_sql('
                 SELECT cmc.id,
@@ -419,46 +418,64 @@ class local_intelliboard_notification {
         return str_replace($keys, $values, $message);
     }
 
-    function filter_owners($user, $columns)
+    protected function filter_by_owner($user, $columns, $params)
     {
         global $DB;
 
-        $sql = '';
-        $params = [];
+        $query = [];
+        $assign_users = [];
+        $assign_courses = [];
+        $assign_cohorts = [];
 
-        if ($DB->count_records('local_intelliboard_assign', array('userid' => $user))) {
-
-            $query = [];
-            foreach ($columns as $column => $type) {
-                if ($type == "users") {
-                    $params[] = $user;
-                    $params[] = 'users';
-                    $params[] = $user;
-                    $params[] = 'cohorts';
-
-                    $query[] = "$column IN (SELECT instance FROM {local_intelliboard_assign} WHERE userid = ? AND type = ?)";
-                    $query[] = " $column IN (SELECT m.userid FROM {local_intelliboard_assign} a, {cohort_members} m WHERE m.cohortid = a.instance AND a.userid = ? AND a.type = ?)";
-                } elseif ($type == "courses") {
-                    $params[] = $user;
-                    $params[] = 'courses';
-                    $query[] = "$column IN (SELECT instance FROM {local_intelliboard_assign} WHERE userid = ? AND type = ?)";
-                } elseif ($type == "cohorts") {
-                    $params[] = $user;
-                    $params[] = 'cohorts';
-                    $query[] = "$column IN (SELECT instance FROM {local_intelliboard_assign} WHERE userid = ? AND type = ?)";
-                }
-            }
-
-            if ($query) {
-                $sql = " AND (".implode(" OR ", $query).")";
-            }
-
+        $assigns = $DB->get_records_sql("SELECT * FROM {local_intelliboard_assign} WHERE userid = :userid", ['userid' => $user]);
+        foreach ($assigns as $assign) {
+            ${'assign_' . $assign->type}[] = (int) $assign->instance;
         }
 
-        return compact('sql', 'params');
+        foreach ($columns as $type => $column) {
+            if ($type == "users") {
+                $list = [];
+
+                if ($assign_cohorts) {
+                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN (" . implode(",", $assign_cohorts) . ")"));
+                }
+
+                if ($assign_courses) {
+                    list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
+                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN (" . implode(",", $assign_courses) . ")", $values));
+                }
+
+                $assign_users = array_merge(array_unique($assign_users), array_unique($list));
+                if ($assign_users) {
+                    $query[] = "$column IN (".implode(",", $assign_users).")";
+                }
+            } elseif($type == "courses") {
+                $list = [];
+                $assign_courses = array_unique($assign_courses);
+
+                if ($assign_users) {
+                    list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
+                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT DISTINCT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ra.userid IN (" . implode(",", $assign_users) . ")", $values));
+                }
+                if ($assign_cohorts) {
+                    $users_list = $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN (" . implode(",", $assign_cohorts) . ")");
+                    list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
+                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT DISTINCT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ra.userid IN (" . implode(",", $users_list) .  ")", $values));
+                }
+
+                $assign_courses = array_merge(array_unique($assign_courses), array_unique($list));
+                if ($assign_courses) {
+                    $query[] = "$column IN (".implode(",", $assign_courses).")";
+                }
+            } elseif($type == "cohorts" && $assign_cohorts) {
+                $query[] = "$column IN (".implode(",", $assign_cohorts).")";
+            }
+        }
+
+        return $query? " (".implode(" AND ", $query).")" : '';
     }
 
-    protected function get_events_from_queue($notification)
+    protected function get_events_from_queue($notification, $params)
     {
         global $DB;
 
@@ -467,20 +484,26 @@ class local_intelliboard_notification {
         if (method_exists($this, $function)) {
             $data = $this->$function($notification);
 
-            $filter = $this->filter_owners($notification['userid'], array(
-                'users' => 'lsl.userid',
-                'courses' => 'lsl.courseid'
-            ));
+            $filter = $this->filter_by_owner($notification['userid'], array(
+                'users' => 't.userid',
+                'courses' => 't.courseid'
+            ), $params);
 
-            $data['sql'] .= $filter['sql'];
-            $data['params'] = array_merge($data['params'], $filter['params']);
+            $data['sql'] .= $filter? ' WHERE ' . $filter : '';
 
             $events = json_decode(json_encode($DB->get_records_sql(
                 $data['sql'], $data['params']
             )), true);
 
             $events = array_map(function($event) {
-                $event['other'] = unserialize($event['other']);
+
+                foreach ($event as $name => $value) {
+                    $nameArr = explode('_', $name);
+
+                    if ($nameArr[0] === 'other') {
+                        $event['other'][$nameArr[1]] = $value;
+                    }
+                }
                 return $event;
             }, $events);
         } else {
@@ -493,19 +516,26 @@ class local_intelliboard_notification {
     protected function notification13_event($notification)
     {
 
-        $sql = 'SELECT
-                  lsl.*
-                  FROM {logstore_standard_log} lsl
-                  INNER JOIN {grade_grades} g ON lsl.objectid = g.id
-                  INNER JOIN {grade_items} gi ON g.itemid = gi.id AND gi.itemmodule IN(\'quiz\',\'assign\')
-                  WHERE lsl.timecreated > ? AND lsl.eventname = ?';
-        $params = array($this->get_border_date($notification['frequency']), '\core\event\user_graded');
+        $sql = '
+            SELECT
+                g.id as id,
+                g.userid as relateduserid,
+                g.userid as userid,
+                g.itemid as other_itemid,
+                gi.courseid as courseid,
+                g.finalgrade as other_finalgrade
+            FROM {grade_grades} as g
+            INNER JOIN {grade_items} as gi ON g.itemid = gi.id AND gi.itemmodule IN (\'quiz\', \'assign\')
+            WHERE g.finalgrade IS NOT NULL AND g.timemodified > ?
+       ';
+        $params = array($this->get_border_date($notification['frequency']));
 
         if (!empty($notification['params']['course'])) {
-            $sql .= " AND lsl.contextinstanceid IN(" . rtrim(str_repeat('?,', count($notification['params']['course'])), ',') . ")";
+            $sql .= " AND gi.courseid IN(" . rtrim(str_repeat('?,', count($notification['params']['course'])), ',') . ")";
             $params = array_merge($params, $notification['params']['course']);
         }
 
+        $sql = 'SELECT t.* FROM (' . $sql . ') AS t';
         return compact('sql', 'params');
 
     }
@@ -513,28 +543,59 @@ class local_intelliboard_notification {
     protected function notification15_event($notification)
     {
         $time = $this->get_border_date($notification['frequency']);
-        $sql = 'SELECT * FROM (
-                  (SELECT lsl.*
-                  FROM {logstore_standard_log} lsl
-                  WHERE lsl.eventname = ?)
-                  UNION ALL
-                  (SELECT lsl.*
-                  FROM {logstore_standard_log} lsl
-                  INNER JOIN {quiz_attempts} qa ON qa.id = lsl.objectid AND lsl.eventname = ?
-                  INNER JOIN {question_attempts} qua ON qua.questionusageid = qa.uniqueid
-                  INNER JOIN {question_attempt_steps} qas ON qas.questionattemptid = qua.id ON qas.state = ?)
-                  ) lsl WHERE lsl.timecreated > ?
-                  ';
+
+        $sql = 'SELECT t.* FROM ((SELECT
+                  s.id AS uniqueid,
+                  s.id AS objectid,
+                  s.assignment AS other_quizid,
+                  s.userid as userid,
+                  a.course as courseid,
+                  \'mod_assign\' AS component
+                FROM {assign_submission} s
+                  LEFT JOIN {assign_grades} g ON s.assignment = g.assignment AND s.userid = g.userid AND g.attemptnumber = s.attemptnumber
+                  LEFT JOIN {assign} a ON a.id = s.assignment
+                WHERE s.latest = 1 AND s.timemodified IS NOT NULL AND s.timecreated > ? AND s.status = \'submitted\' AND (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR g.grade IS NULL))
+    
+                UNION ALL
+    
+                (SELECT
+                  quiza.id AS uniqueid,
+                  quiza.id AS objectid,
+                  quiza.quiz AS other_quizid,
+                  quiza.userid,
+                  qz.course as courseid,
+                  \'mod_quiz\' AS activity
+                FROM {quiz_attempts} quiza
+                  LEFT JOIN {question_attempts} qa ON qa.questionusageid = quiza.uniqueid
+                  LEFT JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id AND qas.sequencenumber = (
+                        SELECT MAX(sequencenumber)
+                        FROM {question_attempt_steps}
+                        WHERE questionattemptid = qa.id
+                        )
+                  LEFT JOIN {quiz} qz ON qz.id = quiza.quiz
+                WHERE quiza.preview = 0 AND quiza.state = \'finished\' AND quiza.timemodified > ? AND qas.state=\'needsgrading\'
+                )) t
+        ';
 
         $params = array(
             $time,
-            '\mod_assign\event\assessable_submitted',
-            '\mod_quiz\event\attempt_submitted',
-            'needsgrading',
             $time
         );
 
-        return null;
+        return compact('sql', 'params');
+    }
+
+    private function get_filter_in_sql($items, $column)
+    {
+        global $DB;
+
+        if($items){
+            $result = $DB->get_in_or_equal($items, SQL_PARAMS_QM);
+            $result[0] = " $column " . $result[0] . " ";
+            return $result;
+        }
+
+        return array('sql' => '', 'params' => array());
     }
 
 }

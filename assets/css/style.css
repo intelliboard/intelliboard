@@ -179,6 +179,7 @@
 .chart-tab .filter-box input{width: 49%; padding:8px 16px;margin-bottom: 0; height:auto;box-sizing: border-box; float: left;margin-right: 2%;}
 .chart-tab .filter-box .intelliboard-dropdown{width: 49%; float: left;}
 .chart-tab .area{ height:350px;}
+.chart-tab .filter-box .intelliboard-dropdown.users{margin-left: 2%;}
 
 .nav-tabs span{float:right;padding-top: 2px;}
 .nav-tabs span a{font-size: 21px; line-height:28px;color:#ddd; margin-left: 8px;}
@@ -198,7 +199,7 @@
 .table-tabs.icono span a.active,
 .table-tabs.icono span a:hover{color:#666;}
 
-.area .google-visualization-tooltip{ padding:5px; height:auto!important;}
+.area:not(.custom-tooltip) .google-visualization-tooltip{ padding:5px; height:auto!important;}
 
 .intelli-instructor-header{	border-bottom: 1px solid #ddd;  margin-bottom: 40px;}
 .intelli-instructor-header .instructor-head{width: 70%;float: left;box-sizing: border-box; border-right: 1px solid #ddd; box-sizing: border-box;padding-top: 10px}

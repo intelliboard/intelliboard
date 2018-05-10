@@ -31,16 +31,12 @@ require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 class local_intelliboard_observer
 {
 
-    protected $event_queue_table = 'logstore_standart_log';
-
     public static function role_assigned(core\event\role_assigned $event)
     {
         $data = $event->get_data();
         $relatedUser = $data['relateduserid'];
 
-        $excluded = exclude_not_owners(array($relatedUser, $data['courseid'], $relatedUser));
-
-        self::process_event(2, $event, array(), $excluded);
+        self::process_event(2, $event, array(), array('users' => $relatedUser, 'courses' => $data['courseid']));
     }
 
     public static function role_unassigned(core\event\role_unassigned $event)
@@ -48,24 +44,19 @@ class local_intelliboard_observer
         $data = $event->get_data();
         $relatedUser = $data['relateduserid'];
 
-        $excluded = exclude_not_owners(array($relatedUser, $data['courseid'], $relatedUser));
-
-        self::process_event(2, $event, array(), $excluded);
+        self::process_event(2, $event, array(), array('users' => $relatedUser, 'courses' => $data['courseid']));
     }
 
     public static function post_created(mod_forum\event\post_created $event)
     {
 
         $eventData = $event->get_data();
-
-        $excluded = exclude_not_owners(array($eventData['userid'], $eventData['courseid'], $eventData['userid']));
-
         $data = array(
             'forums' => $eventData['other']['forumid'],
             'course' => $eventData['courseid']
         );
 
-        self::process_event(12, $event, $data, $excluded);
+        self::process_event(12, $event, $data, array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
     }
 
     public static function user_graded(\core\event\user_graded $event)
@@ -79,12 +70,11 @@ class local_intelliboard_observer
         $item = $DB->get_record('grade_items', array('id' => $itemid), "itemmodule");
 
         if (in_array($item->itemmodule, $allowedTypes)) {
-            $excluded = exclude_not_owners(array($eventData['userid'], $eventData['courseid'], $eventData['userid']));
             $data = array(
                 'course' => $eventData['courseid']
             );
 
-            self::process_event(13, $event, $data, $excluded);
+            self::process_event(13, $event, $data, array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
         }
 
     }
@@ -107,22 +97,21 @@ class local_intelliboard_observer
             return;
         }
 
-        $excluded = exclude_not_owners(array($eventData['userid'], $eventData['courseid'], $eventData['userid']));
-
-        self::process_event(15, $event, array(), $excluded);
+        self::process_event(15, $event, array(), array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
     }
 
     public static function assign_attempt_submitted(\mod_assign\event\assessable_submitted $event)
     {
         $eventData = $event->get_data();
-        $excluded = exclude_not_owners(array($eventData['userid'], $eventData['courseid'], $eventData['userid']));
-
-        self::process_event(15, $event, array(), $excluded);
+        self::process_event(15, $event, array(), array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
     }
 
-    protected static function process_event($type, $event, $filter = array(), $excluded = null)
+    protected static function process_event($type, $event, $filter = array(), $ex_params = array())
     {
+
         $notification = new local_intelliboard_notification();
+
+        $excluded = exclude_not_owners($ex_params);
 
         $notifications = $notification->get_instant_notifications($type, $filter, $excluded);
 

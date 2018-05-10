@@ -94,6 +94,8 @@ if($course == 0){
     $course = key($list_of_my_courses);
 }
 
+$enrolled_users = get_enrolled_users(context_course::instance($course));
+
 $n1 = get_config('local_intelliboard', 'n1');
 $n2 = get_config('local_intelliboard', 'n2');
 $n3 = get_config('local_intelliboard', 'n3');
@@ -106,6 +108,8 @@ $n13 = get_config('local_intelliboard', 'n13');
 $n14 = get_config('local_intelliboard', 'n14');
 $n15 = get_config('local_intelliboard', 'n15');
 $n16 = get_config('local_intelliboard', 'n16');
+$n18 = get_config('local_intelliboard', 'n18');
+$raw = get_config('local_intelliboard', 'scale_raw');
 
 $menu = array();
 if($n1){
@@ -274,7 +278,7 @@ echo $OUTPUT->header();
 	</div>
 
 	<div class="intelliboard-box">
-		<?php if($n6 || $n14): ?>
+		<?php if($n6 || $n14 || $n18): ?>
 		<div class="box<?php echo($n7 || $n15 || $n16)?'50':'100'; ?> pull-left h410">
 			<ul class="nav nav-tabs clearfix">
                 <?php if($n6): ?>
@@ -282,6 +286,9 @@ echo $OUTPUT->header();
                 <?php endif; ?>
                 <?php if($n14): ?>
 	            <li role="presentation" class="nav-item" data-tab="chart5"><a class="nav-link" href="#"><?php echo get_string('in26', 'local_intelliboard'); ?></a></li>
+                <?php endif; ?>
+                <?php if($n18): ?>
+	            <li role="presentation" class="nav-item" data-tab="chart7"><a class="nav-link" href="#"><?php echo get_string('in34', 'local_intelliboard'); ?></a></li>
                 <?php endif; ?>
 	        </ul>
 	        <div class="card-block">
@@ -307,6 +314,33 @@ echo $OUTPUT->header();
                         </div>
                     </div>
                     <div id="chart5_area" class="area"><?php echo get_string('loading', 'local_intelliboard'); ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if($n18): ?>
+	        	<div id="chart7" class="chart-tab" style="display: none;">
+                    <div class="filter-box clearfix">
+                        <div class="intelliboard-dropdown courses">
+                            <?php foreach($list_of_my_courses as $key=>$value): ?>
+                                <?php if($key == $course): ?>
+                                    <button value="<?php echo $key; ?>"><span><?php echo format_string($value); ?></span> <i class="ion-android-arrow-dropdown"></i></button>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                            <ul>
+                                <?php foreach($list_of_my_courses as $key=>$value): ?>
+                                        <li><a href="#" dava-value="<?php echo $key; ?>"><?php echo format_string($value); ?></a></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                        <div class="intelliboard-dropdown users">
+                            <button value="0"><span><?php echo get_string('select_user', 'local_intelliboard'); ?></span> <i class="ion-android-arrow-dropdown"></i></button>
+                            <ul>
+                                <?php foreach($enrolled_users as $key=>$value): ?>
+                                    <li><a href="#" dava-value="<?php echo $key; ?>"><?php echo fullname($value); ?></a></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    </div>
+                    <div id="chart7_area" class="area custom-tooltip"><p class="alert alert-warning"><?php echo get_string('select_user', 'local_intelliboard'); ?></p></div>
                 </div>
                 <?php endif; ?>
 	        </div>
@@ -444,6 +478,53 @@ echo $OUTPUT->header();
             });
             jQuery('.nav-item[data-tab="chart5"]').click(function (e) {
                 load_engagement_chart();
+            });
+
+
+            jQuery('#chart7 .intelliboard-dropdown.courses a').click(function (e) {
+                e.preventDefault();
+                var course = jQuery(this).attr('dava-value');
+                jQuery('#chart7 .intelliboard-dropdown.courses button span').html(jQuery(this).html());
+                jQuery('#chart7 .intelliboard-dropdown.courses button').val(course);
+                jQuery('#chart7 .intelliboard-dropdown.courses ul').hide();
+                jQuery('#chart7 .intelliboard-dropdown.users button span').html('<?php echo get_string('select_user', 'local_intelliboard'); ?>');
+
+                jQuery.ajax({
+                    url: "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?action=get_course_users&course="+course,
+                    dataType: "json"
+                }).done(function( response ) {
+                    jQuery('#chart7 .intelliboard-dropdown.users ul').html(response.items);
+                });
+            });
+
+            $("#chart7 .intelliboard-dropdown.users").on("click", "a", function(e){
+                e.preventDefault();
+                var user = jQuery(this).attr('dava-value');
+                var course = jQuery('#chart7 .intelliboard-dropdown.courses button').val();
+
+                jQuery('#chart7 .intelliboard-dropdown.users button span').html(jQuery(this).html());
+                jQuery('#chart7 .intelliboard-dropdown.users button').val(user);
+                jQuery('#chart7 .intelliboard-dropdown.users ul').hide();
+
+                jQuery.ajax({
+                    url: "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?action=get_student_grade_progression&user="+user+"&course="+course,
+                    dataType: "json"
+                }).done(function( response ) {
+                    if(response.length<2){
+                        $('#chart7_area').html("<p class='alert alert-warning'><?php echo get_string('no_data','local_intelliboard');?></p>");
+                    }else {
+                        for (var i = 1; i < response.length; i++) {
+                            response[i][0] = new Date(response[i][0] * 1000);
+                        }
+
+                        var data = google.visualization.arrayToDataTable(response);
+                        var options = <?php echo format_string($factorInfo->GradeProgression); ?>;
+                        options.vAxis.format = '#';
+                        options.vAxis.title = '<?php echo get_string('grade', 'local_intelliboard');?> <?php echo((!$raw)?'(' . get_string("scale_percentage", "local_intelliboard") . ')':'');?>';
+                        var chart = new google.visualization.LineChart(document.getElementById('chart7_area'));
+                        chart.draw(data, options);
+                    }
+                });
             });
 
             jQuery("#chart3 .daterange").flatpickr({

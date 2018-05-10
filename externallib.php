@@ -4294,12 +4294,14 @@ class local_intelliboard_external extends external_api {
         $sql_filter1 .= $this->get_filter_course_sql($params, "c.");
         $sql_filter1 .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter1 .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter1 .= $this->get_filterdate_sql($params, "s.timemodified");
 
         $sql_filter2 = $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter2 .= $this->get_filter_user_sql($params, "u.");
         $sql_filter2 .= $this->get_filter_course_sql($params, "c.");
         $sql_filter2 .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter2 .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter2 .= $this->get_filterdate_sql($params, "quiza.timefinish");
         $sql1 = $sql2 = '';
 
         if($params->userid > 0){
@@ -4339,6 +4341,8 @@ class local_intelliboard_external extends external_api {
               JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=a.id AND cm.visible=1
               JOIN {enrol} e ON e.courseid=c.id
               JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ue.userid=u.id
+              JOIN {grade_items} gi ON gi.courseid=a.course AND gi.itemtype='mod' AND gi.itemmodule='assign' AND gi.iteminstance=a.id
+              JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=u.id AND gg.overridden=0
               $sql1
             WHERE s.latest = 1 AND s.timemodified IS NOT NULL AND s.status = 'submitted' AND (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR g.grade IS NULL)
             $sql_filter1 $sql_having2)
@@ -4374,6 +4378,8 @@ class local_intelliboard_external extends external_api {
               JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=qz.id AND cm.visible=1
               JOIN {enrol} e ON e.courseid=c.id
               JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ue.userid=u.id
+              JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='mod' AND gi.itemmodule='quiz' AND gi.iteminstance=qz.id
+              JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=u.id AND gg.overridden=0
               $sql2
             WHERE quiza.preview = 0 AND quiza.state = 'finished' AND qas.state='needsgrading'
             $sql_filter2 $sql_having1)) t $sql_order", $params);
@@ -6363,9 +6369,9 @@ class local_intelliboard_external extends external_api {
               JOIN (SELECT px.category, g.userid, ROUND(((SUM(g.finalgrade))), 1) AS grade FROM {grade_items} gi, {grade_grades} g, {course} px
               WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND gi.courseid = px.id AND g.finalgrade IS NOT NULL GROUP BY px.category, g.userid) AS t_category ON c.category = t_category.category AND REG.id = t_category.userid
 
-            WHERE ctx.contextlevel = 30 $sql_filter $sql_having $sql_order
+            WHERE ctx.contextlevel = 30 $sql_filter 
             GROUP BY REGlra.roleid,REG.email, REG.ID , c.id, c.fullname,e.roleid , ue.id, ue.userid, u.email, cma.cmnuma, c.fullname, u.firstname, u.lastname,
-            cmca.cmcnuma, c.id, c.category, gc_category_max.grademax", $params);
+            cmca.cmcnuma, c.id, c.category, gc_category_max.grademax $sql_having $sql_order", $params);
     }
 
     function report139_header($params)
@@ -6445,16 +6451,7 @@ class local_intelliboard_external extends external_api {
 
     function report140($params)
     {
-        $columns = array("c.fullname","f.name");
-
-        $questions = $this->get_feedback_questions($params);
-        $questions_ids = array();
-        $sql_columns = '';
-        foreach($questions as $question){
-            $questions_ids[] = $question->id;
-            $columns[] = 'question_'.$question->id;
-            $sql_columns .= ",AVG(IF(fv.item=$question->id,fv.value,null)) AS question_".$question->id;
-        }
+        $columns = array("fi.name","avg_value");
 
         $sql_filter = $this->get_filter_in_sql($params->custom,'f.id',false);
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -6463,24 +6460,15 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
         	SELECT
-              c.id,
-              c.fullname,
-			  f.name
-			  $sql_columns
+              fi.id,
+              fi.name,
+			  AVG(fv.value) as avg_value
 			  
 			FROM {feedback} f
-			  JOIN {course} c ON c.id=f.course
 			  JOIN {feedback_completed} fc ON fc.feedback=f.id
-			  JOIN {feedback_value} fv ON fv.completed=fc.id			
-			WHERE $sql_filter $sql_having $sql_order", $params);
-    }
-
-    function get_feedback_questions($params){
-        global $DB;
-
-        $sql_filter = $this->get_filter_in_sql($params->custom,'feedback');
-
-        return $DB->get_records_sql("SELECT id,name FROM {feedback_item} WHERE typ IN('multichoicerated','multichoice','numeric') $sql_filter ORDER BY position ASC",$this->params);
+			  JOIN {feedback_item} fi ON fi.feedback=f.id
+			  JOIN {feedback_value} fv ON fv.completed=fc.id AND fv.item=fi.id			
+			WHERE $sql_filter GROUP BY fi.id $sql_having $sql_order", $params);
     }
 
     function get_course_feedback($params){

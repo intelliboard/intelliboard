@@ -391,4 +391,50 @@ if($action == 'get_total_students'){
     }
 
     die(json_encode($data));
+}elseif($action == 'get_course_users'){
+    $enrolled_users = get_enrolled_users(context_course::instance($course));
+
+    $html = '';
+    foreach($enrolled_users as $user){
+        $html .= '<li><a href="#" dava-value="'.$user->id.'">'.fullname($user).'</a></li>';
+    }
+
+    die(json_encode(array('items'=>$html)));
+}elseif($action == 'get_student_grade_progression'){
+    $user = required_param('user', PARAM_INT);
+    $grade_sql = intelliboard_grade_sql(false,null,'gh.');
+    $raw = get_config('local_intelliboard', 'scale_raw');
+
+    $data = $DB->get_records_sql("
+                SELECT
+                  gh.timemodified,
+                  $grade_sql AS finalgrade,
+                  gh.rawgrademax
+                FROM {grade_items} gi
+                  JOIN {grade_grades_history} gh ON gh.itemid=gi.id AND gh.userid=:user AND gh.finalgrade IS NOT NULL
+                WHERE gi.courseid=:course AND gi.itemtype='course'", array('user'=>$user,'course'=>$course));
+
+    $tooltip = new stdClass();
+    $tooltip->type = 'string';
+    $tooltip->role = 'tooltip';
+    $tooltip->p = new stdClass();
+    $tooltip->p->html = true;
+
+    $grades = array([array('type'=>'datetime','label'=>get_string('time', 'local_intelliboard')), get_string('course_grade', 'local_intelliboard'), $tooltip]);
+    foreach($data as $item){
+
+        $tooltip = "<div class=\"chart-tooltip\">";
+        $tooltip .= "<div class=\"chart-tooltip-header\">". userdate($item->timemodified) ."</div>";
+        $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
+        $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". round($item->finalgrade, 2).((!$raw)?'%':'')."</span></div>";
+        $tooltip .= "<div class=\"chart-tooltip-right\">".get_string('course_max_grade','local_intelliboard').": <span>". round($item->rawgrademax, 2)."</span></div>";
+        $tooltip .= "</div>";
+        $tooltip .= "</div>";
+
+        //$tooltip = "<strong>".userdate($item->timemodified)."</strong><br>".get_string('course_grade', 'local_intelliboard').": <strong>".round($item->finalgrade,2).((!$raw)?'%':'')."</strong>";
+
+        $grades[] = array((int)$item->timemodified, round($item->finalgrade,2), $tooltip);
+    }
+
+    die(json_encode($grades));
 }

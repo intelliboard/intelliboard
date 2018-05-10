@@ -91,6 +91,7 @@ $string['n5'] = 'Current Progress';
 $string['n13'] = 'Total Students';
 $string['n6'] = 'Widget: Correlations';
 $string['n14'] = 'Widget: Learner Engagement';
+$string['n18'] = 'Widget: Student Grade Progression';
 $string['n7'] = 'Widget: Event Utilization';
 $string['n15'] = 'Widget: Activity Utilization';
 $string['n16'] = 'Widget: Topic Utilization';
@@ -313,6 +314,7 @@ $string['in23'] = 'You have no learners to display.';
 $string['in24'] = 'Module';
 $string['in25'] = 'Passing Grade';
 $string['in26'] = 'Learner Engagement';
+$string['in34'] = 'Student Grade Progression';
 $string['in27'] = 'Total Students';
 $string['in28'] = 'Average Time Spent';
 $string['in29'] = 'Active Students';
@@ -472,6 +474,8 @@ $string['last_year'] = 'Last Year';
 
 $string['reportselect'] = 'Please select at least one Report from the drop down menu in the Admin Dashboard before proceeding.';
 $string['monitorselect'] = 'Please select at least one Monitor from the drop down menu in the Admin Dashboard before proceeding.';
+$string['select_user'] = 'Select user';
+$string['course_max_grade'] = 'Course max grade';
 
 
 

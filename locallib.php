@@ -156,6 +156,8 @@ function chart_options(){
 
     $res['CoursesCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chartArea:{width:'90%',height:'76%',right:20,top:10},height:200,hAxis:{format:'dd MMM',gridlines: {},baselineColor:'#ccc',gridlineColor:'#ccc',},vAxis:{baselineColor:'#CCCCCC',gridlines:{count:5,color:'transparent',},minValue:0},pointSize:6,lineWidth:2,colors:['#1db34f','#1d7fb3'],backgroundColor:{fill:'transparent'},tooltip:{isHtml:true},legend:{position:'bottom'}}";
 
+    $res['GradeProgression'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chartArea:{width:'90%',height:'70%',top:10},hAxis:{format:'dd MMM',gridlines: {},baselineColor:'#ccc',gridlineColor:'#ccc',},vAxis:{baselineColor:'#CCCCCC',gridlines:{count:5,color:'transparent',},minValue:0},pointSize:6,lineWidth:2,colors:['#1db34f','#1d7fb3'],backgroundColor:{fill:'transparent'},tooltip:{isHtml:true},legend:{position:'bottom'}}";
+
     return (object) $res;
 }
 function seconds_to_time($t,$f=':'){
@@ -358,25 +360,41 @@ function get_modules_names() {
     return $nameColumn?  "CASE $nameColumn ELSE 'NONE' END" : "''";
 }
 
-function exclude_not_owners($params) {
+function exclude_not_owners($columns) {
 
     global $DB;
+    $owners_users = array();
+    $owners_courses = array();
+    $owners_cohorts = array();
 
-    $ids = $DB->get_records_sql("SELECT DISTINCT(lia.userid) as id
-                    FROM {local_intelliboard_assign} lia
-                    WHERE
-                    lia.userid NOT IN(
-                      SELECT lia.userid FROM {local_intelliboard_assign} lia WHERE
-                      (lia.type = 'users' AND lia.instance = ?) OR
-                      (lia.type = 'courses' AND lia.instance = ?) OR
-                      (lia.type = 'cohorts' AND lia.instance IN(
-                        SELECT chm.userid FROM {cohort_members} chm WHERE lia.instance = chm.cohortid AND chm.userid = ?
-                      ))
-                    )", $params);
-    $ids = array_map(function ($id) {
-        return $id->id;
-    }, $ids);
+    foreach ($columns as $type => $value) {
+        if ($type == "users") {
+            $owners_users = array_merge($owners_users, $DB->get_fieldset_sql(" SELECT userid FROM {local_intelliboard_assign} WHERE type = 'users' AND instance = :userid", array('userid' => $value)));
 
-    return $ids;
+            $owners_users = array_merge($owners_users, $DB->get_fieldset_sql("SELECT lia.userid FROM {local_intelliboard_assign} lia
+              INNER JOIN {context} ctx ON lia.type = 'courses' AND ctx.instanceid = lia.instance AND ctx.contextlevel = 50
+              INNER JOIN {role_assignments} ra ON ctx.id = ra.contextid
+              WHERE ra.userid = ?
+            ", array('userid' => $value)));
+            $owners_users = array_merge($owners_users, $DB->get_fieldset_sql("SELECT lia.userid FROM {local_intelliboard_assign}  lia
+              INNER JOIN {cohort_members} cm ON lia.type = 'cohorts' AND cm.cohortid = lia.instance
+              WHERE cm.userid = ?
+            ", array('userid' => $value)));
+
+        } elseif ($type == 'courses') {
+            $owners_courses = array_merge($owners_courses, $DB->get_fieldset_sql(" SELECT userid FROM {local_intelliboard_assign} WHERE type = 'courses' AND instance = :courseid", array('courseid' => $value)));
+        } elseif ($type == 'cohorts') {
+            $owners_cohorts = array_merge($owners_cohorts, $DB->get_fieldset_sql(" SELECT userid FROM {local_intelliboard_assign} WHERE type = 'cohorts' AND instance = :cohortid", array('cohortid' => $value)));
+        }
+    }
+
+    $owners = array_merge($owners_users, $owners_courses, $owners_cohorts);
+    $sql = "SELECT userid FROM {local_intelliboard_assign}";
+
+    if ($owners) {
+        $sql .= " WHERE userid NOT IN (" . implode(",", $owners) . ")";
+    }
+
+    return json_encode($DB->get_fieldset_sql($sql));
 
 }
