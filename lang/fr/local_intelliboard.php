@@ -417,5 +417,5 @@ $string['you_have_certificates'] = 'Vous avez des certificats {$a}';
 $string['widget_name31'] = 'Registraires et superviseur';
 $string['total_numbers3'] = '---- Date: {$a-> timecreated}, Track ID: {$a-> trackid}, Visites: {$a-> visites}, Temps passé: {$a-> timespend}';
 
-$string['reportselect'] = 'Please select at least one Report from the drop down menu in the Admin Dashboard before proceeding.';
-$string['monitorselect'] = 'Please select at least one Monitor from the drop down menu in the Admin Dashboard before proceeding.';
+$string['reportselect'] = 'Please select at least one report from App.IntelliBoard.net.  Click on a Report, then Report Settings, and select it in "Visible in Moodle".';
+$string['monitorselect'] = 'Please select at least one monitor from App.IntelliBoard.net.  Click on a Monitors, then Monitors Settings, and select it in "Visible in Moodle".';

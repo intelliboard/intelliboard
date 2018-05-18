@@ -405,5 +405,5 @@ $string['completions_desc'] = '1) El usuario ha completado esta actividad. No se
 2) El usuario ha completado esta actividad con un grado por encima de la calificación de aprobado. <br>
 3) El usuario ha completado esta actividad, pero su calificación es menor que la calificación de aprobado.';
 
-$string['reportselect'] = 'Please select at least one Report from the drop down menu in the Admin Dashboard before proceeding.';
-$string['monitorselect'] = 'Please select at least one Monitor from the drop down menu in the Admin Dashboard before proceeding.';
+$string['reportselect'] = 'Please select at least one report from App.IntelliBoard.net.  Click on a Report, then Report Settings, and select it in "Visible in Moodle".';
+$string['monitorselect'] = 'Please select at least one monitor from App.IntelliBoard.net.  Click on a Monitors, then Monitors Settings, and select it in "Visible in Moodle".';

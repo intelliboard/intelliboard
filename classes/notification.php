@@ -432,20 +432,25 @@ class local_intelliboard_notification {
             ${'assign_' . $assign->type}[] = (int) $assign->instance;
         }
 
+        $assign_users_list = implode(",", $assign_users);
+        $assign_courses_list = implode(",", $assign_courses);
+        $assign_cohorts_list = implode(",", $assign_cohorts);
+
         foreach ($columns as $type => $column) {
             if ($type == "users") {
                 $list = [];
 
-                if ($assign_cohorts) {
-                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN (" . implode(",", $assign_cohorts) . ")"));
+                if ($assign_cohorts_list) {
+                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN ($assign_cohorts_list)"));
                 }
 
-                if ($assign_courses) {
+                if ($assign_courses_list) {
                     list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
-                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN (" . implode(",", $assign_courses) . ")", $values));
+                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN ($assign_courses_list)", $values));
                 }
 
                 $assign_users = array_merge(array_unique($assign_users), array_unique($list));
+
                 if ($assign_users) {
                     $query[] = "$column IN (".implode(",", $assign_users).")";
                 }
@@ -453,12 +458,12 @@ class local_intelliboard_notification {
                 $list = [];
                 $assign_courses = array_unique($assign_courses);
 
-                if ($assign_users) {
+                if ($assign_users_list) {
                     list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
-                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT DISTINCT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ra.userid IN (" . implode(",", $assign_users) . ")", $values));
+                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT DISTINCT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ra.userid IN ($assign_users_list)", $values));
                 }
-                if ($assign_cohorts) {
-                    $users_list = $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN (" . implode(",", $assign_cohorts) . ")");
+                if ($assign_cohorts_list) {
+                    $users_list = $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN ($assign_cohorts_list)");
                     list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
                     $list = array_merge($list, $DB->get_fieldset_sql("SELECT DISTINCT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ra.userid IN (" . implode(",", $users_list) .  ")", $values));
                 }
@@ -472,7 +477,7 @@ class local_intelliboard_notification {
             }
         }
 
-        return $query? " (".implode(" AND ", $query).")" : '';
+        return $query? " (".implode(" AND ", $query).") " : '';
     }
 
     protected function get_events_from_queue($notification, $params)

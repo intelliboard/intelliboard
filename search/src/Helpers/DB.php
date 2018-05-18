@@ -9,7 +9,7 @@ class DB {
 
     private static $systemWords = array(
         'students?', 'users?', 'admins?', 'learners?', 'courses?', 'activity', 'activities',
-        'cohorts?', 'guest', 'teachers?'
+        'cohorts?', 'guest', 'teachers?', 'data'
     );
 
     private static $operators = array(
@@ -33,18 +33,28 @@ class DB {
             "teacher_fullname" => "CONCAT_WS(' ', firstname, lastname)",
             "activity_activity" => function() {
                 return \get_modules_names();
-            }
+            },
+            "config_plugins_type" => "SUBSTRING_INDEX(plugin, '_', 1)",
+            "config_plugins_name" => "REPLACE(TRIM(BOTH '_' FROM SUBSTRING(plugin, POSITION('_' IN plugin))), '_', ' ')",
+            "local_plugins_name" => "REPLACE(TRIM(BOTH '_' FROM SUBSTRING(plugin, POSITION('_' IN plugin))), '_', ' ')",
         );
 
         self::$virtualTables = array(
-            "teacher" => function($settings) {
-                return array('sql' => '{user} AS u INNER JOIN {role_assignments} AS ra ON ra.userid = u.id AND ra.roleid IN(' . $settings['teacher_roles'] . ')', 'alias' => 'u');
+            "teacher" => function($settings, $getter) {
+                $getter->add('tables', '{user} AS u INNER JOIN {role_assignments} AS ra ON ra.userid = u.id AND ra.roleid IN(' . $settings['teacher_roles'] . ')');
+                return 'u';
             },
-            "student" => function($settings) {
-                return array('sql' => '{user} AS u INNER JOIN {role_assignments} AS ra ON ra.userid = u.id AND ra.roleid IN(' . $settings['learner_roles'] . ')', 'alias' => 'u');
+            "student" => function($settings, $getter) {
+                $getter->add('tables', '{user} AS u INNER JOIN {role_assignments} AS ra ON ra.userid = u.id AND ra.roleid IN(' . $settings['learner_roles'] . ')');
+                return 'u';
             },
-            "activity" => function() {
-                return array('sql' => '{modules} as m INNER JOIN {course_modules} as cm ON m.id = cm.module', 'alias' => 'cm');
+            "activity" => function($settings, $getter) {
+                $getter->add('tables', '{modules} as m INNER JOIN {course_modules} as cm ON m.id = cm.module');
+                return 'cm';
+            },
+            "local_plugins" => function($settings, $getter) {
+                $getter->add('tables', '{config_plugins} as cp');
+                return 'cp';
             }
         );
     }
@@ -128,16 +138,16 @@ class DB {
         }, $result));
     }
 
-    public static function getTable($table, $settings) {
+    public static function getTable($table, $settings, $getter) {
 
         if (self::$virtualTables[$table]) {
-            $destination = (self::$virtualTables[$table])($settings);
+            $alias = (self::$virtualTables[$table])($settings, $getter);
         } else {
             $alias = $table[0];
-            $destination = array('sql' => '{' . $table . '} as ' . $alias, "alias" => $alias);
+            $getter->add('tables', '{' . $table . '} as ' . $alias);
         }
 
-        return $destination;
+        return $alias;
 
     }
 
@@ -206,10 +216,10 @@ class DB {
             $variants = array();
 
             foreach($values as $value) {
-                $sentence = preg_replace_callback('~\b' . $value['value'] . '\b~i',
+                $sentence = preg_replace_callback('~(?:^|\s)' . $value['value'] . '(?:\s|$)~i',
                     function ($matches) use (&$variants, $value) {
                         $variants[] = $value;
-                        return '';
+                        return ' ';
                     }, $sentence, 1
                 );
             }
@@ -232,7 +242,7 @@ class DB {
                 $getter->add('filters', "$column NOT IN ($systemWords)");
             }
 
-            $getter->add('columns', "REPLACE('$sentence', $column, '') as replacement");
+            $getter->add('columns', "REPLACE('$sentence', LOWER($column), '') as replacement");
 
             $data = $getter->release();
             $sql  = $data['sql'] . " ORDER BY CHAR_LENGTH($column) DESC LIMIT 1";
@@ -506,6 +516,10 @@ class DB {
             }
         }
 
+        if (in_array('local_plugins', $types)) {
+            $getter->add('filters', "$alias.plugin LIKE 'local_%'");
+        }
+
         static::addAdditionalFields($getter, $column, $additionalFields, $alias);
 
         if ($required = array_intersect($types, $pluginTypes)) {
@@ -561,17 +575,13 @@ class DB {
 
             $table = trim($table, '{}');
 
-            $actual = static::getTable($table, $settings);
-            $column = static::getColumn($column, $table, $settings);
-
             $getter = new ParamGetter();
             $types = static::detectType($table);
-            $alias = $actual['alias'];
 
-            $getter->add('tables', $actual['sql']);
+            $alias = static::getTable($table, $settings, $getter);
+            $column = static::getColumn($column, $table, $settings);
 
             static::$initialized = array($table, $column, $getter, $types, $alias);
-
         }
 
         return static::$initialized;
@@ -582,8 +592,6 @@ class DB {
 
         if(in_array($table, array('teacher', 'user', 'student'))) {
             return array('user');
-        } else if (in_array($table, array('course', 'cohort'))) {
-            return array($table);
         } else if (in_array($table, array_merge(array('activity'), array_keys($DB->get_records('modules', array(),null,'name'))))) {
             return array('module', $table);
         } else if (in_array($table, array('auth', 'enrol', 'country'))) {

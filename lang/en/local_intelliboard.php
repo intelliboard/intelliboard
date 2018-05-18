@@ -472,8 +472,8 @@ $string['filter_last_year'] = 'Time filter: Last Year';
 $string['this_year'] = 'This Year';
 $string['last_year'] = 'Last Year';
 
-$string['reportselect'] = 'Please select at least one Report from the drop down menu in the Admin Dashboard before proceeding.';
-$string['monitorselect'] = 'Please select at least one Monitor from the drop down menu in the Admin Dashboard before proceeding.';
+$string['reportselect'] = 'Please select at least one report from App.IntelliBoard.net.  Click on a Report, then Report Settings, and select it in "Visible in Moodle".';
+$string['monitorselect'] = 'Please select at least one monitor from App.IntelliBoard.net.  Click on a Monitors, then Monitors Settings, and select it in "Visible in Moodle".';
 $string['select_user'] = 'Select user';
 $string['course_max_grade'] = 'Course max grade';
 

@@ -363,43 +363,48 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 			$intelliboardPage = 'user';
 			$intelliboardParam = $USER->id;
 		} elseif(strpos($PAGE->url, '/intelliboard/student/courses') !== false) {
-			$intelliboardPage = 'student-courses';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 1;
 		} elseif(strpos($PAGE->url, '/intelliboard/student/grades') !== false) {
-			$intelliboardPage = 'student-grades';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 2;
 		} elseif(strpos($PAGE->url, '/intelliboard/student/reports') !== false) {
-			$intelliboardPage = 'student-reports';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 3;
 		} elseif(strpos($PAGE->url, '/intelliboard/student/monitors') !== false) {
-			$intelliboardPage = 'student-monitors';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 4;
 		} elseif(strpos($PAGE->url, '/intelliboard/student/') !== false) {
-			$intelliboardPage = 'student';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 5;
 		} elseif(strpos($PAGE->url, '/intelliboard/instructor/monitors') !== false) {
-			$intelliboardPage = 'instructor-monitors';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 6;
 		} elseif(strpos($PAGE->url, '/intelliboard/instructor/reports') !== false) {
-			$intelliboardPage = 'instructor-reports';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 7;
 		} elseif(strpos($PAGE->url, '/intelliboard/instructor/courses') !== false) {
-			$intelliboardPage = 'instructor-courses';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 8;
 		} elseif(strpos($PAGE->url, '/intelliboard/instructor/') !== false) {
-			$intelliboardPage = 'instructor';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 9;
 		} elseif(strpos($PAGE->url, '/intelliboard/competencies/') !== false) {
-			$intelliboardPage = 'competencies';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 10;
 		} elseif(strpos($PAGE->url, '/intelliboard/monitors') !== false) {
-			$intelliboardPage = 'intelliboard-monitors';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 11;
 		} elseif(strpos($PAGE->url, '/intelliboard/reports') !== false) {
-			$intelliboardPage = 'intelliboard-reports';
-			$intelliboardParam = 0;
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 12;
 		} elseif(strpos($PAGE->url, '/intelliboard/') !== false) {
-			$intelliboardPage = 'intelliboard';
+			$intelliboardPage = 'local_intelliboard';
+			$intelliboardParam = 0;
+		}  elseif(strpos($PAGE->url, '/local/') !== false) {
+			$start = strpos($PAGE->url, '/', strpos($PAGE->url, '/local/') + 1) + 1;
+			$end = strpos($PAGE->url, '/', $start);
+			$intelliboardPage = 'local_' . substr($PAGE->url, $start, ($end - $start));
 			$intelliboardParam = 0;
 		} else {
 			$intelliboardPage = 'site';

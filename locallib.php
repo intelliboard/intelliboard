@@ -49,7 +49,7 @@ function intelliboard_compl_sql($prefix = "", $sep = true)
         return $prefix . "completionstate IN(1,2)"; //Default completed and passed
     }
 }
-function intelliboard_grade_sql($avg = false, $params = null, $alias = 'g.', $round = 2)
+function intelliboard_grade_sql($avg = false, $params = null, $alias = 'g.', $round = 0)
 {
     $scales = get_config('local_intelliboard', 'scales');
     $raw = get_config('local_intelliboard', 'scale_raw');

@@ -136,12 +136,63 @@ class ColumnsContainer extends BaseContainer {
                 DataExtractor::MYSQL_MODE => function($value, $params = array('separator' => ',', 'count' => 1)) {
                     $params['separator'] = isset($params['separator'])? $params['separator'] : ',';
                     $params['count'] = isset($params['count'])? $params['count'] : 1;
-                    return "substring_index($value, '" . $params['separator'] . "', " . $params['count'] . ")";
+                    return "SUBSTRING_INDEX($value, '" . $params['separator'] . "', " . $params['count'] . ")";
                 },
                 DataExtractor::POSTGRES_MODE => function($value, $params = array('separator' => ',', 'count' => 1)) {
                     return "split_part($value, '" . $params['separator'] . "', " . $params['count'] . ")";
                 }
             ),
+            28 => array(
+                DataExtractor::MYSQL_MODE => function($value, $params = array()) {
+                    $params['separator'] = isset($params['separator'])? $params['separator'] : '_';
+                    $params['count'] = isset($params['count'])? $params['count'] : 1;
+
+                    return
+                        "REPLACE (SUBSTRING(
+                            SUBSTRING_INDEX($value, '" . $params['separator'] . "', " . $params['count'] . "),
+                            CHAR_LENGTH(
+                                SUBSTRING_INDEX($value, '{$params['separator']}', " . $params['count'] - 1 . ")
+                            ) + 1
+                        ), '{$params['separator']}', '')";
+                },
+                DataExtractor::POSTGRES_MODE => function($value, $params = array('separator' => ',', 'count' => 1)) {
+                    return "split_part($value, '" . $params['separator'] . "', " . $params['count'] . ")";
+                }
+            ),
+            29 => function($value, $params = array()) {
+                    $params['separator'] = isset($params['separator'])? $params['separator'] : '_';
+                    return "POSITION('{$params['separator']}' IN $value)";
+            },
+            30 => function($value, $params = array()) {
+
+                $params['sub'] = isset($params['sub'])? $params['sub'] : '$init';
+                $sql = "SUBSTRING({$params['sub']}, $value";
+
+                if (!empty($params['length'])) {
+                    $sql .= ', ' . $params['length'];
+                }
+
+                $sql .= ')';
+                return $sql;
+            },
+            31 => function($value, $params = array()) {
+
+                $params['type'] = isset($params['type'])? $params['type'] : 'BOTH';
+                $params['sub'] = isset($params['sub'])? $params['sub'] : ' ';
+
+                return "TRIM({$params['type']} '{$params['sub']}' FROM $value)";
+            },
+            32 => function($value, $params = array()) {
+                $params['needle']  = isset($params['needle'])? $params['needle'] : "'_'";
+                $params['replace'] = isset($params['replace'])? $params['replace'] : "' '";
+                $params['string']  = isset($params['string'])? $params['string'] : $value;
+
+                return "REPLACE({$params['string']}, {$params['needle']}, {$params['replace']})";
+            },
+            33 => array(
+                DataExtractor::MYSQL_MODE => 'REGEXP',
+                DataExtractor::POSTGRES_MODE => '~*'
+            )
         );
 
         $columns = array(
@@ -381,6 +432,8 @@ class ColumnsContainer extends BaseContainer {
             221 => array("name" => "parent", "sql" => "parent"),
             222 => array("name" => "middlename", "sql" => "middlename"),
             223 => array("name" => "lastip", "sql" => "lastip"),
+            224 => array("name" => "plugin", "sql" => "plugin"),
+            225 => array("name" => "version", "sql" => "version"),
         );
 
         static::$modifiers = array_map(function($modifier) use ($mode) {
@@ -462,8 +515,9 @@ class ColumnsContainer extends BaseContainer {
             }
 
             if (isset($column['modifier'])) {
-                $value['sql'] = array_reduce($column['modifier'], function($carry, $modifier) use($extractor) {
-                    return static::applyModifier($modifier, $carry, $extractor);
+                $initial = $value['sql'];
+                $value['sql'] = array_reduce($column['modifier'], function($carry, $modifier) use($extractor, $initial) {
+                    return static::applyModifier($modifier, $carry, $extractor, $initial);
                 }, $value['sql']);
             }
 
@@ -506,7 +560,7 @@ class ColumnsContainer extends BaseContainer {
         return static::$columns[$id];
     }
 
-    public static function applyModifier($id, $value, DataExtractor $extractor) {
+    public static function applyModifier($id, $value, DataExtractor $extractor, $initial) {
 
         $modifier = is_array($id)? $id : compact('id');
 
@@ -518,10 +572,12 @@ class ColumnsContainer extends BaseContainer {
 
         if (FunctionHelper::is_anonym_function($selected)) {
             $params = isset($modifier['params'])? $modifier['params'] : array();
-            return $selected($value, $params, $extractor);
+            $result = $selected($value, $params, $extractor);
+        } else {
+            $result = $selected . '(' . $value . ')';
         }
 
-        return $selected . '(' . $value . ')';
+        return str_ireplace(array('$init', '$value'), array($initial, $value), $result);
     }
 
     protected static function createColumnFromInfo($infoField, DataExtractor $extractor) {

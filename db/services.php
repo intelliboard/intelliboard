@@ -89,13 +89,6 @@ $functions = array(
             'description' => 'Return gradebook fields',
             'type'        => 'read',
         ),
-        'local_intelliboard_transform_to_placeholder' => array(
-            'classname'   => 'local_intelliboard_search',
-            'methodname'  => 'transform_to_placeholder',
-            'classpath'   => 'local/intelliboard/classes/searchlib.php',
-            'description' => 'Transform values in sentence to placeholders',
-            'type'        => 'read',
-        ),
         'local_intelliboard_send_notifications' => array(
             'classname'   => 'local_intelliboard_notificationlib',
             'methodname'  => 'send_notifications',
@@ -118,7 +111,6 @@ $services = array(
                         'local_intelliboard_process_auto_complete_db',
                         'local_intelliboard_check_installed_plugins',
                         'local_intelliboard_get_gradebook_fields',
-                        'local_intelliboard_transform_to_placeholder',
                         'local_intelliboard_send_notifications'
                 ),
                 'restrictedusers' => 1,
