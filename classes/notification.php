@@ -40,18 +40,19 @@ class local_intelliboard_notification {
 
     public function send_notifications($notifications, $event = array(), $params = array())
     {
+        if ($notifications) {
+            foreach ($notifications as $notification) {
+                 $events = array();
 
-        foreach ($notifications as $notification) {
-             $events = array();
+                if ($event) {
+                    $events[] = $event->get_data();
+                } else {
+                    $events = $this->get_events_from_queue($notification, $params);
+                }
 
-            if ($event) {
-                $events[] = $event->get_data();
-            } else {
-                $events = $this->get_events_from_queue($notification, $params);
+                list($recipients, $results) = $this->{'notification' . $notification['type']}($notification, $events, $params);
+                $this->notify($recipients, $results, $notification);
             }
-
-            list($recipients, $results) = $this->{'notification' . $notification['type']}($notification, $events, $params);
-            $this->notify($recipients, $results, $notification);
         }
 
         $this->save_history();
@@ -560,9 +561,9 @@ class local_intelliboard_notification {
                   LEFT JOIN {assign_grades} g ON s.assignment = g.assignment AND s.userid = g.userid AND g.attemptnumber = s.attemptnumber
                   LEFT JOIN {assign} a ON a.id = s.assignment
                 WHERE s.latest = 1 AND s.timemodified IS NOT NULL AND s.timecreated > ? AND s.status = \'submitted\' AND (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR g.grade IS NULL))
-    
+
                 UNION ALL
-    
+
                 (SELECT
                   quiza.id AS uniqueid,
                   quiza.id AS objectid,
