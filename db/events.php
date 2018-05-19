@@ -27,14 +27,6 @@
 
 $observers = array (
     array (
-        'eventname' => '\core\event\user_created',
-        'callback'  => 'local_intelliboard_observer::user_created',
-    ),
-    array (
-        'eventname' => '\core\event\user_enrolment_created',
-        'callback'  => 'local_intelliboard_observer::user_enrolment_created',
-    ),
-    array (
         'eventname' => '\core\event\role_assigned',
         'callback'  => 'local_intelliboard_observer::role_assigned',
     ),
