@@ -36,7 +36,7 @@ class local_intelliboard_search extends external_api {
                 'column' => new external_value(PARAM_ALPHANUMEXT, 'Column name'),
                 'params' => new external_single_structure(self::intelliboard_params()),
                 'length' => new external_value(PARAM_ALPHANUM, 'How many values return', VALUE_OPTIONAL, 0),
-                'like'  => new external_value(PARAM_ALPHANUM, 'Like filter', VALUE_OPTIONAL),
+                'like'  => new external_value(PARAM_ALPHANUM, 'Like filter', VALUE_OPTIONAL, null),
                 'id' => new external_value(PARAM_ALPHANUM, 'Search between existing ids', VALUE_OPTIONAL, null),
                 'filters' => new external_value(PARAM_TEXT, 'additionalFilters', VALUE_OPTIONAL, array()),
                 'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters', VALUE_OPTIONAL, '[]')
@@ -62,7 +62,7 @@ class local_intelliboard_search extends external_api {
         return new external_multiple_structure(
             new external_single_structure(
                 array(
-                    'id' => new external_value(PARAM_TEXT, 'Found Value ID', VALUE_OPTIONAL),
+                    'id' => new external_value(PARAM_TEXT, 'Found Value ID', VALUE_OPTIONAL, null),
                     'value' => new external_value(PARAM_TEXT, 'Found Value')
                 )
             )
@@ -74,7 +74,7 @@ class local_intelliboard_search extends external_api {
             array(
                 'scenarios' => new external_value(PARAM_TEXT, 'DB requests'),
                 'arguments' => new external_value(PARAM_TEXT, 'DB arguments'),
-                'debug'     => new external_value(PARAM_BOOL, 'Should plugin return debug info?', VALUE_OPTIONAL)
+                'debug'     => new external_value(PARAM_BOOL, 'Should plugin return debug info?', VALUE_OPTIONAL, false)
             )
         );
     }
@@ -98,7 +98,7 @@ class local_intelliboard_search extends external_api {
     public static function get_data_by_query_returns() {
         return new external_single_structure(array(
             'response' => new external_value(PARAM_TEXT, 'DB records'),
-            'debug' => new external_value(PARAM_RAW, 'Debug info', VALUE_OPTIONAL)
+            'debug' => new external_value(PARAM_RAW, 'Debug info', VALUE_OPTIONAL, '')
         ));
     }
 
