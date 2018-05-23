@@ -39,7 +39,7 @@ class local_intelliboard_search extends external_api {
                 'like'  => new external_value(PARAM_ALPHANUM, 'Like filter', VALUE_OPTIONAL, null),
                 'id' => new external_value(PARAM_ALPHANUM, 'Search between existing ids', VALUE_OPTIONAL, null),
                 'filters' => new external_value(PARAM_TEXT, 'additionalFilters', VALUE_OPTIONAL, array()),
-                'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters', VALUE_OPTIONAL, '[]')
+                'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters')
             ))
         ));
     }
@@ -74,12 +74,12 @@ class local_intelliboard_search extends external_api {
             array(
                 'scenarios' => new external_value(PARAM_TEXT, 'DB requests'),
                 'arguments' => new external_value(PARAM_TEXT, 'DB arguments'),
-                'debug'     => new external_value(PARAM_BOOL, 'Should plugin return debug info?', VALUE_OPTIONAL, false)
+                'debug'     => new external_value(PARAM_BOOL, 'Should plugin return debug info?')
             )
         );
     }
 
-    public static function get_data_by_query($scenarios, $arguments, $debug) {
+    public static function get_data_by_query($scenarios, $arguments, $debug = false) {
         global $CFG;
         require_once($CFG->dirroot . '/local/intelliboard/search/src/autoload.php');
 
@@ -115,14 +115,14 @@ class local_intelliboard_search extends external_api {
                 ),
                 'sentence' => new external_value(PARAM_TEXT, 'Sentence where parameters will be found'),
                 'params' => new external_single_structure(self::intelliboard_params()),
-                'pluralize' => new external_value(PARAM_INT, 'Pluralize values or not', VALUE_OPTIONAL, 0),
-                'escape_system' => new external_value(PARAM_INT, 'Escape system words or not', VALUE_OPTIONAL, 0),
-                'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters', VALUE_OPTIONAL, '[]')
+                'pluralize' => new external_value(PARAM_INT, 'Pluralize values or not'),
+                'escape_system' => new external_value(PARAM_INT, 'Escape system words or not'),
+                'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters')
             )
         );
     }
 
-    public static function extract_db_params_from_sentence($patterns, $sentence, $params, $pluralize = 0, $escapeSystem = 0, $additionalFields = array()){
+    public static function extract_db_params_from_sentence($patterns, $sentence, $params, $pluralize, $escapeSystem, $additionalFields){
         global $CFG;
         require_once($CFG->dirroot . '/local/intelliboard/search/src/autoload.php');
 
