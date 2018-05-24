@@ -419,3 +419,38 @@ $string['total_numbers3'] = '---- Date: {$a-> timecreated}, Track ID: {$a-> trac
 
 $string['reportselect'] = 'Please select at least one report from App.IntelliBoard.net.  Click on a Report, then Report Settings, and select it in "Visible in Moodle".';
 $string['monitorselect'] = 'Please select at least one monitor from App.IntelliBoard.net.  Click on a Monitors, then Monitors Settings, and select it in "Visible in Moodle".';
+
+
+$string['privacy:metadata:local_intelliboard_assign:rel'] = 'Rel type of record';
+$string['privacy:metadata:local_intelliboard_assign:type'] = 'Moodle Instance Type';
+$string['privacy:metadata:local_intelliboard_assign:instance'] = 'Connected Moodle Instance ID';
+$string['privacy:metadata:local_intelliboard_assign:timecreated'] = 'Records Timestamp';
+
+$string['privacy:metadata:local_intelliboard_details:logid'] = 'Table ID [local_intelliboard_logs]';
+$string['privacy:metadata:local_intelliboard_details:visits'] = 'The number of visits, mouse clicks, per day';
+$string['privacy:metadata:local_intelliboard_details:timespend'] = 'The amount of time spent per hour';
+$string['privacy:metadata:local_intelliboard_details:timepoint'] = 'The hour';
+
+$string['privacy:metadata:local_intelliboard_logs:trackid'] = 'The ID of the table [local_intelliboard_tracking]';
+$string['privacy:metadata:local_intelliboard_logs:visits'] = 'Visits, mouse clicks, per day';
+$string['privacy:metadata:local_intelliboard_logs:timespend'] = 'Timespent, per day';
+$string['privacy:metadata:local_intelliboard_logs:timepoint'] = 'Timestamp of day in year';
+
+$string['privacy:metadata:local_intelliboard_totals:sessions'] = 'Total Number of User Sessions in Moodle';
+$string['privacy:metadata:local_intelliboard_totals:courses'] = 'Total Courses in Moodle';
+$string['privacy:metadata:local_intelliboard_totals:visits'] = 'Total Visits by all Ssers in Moodle';
+$string['privacy:metadata:local_intelliboard_totals:timespend'] = 'Total Users Timespent in Moodle';
+$string['privacy:metadata:local_intelliboard_totals:timepoint'] = 'Timestamp of day in year';
+
+$string['privacy:metadata:local_intelliboard_tracking:userid'] = 'User ID who visits Moodle Page.';
+$string['privacy:metadata:local_intelliboard_tracking:courseid'] = 'Course ID that User Visits';
+$string['privacy:metadata:local_intelliboard_tracking:page'] = 'Page Type [course,module,profile,site]';
+$string['privacy:metadata:local_intelliboard_tracking:param'] = 'Page ID Type';
+$string['privacy:metadata:local_intelliboard_tracking:visits'] = 'Users Visits on a Page';
+$string['privacy:metadata:local_intelliboard_tracking:timespend'] = 'Users Timespent on a Page';
+$string['privacy:metadata:local_intelliboard_tracking:firstaccess'] = 'Users First Access';
+$string['privacy:metadata:local_intelliboard_tracking:lastaccess'] = 'Users Last Access';
+$string['privacy:metadata:local_intelliboard_tracking:useragent'] = 'Users Browser Type';
+$string['privacy:metadata:local_intelliboard_tracking:useros'] = 'Users Operating System';
+$string['privacy:metadata:local_intelliboard_tracking:userlang'] = 'Users Browser Language';
+$string['privacy:metadata:local_intelliboard_tracking:userip'] = 'Users Last IP address';
