@@ -6776,7 +6776,7 @@ class local_intelliboard_external extends external_api {
 
 
     public function analytic1($params){
-        global $DB;
+        global $DB,$CFG;
 
         $where_sql = "";
         $select_sql = "";
@@ -6799,8 +6799,28 @@ class local_intelliboard_external extends external_api {
         $where_sql .= $this->get_filter_in_sql($params->courseid,'courseid');
         $where_sql .= $this->get_filterdate_sql($params, 'timecreated');
 
-        $data = $DB->get_records_sql("
-                  SELECT log.id,
+        if ($CFG->dbtype == 'pgsql') {
+            $data = $DB->get_records_sql("
+                  SELECT MIN(log.id) AS id,
+                       COUNT(log.id) AS count,
+                       (CASE WHEN extract(dow from to_timestamp(log.timecreated))=0 THEN 6 ELSE extract(dow from to_timestamp(log.timecreated))-1 END) AS day,
+
+                       (CASE WHEN extract(hour from to_timestamp(log.timecreated))>=6 AND extract(hour from to_timestamp(log.timecreated))<12 THEN '1' ELSE (
+                             CASE WHEN extract(hour from to_timestamp(log.timecreated))>=12 AND extract(hour from to_timestamp(log.timecreated))<17 THEN '2' ELSE (
+                                  CASE WHEN extract(hour from to_timestamp(log.timecreated))>=17 AND extract(hour from to_timestamp(log.timecreated))<=23 THEN '3' ELSE (
+                                       CASE WHEN extract(hour from to_timestamp(log.timecreated))>=0 AND extract(hour from to_timestamp(log.timecreated))<6 THEN '4' ELSE 'undef' END
+                                  ) END
+                             ) END
+                       ) END) AS time_of_day
+                  FROM {logstore_standard_log} log
+                    $select_sql
+                  WHERE log.id > 0 $where_sql
+                  GROUP BY day,time_of_day
+                  ORDER BY time_of_day, day
+                ", $this->params);
+        } else {
+            $data = $DB->get_records_sql("
+                  SELECT MIN(log.id) AS id,
                          COUNT(log.id) AS count,
                          WEEKDAY(FROM_UNIXTIME(log.timecreated,'%Y-%m-%d %T')) AS day,
                          IF(FROM_UNIXTIME(log.timecreated,'%H')>=6 && FROM_UNIXTIME(log.timecreated,'%H')<12,'1',
@@ -6813,6 +6833,7 @@ class local_intelliboard_external extends external_api {
                   GROUP BY day,time_of_day
                   ORDER BY time_of_day, day
                 ", $this->params);
+        }
 
         return array("data" => $data);
     }
@@ -8096,7 +8117,7 @@ class local_intelliboard_external extends external_api {
         $sql10 .= $this->get_completion($params, "cmc.");
         $sql10 .= $this->get_filter_module_sql($params, "cm.");
 
-        return $DB->get_record_sql("
+        $data = $DB->get_record_sql("
             SELECT
                 (SELECT COUNT(*) FROM {course_completions} WHERE timecompleted > 0 $sql1) AS completed_courses,
                 (SELECT COUNT(*) FROM {course_modules} WHERE visible = 1 $sql2) AS modules,
@@ -8109,6 +8130,13 @@ class local_intelliboard_external extends external_api {
                 (SELECT COUNT(cmc.id) FROM {course_modules_completion} cmc, {course_modules} cm WHERE cmc.coursemoduleid = cm.id $sql10) AS completed_activities,
                 (SELECT COUNT(cm.id) FROM {course_modules} cm, {modules} m WHERE m.name = 'certificate' AND cm.module = m.id $sql9) AS certificates
                 ", $this->params);
+
+        if ($data->certificates) {
+            $data->certificates_issued = $DB->count_records('certificate_issues');
+        } else {
+            $data->certificates_issued = 0;
+        }
+        return $data;
     }
 
     public function get_system_load($params){
