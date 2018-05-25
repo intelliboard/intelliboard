@@ -25,12 +25,10 @@
 
 namespace local_intelliboard\privacy;
 
-use \core_privacy\local\request\approved_contextlist;
-use \core_privacy\local\request\deletion_criteria;
-use \core_privacy\local\request\writer;
-use \core_privacy\local\request\helper as request_helper;
-use \core_privacy\local\metadata\collection;
-use \core_privacy\local\request\transform;
+use core_privacy\local\metadata\collection;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\contextlist;
+use core_privacy\local\request\transform;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -41,14 +39,11 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements
-    // This plugin has data.
-    \core_privacy\local\metadata\provider,
+        \core_privacy\local\metadata\provider,
 
-    // This plugin currently implements the original plugin\provider interface.
-    \core_privacy\local\request\plugin\provider
-{
+        \core_privacy\local\request\subsystem\provider,
 
-    use subcontext_info;
+        \core_privacy\local\request\subsystem\plugin_provider {
 
     /**
      * Returns meta data about this system.
