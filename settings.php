@@ -97,6 +97,12 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/api';
+        $title = new lang_string('api', 'local_intelliboard');
+        $description = new lang_string('api_desc', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/filter1';
