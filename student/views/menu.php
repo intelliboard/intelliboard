@@ -28,6 +28,7 @@ $id = optional_param('id', 0, PARAM_INT);
 $alt_name = get_config('local_intelliboard', 'grades_alt_text');
 $def_name = get_string('grades', 'local_intelliboard');
 $grade_name = ($alt_name) ? $alt_name : $def_name;
+$scale_real = get_config('local_intelliboard', 'scale_real');
 ?>
 
 <div class="sheader clearfix">
@@ -49,7 +50,7 @@ $grade_name = ($alt_name) ? $alt_name : $def_name;
 			<?php endif; ?>
 
 			<?php if(get_config('local_intelliboard', 't06')): ?>
-			<li><?php echo (int)$totals->grade; ?><span><?php echo get_string('courses_avg_grade', 'local_intelliboard');?></span></li>
+			<li><?php echo ($scale_real)?$totals->grade:(int)$totals->grade; ?><span><?php echo get_string('courses_avg_grade', 'local_intelliboard');?></span></li>
 			<?php endif; ?>
 
 			<?php if(get_config('local_intelliboard', 't07')): ?>

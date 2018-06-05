@@ -403,12 +403,14 @@ if($action == 'get_total_students'){
 }elseif($action == 'get_student_grade_progression'){
     $user = required_param('user', PARAM_INT);
     $grade_sql = intelliboard_grade_sql(false,null,'gh.');
+    $grade_percent = intelliboard_grade_sql(false,null, 'gh.',0, 'gi.',true);
     $raw = get_config('local_intelliboard', 'scale_raw');
 
     $data = $DB->get_records_sql("
                 SELECT
                   gh.timemodified,
-                  $grade_sql AS finalgrade,
+                  $grade_percent AS finalgrade,
+                  $grade_sql AS grade_real,
                   gh.rawgrademax
                 FROM {grade_items} gi
                   JOIN {grade_grades_history} gh ON gh.itemid=gi.id AND gh.userid=:user AND gh.finalgrade IS NOT NULL
@@ -426,7 +428,7 @@ if($action == 'get_total_students'){
         $tooltip = "<div class=\"chart-tooltip\">";
         $tooltip .= "<div class=\"chart-tooltip-header\">". userdate($item->timemodified) ."</div>";
         $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-        $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". round($item->finalgrade, 2).((!$raw)?'%':'')."</span></div>";
+        $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". $item->grade_real."</span></div>";
         $tooltip .= "<div class=\"chart-tooltip-right\">".get_string('course_max_grade','local_intelliboard').": <span>". round($item->rawgrademax, 2)."</span></div>";
         $tooltip .= "</div>";
         $tooltip .= "</div>";

@@ -102,6 +102,30 @@ class provider implements
             'userip' => 'privacy:metadata:local_intelliboard_tracking:userip',
         ], 'privacy:metadata:local_intelliboard_tracking');
 
+         // The 'local_intelliboard_ntf' table stores information about notification.
+        $items->add_database_table('local_intelliboard_ntf', [
+            'id' => 'privacy:metadata:local_intelliboard_ntf:id',
+            'type' => 'privacy:metadata:local_intelliboard_ntf:type',
+            'externalid' => 'privacy:metadata:local_intelliboard_ntf:externalid',
+            'userid' => 'privacy:metadata:local_intelliboard_ntf:userid',
+            'email' => 'privacy:metadata:local_intelliboard_ntf:email',
+            'subject' => 'privacy:metadata:local_intelliboard_ntf:subject',
+            'message' => 'privacy:metadata:local_intelliboard_ntf:message',
+            'state' => 'privacy:metadata:local_intelliboard_ntf:state',
+            'attachment' => 'privacy:metadata:local_intelliboard_ntf:attachment',
+            'tags' => 'privacy:metadata:local_intelliboard_ntf:tags',
+        ], 'privacy:metadata:local_intelliboard_ntf');
+
+         // The 'local_intelliboard_ntf_hst' table stores information about notification history.
+        $items->add_database_table('local_intelliboard_ntf_hst', [
+            'id' => 'privacy:metadata:local_intelliboard_ntf_hst:id',
+            'notificationid' => 'privacy:metadata:local_intelliboard_ntf_hst:notificationid',
+            'userid' => 'privacy:metadata:local_intelliboard_ntf_hst:userid',
+            'notificationname' => 'privacy:metadata:local_intelliboard_ntf_hst:notificationname',
+            'email' => 'privacy:metadata:local_intelliboard_ntf_hst:email',
+            'timesent' => 'privacy:metadata:local_intelliboard_ntf_hst:timesent',
+        ], 'privacy:metadata:local_intelliboard_ntf_hst');
+
         return $items;
     }
 

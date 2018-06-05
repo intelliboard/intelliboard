@@ -212,12 +212,14 @@ function intelliboard_instructor_correlations($page, $length)
     list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     $grade_avg = intelliboard_grade_sql(true);
+    $grade_avg_percent = intelliboard_grade_sql(true,null, 'g.',0, 'gi.',true);
 
     $items = $DB->get_records_sql("
             SELECT
                 c.id,
                 c.fullname,
-                $grade_avg AS grade,
+                $grade_avg_percent AS grade,
+                $grade_avg AS grade_real,
                 SUM(l.duration) as duration, '0' AS duration_calc
             FROM {course} c
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
@@ -246,12 +248,13 @@ function intelliboard_instructor_correlations($page, $length)
         $tooltip = "<div class=\"chart-tooltip\">";
         $tooltip .= "<div class=\"chart-tooltip-header\">". format_string($item->fullname) ."</div>";
         $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-        $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". round($item->grade, 2)."</span></div>";
+        $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". $item->grade_real."</span></div>";
         $tooltip .= "<div class=\"chart-tooltip-right\">".get_string('time_spent','local_intelliboard').": <span>". $d."</span></div>";
         $tooltip .= "</div>";
         $tooltip .= "</div>";
         $data[] = array($l, round($item->grade, 2), $tooltip);
     }
+
     return $data;
 }
 function intelliboard_instructor_modules()
@@ -353,6 +356,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
     list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     $grade_avg = intelliboard_grade_sql(true);
+    $grade_avg_percent = intelliboard_grade_sql(true,null, 'g.',0,'gi.',true);
     $completion = intelliboard_compl_sql("cmc.");
 
     if($view == 'grades'){
@@ -371,6 +375,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
                 c.id,
                 c.fullname,
                 $grade_avg AS data1,
+                $grade_avg_percent AS data1_percent,
                 (SELECT cc.gradepass FROM {course_completion_criteria} cc WHERE cc.course = c.id AND cc.criteriatype = 6 ) as data2
             FROM {course} c
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'

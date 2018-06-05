@@ -99,6 +99,7 @@ $t35 = get_config('local_intelliboard', 't35');
 $t36 = get_config('local_intelliboard', 't36');
 $t37 = get_config('local_intelliboard', 't37');
 $t38 = get_config('local_intelliboard', 't38');
+$scale_real = get_config('local_intelliboard', 'scale_real');
 
 $courses = intelliboard_learner_courses($USER->id);
 $totals = intelliboard_learner_totals($USER->id);
@@ -124,24 +125,26 @@ if($t5){
         $obj = new stdClass();
         $obj->timepoint = strtotime('+1 day');
         $obj->grade = 0;
+        $obj->grade_percent = 0;
         $progress[0][] = $obj;
     }
     foreach($progress[0] as $item){
-        $l = 0;
+        $l = '';
+        $lp = 0;
         if(isset($progress[1][$item->timepoint])){
             $d = $progress[1][$item->timepoint];
-            $l = round($d->grade,2);
+            $l = $d->grade;
+            $lp = $d->grade_percent;
         }
-        $item->grade = round($item->grade,2);
         $tooltip = "<div class=\"chart-tooltip\">";
         $tooltip .= "<div class=\"chart-tooltip-header\">".date('D, M d Y', $item->timepoint)."</div>";
         $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-        $tooltip .= "<div class=\"chart-tooltip-left\"><span>". round($item->grade, 2)."%</span> ".get_string('current_grade','local_intelliboard')."</div>";
-        $tooltip .= "<div class=\"chart-tooltip-right\"><span>". round($l, 2)."%</span> ".get_string('average_grade','local_intelliboard')."</div>";
+        $tooltip .= "<div class=\"chart-tooltip-left\"><span>". $item->grade.((!$scale_real)?'%':'')."</span> ".get_string('current_grade','local_intelliboard')."</div>";
+        $tooltip .= "<div class=\"chart-tooltip-right\"><span>". ((!$scale_real)?round($l,2).'%':$l)."</span> ".get_string('average_grade','local_intelliboard')."</div>";
         $tooltip .= "</div>";
         $tooltip .= "</div>";
         $item->timepoint = $item->timepoint*1000;
-        $json_data[] = "[new Date($item->timepoint), ".round($item->grade, 2).", '$tooltip', $l, '$tooltip']";
+        $json_data[] = "[new Date($item->timepoint), ".round((($scale_real)?$item->grade_percent:$item->grade), 2).", '$tooltip', $lp, '$tooltip']";
     }
 
 }
@@ -153,7 +156,7 @@ foreach($courses as $item){
     $tooltip = "<div class=\"chart-tooltip\">";
     $tooltip .= "<div class=\"chart-tooltip-header\">". str_replace("'",'"',format_string($item->fullname)) ."</div>";
     $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-    $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". round($item->grade, 2)."</span></div>";
+    $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". ((!$scale_real)?round($item->grade, 2):$item->grade_real)."</span></div>";
     $tooltip .= "<div class=\"chart-tooltip-right\">".get_string('time_spent','local_intelliboard').": <span>". $d."</span></div>";
     $tooltip .= "</div>";
     $tooltip .= "</div>";
@@ -221,10 +224,10 @@ echo $OUTPUT->header();
             <?php if($t7 or $t8): ?>
                 <div class="avg <?php echo (!$t7 or !$t8)?'full':''; ?>">
                     <?php if($t7): ?>
-                        <p class="user"><?php echo round($totals->grade, 2); ?>% <span><?php echo get_string('my_course_average_all', 'local_intelliboard'); ?></span></p>
+                        <p class="user"><?php echo ($scale_real)?$totals->grade:round($totals->grade, 2).'%'; ?> <span><?php echo get_string('my_course_average_all', 'local_intelliboard'); ?></span></p>
                     <?php endif; ?>
                     <?php if($t8): ?>
-                        <p class="site"><?php echo round($totals->average, 2); ?>% <span><?php echo get_string('overall_course_average', 'local_intelliboard'); ?></span></p>
+                        <p class="site"><?php echo ($scale_real)?$totals->average:round($totals->average, 2).'%'; ?> <span><?php echo get_string('overall_course_average', 'local_intelliboard'); ?></span></p>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
@@ -294,7 +297,11 @@ echo $OUTPUT->header();
                                             </td>
                                             <?php if($t31): ?>
                                                 <td class="align-center">
-                                                    <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                                    <?php if($scale_real):?>
+                                                        <?php echo $item->grade; ?>
+                                                    <?php else:?>
+                                                        <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                                    <?php endif;?>
                                                 </td>
                                             <?php endif; ?>
                                             <?php if($t32): ?>
@@ -350,7 +357,11 @@ echo $OUTPUT->header();
                                             </td>
                                             <?php if($t33): ?>
                                                 <td class="align-center">
-                                                    <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                                    <?php if($scale_real):?>
+                                                        <?php echo $item->grade; ?>
+                                                    <?php else:?>
+                                                        <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                                    <?php endif;?>
                                                 </td>
                                             <?php endif; ?>
                                             <?php if($t34): ?>
@@ -458,7 +469,11 @@ echo $OUTPUT->header();
 
                                     <?php if($t36): ?>
                                         <td class="align-center">
-                                            <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                            <?php if($scale_real):?>
+                                                <?php echo $item->grade; ?>
+                                            <?php else:?>
+                                                <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                            <?php endif;?>
                                         </td>
                                     <?php endif; ?>
 
@@ -690,7 +705,7 @@ echo $OUTPUT->header();
             var data = google.visualization.arrayToDataTable([
                 ['Course', 'Course Average', 'My Grade'],
                 <?php foreach($courses as $row):  ?>
-                ['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', <?php echo (int)$row->average; ?>, <?php echo (int)$row->grade; ?>],
+                ['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', <?php echo ($scale_real)?"{v: ".(int)$row->average.", f: '".$row->average_real."'}":(int)$row->average; ?>, <?php echo ($scale_real)?"{v: ".(int)$row->grade.", f: '".$row->grade_real."'}":(int)$row->grade; ?>],
                 <?php endforeach; ?>
             ]);
 

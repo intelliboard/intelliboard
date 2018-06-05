@@ -49,19 +49,37 @@ function intelliboard_compl_sql($prefix = "", $sep = true)
         return $prefix . "completionstate IN(1,2)"; //Default completed and passed
     }
 }
-function intelliboard_grade_sql($avg = false, $params = null, $alias = 'g.', $round = 0)
+function intelliboard_grade_sql($avg = false, $params = null, $alias = 'g.', $round = 0, $alias_gi='gi.',$percent = false)
 {
+    global $CFG;
+    require_once($CFG->dirroot . '/local/intelliboard/classes/grade_aggregation.php');
+
     $scales = get_config('local_intelliboard', 'scales');
     $raw = get_config('local_intelliboard', 'scale_raw');
     $total = get_config('local_intelliboard', 'scale_total');
     $value = get_config('local_intelliboard', 'scale_value');
     $percentage = get_config('local_intelliboard', 'scale_percentage');
+    $scale_real = get_config('local_intelliboard', 'scale_real');
 
-    if ((isset($params->scale_raw) and $params->scale_raw) or ($raw and !isset($params->scale_raw))) {
-         if ($avg) {
-            return "ROUND(AVG({$alias}finalgrade), $round)";
+    if($percent){
+        if ($avg) {
+            return "ROUND(AVG(CASE WHEN ({$alias}rawgrademax-{$alias}rawgrademin) > 0 THEN (({$alias}finalgrade-{$alias}rawgrademin)/({$alias}rawgrademax-{$alias}rawgrademin))*100 ELSE {$alias}finalgrade END), {$round})";
         } else {
-            return "ROUND({$alias}finalgrade, $round)";
+            return "ROUND((CASE WHEN ({$alias}rawgrademax-{$alias}rawgrademin) > 0 THEN (({$alias}finalgrade-{$alias}rawgrademin)/({$alias}rawgrademax-{$alias}rawgrademin))*100 ELSE {$alias}finalgrade END), {$round})";
+        }
+    }elseif ((isset($params->scale_raw) and $params->scale_raw) or ($raw and !isset($params->scale_raw))) {
+        if((isset($params->scale_real) and $params->scale_real) or ($scale_real and !isset($params->scale_real))){
+            if ($avg) {
+                return local_intelliboard_grade_aggregation::get_real_grade_avg($alias, $round, $alias_gi);
+            } else {
+                return local_intelliboard_grade_aggregation::get_real_grade_single($alias, $round, $alias_gi);
+            }
+        }else{
+            if ($avg) {
+                return "ROUND(AVG({$alias}finalgrade), $round)";
+            } else {
+                return "ROUND({$alias}finalgrade, $round)";
+            }
         }
     } elseif (isset($params->scales) and $params->scales) {
         $total = $params->scale_total;
@@ -105,15 +123,18 @@ function intelliboard_filter_in_sql($sequence, $column, $params = array(), $prfx
 
 function intelliboard_url()
 {
-    return 'https://app.intelliboard.net/';
+    require('config.php');
+
+    return $config['app_url'];
 }
 function intelliboard($params, $function = 'sso'){
 	global $CFG;
 
+    require('config.php');
 	require_once($CFG->libdir . '/filelib.php');
 
     $api = get_config('local_intelliboard', 'api');
-    $url = ($api) ? 'https://api.intelliboard.net/' : intelliboard_url();
+    $url = ($api) ? $config['api_url'] : $config['app_url'];
 
     $params['email'] = get_config('local_intelliboard', 'te1');
 	$params['apikey'] = get_config('local_intelliboard', 'apikey');
@@ -398,6 +419,6 @@ function exclude_not_owners($columns) {
         $sql .= " WHERE userid NOT IN (" . implode(",", $owners) . ")";
     }
 
-    return json_encode($DB->get_fieldset_sql($sql));
+    return $DB->get_fieldset_sql($sql);
 
 }

@@ -28,6 +28,7 @@ require_once($CFG->libdir . '/tablelib.php');
 require_once($CFG->libdir . '/gradelib.php');
 
 class intelliboard_courses_grades_table extends table_sql {
+    public $scale_real;
 
     function __construct($uniqueid, $search = '') {
         global $CFG, $PAGE, $DB, $USER;
@@ -105,6 +106,8 @@ class intelliboard_courses_grades_table extends table_sql {
         $where = "c.visible = 1 AND c.id IN (SELECT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.roleid $sql2 AND ra.userid = :userid GROUP BY ctx.instanceid) $sql";
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
+
+        $this->scale_real = get_config('local_intelliboard', 'scale_real');
     }
     function col_visits($values) {
         return html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
@@ -127,10 +130,14 @@ class intelliboard_courses_grades_table extends table_sql {
     }
 
     function col_grade($values) {
-        $html = html_writer::start_tag("div",array("class"=>"grade"));
-        $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
-        $html .= html_writer::end_tag("div");
-        return $html;
+        if($this->scale_real>0){
+            return $values->grade;
+        }else{
+            $html = html_writer::start_tag("div", array("class" => "grade"));
+            $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
+            $html .= html_writer::end_tag("div");
+            return $html;
+        }
     }
     function col_modules($values) {
         return intval($values->modules);
@@ -154,6 +161,7 @@ class intelliboard_courses_grades_table extends table_sql {
 }
 
 class intelliboard_activities_grades_table extends table_sql {
+    public $scale_real;
 
     function __construct($uniqueid, $courseid = 0, $search = '') {
         global $CFG, $PAGE, $DB;
@@ -223,13 +231,19 @@ class intelliboard_activities_grades_table extends table_sql {
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
+
+        $this->scale_real = get_config('local_intelliboard', 'scale_real');
     }
 
     function col_grade($values) {
-        $html = html_writer::start_tag("div",array("class"=>"grade"));
-        $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
-        $html .= html_writer::end_tag("div");
-        return $html;
+        if($this->scale_real>0){
+            return $values->grade;
+        }else{
+            $html = html_writer::start_tag("div", array("class" => "grade"));
+            $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
+            $html .= html_writer::end_tag("div");
+            return $html;
+        }
     }
 
     function col_completed($values) {
@@ -254,6 +268,7 @@ class intelliboard_activities_grades_table extends table_sql {
 }
 
 class intelliboard_activity_grades_table extends table_sql {
+    public $scale_real;
 
     function __construct($uniqueid, $cmid = 0, $courseid = 0, $search = '') {
         global $CFG, $PAGE, $DB;
@@ -316,13 +331,18 @@ class intelliboard_activity_grades_table extends table_sql {
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
+        $this->scale_real = get_config('local_intelliboard', 'scale_real');
     }
 
     function col_grade($values) {
-        $html = html_writer::start_tag("div",array("class"=>"grade"));
-        $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
-        $html .= html_writer::end_tag("div");
-        return $html;
+        if($this->scale_real>0){
+            return $values->grade;
+        }else{
+            $html = html_writer::start_tag("div", array("class" => "grade"));
+            $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
+            $html .= html_writer::end_tag("div");
+            return $html;
+        }
     }
     function col_timecompleted($values) {
         if ($values->completionstate == 3) {
@@ -358,6 +378,7 @@ class intelliboard_activity_grades_table extends table_sql {
 
 
 class intelliboard_learners_grades_table extends table_sql {
+    public $scale_real;
 
     function __construct($uniqueid, $courseid = 0, $search = '') { 
         global $CFG, $PAGE, $DB;
@@ -431,13 +452,18 @@ class intelliboard_learners_grades_table extends table_sql {
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
+        $this->scale_real = get_config('local_intelliboard', 'scale_real');
     }
 
     function col_grade($values) {
-        $html = html_writer::start_tag("div",array("class"=>"grade"));
-        $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
-        $html .= html_writer::end_tag("div");
-        return $html;
+        if($this->scale_real>0){
+            return $values->grade;
+        }else{
+            $html = html_writer::start_tag("div",array("class"=>"grade"));
+            $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
+            $html .= html_writer::end_tag("div");
+            return $html;
+        }
     }
      function col_progress($values) {
         return intval($values->progress);
@@ -470,6 +496,7 @@ class intelliboard_learners_grades_table extends table_sql {
     }
 }
 class intelliboard_learner_grades_table extends table_sql {
+    public $scale_real;
 
     function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '') {
         global $CFG, $PAGE, $DB;
@@ -543,13 +570,18 @@ class intelliboard_learner_grades_table extends table_sql {
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
+        $this->scale_real = get_config('local_intelliboard', 'scale_real');
     }
 
     function col_grade($values) {
-        $html = html_writer::start_tag("div",array("class"=>"grade"));
-        $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
-        $html .= html_writer::end_tag("div");
-        return $html;
+        if($this->scale_real>0){
+            return $values->grade;
+        }else{
+            $html = html_writer::start_tag("div", array("class" => "grade"));
+            $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
+            $html .= html_writer::end_tag("div");
+            return $html;
+        }
     }
 
     function col_visits($values) {

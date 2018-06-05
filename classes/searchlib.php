@@ -35,10 +35,10 @@ class local_intelliboard_search extends external_api {
                 'table'  => new external_value(PARAM_ALPHANUMEXT, 'Table name'),
                 'column' => new external_value(PARAM_ALPHANUMEXT, 'Column name'),
                 'params' => new external_single_structure(self::intelliboard_params()),
-                'length' => new external_value(PARAM_ALPHANUM, 'How many values return', VALUE_OPTIONAL, 0),
-                'like'  => new external_value(PARAM_ALPHANUM, 'Like filter', VALUE_OPTIONAL, null),
-                'id' => new external_value(PARAM_ALPHANUM, 'Search between existing ids', VALUE_OPTIONAL, null),
-                'filters' => new external_value(PARAM_TEXT, 'additionalFilters', VALUE_OPTIONAL, array()),
+                'length' => new external_value(PARAM_ALPHANUM, 'How many values return'),
+                'like'  => new external_value(PARAM_ALPHANUM, 'Like filter'),
+                'id' => new external_value(PARAM_ALPHANUM, 'Search between existing ids'),
+                'filters' => new external_value(PARAM_TEXT, 'additionalFilters'),
                 'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters')
             ))
         ));
@@ -55,18 +55,13 @@ class local_intelliboard_search extends external_api {
         $params['length'] = $length;
         $values = Helpers\DB::getParamsFromDB($table, $column, $params, $length, $like, $id, 0, $filters, $additionalFields);
 
-        return $values;
+        return array('result' => json_encode($values));
     }
 
     public static function get_param_values_returns() {
-        return new external_multiple_structure(
-            new external_single_structure(
-                array(
-                    'id' => new external_value(PARAM_TEXT, 'Found Value ID', VALUE_OPTIONAL, null),
-                    'value' => new external_value(PARAM_TEXT, 'Found Value')
-                )
-            )
-        );
+        return new external_single_structure(array(
+            'result' => new external_value(PARAM_TEXT, 'Serialized Found Values')
+        ));
     }
 
     public static function get_data_by_query_parameters() {
@@ -98,46 +93,77 @@ class local_intelliboard_search extends external_api {
     public static function get_data_by_query_returns() {
         return new external_single_structure(array(
             'response' => new external_value(PARAM_TEXT, 'DB records'),
-            'debug' => new external_value(PARAM_RAW, 'Debug info', VALUE_OPTIONAL, '')
+            'debug' => new external_value(PARAM_RAW, 'Debug info')
         ));
     }
 
     public static function extract_db_params_from_sentence_parameters() {
         return new external_function_parameters(
             array(
-                'patterns' => new external_multiple_structure(
-                    new external_single_structure(
-                        array(
-                            'table'  => new external_value(PARAM_ALPHANUMEXT, 'Table name'),
-                            'column' => new external_value(PARAM_ALPHANUMEXT, 'Column name'),
-                        )
-                    )
-                ),
+                'patterns' => new external_value(PARAM_TEXT, 'Patterns JSON'),
                 'sentence' => new external_value(PARAM_TEXT, 'Sentence where parameters will be found'),
                 'params' => new external_single_structure(self::intelliboard_params()),
                 'pluralize' => new external_value(PARAM_INT, 'Pluralize values or not'),
                 'escape_system' => new external_value(PARAM_INT, 'Escape system words or not'),
-                'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters')
             )
         );
     }
 
-    public static function extract_db_params_from_sentence($patterns, $sentence, $params, $pluralize, $escapeSystem, $additionalFields){
+
+    public static function extract_db_params_from_sentence($patterns, $sentence, $params, $pluralize, $escapeSystem){
+
         global $CFG;
         require_once($CFG->dirroot . '/local/intelliboard/search/src/autoload.php');
 
         $response = array('result' => array(), 'sentence' => $sentence);
+        $groups = json_decode($patterns, true);
+        $queue = array();
 
-        foreach($patterns as $pattern) {
+        $prefixed = array_filter($groups, function ($item) {
+            return !empty($item['prefix']);
+        });
 
-            $response = Helpers\DB::extractParamsFromSentence($pattern['table'], $pattern['column'], $sentence, $params, $pluralize, $escapeSystem, json_decode($additionalFields, true));
+        array_walk($prefixed, function($item, $name) use (&$queue) {
+            $queue[] = array(
+                'patterns' => $item['patterns'],
+                'prefix' => array('value' => $item['prefix'], 'type' => 'prefix'),
+                'name' => $name
+            );
+            $queue[] = array(
+                'patterns' => $item['patterns'],
+                'prefix' => array('value' => $item['prefix'], 'type' => 'suffix'),
+                'name' => $name
+            );
+        });
 
-            if (!empty($response['result'])) {
-                return $response;
+        array_walk($groups, function($item, $name) use (&$queue) {
+            $queue[] = array(
+                'patterns' => $item['patterns'],
+                'name' => $name
+            );
+        });
+
+        foreach ($queue as $patterns) {
+
+            if (!empty($response['result'][$patterns['name']])) {
+                continue;
             }
 
+            foreach($patterns['patterns'] as $pattern) {
+                $additionalFields = $pattern['additionalFields'] ?? array();
+                $processed = Helpers\DB::extractParamsFromSentence($pattern['table'], $pattern['column'], $sentence, $params, $pluralize, $escapeSystem, $additionalFields, null, $patterns['prefix']);
+
+                if (!empty($processed['result'])) {
+                    $response['result'][$patterns['name']] = $processed['result'];
+                    $response['sentence'] = trim($processed['sentence']);
+                    $sentence = trim($processed['sentence']);
+                    break;
+                }
+
+            }
         }
 
+        $response['result'] = json_encode($response['result']);
         return $response;
     }
 
@@ -240,17 +266,17 @@ class local_intelliboard_search extends external_api {
 
     protected static function intelliboard_params() {
         return array(
-            'filter_user_deleted'       => new external_value(PARAM_INT, 'filter_user_deleted', VALUE_OPTIONAL, 0),
-            'filter_user_suspended'     => new external_value(PARAM_INT, 'filter_user_suspended', VALUE_OPTIONAL, 0),
-            'filter_user_guest'         => new external_value(PARAM_INT, 'filter_user_guest', VALUE_OPTIONAL, 0),
-            'filter_course_visible'     => new external_value(PARAM_INT, 'filter_course_visible', VALUE_OPTIONAL, 0),
-            'filter_enrolmethod_status' => new external_value(PARAM_INT, 'filter_enrolmethod_status', VALUE_OPTIONAL, 0),
-            'filter_enrol_status'       => new external_value(PARAM_INT, 'filter_enrol_status', VALUE_OPTIONAL, 0),
-            'filter_enrolled_users'     => new external_value(PARAM_INT, 'filter_enrolled_users', VALUE_OPTIONAL, 0),
-            'filter_module_visible'     => new external_value(PARAM_INT, 'filter_module_visible', VALUE_OPTIONAL, 0),
-            'learner_roles'             => new external_value(PARAM_SEQUENCE, 'Learner Roles', VALUE_OPTIONAL, '5'),
-            'teacher_roles'             => new external_value(PARAM_SEQUENCE, 'Teacher Roles', VALUE_OPTIONAL, '1,2,3'),
-            'external_id'               => new external_value(PARAM_INT, 'Intelliboard User ID', VALUE_OPTIONAL, null),
+            'filter_user_deleted'       => new external_value(PARAM_INT, 'filter_user_deleted'),
+            'filter_user_suspended'     => new external_value(PARAM_INT, 'filter_user_suspended'),
+            'filter_user_guest'         => new external_value(PARAM_INT, 'filter_user_guest'),
+            'filter_course_visible'     => new external_value(PARAM_INT, 'filter_course_visible'),
+            'filter_enrolmethod_status' => new external_value(PARAM_INT, 'filter_enrolmethod_status'),
+            'filter_enrol_status'       => new external_value(PARAM_INT, 'filter_enrol_status'),
+            'filter_enrolled_users'     => new external_value(PARAM_INT, 'filter_enrolled_users'),
+            'filter_module_visible'     => new external_value(PARAM_INT, 'filter_module_visible'),
+            'learner_roles'             => new external_value(PARAM_SEQUENCE, 'Learner Roles'),
+            'teacher_roles'             => new external_value(PARAM_SEQUENCE, 'Teacher Roles'),
+            'external_id'               => new external_value(PARAM_INT, 'Intelliboard User ID'),
         );
     }
 

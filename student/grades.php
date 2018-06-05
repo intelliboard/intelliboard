@@ -71,6 +71,8 @@ if($id){
 $table->show_download_buttons_at(array());
 $table->is_downloading('', '', '');
 
+$scale_real = get_config('local_intelliboard', 'scale_real');
+
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
@@ -82,7 +84,7 @@ echo $OUTPUT->header();
 			<?php if(isset($course)): ?>
 				<div class="intelliboard-course-header clearfix">
 					<div class="grade">
-						<div class="circle-progress-course"  data-percent="<?php echo (int)$course->grade; ?>"></div>
+						<div class="circle-progress-course"  data-percent="<?php echo ($scale_real)?$course->grade:(int)$course->grade; ?>"></div>
 					</div>
 					<div class="details">
 						<h3><?php echo format_string($course->fullname); ?></h3>

@@ -42,6 +42,7 @@ if ($search) {
 if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 't3')){
 	throw new moodle_exception('invalidaccess', 'error');
 }
+$scale_real = get_config('local_intelliboard', 'scale_real');
 $email = get_config('local_intelliboard', 'te1');
 $params = array(
 	'do'=>'learner',
@@ -54,21 +55,22 @@ if($courseid and $action == 'details'){
 	$progress = intelliboard_learner_course_progress($courseid, $USER->id);
 	$json_data = array();
 	foreach($progress[0] as $item){
-		$l = 0;
+		$l = '';
+        $lp = 0;
 		if(isset($progress[1][$item->timepoint])){
 			$d = $progress[1][$item->timepoint];
-			$l = round($d->grade,2);
+			$l = $d->grade;
+            $lp = $d->grade_percent;
 		}
-		$item->grade = round($item->grade,2);
 		$tooltip = "<div class=\"chart-tooltip\">";
 		$tooltip .= "<div class=\"chart-tooltip-header\">".date('D, M d Y', $item->timepoint)."</div>";
 		$tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-		$tooltip .= "<div class=\"chart-tooltip-left\"><span>". round($item->grade, 2)."%</span> ".get_string('current_grade','local_intelliboard')."</div>";
-		$tooltip .= "<div class=\"chart-tooltip-right\"><span>". round($l, 2)."%</span> ".get_string('average_grade','local_intelliboard')."</div>";
+		$tooltip .= "<div class=\"chart-tooltip-left\"><span>". ((!$scale_real)?round($item->grade, 2)."%":$item->grade)."</span> ".get_string('current_grade','local_intelliboard')."</div>";
+		$tooltip .= "<div class=\"chart-tooltip-right\"><span>". ((!$scale_real)?round($l, 2)."%":$l)."</span> ".get_string('average_grade','local_intelliboard')."</div>";
 		$tooltip .= "</div>";
 		$tooltip .= "</div>";
 		$item->timepoint = $item->timepoint*1000;
-		$json_data[] = array($item->timepoint, $item->grade, $tooltip, $l, $tooltip);
+		$json_data[] = array($item->timepoint, round((($scale_real)?$item->grade_percent:$item->grade), 2), $tooltip, $lp, $tooltip);
 	}
 	echo json_encode($json_data);
 	exit;
@@ -143,7 +145,7 @@ echo $OUTPUT->header();
 						</div>
 						<?php if($t19): ?>
 						<div class="grade" title="<?php echo get_string('current_grade','local_intelliboard');?>">
-							<div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+							<div class="circle-progress"  data-percent="<?php echo ($scale_real)?$item->grade:(int)$item->grade; ?>"></div>
 						</div>
 						<?php endif; ?>
 					</div>
@@ -158,7 +160,7 @@ echo $OUTPUT->header();
 						<?php if($t20): ?>
 						<div>
 							<span><?php echo get_string('class_average','local_intelliboard');?></span>
-							<p><?php echo (int)$item->average; ?>%</p>
+							<p><?php echo ($scale_real)?$item->average:(int)$item->average.'%'; ?></p>
 						</div>
 						<?php endif; ?>
 
@@ -230,7 +232,7 @@ echo $OUTPUT->header();
 					var json_data = [];
 					for(var i = 0; i < data.length; i++){
 						var item = data[i];
-						json_data.push([new Date(item[0]), item[1], item[2], item[3], item[4]]);
+						json_data.push([new Date(item[0]), item[1], item[2], Number(item[3]), item[4]]);
 					}
 
 					var data = new google.visualization.DataTable();

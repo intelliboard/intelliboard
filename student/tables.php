@@ -70,8 +70,8 @@ class intelliboard_courses_grades_table extends table_sql {
             $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
             $params['fullname'] = "%$search%";
         }
-        $grade_single = intelliboard_grade_sql();
-        $grade_avg = intelliboard_grade_sql(true);
+        $grade_single = intelliboard_grade_sql(false, null, 'g.',0, 'gi.',true);
+        $grade_avg = intelliboard_grade_sql(true, null, 'g.',0, 'gi.',true);
         $completion = intelliboard_compl_sql("cmc.");
 
         $fields = "c.id, c.fullname as course, c.timemodified, c.startdate, c.enablecompletion, cri.gradepass, $grade_single AS grade, gc.average, cc.timecompleted, m.modules, cm.completedmodules, '' as actions, '' as letter";
@@ -152,6 +152,7 @@ class intelliboard_courses_grades_table extends table_sql {
 }
 
 class intelliboard_activities_grades_table extends table_sql {
+    public $scale_real;
 
     function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '') {
         global $PAGE, $DB;
@@ -172,7 +173,7 @@ class intelliboard_activities_grades_table extends table_sql {
             $headers[] =  get_string('graded', 'local_intelliboard');
         }if(get_config('local_intelliboard', 't46')){
             $columns[] =  'timecompleted';
-            $headers[] =  get_string('type', 'local_intelliboard');
+            $headers[] =  get_string('completed', 'local_intelliboard');
         }
 
         $this->define_headers($headers);
@@ -202,13 +203,18 @@ class intelliboard_activities_grades_table extends table_sql {
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
+        $this->scale_real = get_config('local_intelliboard', 'scale_real');
     }
 
     function col_grade($values) {
-        $html = html_writer::start_tag("div",array("class"=>"grade"));
-        $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
-        $html .= html_writer::end_tag("div");
-        return $html;
+        if($this->scale_real>0){
+            return $values->grade;
+        }else{
+            $html = html_writer::start_tag("div", array("class" => "grade"));
+            $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
+            $html .= html_writer::end_tag("div");
+            return $html;
+        }
     }
 
 

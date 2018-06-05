@@ -698,7 +698,7 @@ echo $OUTPUT->header();
 				var data = google.visualization.arrayToDataTable([
 				['Course', '<?php echo get_string('in19', 'local_intelliboard'); ?>', '<?php echo get_string('in25', 'local_intelliboard'); ?>'],
 				<?php foreach($courses as $row):  ?>
-				['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
+				['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', {v: <?php echo (int)$row->data1_percent; ?>, f: '<?php echo $row->data1; ?>'}, <?php echo (int)$row->data2; ?>],
 				<?php endforeach; ?>
 				]);
 	        <?php elseif($view == 'activities'): ?>

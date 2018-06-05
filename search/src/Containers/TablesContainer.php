@@ -84,6 +84,7 @@ class TablesContainer extends BaseContainer {
             69 => array("name" => "ch", "sql" => "{chat}"),
             70 => array("name" => "cp", "sql" => "{config_plugins}"),
             71 => array("name" => "up", "sql" => "{upgrade_log}"),
+            72 => array("name" => "up", "sql" => "{tag_instance}"),
         );
 
         static::$joins = array(

@@ -178,27 +178,31 @@ class DB {
         $pluralize = 0,
         $escapeSystem = 0,
         $additionalFields = array(),
-        $pattern = null
+        $pattern = null,
+        $prefix = null
     ) {
 
         global $DB;
 
-        $pattern = $pattern? $pattern : ":sentence " . static::getOperator("regexp") . " CONCAT('[[:<:]]', :column, '[[:>:]]')";
         list($table, $column, $getter, $types, $alias) = static::start($table, $column, $params);
+        $variants = array();
+
+        if (!empty($prefix['value'])) {
+            $prefix['value'] = (is_array($prefix['value'])? '(' . implode('|', $prefix['value']) . ')' : $prefix['value']);
+        }
 
         if ($pluralize || in_array('custom', $types)) {
-
             $values = static::getParamsFromDB($table, $column, $params, null, null, null, $pluralize, array(), $additionalFields);
 
-            $values = array_map(function($value) {
+            array_walk($values, function($value) {
                 $value['value'] = trim($value['value']);
-                return $value;
-            }, $values);
+            });
 
             $values = array_filter($values, function($value) use($escapeSystem) {
                 if ($value['value'] === '') {
                     return false;
                 }
+
                 if ($escapeSystem) {
                     $systemWords = implode('|', static::$systemWords);
 
@@ -206,6 +210,7 @@ class DB {
                         return false;
                     }
                 }
+
                 return true;
             });
 
@@ -213,22 +218,45 @@ class DB {
                 return strlen($b['value']) - strlen($a['value']);
             });
 
-            $variants = array();
-
             foreach($values as $value) {
-                $sentence = preg_replace_callback('~(?:^|\s)' . $value['value'] . '(?:\s|$)~i',
-                    function ($matches) use (&$variants, $value) {
+
+                if ($prefix) {
+                    $search = $prefix['type'] === 'prefix'? $prefix['value'] . ' ' . $value['value'] : $value['value']  . ' ' . $prefix['value'];
+                    $replacement = $prefix['type'] === 'prefix'? ':prefix ' : ' :prefix';
+                } else {
+                    $search = $value['value'];
+                    $replacement = ' ';
+                }
+
+                $sentence = preg_replace_callback('~(?:^|\s)' . $search . '(?:\s|$)~i',
+                    function ($matches) use (&$variants, $value, $replacement, $prefix) {
                         $variants[] = $value;
-                        return ' ';
+
+                        return $prefix? str_replace(':prefix', $matches[1], $replacement) : $replacement;
                     }, $sentence, 1
                 );
+
+                if ($variants) {
+                    break;
+                }
+
             }
 
         } else {
 
+
             static::applyFilters($table, $column, $getter, $types, $alias, $params, array(), $additionalFields);
 
-            $getter->add('filters', str_replace(array(':column', ':sentence'), array($column, "'$sentence'"), $pattern));
+            if ($prefix) {
+                $search = ($prefix['type'] === 'prefix'? ":prefix, ' ',  $column" : "$column, ' ', :prefix");
+                $getter->setParam('prefix', trim($prefix['value']));
+            } else {
+                $search = $column;
+            }
+
+            $pattern = $pattern? $pattern : ":sentence " . static::getOperator("regexp") . " CONCAT('[[:<:]]', :column, '[[:>:]]')";
+
+            $getter->add('filters', str_replace(array(':column', ':sentence'), array($search, "'$sentence'"), $pattern));
             $getter->add('filters', "$column <> ''");
 
             if ($escapeSystem) {
@@ -242,15 +270,14 @@ class DB {
                 $getter->add('filters', "$column NOT IN ($systemWords)");
             }
 
-            $getter->add('columns', "REPLACE('$sentence', LOWER($column), '') as replacement");
-
+            $sentence = " $sentence ";
+            $getter->add('columns', "INSERT('$sentence', POSITION(CONCAT(' ', LOWER({$column})) IN '$sentence'), CHAR_LENGTH($column) + 1, ' ') as replacement");
             $data = $getter->release();
             $sql  = $data['sql'] . " ORDER BY CHAR_LENGTH($column) DESC LIMIT 1";
-
-
             $variant = json_decode(json_encode($DB->get_record_sql($sql, $data['params'])), true);
             $sentence = $variant['replacement'] ?? $sentence;
             $variants = $variant? array(array_diff_key($variant, array('replacement' => 1))) : [];
+
         }
 
         if ($variants && $table === 'role') {
@@ -279,7 +306,9 @@ class DB {
             }
         }
 
-        $result = json_encode($variants);
+        $result = $variants;
+
+        static::removeInitialization();
         return compact('sentence', 'result');
     }
 
@@ -306,7 +335,7 @@ class DB {
         return compact('endings', 'found');
     }
 
-    protected function applyFilters(
+    protected static function applyFilters(
         &$table,
         &$column,
         ParamGetter $getter,
@@ -317,14 +346,17 @@ class DB {
         $additionalFields = array()
     ) {
 
-        $courseFilter   = !empty($paramFilters['course']) ? $paramFilters['course']     : false;
-        $roleFilter     = !empty($paramFilters['role']) ? $paramFilters['role']         : false;
-        $activityFilter = !empty($paramFilters['activity']) ? $paramFilters['activity'] : false;
-        $cohortFilter   = !empty($paramFilters['cohort']) ? $paramFilters['cohort']     : false;
-        $groupFilter    = !empty($paramFilters['group']) ? $paramFilters['group']       : false;
-        $teacherFilter  = !empty($paramFilters['teacher']) ? $paramFilters['teacher']   : false;
-        $enrolFilter    = !empty($paramFilters['enrol']) ? $paramFilters['enrol']       : false;
-        $moduleFilter   = !empty($paramFilters['module']) ? $paramFilters['module']    : false;
+        $courseFilter        = !empty($paramFilters['course']) ? $paramFilters['course']       : false;
+        $roleFilter          = !empty($paramFilters['role']) ? $paramFilters['role']           : false;
+        $activityFilter      = !empty($paramFilters['activity']) ? $paramFilters['activity']   : false;
+        $cohortFilter        = !empty($paramFilters['cohort']) ? $paramFilters['cohort']       : false;
+        $groupFilter         = !empty($paramFilters['group']) ? $paramFilters['group']         : false;
+        $teacherFilter       = !empty($paramFilters['teacher']) ? $paramFilters['teacher']     : false;
+        $enrolFilter         = !empty($paramFilters['enrol']) ? $paramFilters['enrol']         : false;
+        $moduleFilter        = !empty($paramFilters['module']) ? $paramFilters['module']       : false;
+        $userInfoDataFilter  = !empty($paramFilters['userdata']) ? $paramFilters['userdata']   : false;
+        $userInfoFieldFilter = !empty($paramFilters['userfield']) ? $paramFilters['userfield'] : false;
+        $userFilter          = !empty($paramFilters['user']) ? $paramFilters['user'] : false;
 
         $pluginTypes = array('certificate', 'questionnaire');
 
@@ -381,6 +413,12 @@ class DB {
 
             if (empty($settings['filter_user_guest'])) {
                 $getter->add('filters', 'u.username <> \'guest\'');
+            }
+
+            if ($userInfoDataFilter) {
+                $getter->add('tables', 'INNER JOIN {user_info_data} uid ON uid.userid = u.id');
+                $getter->add('filters', 'uid.data = :data');
+                $getter->setParam('data', $userInfoDataFilter);
             }
 
             if (!empty($settings['external_id'])) {
@@ -520,6 +558,26 @@ class DB {
             $getter->add('filters', "$alias.plugin LIKE 'local_%'");
         }
 
+        if (in_array('user_info_data', $types)) {
+            if ($userInfoFieldFilter) {
+                $getter->add('filters', 'fieldid = :field');
+                $getter->setParam('field', $userInfoFieldFilter);
+            }
+
+            if ($userFilter) {
+                $getter->add('filters', '{user_info_data}.userid = :user');
+                $getter->setParam('user', $userFilter);
+            }
+        }
+
+        if (in_array('user_info_field', $types)) {
+            if ($userInfoDataFilter) {
+                $getter->add('tables', 'INNER JOIN {user_info_data} uid ON uid.fieldid = {user_info_field}.id');
+                $getter->add('filters', 'uid.data = :data');
+                $getter->setParam('data', $userInfoDataFilter);
+            }
+        }
+
         static::addAdditionalFields($getter, $column, $additionalFields, $alias);
 
         if ($required = array_intersect($types, $pluginTypes)) {
@@ -585,6 +643,11 @@ class DB {
         }
 
         return static::$initialized;
+    }
+
+    public static function removeInitialization()
+    {
+        static::$initialized = false;
     }
 
     public static function detectType($table) {

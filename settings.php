@@ -656,6 +656,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/scale_real';
+        $title = new lang_string('scale_real', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
         $name = 'local_intelliboard/scales';
         $title = new lang_string('scales', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);

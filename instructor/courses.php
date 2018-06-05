@@ -48,6 +48,7 @@ $params = array(
 );
 $intelliboard = intelliboard($params);
 $factorInfo = chart_options();
+$scale_real = get_config('local_intelliboard', 'scale_real');
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/instructor/courses.php",
 			array("search"=>$search, "action"=>$action, "id"=>$courseid, "userid"=>$userid, "cmid"=>$cmid, "sesskey"=> sesskey())));
@@ -98,7 +99,7 @@ echo $OUTPUT->header();
 								<p><?php echo get_string('course'); ?>: <strong><?php echo format_string($data->course); ?></strong></p>
 							</div>
 							<ul class="totals">
-								<li><?php echo (int)$data->grade; ?><span><?php echo get_string('course_grade', 'local_intelliboard'); ?></span></li>
+								<li><?php echo ($scale_real>0)?$data->grade:(int)$data->grade; ?><span><?php echo get_string('course_grade', 'local_intelliboard'); ?></span></li>
 								<li><?php echo (int)$data->progress; ?><span><?php echo get_string('completed_activities_resourses', 'local_intelliboard'); ?></span></li>
 							</ul>
 
@@ -121,7 +122,7 @@ echo $OUTPUT->header();
 								<p><?php echo get_string('course'); ?>: <strong><?php echo $data->course ?></strong></p>
 							</div>
 							<ul class="totals">
-								<li><?php echo (int)$data->grade; ?><span><?php echo get_string('in19', 'local_intelliboard'); ?></span></li>
+								<li><?php echo ($scale_real>0)?$data->grade:(int)$data->grade; ?><span><?php echo get_string('in19', 'local_intelliboard'); ?></span></li>
 								<li><?php echo (int)$data->completed; ?><span><?php echo get_string('completed', 'local_intelliboard'); ?></span></li>
 							</ul>
 
@@ -135,7 +136,7 @@ echo $OUTPUT->header();
 							</ul>
 						<?php elseif($action === 'learners'): ?>
 							<div class="grade" title="<?php echo get_string('in21', 'local_intelliboard'); ?>">
-								<div class="circle-progress-course"  data-percent="<?php echo (int)$course->grade; ?>"></div>
+                                <div class="circle-progress-course"  data-percent="<?php echo ($scale_real>0)?$course->grade:(int)$course->grade; ?>"></div>
 							</div>
 							<div class="details">
 							<h3><?php echo $course->fullname ?> <span class="" title='<?php echo get_string('completion','local_intelliboard'); ?>: <?php echo ($course->enablecompletion)?get_string('in22','local_intelliboard'):get_string('disabled','local_intelliboard') ?>'><i class='<?php echo ($course->enablecompletion)?'ion-android-checkbox-outline':'ion-android-checkbox-outline-blank' ?>'></i></span></h3>
@@ -155,7 +156,7 @@ echo $OUTPUT->header();
 							</ul>
 						<?php elseif($action === 'activities'): ?>
 							<div class="grade" title="<?php echo get_string('in21','local_intelliboard'); ?>">
-									<div class="circle-progress-course"  data-percent="<?php echo (int)$course->grade; ?>"></div>
+									<div class="circle-progress-course"  data-percent="<?php echo ($scale_real>0)?$course->grade:(int)$course->grade; ?>"></div>
 							</div>
 							<div class="details">
 								<h3><?php echo $course->fullname ?> <span class="" title='<?php echo get_string('completion','local_intelliboard'); ?>: <?php echo ($course->enablecompletion)?get_string('in22','local_intelliboard'):get_string('disabled','local_intelliboard') ?>'><i class='<?php echo ($course->enablecompletion)?'ion-android-checkbox-outline':'ion-android-checkbox-outline-blank' ?>'></i></span></h3>

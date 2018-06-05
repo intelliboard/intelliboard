@@ -96,6 +96,27 @@ $functions = array(
             'description' => 'Work with notifications;',
             'type'        => 'read',
         ),
+        'local_intelliboard_save_notification' => array(
+            'classname'   => 'local_intelliboard_notificationlib',
+            'methodname'  => 'save_notification',
+            'classpath'   => 'local/intelliboard/classes/notificationlib.php',
+            'description' => 'Save event notification;',
+            'type'        => 'write',
+        ),
+        'local_intelliboard_delete_notification' => array(
+            'classname'   => 'local_intelliboard_notificationlib',
+            'methodname'  => 'delete_notification',
+            'classpath'   => 'local/intelliboard/classes/notificationlib.php',
+            'description' => 'Delete event notification;',
+            'type'        => 'write',
+        ),
+        'local_intelliboard_get_history' => array(
+            'classname'   => 'local_intelliboard_notificationlib',
+            'methodname'  => 'get_history',
+            'classpath'   => 'local/intelliboard/classes/notificationlib.php',
+            'description' => 'Get notification history;',
+            'type'        => 'read',
+        ),
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
@@ -111,7 +132,10 @@ $services = array(
                         'local_intelliboard_process_auto_complete_db',
                         'local_intelliboard_check_installed_plugins',
                         'local_intelliboard_get_gradebook_fields',
-                        'local_intelliboard_send_notifications'
+                        'local_intelliboard_send_notifications',
+                        'local_intelliboard_save_notification',
+                        'local_intelliboard_delete_notification',
+                        'local_intelliboard_get_history',
                 ),
                 'restrictedusers' => 1,
                 'enabled'=>1,

@@ -30,7 +30,6 @@ require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 
 class local_intelliboard_observer
 {
-
     public static function role_assigned(core\event\role_assigned $event)
     {
         $data = $event->get_data();
@@ -49,7 +48,6 @@ class local_intelliboard_observer
 
     public static function post_created(mod_forum\event\post_created $event)
     {
-
         $eventData = $event->get_data();
         $data = array(
             'forums' => $eventData['other']['forumid'],
@@ -92,7 +90,7 @@ class local_intelliboard_observer
             INNER JOIN {quiz_attempts} q ON q.uniqueid = qa.questionusageid
             WHERE q.id = ? AND qas.state = 'needsgrading'
         ", array($eventData['objectid']))->checking;
-        
+
         if (!$isNeededGrading) {
             return;
         }
@@ -117,5 +115,4 @@ class local_intelliboard_observer
 
         $notification->send_notifications($notifications, $event);
     }
-
 }

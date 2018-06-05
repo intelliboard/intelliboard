@@ -205,5 +205,134 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 		upgrade_plugin_savepoint(true, 2018052207, 'local', 'intelliboard');
 	  }
 
+    if ($oldversion < 2018060401) {
+        $data = [];
+        $table = new xmldb_table('local_intelliboard_ntf');
+
+        if ($dbman->table_exists($table)) {
+            $data = $DB->get_records("local_intelliboard_ntf");
+            $dbman->drop_table($table);
+        }
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('type', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('externalid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('email', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('subject', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('message', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('state', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('attachment', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('tags', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        // Add index to local_intelliboard_ntf
+        $index1 = new xmldb_index('type_idx', XMLDB_INDEX_NOTUNIQUE, array('type'));
+        $index2 = new xmldb_index('userid_idx', XMLDB_INDEX_NOTUNIQUE, array('userid'));
+        $index3 = new xmldb_index('externalid_idx', XMLDB_INDEX_NOTUNIQUE, array('externalid'));
+
+        if (!$dbman->index_exists($table, $index1)) {
+            $dbman->add_index($table, $index1);
+        }
+
+        if (!$dbman->index_exists($table, $index2)) {
+            $dbman->add_index($table, $index2);
+        }
+
+        if (!$dbman->index_exists($table, $index3)) {
+            $dbman->add_index($table, $index3);
+        }
+
+        if ($data) {
+            $DB->insert_records('local_intelliboard_ntf', $data);
+        }
+
+
+        $data = [];
+        $table = new xmldb_table('local_intelliboard_ntf_pms');
+
+        if ($dbman->table_exists($table)) {
+            $data = $DB->get_records("local_intelliboard_ntf_pms");
+            $dbman->drop_table($table);
+        }
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('notificationid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('value', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        // Add index to local_intelliboard_ntf_pms
+        $index1 = new xmldb_index('notificationid_idx', XMLDB_INDEX_NOTUNIQUE, array('notificationid'));
+        $index2 = new xmldb_index('name_value_idx', XMLDB_INDEX_NOTUNIQUE, array('name', 'value'));
+
+        if (!$dbman->index_exists($table, $index1)) {
+            $dbman->add_index($table, $index1);
+        }
+
+        if (!$dbman->index_exists($table, $index2)) {
+            $dbman->add_index($table, $index2);
+        }
+
+        if ($data) {
+            $DB->insert_records('local_intelliboard_ntf_pms', $data);
+        }
+
+        upgrade_plugin_savepoint(true, 2018060401, 'local', 'intelliboard');
+    }
+
+    if ($oldversion < 2018060405) {
+        $data = [];
+        $table = new xmldb_table('local_intelliboard_ntf_hst');
+
+        if ($dbman->table_exists($table)) {
+            $data = $DB->get_records("local_intelliboard_ntf_hst");
+            $dbman->drop_table($table);
+        }
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('notificationname', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('notificationid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('email', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('timesent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        // Add index to local_intelliboard_ntf
+        $index = new xmldb_index('notificationid_idx', XMLDB_INDEX_NOTUNIQUE, array('notificationid'));
+
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        if ($data) {
+            $DB->insert_records('local_intelliboard_ntf_hst', $data);
+        }
+
+        $table = $table = new xmldb_table("local_intelliboard_ntf");
+        $field = new xmldb_field('email');
+        $field->set_attributes(XMLDB_TYPE_TEXT, null, null, null, null, null);
+        try {
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        $field = new xmldb_field('name');
+        if (!$dbman->field_exists($table, $field)) {
+            $field->set_attributes(XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2018060405, 'local', 'intelliboard');
+    }
+
 	return true;
 }

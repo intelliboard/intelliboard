@@ -434,6 +434,7 @@ class ColumnsContainer extends BaseContainer {
             223 => array("name" => "lastip", "sql" => "lastip"),
             224 => array("name" => "plugin", "sql" => "plugin"),
             225 => array("name" => "version", "sql" => "version"),
+            226 => array("name" => "tagid", "sql" => "tagid"),
         );
 
         static::$modifiers = array_map(function($modifier) use ($mode) {
@@ -560,8 +561,8 @@ class ColumnsContainer extends BaseContainer {
         return static::$columns[$id];
     }
 
-    public static function applyModifier($id, $value, DataExtractor $extractor, $initial) {
-
+    public static function applyModifier($id, $value, DataExtractor $extractor, $initial = null) {
+        $initial = $initial? $initial : $value;
         $modifier = is_array($id)? $id : compact('id');
 
         if (empty(static::$modifiers[$modifier['id']])) {

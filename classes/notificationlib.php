@@ -39,19 +39,21 @@ class local_intelliboard_notificationlib extends external_api {
                             'type'       => new external_value(PARAM_INT, 'Notification type'),
                             'name'       => new external_value(PARAM_TEXT, 'Notification name'),
                             'userid'     => new external_value(PARAM_INT, 'User that created notification'),
-                            'email'      => new external_value(PARAM_TEXT, 'Email where this notification should to go'),
+                            'email'      => new external_multiple_structure(
+                                new external_value(PARAM_TEXT, 'Email where this notification should to go')
+                            ),
                             'subject'    => new external_value(PARAM_TEXT, 'Notification subject'),
                             'message'    => new external_value(PARAM_RAW, 'Notification message'),
-                            'attachment' => new external_value(PARAM_TEXT, 'Notification attachment', VALUE_OPTIONAL, ''),
-                            'params'     => new external_value(PARAM_TEXT, 'Notification dynamic params', VALUE_OPTIONAL, '{}'),
-                            'tags'       => new external_value(PARAM_TEXT, 'Notification tags', VALUE_OPTIONAL, '{}'),
+                            'attachment' => new external_value(PARAM_TEXT, 'Notification attachment'),
+                            'params'     => new external_value(PARAM_TEXT, 'Notification dynamic params'),
+                            'tags'       => new external_value(PARAM_TEXT, 'Notification tags'),
                             'frequency'  => new external_value(PARAM_INT, 'Notification frequency'),
                         )
                     )
                 ),
                 'params' => new external_single_structure(
                     array(
-                        'learner_roles'         => new external_value(PARAM_SEQUENCE, 'Learner Roles', VALUE_OPTIONAL, ''),
+                        'learner_roles'         => new external_value(PARAM_SEQUENCE, 'Learner Roles'),
                     )
                 )
             )
@@ -75,6 +77,222 @@ class local_intelliboard_notificationlib extends external_api {
         return new external_single_structure(
             array(
                 'state' => new external_value(PARAM_BOOL, 'State'),
+            )
+        );
+    }
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     * @since Moodle 2.5
+     */
+    public static function save_notification_parameters() {
+        return new external_function_parameters(
+            array(
+                'notification'  => new external_single_structure(
+                        array(
+                            'type'       => new external_value(PARAM_INT, 'Notification type'),
+                            'name'       => new external_value(PARAM_TEXT, 'Notification name'),
+                            'externalid'  => new external_value(PARAM_INT, 'Notification Intelliboard ID'),
+                            'userid'     => new external_value(PARAM_INT, 'User that created notification'),
+                            'email'      => new external_value(PARAM_TEXT, 'Email where this notification should to go'),
+                            'state'      => new external_value(PARAM_INT, 'Notification state'),
+                            'subject'    => new external_value(PARAM_TEXT, 'Notification subject'),
+                            'message'    => new external_value(PARAM_RAW, 'Notification message'),
+                            'attachment' => new external_value(PARAM_TEXT, 'Notification attachment'),
+                            'params'     => new external_value(PARAM_TEXT, 'Notification dynamic params'),
+                            'tags'       => new external_value(PARAM_TEXT, 'Notification tags'),
+                        )
+                    )
+                )
+            );
+    }
+
+    /**
+     * Create one or more assigns
+     *
+     * @param array $notification.
+     * @return array An array with id
+     * @since Moodle 2.5
+     */
+    public static function save_notification($notification) {
+        global $DB;
+
+        $transaction = $DB->start_delegated_transaction();
+
+        if (isset($notification['email']) && !$notification['email']) {
+            $notification['email'] = null;
+        }
+
+        $notification = (object) $notification;
+        $params = empty($notification->params)? array() : json_decode($notification->params, true);
+
+        unset($notification->params);
+
+        if ($old = $DB->get_record('local_intelliboard_ntf',array('externalid' => $notification->externalid), 'id') ) {
+            $id = $old->id;
+            $notification->id = $old->id;
+            $DB->update_record('local_intelliboard_ntf', $notification);
+
+            $DB->delete_records('local_intelliboard_ntf_pms', array('notificationid' => $notification->id));
+
+        } else {
+            $id = $DB->insert_record('local_intelliboard_ntf', $notification);
+        }
+
+        $paramsToSave = array();
+
+        foreach ($params as $key => $values) {
+            $values = is_array($values)? $values : array($values);
+
+            foreach ($values as $value) {
+                $paramsToSave[] = (object) [
+                    'name' => $key,
+                    'value' => $value,
+                    'notificationid' => $id
+                ];
+            }
+
+        }
+
+        $DB->insert_records('local_intelliboard_ntf_pms', $paramsToSave);
+
+        $transaction->allow_commit();
+
+        return compact('id');
+    }
+
+    /**
+     * Returns description of method result value
+     *
+     * @return external_description
+     * @since Moodle 2.5
+     */
+    public static function save_notification_returns() {
+        return new external_single_structure(
+            array(
+                'id' => new external_value(PARAM_INT, 'Notification ID on Moodle'),
+            )
+        );
+    }
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     * @since Moodle 2.5
+     */
+    public static function delete_notification_parameters() {
+        return new external_function_parameters(
+            array(
+                'externalid' =>  new external_value(PARAM_INT, 'External Notification ID'),
+            )
+        );
+    }
+
+    /**
+     *
+     * @param int $id
+     * @return null
+     * @since Moodle 2.5
+     */
+    public static function delete_notification($id) {
+        global $DB;
+
+        $transaction = $DB->start_delegated_transaction();
+
+        if ($notification = $DB->get_record('local_intelliboard_ntf',array('externalid' => $id), 'id') ) {
+            $DB->delete_records('local_intelliboard_ntf', array('id' => $notification->id));
+            $DB->delete_records('local_intelliboard_ntf_pms', array('notificationid' => $notification->id));
+        }
+
+        $transaction->allow_commit();
+
+        return null;
+    }
+
+    public static function delete_notification_returns() {
+        return null;
+    }
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     * @since Moodle 2.5
+     */
+    public static function get_history_parameters() {
+        return new external_function_parameters(
+            array(
+                'userid' =>  new external_value(PARAM_INT, 'Get history by app user'),
+                'limit' => new external_value(PARAM_INT, 'Limit entries'),
+                'offset' => new external_value(PARAM_INT, 'Offset entries'),
+                'search' => new external_value(PARAM_TEXT, 'Search in history'),
+                'order' => new external_single_structure(
+                    array(
+                        'key'       => new external_value(PARAM_TEXT, 'Order key'),
+                        'direction'  => new external_value(PARAM_INT, 'Order direction'),
+                    )
+                )
+            )
+        );
+    }
+
+    /**
+     *
+     * @param int $userid
+     * @param int $limit
+     * @param int $offset
+     * @param string $search
+     * @param array $order
+     * @return null
+     * @since Moodle 2.5
+     */
+    public static function get_history($userid, $limit, $offset, $search, $order) {
+        global $DB;
+
+        $sql = "SELECT
+            linh.id,
+            linh.notificationid, 
+            linh.email, 
+            linh.timesent,
+            linh.notificationname
+            FROM {local_intelliboard_ntf_hst} linh
+            WHERE linh.userid = :userid
+        ";
+        $params = compact('userid');
+
+        if ($search) {
+            $sql .= ' AND linh.notificationname LIKE :name';
+            $params['name'] = '%' . $search . '%';
+        }
+
+        if ($order) {
+            $direction = $order['direction'] === 2? 'DESC' : 'ASC';
+            $sql .= ' ORDER BY ' . $order['key'] . ' ' . $direction;
+        }
+
+        if ($limit) {
+            $sql .= ' LIMIT ' . $limit;
+        }
+
+        if ($offset) {
+            $sql .= ' OFFSET ' . $offset;
+        }
+
+        return $DB->get_records_sql($sql, $params);
+    }
+
+    public static function get_history_returns() {
+        return new external_multiple_structure(
+            new external_single_structure(
+                array(
+                    'notificationid' => new external_value(PARAM_INT, 'Notification ID on App'),
+                    'email' => new external_value(PARAM_TEXT, 'Receiver email'),
+                    'timesent' => new external_value(PARAM_INT, 'Notification sending time'),
+                    'notificationname' => new external_value(PARAM_TEXT, 'Notification name'),
+                )
             )
         );
     }

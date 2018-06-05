@@ -289,6 +289,7 @@ $string['s48'] = 'Temps passé sur le sujet';
 $string['save'] = 'sauvegarder';
 $string['scale_percentage'] = 'Pourcentage';
 $string['scale_raw'] = 'Désactiver échelle';
+$string['scale_real'] = 'Afficher la note réelle au lieu de pourcentage';
 $string['scales'] = 'Activer échelle personnalisée';
 $string['scalesettings'] = 'Paramètres échelle';
 $string['scale_total'] = 'note totale';
@@ -370,7 +371,7 @@ $string['t9'] = 'Activer le widget [Affectations]';
 $string['te1'] = 'Email';
 $string['te12'] = 'Prénom';
 $string['te13'] = 'Nom de famille';
-$string['te1_desc'] = 'Entrez le prénom, le nom, le courriel utilisé avec votre abonnement IntelliBoard.net. Si vous navez pas dabonnement actif, inscrivez-vous sur <a target="_blank" href="https://intelliboard.net"> IntelliBoard.net </a>. Le tableau de bord apprenant et instructeur est disponible avec un abonnement de niveau 4 et plus.';
+$string['te1_desc'] = 'Entrez le courriel utilisé avec votre abonnement IntelliBoard.net. Si vous navez pas dabonnement actif, inscrivez-vous sur <a target="_blank" href="https://intelliboard.net"> IntelliBoard.net </a>. Le tableau de bord apprenant et instructeur est disponible avec un abonnement de niveau 4 et plus.';
 $string['teacher'] = 'Prof';
 $string['tex1'] = 'Tableau de bord Apprenant IntelliBoard est pas activé.';
 $string['time'] = 'Temps';
@@ -454,3 +455,21 @@ $string['privacy:metadata:local_intelliboard_tracking:useragent'] = 'Users Brows
 $string['privacy:metadata:local_intelliboard_tracking:useros'] = 'Users Operating System';
 $string['privacy:metadata:local_intelliboard_tracking:userlang'] = 'Users Browser Language';
 $string['privacy:metadata:local_intelliboard_tracking:userip'] = 'Users Last IP address';
+
+$string['privacy:metadata:local_intelliboard_ntf:id'] = 'Notification ID';
+$string['privacy:metadata:local_intelliboard_ntf:type'] = 'Notification type';
+$string['privacy:metadata:local_intelliboard_ntf:externalid'] = 'Notification ExternalNID';
+$string['privacy:metadata:local_intelliboard_ntf:userid'] = 'Notification ExternalAppID';
+$string['privacy:metadata:local_intelliboard_ntf:email'] = 'Notification email';
+$string['privacy:metadata:local_intelliboard_ntf:subject'] = 'Notification subject';
+$string['privacy:metadata:local_intelliboard_ntf:message'] = 'Notification message';
+$string['privacy:metadata:local_intelliboard_ntf:state'] = 'Notification status';
+$string['privacy:metadata:local_intelliboard_ntf:attachment'] = 'Notification attachment';
+$string['privacy:metadata:local_intelliboard_ntf:tags'] = 'Notification tags';
+
+$string['privacy:metadata:local_intelliboard_ntf_hst:id'] = 'Notification history ID';
+$string['privacy:metadata:local_intelliboard_ntf_hst:notificationid'] = 'Notification ID';
+$string['privacy:metadata:local_intelliboard_ntf_hst:userid'] = 'Notification ExternalAppID';
+$string['privacy:metadata:local_intelliboard_ntf_hst:notificationname'] = 'Notification name';
+$string['privacy:metadata:local_intelliboard_ntf_hst:email'] = 'Notification history email';
+$string['privacy:metadata:local_intelliboard_ntf_hst:timesent'] = 'Notification history timestamp';

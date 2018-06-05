@@ -249,13 +249,14 @@ function intelliboard_learner_course_progress($courseid, $userid){
     $params['courseid'] = $courseid;
 
     $grade_avg = intelliboard_grade_sql(true);
+    $grade_avg_percent = intelliboard_grade_sql(true, null, 'g.', 0, 'gi.', true);
 
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, $grade_avg AS grade
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, $grade_avg AS grade, $grade_avg_percent AS grade_percent
                                     FROM {grade_items} gi, {grade_grades} g
                                     WHERE gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid
                                     GROUP BY timepoint ORDER BY timepoint", $params);
 
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, $grade_avg AS grade
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, $grade_avg AS grade, $grade_avg_percent AS grade_percent
                                     FROM {grade_items} gi, {grade_grades} g
                                     WHERE gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid
                                     GROUP BY timepoint ORDER BY timepoint", $params);
@@ -273,13 +274,14 @@ function intelliboard_learner_progress($time, $userid){
     $params['timefinish'] = $timefinish;
 
     $grade_avg = intelliboard_grade_sql(true);
+    $grade_avg_percent = intelliboard_grade_sql(true, null, 'g.', 0, 'gi.', true);
 
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade, $grade_avg_percent AS grade_percent
                                     FROM {grade_items} gi, {grade_grades} g
                                     WHERE gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish
                                     GROUP BY timepoint ORDER BY timepoint", $params);
 
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade
+    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade, $grade_avg_percent AS grade_percent
                                     FROM {grade_items} gi, {grade_grades} g
                                     WHERE gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish
                                     GROUP BY timepoint ORDER BY timepoint", $params);
@@ -294,16 +296,33 @@ function intelliboard_learner_courses($userid){
     $params['userid2'] = $userid;
     $params['userid3'] = $userid;
 
-    $grade_single = intelliboard_grade_sql();
+    $grade_single = intelliboard_grade_sql(false);
     $grade_avg = intelliboard_grade_sql(true);
 
-    $data = $DB->get_records_sql("
+    $grade_single_percent = intelliboard_grade_sql(false,null, 'g.', 0, 'gi.',true);
+    $grade_avg_percent = intelliboard_grade_sql(true,null, 'g.', 0, 'gi.',true);
+
+    $scale_real = get_config('local_intelliboard', 'scale_real');
+    if($scale_real){
+        $params['userid4'] = $userid;
+        $data = $DB->get_records_sql("
+        SELECT c.id, c.fullname, '0' AS duration_calc,
+            (SELECT $grade_single_percent FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid3) AS grade,
+            (SELECT $grade_avg_percent FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
+            (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid4) AS grade_real,
+            (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average_real,
+            (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
+        FROM {user_enrolments} ue, {enrol} e, {course} c
+        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND c.visible = 1 GROUP BY c.id ORDER BY c.sortorder ASC", $params);
+    }else{
+        $data = $DB->get_records_sql("
         SELECT c.id, c.fullname, '0' AS duration_calc,
             (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid3) AS grade,
             (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
             (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
         FROM {user_enrolments} ue, {enrol} e, {course} c
         WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND c.visible = 1 GROUP BY c.id ORDER BY c.sortorder ASC", $params);
+    }
 
     $d = 0;
     foreach($data as $c){
@@ -343,7 +362,7 @@ function intelliboard_learner_totals($userid){
                                             SELECT distinct gi.courseid FROM {grade_items} gi, {grade_grades} g WHERE g.userid = :userid6 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid)) AND e.courseid NOT IN (
                                                 SELECT distinct course FROM {course_completions} WHERE userid = :userid7 AND timecompleted > 0)) as inprogress,
                                     (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.userid != :userid8 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid AND gi.courseid IN (
-                                        SELECT count(distinct e.courseid) FROM {user_enrolments} ue, {enrol} e WHERE e.status = 0 AND ue.status = 0 AND ue.userid = :userid9 AND e.id = ue.enrolid)) as average,
+                                        SELECT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE e.status = 0 AND ue.status = 0 AND ue.userid = :userid9 AND e.id = ue.enrolid)) as average,
                                     (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.userid = :userid10 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid) as grade", $params);
 }
 function intelliboard_learner_course($userid, $courseid){

@@ -24,8 +24,6 @@
  * @website    https://intelliboard.net/
  */
 
-$plugin->version  = 2018060405;
-$plugin->requires = 2011120500;
-$plugin->release = '5.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+$config = [];
+$config['app_url'] = 'https://app.intelliboard.net/';
+$config['api_url'] = 'https://api.intelliboard.net/';

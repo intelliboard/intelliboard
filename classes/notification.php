@@ -31,15 +31,54 @@ class local_intelliboard_notification {
 
     protected $history = array();
 
-    public function get_instant_notifications($type, $filters = array(), $excluded = null)
+    public function get_instant_notifications($type, $filters = array(), $excluded = array())
     {
-        $filters = json_encode($filters);
-        $response = intelliboard(compact('type', 'filters', 'excluded'), 'getInstantNotifications')->data;
-        return json_decode(json_encode($response), true)['notifications'];
+        global $DB;
+        $valueSeparator = '=>';
+        $paramSeparator = ':|:';
+
+        $params = compact('type');
+        $sql = "SELECT * 
+          FROM {local_intelliboard_ntf} lin
+          WHERE lin.type = :type AND lin.state = 1";
+
+        if ($filters) {
+            $filterCount = 0;
+            foreach ($filters as $key => $value) {
+                $sql .= ' AND lin.id IN (SELECT linp.notificationid FROM {local_intelliboard_ntf_pms} linp WHERE linp.name = :name' . $filterCount . " AND linp.value = :value" . $filterCount . ')';
+                $params['name' . $filterCount] = $key;
+                $params['value' . $filterCount] = $value;
+                $filterCount++;
+            }
+        }
+
+        if ($excluded) {
+            $sql .= " AND lin.userid NOT IN (";
+
+            foreach ($excluded as $i => $id) {
+                $sql .= ':excluded' . $i . ',';
+                $params['excluded' . $i] = $id;
+            }
+
+            $sql = rtrim($sql, ',');
+            $sql .= ")";
+        }
+
+        $result = json_decode(json_encode($DB->get_records_sql($sql, $params)), true);
+
+        $result = array_map(function ($item) use ($paramSeparator, $valueSeparator) {
+            $item['email'] = explode(',', $item['email']);
+            $item['tags'] = json_decode($item['tags'], true);
+            return $item;
+        }, $result);
+
+        return $result;
+
     }
 
     public function send_notifications($notifications, $event = array(), $params = array())
     {
+
         if ($notifications) {
             foreach ($notifications as $notification) {
                  $events = array();
@@ -56,6 +95,7 @@ class local_intelliboard_notification {
         }
 
         $this->save_history();
+
     }
 
     protected function notify($recipients, $notifications, $notificationType)
@@ -83,13 +123,14 @@ class local_intelliboard_notification {
                 file_put_contents($path, $notification['attachment']);
             }
             $recipient->mailformat = 1; //allow html
+
             email_to_user($recipient, $sender, $notification['subject'], $notification['message'], $notification['message'], $name, $name);
 
             if ($notification['attachment']) {
                 unlink($path);
             }
 
-            $this->history[] = array('email' => $recipient->email, 'usageid' => $notificationType['id'], 'timesent' => time());
+            $this->add_to_history($recipient, $notificationType);
         }
 
         $CFG->emailfromvia = $old;
@@ -97,11 +138,26 @@ class local_intelliboard_notification {
 
     }
 
+    protected function add_to_history($recipient, $notification)
+    {
+
+        $this->history[] = array(
+            'notificationid' => $notification['externalid'],
+            'notificationname' => $notification['name'],
+            'userid' => $notification['userid'],
+            'email' => $recipient->email,
+            'timesent' => time()
+        );
+    }
+
     protected function save_history()
     {
-        $response = intelliboard(array('history' => json_encode($this->history)), 'saveHistory');
-        $this->history = array();
+        global $DB;
+
+        $DB->insert_records('local_intelliboard_ntf_hst', $this->history);
+        $this->history = [];
     }
+
 
     protected function notification2(&$notification, $events = array())
     {
@@ -116,12 +172,10 @@ class local_intelliboard_notification {
             'action' => $event['action']
         );
 
-        $recipient = get_admin();
-        $recipient->email = $notification['email'];
+        $recipients = $this->get_recipients_by_emails($notification['email']);
+        $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
 
-        $result = $this->prepare_notification($notification, array($result));
-
-        return array(array($recipient), array($result));
+        return array($recipients, $notifications);
     }
 
     protected function notification12(&$notification, $events = array())
@@ -137,13 +191,11 @@ class local_intelliboard_notification {
                 'responseLink' => '<a href="' . ($CFG->wwwroot . '/mod/forum/discuss.php?d=' . $data['other']['discussionid'] . '#p' . $data['objectid']) . '"> Response </a>'
             );
         }
+        
+        $recipients = $this->get_recipients_by_emails($notification['email']);
+        $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, $result));
 
-        $result = $this->prepare_notification($notification, $result);
-
-        $recipient = get_admin();
-        $recipient->email = $notification['email'];
-
-        return array(array($recipient), array($result));
+        return array($recipients, $notifications);
     }
 
     protected function notification13(&$notification, $events = array())
@@ -283,13 +335,10 @@ class local_intelliboard_notification {
             );
         }
 
-        $result = $this->prepare_notification($notification, $result);
+        $recipients = $this->get_recipients_by_emails($notification['email']);
+        $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
 
-        $recipient = get_admin();
-        $recipient->email = $notification['email'];
-
-        return array(array($recipient), array($result));
-
+        return array($recipients, $notifications);
     }
 
     protected function notification17(&$notification, $events = array(), $request_params = array())
@@ -355,7 +404,6 @@ class local_intelliboard_notification {
     protected function prepare_notification($notification, $params = array(), $attachment = array()) {
 
         $buffer = array();
-
         if ($params) {
             foreach ($params as $item) {
                 $buffer[] = $this->transform_tags($notification['message'], $notification['tags'], $item);
@@ -407,7 +455,6 @@ class local_intelliboard_notification {
 
     protected function transform_tags($message, $tags, $values)
     {
-
         $keys = array_map(function($tag) {
             return '[' . $tag . ']';
         }, array_keys($tags));
@@ -519,6 +566,32 @@ class local_intelliboard_notification {
         return $events;
     }
 
+    protected function notification12_event($notification)
+    {
+
+        $sql = '
+            SELECT
+                fp.id as objectid,
+                fp.userid as userid,
+                fd.course as courseid,
+                fd.forum as other_forumid,
+                fp.discussion as other_discussion
+            FROM {forum_posts} as fp
+            INNER JOIN {forum_discussions} as fd ON fd.id = fp.discussion
+            WHERE modified > ?
+       ';
+
+        $params = array($this->get_border_date($notification['frequency']));
+
+        if (!empty($notification['params']['forums'])) {
+            $sql .= " AND fd.forum IN(" . rtrim(str_repeat('?,', count($notification['params']['forums'])), ',') . ")";
+            $params = array_merge($params, $notification['params']['forums']);
+        }
+
+        $sql = 'SELECT t.* FROM (' . $sql . ') AS t';
+        return compact('sql', 'params');
+    }
+
     protected function notification13_event($notification)
     {
 
@@ -602,6 +675,18 @@ class local_intelliboard_notification {
         }
 
         return array('sql' => '', 'params' => array());
+    }
+
+    private function get_recipients_by_emails($emails)
+    {
+        $template = get_admin();
+
+        return array_map(function($email) use ($template) {
+            $user = clone $template;
+            $user->email = $email;
+
+            return $user;
+        }, $emails);
     }
 
 }

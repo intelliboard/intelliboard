@@ -96,6 +96,61 @@
         </INDEXES>
       </TABLE>
 
+      <TABLE NAME="local_intelliboard_ntf" COMMENT="intelliboard notification">
+        <FIELDS>
+          <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+          <FIELD NAME="type" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="externalid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="email" TYPE="text" NOTNULL="false" SEQUENCE="false" />
+          <FIELD NAME="subject" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="message" TYPE="text" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="state" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="attachment" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="tags" TYPE="text" NOTNULL="true" SEQUENCE="false" />
+        </FIELDS>
+        <KEYS>
+          <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        </KEYS>
+        <INDEXES>
+          <INDEX NAME="type_idx" UNIQUE="false" FIELDS="type"/>
+          <INDEX NAME="userid_idx" UNIQUE="false" FIELDS="userid"/>
+          <INDEX NAME="externalid_idx" UNIQUE="true" FIELDS="externalid"/>
+        </INDEXES>
+      </TABLE>
 
+      <TABLE NAME="local_intelliboard_ntf_pms" COMMENT="intelliboard notification params">
+        <FIELDS>
+          <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+          <FIELD NAME="notificationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="name" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="value" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" />
+        </FIELDS>
+        <KEYS>
+          <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        </KEYS>
+        <INDEXES>
+          <INDEX NAME="notificationid_idx" UNIQUE="false" FIELDS="notificationid"/>
+          <INDEX NAME="name_value_idx" UNIQUE="false" FIELDS="name, value"/>
+        </INDEXES>
+      </TABLE>
+
+      <TABLE NAME="local_intelliboard_ntf_hst" COMMENT="intelliboard notification history">
+        <FIELDS>
+          <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+          <FIELD NAME="notificationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="notificationname" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" />
+          <FIELD NAME="email" TYPE="text" NOTNULL="false" SEQUENCE="false" />
+          <FIELD NAME="timesent" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" />
+        </FIELDS>
+        <KEYS>
+          <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        </KEYS>
+        <INDEXES>
+          <INDEX NAME="notificationid_idx" UNIQUE="false" FIELDS="notificationid"/>
+        </INDEXES>
+      </TABLE>
     </TABLES>
   </XMLDB>
