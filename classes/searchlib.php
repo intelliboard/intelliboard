@@ -150,7 +150,10 @@ class local_intelliboard_search extends external_api {
             }
 
             foreach($patterns['patterns'] as $pattern) {
-                $additionalFields = $pattern['additionalFields'] ?? array();
+                $additionalFields = array();
+                if (!empty($pattern['additionalFields'])) {
+                    $additionalFields = $pattern['additionalFields'];
+                }
                 $processed = Helpers\DB::extractParamsFromSentence($pattern['table'], $pattern['column'], $sentence, $params, $pluralize, $escapeSystem, $additionalFields, null, $patterns['prefix']);
 
                 if (!empty($processed['result'])) {
