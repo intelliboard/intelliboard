@@ -24,21 +24,64 @@
  * @website    http://intelliboard.net/
  */
 
+require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
+
 $id = optional_param('id', 0, PARAM_INT);
 $alt_name = get_config('local_intelliboard', 'grades_alt_text');
 $def_name = get_string('grades', 'local_intelliboard');
 $grade_name = ($alt_name) ? $alt_name : $def_name;
 $scale_real = get_config('local_intelliboard', 'scale_real');
+$other_user = optional_param('user', 0, PARAM_INT);
+
+$mentor_role = get_config('local_intelliboard', 't09');
+$show_students = false;
+if ($mentor_role>0){
+    $show_students = intelliboard_instructor_have_access($USER->id);
+
+    if($show_students){
+        $students = $DB->get_records_sql("SELECT u.* 
+                                          FROM {role_assignments} ra 
+                                            JOIN {context} c ON c.id=ra.contextid
+                                            JOIN {user} u ON u.id=c.instanceid
+                                          WHERE ra.roleid=:role AND ra.userid=:userid",array('role'=>$mentor_role, 'userid'=>$USER->id));
+        $users_list = array(0=>fullname($USER));
+        foreach($students as $student){
+            $users_list[$student->id] = fullname($student);
+        }
+    }
+}
+
 ?>
 
 <div class="sheader clearfix">
 	<div class="avatar">
-		<?php echo $OUTPUT->user_picture($USER, array('size'=>75)); ?>
+		<?php echo $OUTPUT->user_picture($showing_user, array('size'=>75)); ?>
 	</div>
-	<div class="info">
-		<h2><?php echo fullname($USER); ?> <i class="ion-checkmark-circled"></i></h2>
-		<p><?php echo format_string($USER->email); ?></p>
-	</div>
+    <?php if($show_students && !empty($students)):?>
+        <div class="info">
+            <div class="intelliboard-dropdown students">
+                <?php foreach($users_list as $key=>$value): ?>
+                    <?php if($key == $other_user): ?>
+                        <button><span value="<?php echo $key; ?>"><?php echo $value; ?></span> <i class="ion-android-arrow-dropdown"></i></button>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+                <ul>
+                    <?php foreach($users_list as $key=>$value): ?>
+                        <?php if($key != $other_user): ?>
+                            <li value="<?php echo $key; ?>"><?php echo $value; ?></li>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <div class="clear"></div>
+            <p><?php echo format_string($showing_user->email); ?></p>
+        </div>
+    <?php else:?>
+        <div class="info">
+            <h2><?php echo fullname($showing_user); ?> <i class="ion-checkmark-circled"></i></h2>
+            <p><?php echo format_string($showing_user->email); ?></p>
+        </div>
+    <?php endif;?>
 	<div class="stats">
 		<ul>
 			<?php if(get_config('local_intelliboard', 't04')): ?>
@@ -53,8 +96,12 @@ $scale_real = get_config('local_intelliboard', 'scale_real');
 			<li><?php echo ($scale_real)?$totals->grade:(int)$totals->grade; ?><span><?php echo get_string('courses_avg_grade', 'local_intelliboard');?></span></li>
 			<?php endif; ?>
 
+			<?php if(get_config('local_intelliboard', 't08')): ?>
+			<li><?php echo $totals->sum_grade; ?><span><?php echo get_string('courses_sum_grade', 'local_intelliboard');?></span></li>
+			<?php endif; ?>
+
 			<?php if(get_config('local_intelliboard', 't07')): ?>
-			<li><a href="<?php echo $CFG->wwwroot; ?>/message/index.php?viewing=unread&id=<?php echo $USER->id; ?>">
+			<li><a href="<?php echo $CFG->wwwroot; ?>/message/index.php?viewing=unread&id=<?php echo $showing_user->id; ?>">
 				<?php echo (int)$totals->messages; ?></a>
 			<span><?php echo get_string('messages', 'local_intelliboard');?></span></li>
 			<?php endif; ?>
@@ -63,13 +110,13 @@ $scale_real = get_config('local_intelliboard', 'scale_real');
 </div>
 <ul class="intelliboard-menu">
 	<?php if(get_config('local_intelliboard', 't2')): ?>
-		<li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
+		<li><a href="index.php<?php echo ($other_user>0)?"?user=".$other_user:"";?>" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
 	<?php endif; ?>
 	<?php if(get_config('local_intelliboard', 't3')): ?>
-		<li><a href="courses.php" <?php echo ($PAGE->pagetype == 'courses')?'class="active"':''; ?>><?php echo get_string('courses', 'local_intelliboard');?></a></li>
+		<li><a href="courses.php<?php echo ($other_user>0)?"?user=".$other_user:"";?>" <?php echo ($PAGE->pagetype == 'courses')?'class="active"':''; ?>><?php echo get_string('courses', 'local_intelliboard');?></a></li>
 	<?php endif; ?>
 	<?php if(get_config('local_intelliboard', 't4')): ?>
-		<li><a href="grades.php" <?php echo ($PAGE->pagetype == 'grades')?'class="active"':''; ?>><?php echo $grade_name;?></a></li>
+		<li><a href="grades.php<?php echo ($other_user>0)?"?user=".$other_user:"";?>" <?php echo ($PAGE->pagetype == 'grades')?'class="active"':''; ?>><?php echo $grade_name;?></a></li>
 	<?php endif; ?>
 
 	<?php if(get_config('local_intelliboard', 't48') and isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
@@ -82,3 +129,30 @@ $scale_real = get_config('local_intelliboard', 'scale_real');
 	</li>
 	<?php endif; ?>
 </ul>
+<?php if($show_students && !empty($students)):?>
+    <script>
+        jQuery(document).ready(function() {
+            jQuery('.sheader .info .intelliboard-dropdown ul li').click(function (e) {
+                var stext = jQuery(this).parent().parent().find('span').text();
+                var svalue = jQuery(this).parent().parent().find('span').attr('value');
+                var ctext = jQuery(this).text();
+                var cvalue = jQuery(this).attr('value');
+
+                jQuery(this).text(stext);
+                jQuery(this).attr('value', svalue);
+                jQuery(this).parent().parent().find('span').text(ctext);
+                jQuery(this).parent().parent().find('span').attr('value', cvalue);
+                jQuery(this).parent().hide();
+                location = "<?php echo $PAGE->url->get_path(); ?>?user=" + cvalue;
+            });
+
+            jQuery('.sheader .info .intelliboard-dropdown button').click(function (e) {
+                e.stopPropagation();
+                if (jQuery(this).parent().hasClass('disabled')) {
+                    return false;
+                }
+                jQuery(this).parent().find('ul').toggle();
+            });
+        });
+    </script>
+<?php endif; ?>

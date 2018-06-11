@@ -6842,8 +6842,9 @@ class local_intelliboard_external extends external_api {
             }
         }
 
-        if(empty($params->courseid))
+        if(empty($params->courseid)){
             return array("data" => array());
+        }
 
         $where_sql .= $this->get_filter_in_sql($params->courseid,'courseid');
         $where_sql .= $this->get_filterdate_sql($params, 'timecreated');

@@ -39,9 +39,7 @@ class local_intelliboard_notificationlib extends external_api {
                             'type'       => new external_value(PARAM_INT, 'Notification type'),
                             'name'       => new external_value(PARAM_TEXT, 'Notification name'),
                             'userid'     => new external_value(PARAM_INT, 'User that created notification'),
-                            'email'      => new external_multiple_structure(
-                                new external_value(PARAM_TEXT, 'Email where this notification should to go')
-                            ),
+                            'email'      => new external_value(PARAM_TEXT, 'Email where this notification should to go'),
                             'subject'    => new external_value(PARAM_TEXT, 'Notification subject'),
                             'message'    => new external_value(PARAM_RAW, 'Notification message'),
                             'attachment' => new external_value(PARAM_TEXT, 'Notification attachment'),
@@ -64,6 +62,7 @@ class local_intelliboard_notificationlib extends external_api {
         $notifications = array_map(function($notification) {
             $notification['params'] = json_decode($notification['params'], true);
             $notification['tags'] = json_decode($notification['tags'], true);
+            $notification['email'] = json_decode($notification['email'], true);
             return $notification;
         }, $notifications);
 
@@ -163,12 +162,6 @@ class local_intelliboard_notificationlib extends external_api {
         return compact('id');
     }
 
-    /**
-     * Returns description of method result value
-     *
-     * @return external_description
-     * @since Moodle 2.5
-     */
     public static function save_notification_returns() {
         return new external_single_structure(
             array(
@@ -232,7 +225,7 @@ class local_intelliboard_notificationlib extends external_api {
                 'order' => new external_single_structure(
                     array(
                         'key'       => new external_value(PARAM_TEXT, 'Order key'),
-                        'direction'  => new external_value(PARAM_INT, 'Order direction'),
+                        'direction'  => new external_value(PARAM_TEXT, 'Order direction'),
                     )
                 )
             )
@@ -261,15 +254,18 @@ class local_intelliboard_notificationlib extends external_api {
             FROM {local_intelliboard_ntf_hst} linh
             WHERE linh.userid = :userid
         ";
+        $countSql = "SELECT COUNT(*) FROM {local_intelliboard_ntf_hst} linh WHERE linh.userid = :userid";
+
         $params = compact('userid');
 
         if ($search) {
             $sql .= ' AND linh.notificationname LIKE :name';
+            $countSql .= ' AND linh.notificationname LIKE :name';
             $params['name'] = '%' . $search . '%';
         }
 
         if ($order) {
-            $direction = $order['direction'] === 2? 'DESC' : 'ASC';
+            $direction = $order['direction'] === 'desc'? 'DESC' : 'ASC';
             $sql .= ' ORDER BY ' . $order['key'] . ' ' . $direction;
         }
 
@@ -281,19 +277,28 @@ class local_intelliboard_notificationlib extends external_api {
             $sql .= ' OFFSET ' . $offset;
         }
 
-        return $DB->get_records_sql($sql, $params);
+        $data = $DB->get_records_sql($sql, $params);
+        $count = $DB->count_records_sql($countSql, $params);
+
+        return compact('data', 'count');
     }
 
     public static function get_history_returns() {
-        return new external_multiple_structure(
-            new external_single_structure(
+        return new external_single_structure(
                 array(
-                    'notificationid' => new external_value(PARAM_INT, 'Notification ID on App'),
-                    'email' => new external_value(PARAM_TEXT, 'Receiver email'),
-                    'timesent' => new external_value(PARAM_INT, 'Notification sending time'),
-                    'notificationname' => new external_value(PARAM_TEXT, 'Notification name'),
+                    'data' => new external_multiple_structure(
+                        new external_single_structure(
+                            array(
+                                'id' => new external_value(PARAM_INT, 'Notification Entry ID'),
+                                'notificationid' => new external_value(PARAM_INT, 'Notification ID on App'),
+                                'email' => new external_value(PARAM_TEXT, 'Receiver email'),
+                                'timesent' => new external_value(PARAM_INT, 'Notification sending time'),
+                                'notificationname' => new external_value(PARAM_TEXT, 'Notification name'),
+                            )
+                        )
+                    ),
+                    'count' => new external_value(PARAM_INT, 'Count of history entries')
                 )
-            )
         );
     }
 

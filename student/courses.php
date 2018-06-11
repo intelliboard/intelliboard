@@ -27,10 +27,12 @@
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
+require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHANUMEXT);
 $search = optional_param('search', '', PARAM_ALPHANUMEXT);
+$other_user = optional_param('user', 0, PARAM_INT);
 
 require_login();
 require_capability('local/intelliboard:students', context_system::instance());
@@ -44,6 +46,12 @@ if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 
 }
 $scale_real = get_config('local_intelliboard', 'scale_real');
 $email = get_config('local_intelliboard', 'te1');
+
+$showing_user = $USER;
+if(get_config('local_intelliboard', 't09')>0 && $other_user>0 && intelliboard_instructor_have_access($USER->id)){
+    $showing_user = core_user::get_user($other_user, '*', MUST_EXIST);
+}
+
 $params = array(
 	'do'=>'learner',
 	'mode'=> 1
@@ -52,7 +60,7 @@ $intelliboard = intelliboard($params);
 $factorInfo = chart_options();
 
 if($courseid and $action == 'details'){
-	$progress = intelliboard_learner_course_progress($courseid, $USER->id);
+	$progress = intelliboard_learner_course_progress($courseid, $showing_user->id);
 	$json_data = array();
 	foreach($progress[0] as $item){
 		$l = '';
@@ -76,7 +84,7 @@ if($courseid and $action == 'details'){
 	exit;
 }
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/courses.php", array("search"=>s($search), "sesskey"=> sesskey())));
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/courses.php", array("search"=>s($search), "sesskey"=> sesskey(), "user"=>$other_user)));
 $PAGE->set_pagetype('courses');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -86,8 +94,8 @@ $PAGE->requires->jquery();
 $PAGE->requires->js('/local/intelliboard/assets/js/jquery.circlechart.js');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 
-$courses = intelliboard_data('courses', $USER->id);
-$totals = intelliboard_learner_totals($USER->id);
+$courses = intelliboard_data('courses', $showing_user->id, $showing_user);
+$totals = intelliboard_learner_totals($showing_user->id);
 
 $t16 = get_config('local_intelliboard', 't16');
 $t17 = get_config('local_intelliboard', 't17');
@@ -221,7 +229,7 @@ echo $OUTPUT->header();
 				jQuery(this).parents('.course-item').addClass('active');
 
 				jQuery.ajax({
-					url: '<?php echo $PAGE->url; ?>&action=details&courseid='+id,
+					url: '<?php echo str_replace('amp;','', $PAGE->url); ?>&action=details&courseid='+id,
 					dataType: "json",
 					beforeSend: function(){
 						jQuery(icon).attr('class','ion-ios-loop-strong ion-spin-animation');

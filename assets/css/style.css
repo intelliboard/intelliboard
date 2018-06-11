@@ -246,6 +246,8 @@
 .intelliboard-dropdown ul li a{color: #333}
 .intelliboard-dropdown ul li:hover{background-color: #f6f6f6; }
 
+.sheader .info .intelliboard-dropdown{float: left;margin-bottom: 5px;}
+
 .s-progress{float: right;width: 180px;}
 .s-progress div{position:relative; border-bottom:3px solid #eee; margin-top: 6px;font-size:13px;}
 .s-progress div .text{float: left;}

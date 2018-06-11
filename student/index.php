@@ -27,6 +27,7 @@
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
+require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 
 require_login();
 require_capability('local/intelliboard:students', context_system::instance());
@@ -53,24 +54,30 @@ $action = optional_param('action', '', PARAM_ALPHANUMEXT);
 $search = clean_raw(optional_param('search', '', PARAM_RAW));
 $type = optional_param('type', '', PARAM_ALPHANUMEXT);
 $time = optional_param('time', 0, PARAM_INT);
+$other_user = optional_param('user', 0, PARAM_INT);
 
 $activity_setting = optional_param('activity_setting', 0, PARAM_INT);
 $activity_courses = optional_param('activity_courses', 0, PARAM_INT);
 $activity_time = optional_param('activity_time', 0, PARAM_INT);
 
+$showing_user = $USER;
+if(get_config('local_intelliboard', 't09')>0 && $other_user>0 && intelliboard_instructor_have_access($USER->id)){
+    $showing_user = core_user::get_user($other_user, '*', MUST_EXIST);
+}
+
 if($activity_setting){
-    $USER->activity_courses = $activity_courses;
-    $USER->activity_time = $activity_time;
+    $showing_user->activity_courses = $activity_courses;
+    $showing_user->activity_time = $activity_time;
 }else{
-    $USER->activity_courses = (isset($USER->activity_courses))?$USER->activity_courses:0;
-    $USER->activity_time = (isset($USER->activity_time))?$USER->activity_time:-1;
+    $showing_user->activity_courses = (isset($showing_user->activity_courses))?$showing_user->activity_courses:0;
+    $showing_user->activity_time = (isset($showing_user->activity_time))?$showing_user->activity_time:-1;
 }
 
 if ($search or $activity_setting) {
     require_sesskey();
 }
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/index.php", array("type"=>s($type), "search"=>s($search), "sesskey"=> sesskey())));
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/index.php", array("type"=>s($type), "search"=>s($search), "sesskey"=> sesskey(), "user"=>$other_user)));
 $PAGE->set_pagetype('home');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -101,24 +108,24 @@ $t37 = get_config('local_intelliboard', 't37');
 $t38 = get_config('local_intelliboard', 't38');
 $scale_real = get_config('local_intelliboard', 'scale_real');
 
-$courses = intelliboard_learner_courses($USER->id);
-$totals = intelliboard_learner_totals($USER->id);
+$courses = intelliboard_learner_courses($showing_user->id);
+$totals = intelliboard_learner_totals($showing_user->id);
 
 if($t12 or $t13){
-    $modules_progress = intelliboard_learner_modules($USER->id);
+    $modules_progress = intelliboard_learner_modules($showing_user->id);
 }
 if($t9){
-    $assignments = intelliboard_data('assignment', $USER->id);
+    $assignments = intelliboard_data('assignment', $showing_user->id, $showing_user);
 }
 if($t10){
-    $quizes = intelliboard_data('quiz', $USER->id);
+    $quizes = intelliboard_data('quiz', $showing_user->id, $showing_user);
 }
 if($t11){
-    $courses_report = intelliboard_data('course', $USER->id);
+    $courses_report = intelliboard_data('course', $showing_user->id, $showing_user);
 }
 
 if($t5){
-    $progress = intelliboard_learner_progress($time, $USER->id);
+    $progress = intelliboard_learner_progress($time, $showing_user->id);
     $json_data = array();
 
     if (count($progress[0]) < 2){
@@ -389,7 +396,7 @@ echo $OUTPUT->header();
                                         <select name="activity_courses" class="form-control">
                                             <option><?php echo get_string('all_courses', 'local_intelliboard'); ?></option>
                                             <?php foreach($courses as $row):  ?>
-                                                <option <?php echo ($USER->activity_courses == $row->id)?'selected="selected"':''; ?> value="<?php echo $row->id; ?>"><?php echo format_string($row->fullname); ?></option>
+                                                <option <?php echo ($showing_user->activity_courses == $row->id)?'selected="selected"':''; ?> value="<?php echo $row->id; ?>"><?php echo format_string($row->fullname); ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
@@ -399,7 +406,7 @@ echo $OUTPUT->header();
                                         <select id="activity_time" name="activity_time" class="form-control">
                                             <option value="-1"><?php echo get_string('all_data', 'local_intelliboard'); ?></option>
                                             <?php foreach($menu as $key=>$value): ?>
-                                                <option <?php echo ($USER->activity_time == $key)?'selected="selected"':''; ?> value="<?php echo s($key); ?>"><?php echo format_string($value); ?></option>
+                                                <option <?php echo ($showing_user->activity_time == $key)?'selected="selected"':''; ?> value="<?php echo s($key); ?>"><?php echo format_string($value); ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
@@ -561,7 +568,7 @@ echo $OUTPUT->header();
     <script type="text/javascript">
         jQuery(document).ready(function(){
             jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesCalculation); ?>);
-            jQuery('.intelliboard-dropdown ul li').click(function(e){
+            jQuery('.intelliboard-dropdown:not(.students) ul li').click(function(e){
                 var stext = jQuery(this).parent().parent().find('span').text();
                 var svalue = jQuery(this).parent().parent().find('span').attr('value');
                 var ctext = jQuery(this).text();
@@ -572,10 +579,10 @@ echo $OUTPUT->header();
                 jQuery(this).parent().parent().find('span').text(ctext);
                 jQuery(this).parent().parent().find('span').attr('value', cvalue);
                 jQuery(this).parent().hide();
-                location = "<?php echo $CFG->wwwroot; ?>/local/intelliboard/student/index.php?userid=<?php echo $USER->id; ?>&time="+cvalue;
+                location = "<?php echo $CFG->wwwroot; ?>/local/intelliboard/student/index.php?userid=<?php echo $showing_user->id; ?>&time="+cvalue+"&user=<?php echo $other_user; ?>";
             });
 
-            jQuery('.intelliboard-dropdown button').click(function(e){
+            jQuery('.intelliboard-dropdown:not(.students) button').click(function(e){
                 if(jQuery(this).parent().hasClass('disabled')){
                     return false;
                 }
@@ -632,9 +639,9 @@ echo $OUTPUT->header();
                 jQuery(this).addClass("active");
                 jQuery(this).parent().parent().find('.intelliboard-chart-dash').hide().eq(jQuery(this).index()).show();
                 if(jQuery(this).hasClass('nofilter')){
-                    jQuery('.intelliboard-dropdown').addClass('disabled');
+                    jQuery('.intelliboard-dropdown:not(.students)').addClass('disabled');
                 }else{
-                    jQuery('.intelliboard-dropdown').removeClass('disabled');
+                    jQuery('.intelliboard-dropdown:not(.students)').removeClass('disabled');
                 }
             });
 

@@ -114,6 +114,8 @@ $string['t04'] = 'Enable [header] Completed courses';
 $string['t05'] = 'Enable [header] Courses in progress';
 $string['t06'] = 'Enable [header] Courses avg. grade';
 $string['t07'] = 'Enable [header] Messages';
+$string['t08'] = 'Enable [header] Courses sum. grade';
+$string['t09'] = 'Instructor can see own students';
 $string['t1'] = 'Enable Learner Dashboard';
 $string['t2'] = 'Enable Dashboard';
 $string['t3'] = 'Enable Courses';
@@ -225,6 +227,7 @@ $string['failed'] = 'Failed';
 $string['completed_courses'] = 'Completed courses';
 $string['courses_in_progress'] = 'Courses in progress';
 $string['courses_avg_grade'] = 'Courses avg. grade';
+$string['courses_sum_grade'] = 'Courses sum. grade';
 $string['grades'] = 'Grades';
 $string['messages'] = 'Messages';
 $string['x_completions'] = '{$a} Completions';
@@ -480,6 +483,10 @@ $string['monitorselect'] = 'Please select at least one monitor from App.IntelliB
 $string['select_user'] = 'Select user';
 $string['course_max_grade'] = 'Course max grade';
 
+$string['no_data_notification'] = 'There is no new data for [date]';
+$string['last_hour'] = 'hour';
+$string['last_day'] = 'day';
+
 
 $string['privacy:metadata:local_intelliboard_assign:rel'] = 'Rel type of record';
 $string['privacy:metadata:local_intelliboard_assign:type'] = 'Moodle Instance Type';
@@ -532,6 +539,8 @@ $string['privacy:metadata:local_intelliboard_ntf_hst:userid'] = 'Notification Ex
 $string['privacy:metadata:local_intelliboard_ntf_hst:notificationname'] = 'Notification name';
 $string['privacy:metadata:local_intelliboard_ntf_hst:email'] = 'Notification history email';
 $string['privacy:metadata:local_intelliboard_ntf_hst:timesent'] = 'Notification history timestamp';
+
+$string['select_manager_role'] = 'Select manager role';
 
 
 

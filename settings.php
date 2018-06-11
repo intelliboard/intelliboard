@@ -342,9 +342,30 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/t08';
+        $title = new lang_string('t08', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
         $name = 'local_intelliboard/t07';
         $title = new lang_string('t07', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $roles_user = $DB->get_records_sql("SELECT r.* 
+                                            FROM {role} r 
+                                              LEFT JOIN {role_context_levels} rcl ON rcl.roleid=r.id
+                                            WHERE rcl.contextlevel=:contextlevel GROUP BY r.id",array('contextlevel'=>CONTEXT_USER));
+        $roles_user = role_fix_names($roles_user);
+        $roles_user_arr = array('0'=>get_string('disable'));
+        foreach($roles_user as $role){
+            $roles_user_arr[$role->id] = $role->localname;
+        }
+
+        $name = 'local_intelliboard/t09';
+        $title = new lang_string('t09', 'local_intelliboard');
+        $desc = new lang_string('select_manager_role', 'local_intelliboard');
+        $setting = new admin_setting_configselect($name, $title, $desc, 0, $roles_user_arr);
         $settings->add($setting);
 
         $settings->add(new admin_setting_heading('local_intelliboard/ts2', new lang_string('ts2', 'local_intelliboard'), ''));

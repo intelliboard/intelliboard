@@ -28,9 +28,11 @@ require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
 require_once($CFG->dirroot .'/local/intelliboard/student/tables.php');
+require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 
 $id = optional_param('id', 0, PARAM_INT);
 $search = clean_raw(optional_param('search', '', PARAM_TEXT));
+$other_user = optional_param('user', 0, PARAM_INT);
 
 require_login();
 require_capability('local/intelliboard:students', context_system::instance());
@@ -42,6 +44,11 @@ if ($search) {
 if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 't4')){
 	throw new moodle_exception('invalidaccess', 'error');
 }
+
+$showing_user = $USER;
+if(get_config('local_intelliboard', 't09')>0 && $other_user>0 && intelliboard_instructor_have_access($USER->id)){
+    $showing_user = core_user::get_user($other_user, '*', MUST_EXIST);
+}
 $email = get_config('local_intelliboard', 'te1');
 $params = array(
 	'do'=>'learner',
@@ -50,7 +57,7 @@ $params = array(
 $intelliboard = intelliboard($params);
 $factorInfo = chart_options();
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>s($search), "id"=>$id, "sesskey"=> sesskey())));
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>s($search), "id"=>$id, "sesskey"=> sesskey(), "user"=>$other_user)));
 $PAGE->set_pagetype('grades');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -61,12 +68,12 @@ $PAGE->requires->js('/local/intelliboard/assets/js/jquery.circlechart.js');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 
 
-$totals = intelliboard_learner_totals($USER->id);
+$totals = intelliboard_learner_totals($showing_user->id);
 if($id){
-	$table = new intelliboard_activities_grades_table('table', $USER->id, $id, s($search));
-	$course = intelliboard_learner_course($USER->id, $id);
+	$table = new intelliboard_activities_grades_table('table', $showing_user->id, $id, s($search));
+	$course = intelliboard_learner_course($showing_user->id, $id);
 }else{
-	$table = new intelliboard_courses_grades_table('table', $USER->id, s($search));
+	$table = new intelliboard_courses_grades_table('table', $showing_user->id, s($search));
 }
 $table->show_download_buttons_at(array());
 $table->is_downloading('', '', '');

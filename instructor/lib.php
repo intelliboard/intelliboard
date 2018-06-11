@@ -826,3 +826,18 @@ function getWidgetFilters($id, $filters = array(), $params)
 
     return $html;
 }
+
+function intelliboard_instructor_have_access($userid){
+    $instructor_roles = get_config('local_intelliboard', 'filter10');
+    if (!empty($instructor_roles)) {
+        $roles = explode(',', $instructor_roles);
+        if (!empty($roles)) {
+            foreach ($roles as $role) {
+                if ($role and user_has_role_assignment($userid, $role)){
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}

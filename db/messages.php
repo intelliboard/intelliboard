@@ -17,15 +17,17 @@
 /**
  * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
- *
  * @package    local_intelliboard
- * @copyright  2017 IntelliBoard, Inc
+ * @copyright  2018 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    https://intelliboard.net/
+ * @website    http://intelliboard.net/
  */
 
-$plugin->version  = 2018061100;
-$plugin->requires = 2011120500;
-$plugin->release = '5.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+$messageproviders = array (
+
+    // checkout notification
+    'intelliboard_notification' => array (
+    ),
+
+
+);

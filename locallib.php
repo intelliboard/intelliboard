@@ -283,6 +283,7 @@ function intelliboard_export_xls($json, $filename, $type = 1)
     $worksheet = array();
     $worksheet[0] = $workbook->add_worksheet('');
     $rowno = 0; $colno = 0;
+
     foreach ($json->header as $col) {
         $worksheet[0]->write($rowno, $colno, $col->name);
         $colno++;

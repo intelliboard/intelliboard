@@ -38,7 +38,7 @@ class local_intelliboard_search extends external_api {
                 'length' => new external_value(PARAM_ALPHANUM, 'How many values return'),
                 'like'  => new external_value(PARAM_ALPHANUM, 'Like filter'),
                 'id' => new external_value(PARAM_ALPHANUM, 'Search between existing ids'),
-                'filters' => new external_value(PARAM_TEXT, 'additionalFilters'),
+                'filters' => new external_value(PARAM_TEXT, 'Additional Filters'),
                 'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters')
             ))
         ));
@@ -150,7 +150,7 @@ class local_intelliboard_search extends external_api {
             }
 
             foreach($patterns['patterns'] as $pattern) {
-                $additionalFields = $pattern['additionalFields'] ?? array();
+                $additionalFields = !empty($pattern['additionalFields'])? $pattern['additionalFields'] : array();
                 $processed = Helpers\DB::extractParamsFromSentence($pattern['table'], $pattern['column'], $sentence, $params, $pluralize, $escapeSystem, $additionalFields, null, $patterns['prefix']);
 
                 if (!empty($processed['result'])) {

@@ -26,8 +26,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-function intelliboard_data($type, $userid) {
-    global $DB, $USER;
+function intelliboard_data($type, $userid, $showing_user) {
+    global $DB;
 
     $data = array();
     $page = optional_param($type.'_page', 0, PARAM_INT);
@@ -47,15 +47,15 @@ function intelliboard_data($type, $userid) {
             $params['fullname'] = "%$search%";
             $params['name'] = "%$search%";
         }
-        if($USER->activity_courses){
+        if($showing_user->activity_courses){
             $sql .= " AND c.id = :activity_courses";
-            $params['activity_courses'] = intval($USER->activity_courses);
+            $params['activity_courses'] = intval($showing_user->activity_courses);
         }else{
             $sql .= " AND c.id IN (SELECT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.userid = :userid1 AND e.id = ue.enrolid )";
-            $params['userid1'] = $USER->id;
+            $params['userid1'] = $showing_user->id;
         }
-        if($USER->activity_time !== -1){
-            list($timestart, $timefinish) = get_timerange($USER->activity_time);
+        if($showing_user->activity_time !== -1){
+            list($timestart, $timefinish) = get_timerange($showing_user->activity_time);
             $sql .= " AND a.duedate BETWEEN :timestart AND :timefinish";
             $params['timestart'] = $timestart;
             $params['timefinish'] = $timefinish;
@@ -83,15 +83,15 @@ function intelliboard_data($type, $userid) {
             $params['name'] = "%$search%";
         }
 
-        if($USER->activity_courses){
+        if($showing_user->activity_courses){
             $sql .= " AND c.id = :activity_courses";
-            $params['activity_courses'] = intval($USER->activity_courses);
+            $params['activity_courses'] = intval($showing_user->activity_courses);
         }else{
             $sql .= " AND c.id IN (SELECT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.userid = :userid AND e.id = ue.enrolid )";
-            $params['userid'] = $USER->id;
+            $params['userid'] = $showing_user->id;
         }
-        if($USER->activity_time !== -1){
-            list($timestart, $timefinish) = get_timerange($USER->activity_time);
+        if($showing_user->activity_time !== -1){
+            list($timestart, $timefinish) = get_timerange($showing_user->activity_time);
             $sql .= " AND a.timeclose BETWEEN :timestart AND :timefinish";
             $params['timestart'] = $timestart;
             $params['timefinish'] = $timefinish;
@@ -353,7 +353,7 @@ function intelliboard_learner_totals($userid){
 
     $grade_avg = intelliboard_grade_sql(true);
 
-    return $DB->get_record_sql("SELECT
+    $data = $DB->get_record_sql("SELECT
                                     (SELECT count(distinct e.courseid) FROM {user_enrolments} ue, {enrol} e WHERE e.status = 0 AND ue.status = 0 AND ue.userid = :userid1 AND e.id = ue.enrolid) AS enrolled,
                                     (SELECT count(id) FROM {message} WHERE useridto = :userid2) AS messages,
                                     (SELECT count(distinct course) FROM {course_completions} WHERE userid = :userid3 AND timecompleted > 0) AS completed,
@@ -364,6 +364,151 @@ function intelliboard_learner_totals($userid){
                                     (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.userid != :userid8 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid AND gi.courseid IN (
                                         SELECT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE e.status = 0 AND ue.status = 0 AND ue.userid = :userid9 AND e.id = ue.enrolid)) as average,
                                     (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.userid = :userid10 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid) as grade", $params);
+
+    if(get_config('local_intelliboard', 't08')){
+        $sum_grade = $DB->get_record_sql("SELECT
+                          (CASE WHEN (AVG((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'))=MIN((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype')))
+                                     OR (AVG((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype')) IS NULL AND MIN((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype')) IS NULL)
+                            THEN (CASE MIN((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'))
+                                  WHEN 1 THEN ROUND(SUM(g.finalgrade), 0)
+                                  WHEN 12 THEN ROUND(SUM(g.finalgrade), 0)
+                                  WHEN 13 THEN ROUND(SUM(g.finalgrade), 0)
+                                  WHEN 2 THEN CONCAT(ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0),'%')
+                                  WHEN 21 THEN CONCAT(ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0),
+                                                      '% (',CASE MIN(gi.gradetype)
+                                                            WHEN 1 THEN ROUND(AVG(g.finalgrade), 0)
+                                                            WHEN 2 THEN (SELECT
+                                                                           SUBSTRING_INDEX(SUBSTRING_INDEX(scale, ',', ROUND(AVG(g.finalgrade))), ',', -1)
+                                                                         FROM {scale} s WHERE s.id=MIN(gi.scaleid))
+                                                            WHEN 3 THEN GROUP_CONCAT(DISTINCT g.feedback ORDER BY g.feedback ASC SEPARATOR '; ')
+                                                            END,')')
+                                  WHEN 23 THEN CONCAT(ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0),
+                                                      '% (',CASE WHEN (SELECT gl.letter
+                                                                       FROM {grade_letters} gl, {context} ctx
+                                                                                                WHERE ctx.contextlevel=50 AND ctx.instanceid=MIN(gi.courseid) AND gl.contextid=ctx.id AND gl.lowerboundary>=ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0)
+                                                                       ORDER BY gl.lowerboundary
+                                                                       LIMIT 1) IS NOT NULL
+                                                            THEN (SELECT gl.letter
+                                                                  FROM {grade_letters} gl, {context} ctx
+                                                                                           WHERE ctx.contextlevel=50 AND ctx.instanceid=MIN(gi.courseid) AND gl.contextid=ctx.id AND gl.lowerboundary>=ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0)
+                                                                  ORDER BY gl.lowerboundary
+                                                                  LIMIT 1)
+                                                            ELSE
+                                                              CASE
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 93 THEN 'A'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 90 THEN 'A-'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 87 THEN 'B+'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 83 THEN 'B'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 80 THEN 'B-'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 77 THEN 'C+'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 73 THEN 'C'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 70 THEN 'C-'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 67 THEN 'D+'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 60 THEN 'D'
+                                                              WHEN ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 0 THEN 'F'
+                                                              ELSE ''
+                                                              END
+                                                            END,')')
+                                  WHEN 3 THEN CASE WHEN (SELECT gl.letter
+                                                         FROM {grade_letters} gl, {context} ctx
+                                                                                  WHERE ctx.contextlevel=50 AND ctx.instanceid=MIN(gi.courseid) AND gl.contextid=ctx.id AND gl.lowerboundary>=ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0)
+                                                         ORDER BY gl.lowerboundary
+                                                         LIMIT 1) IS NOT NULL
+                                              THEN (SELECT gl.letter
+                                                    FROM {grade_letters} gl, {context} ctx
+                                                                             WHERE ctx.contextlevel=50 AND ctx.instanceid=MIN(gi.courseid) AND gl.contextid=ctx.id AND gl.lowerboundary>=ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0)
+                                                    ORDER BY gl.lowerboundary
+                                                    LIMIT 1)
+                                              ELSE
+                                                CASE
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 93 THEN 'A'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 90 THEN 'A-'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 87 THEN 'B+'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 83 THEN 'B'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 80 THEN 'B-'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 77 THEN 'C+'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 73 THEN 'C'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 70 THEN 'C-'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 67 THEN 'D+'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 60 THEN 'D'
+                                                WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 0 THEN 'F'
+                                                ELSE ''
+                                                END
+                                              END
+                                  WHEN 31 THEN CONCAT(CASE WHEN (SELECT gl.letter
+                                                                 FROM {grade_letters} gl, {context} ctx
+                                                                                          WHERE ctx.contextlevel=50 AND ctx.instanceid=MIN(gi.courseid) AND gl.contextid=ctx.id AND gl.lowerboundary>=ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0)
+                                                                 ORDER BY gl.lowerboundary
+                                                                 LIMIT 1) IS NOT NULL
+                                                      THEN (SELECT gl.letter
+                                                            FROM {grade_letters} gl, {context} ctx
+                                                                                     WHERE ctx.contextlevel=50 AND ctx.instanceid=MIN(gi.courseid) AND gl.contextid=ctx.id AND gl.lowerboundary>=ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0)
+                                                            ORDER BY gl.lowerboundary
+                                                            LIMIT 1)
+                                                      ELSE
+                                                        CASE
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 93 THEN 'A'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 90 THEN 'A-'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 87 THEN 'B+'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 83 THEN 'B'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 80 THEN 'B-'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 77 THEN 'C+'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 73 THEN 'C'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 70 THEN 'C-'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 67 THEN 'D+'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 60 THEN 'D'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 0 THEN 'F'
+                                                        ELSE ''
+                                                        END
+                                                      END ,' (', CASE MIN(gi.gradetype)
+                                                                 WHEN 1 THEN ROUND(MIN(g.finalgrade), 0)
+                                                                 WHEN 2 THEN (SELECT
+                                                                                SUBSTRING_INDEX(SUBSTRING_INDEX(scale, ',', ROUND(MIN(g.finalgrade))), ',', -1)
+                                                                              FROM {scale} s WHERE s.id=MIN(gi.scaleid))
+                                                                 WHEN 3 THEN GROUP_CONCAT(DISTINCT g.feedback ORDER BY g.feedback ASC SEPARATOR '; ')
+                                                                 END, ')')
+                                  WHEN 32 THEN CONCAT(CASE WHEN (SELECT gl.letter
+                                                                 FROM {grade_letters} gl, {context} ctx
+                                                                                          WHERE ctx.contextlevel=50 AND ctx.instanceid=MIN(gi.courseid) AND gl.contextid=ctx.id AND gl.lowerboundary>=ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0)
+                                                                 ORDER BY gl.lowerboundary
+                                                                 LIMIT 1) IS NOT NULL
+                                                      THEN (SELECT gl.letter
+                                                            FROM {grade_letters} gl, {context} ctx
+                                                                                     WHERE ctx.contextlevel=50 AND ctx.instanceid=MIN(gi.courseid) AND gl.contextid=ctx.id AND gl.lowerboundary>=ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0)
+                                                            ORDER BY gl.lowerboundary
+                                                            LIMIT 1)
+                                                      ELSE
+                                                        CASE
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 93 THEN 'A'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 90 THEN 'A-'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 87 THEN 'B+'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 83 THEN 'B'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 80 THEN 'B-'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 77 THEN 'C+'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 73 THEN 'C'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 70 THEN 'C-'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 67 THEN 'D+'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 60 THEN 'D'
+                                                        WHEN ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0) >= 0 THEN 'F'
+                                                        ELSE ''
+                                                        END
+                                                      END ,' (', ROUND(MIN(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0), '%)')
+                                  ELSE CONCAT(ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0),'%')
+                                  END)
+                           ELSE CONCAT(ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0),'%')
+                           END ) AS grade
+                        
+                        FROM {user_enrolments} ue
+                          JOIN {enrol} e ON e.id = ue.enrolid
+                          JOIN {course} c ON c.id = e.courseid
+                          JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='course'
+                          JOIN {grade_grades} g ON g.itemid=gi.id AND g.userid=ue.userid
+                        WHERE ue.userid = :userid1 AND c.visible = 1 AND c.id IN(2,21)", $params);
+
+        $data->sum_grade = (!empty($sum_grade->grade))?$sum_grade->grade:'-';
+    }
+
+    return $data;
 }
 function intelliboard_learner_course($userid, $courseid){
     global $DB;

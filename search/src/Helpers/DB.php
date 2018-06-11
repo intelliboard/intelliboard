@@ -105,7 +105,9 @@ class DB {
         static::applyFilters($table, $column, $getter, $types, $alias, $settings, $paramFilters, $additionalFields);
 
         if ($like) {
-            $getter->add('filters', "LOWER($column) LIKE LOWER('%$like%')");
+            $getter->add('filters', "LOWER($column) LIKE LOWER(:like)");
+            $getter->setParam('like', "%$like%");
+
         }
 
         if ($id) {
@@ -356,7 +358,7 @@ class DB {
         $moduleFilter        = !empty($paramFilters['module']) ? $paramFilters['module']       : false;
         $userInfoDataFilter  = !empty($paramFilters['userdata']) ? $paramFilters['userdata']   : false;
         $userInfoFieldFilter = !empty($paramFilters['userfield']) ? $paramFilters['userfield'] : false;
-        $userFilter          = !empty($paramFilters['user']) ? $paramFilters['user'] : false;
+        $userFilter          = !empty($paramFilters['user']) ? $paramFilters['user']           : false;
 
         $pluginTypes = array('certificate', 'questionnaire');
 
@@ -453,7 +455,11 @@ class DB {
 
             if ($teacherFilter) {
                 $getter->add('tables', 'INNER JOIN {context} AS ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50');
-                $getter->add('tables', 'INNER JOIN {role_assignments} AS ra ON ra.contextid = ctx.id AND ra.roleid IN(' . $settings['teacher_roles'] . ')');
+
+                $sql = 'INNER JOIN {role_assignments} AS ra ON ra.contextid = ctx.id AND ra.roleid';
+                $roles = explode(',', $settings['teacher_roles']);
+
+                ParamGetter::in_sql($getter, 'tables', $sql, $roles);
                 $getter->add('filters', 'ra.userid = :teacher');
                 $getter->setParam('teacher', $teacherFilter);
             }
@@ -522,10 +528,10 @@ class DB {
 
             switch($originalColumn) {
                 case 'student':
-                    $getter->add('filters', 'r.id IN (' . $settings['learner_roles'] . ')');
+                    ParamGetter::in_sql($getter, 'filters', 'r.id', explode(',', $settings['learner_roles']));
                     break;
                 case 'teacher':
-                    $getter->add('filters', 'r.id IN (' . $settings['teacher_roles'] . ')');
+                    ParamGetter::in_sql($getter, 'filters', 'r.id', explode(',', $settings['teacher_roles']));
                     break;
                 case 'user':
                     break;
@@ -599,8 +605,8 @@ class DB {
     protected static function addAdditionalFields ($getter, $column, $additionalFields = array(), $alias = false) {
         $alias = $alias? $alias . '.' : '';
         if ($additionalFields) {
-
             foreach ($additionalFields as $name => $field) {
+                $field = preg_replace('/\s+/', '', $field);
                 if (strpos($field, '.') === false) {
                     $getter->add('columns', $alias . $field . " as $name");
                 } else {
@@ -629,6 +635,9 @@ class DB {
                 $table = TablesContainer::getById($table)['sql'];
             }
 
+            $column = preg_replace('/\s+/', '', $column);
+            $table = preg_replace('/\s+/', '', $table);
+
             static::init();
 
             $table = trim($table, '{}');
@@ -650,7 +659,8 @@ class DB {
         static::$initialized = false;
     }
 
-    public static function detectType($table) {
+    public static function detectType($table)
+    {
         global $DB;
 
         if(in_array($table, array('teacher', 'user', 'student'))) {
@@ -667,7 +677,8 @@ class DB {
 
     }
 
-    protected static function getOperator($operator) {
+    protected static function getOperator($operator)
+    {
         global $CFG;
 
         $val = static::$operators[$operator];
