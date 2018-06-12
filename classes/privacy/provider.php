@@ -25,25 +25,23 @@
 
 namespace local_intelliboard\privacy;
 
-use core_privacy\local\metadata\collection;
-use core_privacy\local\request\approved_contextlist;
-use core_privacy\local\request\contextlist;
-use core_privacy\local\request\transform;
-
 defined('MOODLE_INTERNAL') || die();
 
+use core_privacy\local\metadata\collection;
+use core_privacy\local\request\contextlist;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\transform;
+use core_privacy\local\request\writer;
+
 /**
- * Implementation of the privacy subsystem plugin provider for the intelliboard activity module.
+ * Privacy class for requesting user data.
  *
- * @copyright  2018 Andrew Nicols <andrew@nicols.co.uk>
+ * @copyright  2018 Sara Arjona <sara@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements
         \core_privacy\local\metadata\provider,
-
-        \core_privacy\local\request\subsystem\provider,
-
-        \core_privacy\local\request\subsystem\plugin_provider {
+        \core_privacy\local\request\plugin\provider {
 
     /**
      * Returns meta data about this system.
@@ -51,9 +49,9 @@ class provider implements
      * @param   collection     $items The initialised collection to add items to.
      * @return  collection     A listing of user data stored through this system.
      */
-    public static function get_metadata(collection $items) : collection {
+    public static function get_metadata(collection $collection) {
         // The 'local_intelliboard_tracking' table stores the metadata about what [managers] can see in the reports.
-        $items->add_database_table('local_intelliboard_assign', [
+        $collection->add_database_table('local_intelliboard_assign', [
             'userid' => 'privacy:metadata:local_intelliboard_assign:userid',
             'rel' => 'privacy:metadata:local_intelliboard_assign:rel',
             'type' => 'privacy:metadata:local_intelliboard_assign:type',
@@ -62,7 +60,7 @@ class provider implements
         ], 'privacy:metadata:local_intelliboard_assign');
 
         // The 'local_intelliboard_details' table stores the metadata about timespent per-hour.
-        $items->add_database_table('local_intelliboard_details', [
+        $collection->add_database_table('local_intelliboard_details', [
             'logid' => 'privacy:metadata:local_intelliboard_details:logid',
             'visits' => 'privacy:metadata:local_intelliboard_details:visits',
             'timespend' => 'privacy:metadata:local_intelliboard_details:timespend',
@@ -70,7 +68,7 @@ class provider implements
         ], 'privacy:metadata:local_intelliboard_details');
 
         // The 'local_intelliboard_logs' table stores information about timespent per-day.
-        $items->add_database_table('local_intelliboard_logs', [
+        $collection->add_database_table('local_intelliboard_logs', [
             'trackid' => 'privacy:metadata:local_intelliboard_logs:trackid',
             'visits' => 'privacy:metadata:local_intelliboard_logs:visits',
             'timespend' => 'privacy:metadata:local_intelliboard_logs:timespend',
@@ -78,7 +76,7 @@ class provider implements
         ], 'privacy:metadata:local_intelliboard_logs');
 
         // The 'local_intelliboard_totals' table stores information about totals on a site.
-        $items->add_database_table('local_intelliboard_totals', [
+        $collection->add_database_table('local_intelliboard_totals', [
             'sessions' => 'privacy:metadata:local_intelliboard_totals:sessions',
             'courses' => 'privacy:metadata:local_intelliboard_totals:courses',
             'visits' => 'privacy:metadata:local_intelliboard_totals:visits',
@@ -87,7 +85,7 @@ class provider implements
         ], 'privacy:metadata:local_intelliboard_totals');
 
         // The 'local_intelliboard_tracking' table stores the metadata about visits and time.
-        $items->add_database_table('local_intelliboard_tracking', [
+        $collection->add_database_table('local_intelliboard_tracking', [
             'userid' => 'privacy:metadata:local_intelliboard_tracking:userid',
             'courseid' => 'privacy:metadata:local_intelliboard_tracking:courseid',
             'page' => 'privacy:metadata:local_intelliboard_tracking:page',
@@ -103,7 +101,7 @@ class provider implements
         ], 'privacy:metadata:local_intelliboard_tracking');
 
          // The 'local_intelliboard_ntf' table stores information about notification.
-        $items->add_database_table('local_intelliboard_ntf', [
+        $collection->add_database_table('local_intelliboard_ntf', [
             'id' => 'privacy:metadata:local_intelliboard_ntf:id',
             'type' => 'privacy:metadata:local_intelliboard_ntf:type',
             'externalid' => 'privacy:metadata:local_intelliboard_ntf:externalid',
@@ -117,7 +115,7 @@ class provider implements
         ], 'privacy:metadata:local_intelliboard_ntf');
 
          // The 'local_intelliboard_ntf_hst' table stores information about notification history.
-        $items->add_database_table('local_intelliboard_ntf_hst', [
+        $collection->add_database_table('local_intelliboard_ntf_hst', [
             'id' => 'privacy:metadata:local_intelliboard_ntf_hst:id',
             'notificationid' => 'privacy:metadata:local_intelliboard_ntf_hst:notificationid',
             'userid' => 'privacy:metadata:local_intelliboard_ntf_hst:userid',
@@ -126,7 +124,7 @@ class provider implements
             'timesent' => 'privacy:metadata:local_intelliboard_ntf_hst:timesent',
         ], 'privacy:metadata:local_intelliboard_ntf_hst');
 
-        return $items;
+        return $collection;
     }
 
     /**
@@ -137,7 +135,7 @@ class provider implements
      * @param   int         $userid     The user to search.
      * @return  contextlist   $contextlist  The contextlist containing the list of contexts used in this plugin.
      */
-    public static function get_contexts_for_userid(int $userid) : \core_privacy\local\request\contextlist {
+    public static function get_contexts_for_userid($userid) {
         return new contextlist();
     }
 
