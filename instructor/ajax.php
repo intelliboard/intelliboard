@@ -66,6 +66,7 @@ if($action == 'get_total_students'){
     list($sql4, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     list($sql5, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     list($sql6, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+    $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
 
     $data = $DB->get_record_sql("
@@ -80,6 +81,7 @@ if($action == 'get_total_students'){
                         LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
                         LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=lit.courseid
                         LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=lit.userid $sql4
+                        $join_sql1
                        WHERE lit.courseid IN (
                                SELECT DISTINCT ctx.instanceid
                                FROM {role_assignments} ra, {context} ctx
@@ -94,6 +96,7 @@ if($action == 'get_total_students'){
                      LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
                      LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=lit.courseid
                      LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=lit.userid $sql5
+                     $join_sql1
                    WHERE lit.courseid IN (
                            SELECT DISTINCT ctx.instanceid
                            FROM {role_assignments} ra, {context} ctx
@@ -105,6 +108,7 @@ if($action == 'get_total_students'){
                   LEFT JOIN {user_enrolments} ue ON ue.status=0 AND ue.enrolid=e.id
                   LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=e.courseid
                   LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=ue.userid $sql6
+                  $join_sql1
                 WHERE e.courseid IN (
                         SELECT DISTINCT ctx.instanceid
                         FROM {role_assignments} ra, {context} ctx
@@ -132,7 +136,12 @@ if($action == 'get_total_students'){
 
     $params = array('course'=>$course,'timestart'=>$timestart, 'timefinish'=>$timefinish);
     list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
-    $enrolled_users = $DB->get_record_sql("SELECT COUNT(DISTINCT ra.userid) AS users FROM {context} ctx,{role_assignments} ra WHERE ctx.instanceid=:course AND ctx.contextlevel=50 AND ra.contextid=ctx.id $sql1", $params);
+    $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
+    $enrolled_users = $DB->get_record_sql("SELECT COUNT(DISTINCT ra.userid) AS users 
+                                            FROM {role_assignments} ra 
+                                              LEFT JOIN {context} ctx ON ctx.instanceid=:course AND ctx.contextlevel=50 AND ra.contextid=ctx.id
+                                              $join_sql1
+                                            WHERE ctx.contextlevel=50 $sql1", $params);
 
     $sql_columns = "";
     $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1");
@@ -144,14 +153,16 @@ if($action == 'get_total_students'){
     $data = $DB->get_records_sql("
                 SELECT
                   cm.id,
-                  COUNT(DISTINCT CASE WHEN lil.id IS NOT NULL THEN ra.userid ELSE NULL END) AS students_attempt
+                  (SELECT COUNT(DISTINCT CASE WHEN lil.id IS NOT NULL THEN ra.userid ELSE NULL END)
+                    FROM {local_intelliboard_tracking} lit
+                      LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id AND lil.timepoint BETWEEN :timestart AND :timefinish
+                      LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=lit.courseid
+                      LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=lit.userid $sql1
+                      $join_sql1
+                    WHERE lit.courseid=cm.course AND lit.param=cm.id AND lit.page='module') AS students_attempt
                   $sql_columns
                 FROM {course_modules} cm
-                  LEFT JOIN {modules} m ON m.id = cm.module
-                  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=cm.course AND lit.param=cm.id AND lit.page='module'
-                  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id AND lil.timepoint BETWEEN :timestart AND :timefinish
-                  LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=lit.courseid
-                  LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=lit.userid $sql1
+                  LEFT JOIN {modules} m ON m.id = cm.module           
                 WHERE cm.course=:course
                 GROUP BY cm.id,m.name",$params);
 
@@ -193,6 +204,7 @@ if($action == 'get_total_students'){
         $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
     }
     $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
+    $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
     $data = $DB->get_records_sql("
                 SELECT
@@ -207,6 +219,7 @@ if($action == 'get_total_students'){
                     LEFT JOIN {modules} m ON m.id = cm.module
                     LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = ra.userid AND l.param = cm.id
                     LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=l.id AND lil.timepoint BETWEEN :timestart AND :timefinish
+                    $join_sql1
                 WHERE c.id = :course $sql1
                 GROUP BY cm.id,m.name",$params);
 
@@ -253,6 +266,7 @@ if($action == 'get_total_students'){
     $learner_roles = get_config('local_intelliboard', 'filter11');
     $params = array('course'=>$course,'timestart'=>$timestart, 'timefinish'=>$timefinish);
     list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+    $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
     $data = $DB->get_records_sql("
                 SELECT
@@ -267,6 +281,7 @@ if($action == 'get_total_students'){
                     LEFT JOIN {modules} m ON m.id = cm.module
                     LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = ra.userid AND l.param = cm.id
                     LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=l.id AND lil.timepoint BETWEEN :timestart AND :timefinish
+                    $join_sql1
                 WHERE c.id = :course $sql1
                 GROUP BY cs.id",$params);
 
@@ -308,6 +323,7 @@ if($action == 'get_total_students'){
         );
         $learner_roles = get_config('local_intelliboard', 'filter11');
         list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+        $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
         $courses = $DB->get_records_sql("
                 SELECT
@@ -317,7 +333,14 @@ if($action == 'get_total_students'){
                 FROM {course_modules} cm
                   LEFT JOIN {modules} m ON m.id = cm.module
                   LEFT JOIN {course_sections} cs ON cs.id = cm.section
-				  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=:courseid1 AND lit.param=cm.id AND lit.page='module' AND lit.userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50 $sql1)
+				  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=:courseid1 
+				                                                  AND lit.param=cm.id 
+				                                                  AND lit.page='module' 
+				                                                  AND lit.userid IN (SELECT DISTINCT ra.userid 
+                                                                                        FROM {role_assignments} ra 
+                                                                                            JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50
+                                                                                            $join_sql1
+                                                                                        WHERE ctx.contextlevel = 50 $sql1)
                 WHERE cm.course=:courseid2
                 GROUP BY cs.id", $params);
 
@@ -358,11 +381,18 @@ if($action == 'get_total_students'){
         );
         $learner_roles = get_config('local_intelliboard', 'filter11');
         list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+        $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
         $courses = $DB->get_records_sql("
                 SELECT
                   cm.id,
-                  (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE courseid=:courseid1 AND param=cm.id AND page='module' AND userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50 $sql1)) AS timespend
+                  (SELECT SUM(timespend) 
+                    FROM {local_intelliboard_tracking} 
+                    WHERE courseid=:courseid1 AND param=cm.id AND page='module' AND userid IN (SELECT DISTINCT ra.userid 
+                                                                                                  FROM {role_assignments} ra 
+                                                                                                    JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50
+                                                                                                    $join_sql1
+                                                                                                  WHERE  ctx.contextlevel = 50 $sql1)) AS timespend
                   $sql_columns
                 FROM {course_modules} cm
                   LEFT JOIN {modules} m ON m.id = cm.module
@@ -392,7 +422,18 @@ if($action == 'get_total_students'){
 
     die(json_encode($data));
 }elseif($action == 'get_course_users'){
-    $enrolled_users = get_enrolled_users(context_course::instance($course));
+    $params = array(
+        'course' => $course
+    );
+    $learner_roles = get_config('local_intelliboard', 'filter11');
+    list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+    $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
+    $enrolled_users = $DB->get_records_sql("SELECT u.* 
+                                            FROM {role_assignments} ra 
+                                              LEFT JOIN {context} ctx ON ctx.instanceid=:course AND ctx.contextlevel=50 AND ra.contextid=ctx.id
+                                              LEFT JOIN {user} u ON u.id=ra.userid
+                                              $join_sql1
+                                            WHERE ctx.contextlevel=50 $sql1", $params);
 
     $html = '';
     foreach($enrolled_users as $user){

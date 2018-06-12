@@ -143,7 +143,8 @@ class DB {
     public static function getTable($table, $settings, $getter) {
 
         if (self::$virtualTables[$table]) {
-            $alias = (self::$virtualTables[$table])($settings, $getter);
+            $function = self::$virtualTables[$table];
+            $alias = $function($settings, $getter);
         } else {
             $alias = $table[0];
             $getter->add('tables', '{' . $table . '} as ' . $alias);
@@ -160,7 +161,8 @@ class DB {
             if (isset(self::$virtualColumns[$key])) {
 
                 if(is_callable(self::$virtualColumns[$key])) {
-                    $destination = (self::$virtualColumns[$key])($settings);
+                    $function = self::$virtualTables[$table];
+                    $destination = $function($settings);
                 } else {
                     $destination = self::$virtualColumns[$key];
                 }
@@ -277,7 +279,7 @@ class DB {
             $data = $getter->release();
             $sql  = $data['sql'] . " ORDER BY CHAR_LENGTH($column) DESC LIMIT 1";
             $variant = json_decode(json_encode($DB->get_record_sql($sql, $data['params'])), true);
-            $sentence = $variant['replacement'] ?? $sentence;
+            $sentence = !empty($variant['replacement'])? $variant['replacement'] : $sentence;
             $variants = $variant? array(array_diff_key($variant, array('replacement' => 1))) : [];
 
         }

@@ -466,3 +466,4 @@ $string['privacy:metadata:local_intelliboard_ntf_hst:email'] = 'Notification his
 $string['privacy:metadata:local_intelliboard_ntf_hst:timesent'] = 'Notification history timestamp';
 
 $string['select_manager_role'] = 'Seleccionar rol de administrador';
+$string['group_aggregation'] = 'Agrupación de grupos';

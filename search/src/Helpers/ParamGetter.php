@@ -14,7 +14,8 @@ class ParamGetter {
     public function add($type, $data)
     {
         if (isset($this->$type) && !in_array($data, $this->$type)) {
-            $this->$type[] = $data;
+            $array = &$this->$type;
+            $array[] = $data;
         }
     }
 
