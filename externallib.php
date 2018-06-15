@@ -715,7 +715,7 @@ class local_intelliboard_external extends external_api {
             $sql_join = "
                     LEFT JOIN (SELECT gi.courseid, g.userid, $grade_single AS grade
                     FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                    GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id";
+                    GROUP BY gi.courseid, g.userid, g.finalgrade, g.rawgrademax) as gc ON gc.courseid = c.id AND gc.userid = u.id";
         }
 
         return $this->get_report_data("
@@ -739,7 +739,7 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnums FROM {course_modules} cm, {course_modules_completion} cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 $completion1 GROUP BY cm.course, cmc.userid) cmc ON cmc.course = c.id AND cmc.userid = u.id
                 LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnuma FROM {course_modules} cm, {course_modules_completion} cmc WHERE cmc.coursemoduleid = cm.id AND cm.module = 1 AND cm.visible  =  1 $completion2 GROUP BY cm.course, cmc.userid) as cmca ON cmca.course = c.id AND cmca.userid = u.id
                 $sql_join
-            WHERE ue.id > 0 $sql_filter GROUP BY ue.userid, e.courseid $sql_having $sql_order", $params);
+            WHERE ue.id > 0 $sql_filter GROUP BY ue.id, ue.userid, u.email, e.courseid, cm.cmnums, cmca.cmcnuma, cmc.cmcnums, cma.cmnuma, cmx.cmnumx, lit.id, visits, cma.cmnuma, gc.grade, c.fullname, u.firstname, u.lastname $sql_having $sql_order", $params);
     }
     public function report8($params)
     {
@@ -1066,7 +1066,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
 
         return $this->get_report_data("
-            SELECT e.id,
+            SELECT MAX(e.id) AS id,
                 e.enrol as enrol,
                 COUNT(DISTINCT e.courseid) as courses,
                 count(ue.userid) as users
@@ -1905,7 +1905,7 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
             SELECT ue.id,
-                IF(ue.timestart = 0, ue.timecreated, ue.timecreated) as enrolstart,
+                ue.timecreated as enrolstart,
                 ue.timeend as enrolend,
                 ccc.timeend,
                 c.startdate,
@@ -1916,7 +1916,7 @@ class local_intelliboard_external extends external_api {
                 u.email,
                 ue.userid,
                 e.courseid,
-                GROUP_CONCAT( DISTINCT e.enrol) AS enrols,
+                e.enrol AS enrols,
                 c.fullname as course
                 $sql_columns
             FROM
@@ -1928,8 +1928,7 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {course} c ON c.id = e.courseid
                 LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid
                 LEFT JOIN {course_completion_criteria} ccc ON ccc.course = e.courseid AND ccc.criteriatype = 2
-            WHERE ue.id > 0 $sql_filter
-            GROUP BY ue.id $sql_having $sql_order", $params);
+            WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
 
 
     }
@@ -2016,7 +2015,7 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
                 LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = e.courseid
                 LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                LEFT JOIN (SELECT t.id,t.userid,t.courseid FROM
+                LEFT JOIN (SELECT MAX(t.id) AS id, t.userid,t.courseid FROM
                     {local_intelliboard_tracking} t,
                     {local_intelliboard_logs} l
                 WHERE l.trackid = t.id $sql1 GROUP BY t.courseid, t.userid) as l ON l.courseid = e.courseid AND l.userid = ue.userid $sql_join
@@ -3164,7 +3163,17 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {grade_items} gi ON gi.outcomeid = o.id
                 LEFT JOIN {grade_grades} g ON g.itemid = gi.id
             WHERE gi.itemtype = 'mod' $sql_filter
-            GROUP BY g.itemid $sql_having $sql_order", $params, false);
+            GROUP BY gi.id,
+                g.itemid,
+                gi.itemname,
+                c.shortname,
+                c.fullname,
+                o.fullname,
+                o.shortname,
+                o.description,
+                sci.scale,
+                ca.name,
+                c.startdate $sql_having $sql_order", $params, false);
 
         foreach($data as $k=>$v){
             $scale = explode(',', $v->scale);
@@ -3299,7 +3308,7 @@ class local_intelliboard_external extends external_api {
         $completion = $this->get_completion($params, "x.");
 
         return $this->get_report_data("
-            SELECT ue.id,
+            SELECT max(ue.id) AS id,
                 u.firstname,
                 u.lastname,
                 u.email,
@@ -3320,7 +3329,17 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) as m ON m.course = c.id
                 LEFT JOIN (SELECT cm.course, x.userid, COUNT(DISTINCT x.id) as completed FROM {course_modules} cm, {course_modules_completion} x WHERE x.coursemoduleid = cm.id AND cm.visible = 1 $completion GROUP BY cm.course, x.userid) as cmc ON cmc.course = c.id AND cmc.userid = ue.userid
             WHERE ue.id > 0 $sql_filter
-            GROUP BY ue.userid, e.courseid $sql_having $sql_order", $params);
+            GROUP BY u.firstname,
+                u.lastname,
+                u.email,
+                ue.timecreated,
+                e.courseid,
+                ue.userid,
+                c.fullname,
+                m.modules,
+                cc.timecompleted,
+                cmc.completed,
+                m.modules $sql_having $sql_order", $params);
     }
     public function report94($params)
     {
@@ -3440,7 +3459,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filterdate_sql($params, "l.timepoint");
 
         return $this->get_report_data("
-            SELECT t.id as tid, u.id,
+            SELECT max(t.id) as tid, u.id AS id,
                u.firstname,
                u.lastname,
                u.email,
@@ -3450,7 +3469,7 @@ class local_intelliboard_external extends external_api {
                $sql_columns
             FROM  {user} u, {course} c, {local_intelliboard_tracking} t, {local_intelliboard_logs} l
             WHERE l.trackid = t.id AND c.id = t.courseid AND u.id = t.userid $sql_filter
-            GROUP BY t.userid, t.courseid $sql_having $sql_order", $params);
+            GROUP BY u.id, c.id $sql_having $sql_order", $params);
     }
 
     public function report78($params)
@@ -3570,6 +3589,7 @@ class local_intelliboard_external extends external_api {
     }
 
     public function report71($params){
+        global $CFG;
         $columns = array_merge(array("u.firstname", "u.lastname","ue.timecreated", "e.enrol", "e.cost", "c.fullname"), $this->get_filter_columns($params));
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -3600,10 +3620,9 @@ class local_intelliboard_external extends external_api {
                 {course} c
             WHERE e.courseid = c.id AND e.cost IS NOT NULL AND ue.enrolid = e.id AND u.id = ue.userid $sql_filter $sql_having $sql_order", $params, false);
 
-
+        $func = ($CFG->dbtype == 'pgsql') ? '::int':'';
         $data2 = $this->get_report_data("
-            SELECT floor(ue.timecreated / 86400) * 86400 as timepoint,
-                   SUM(e.cost) as amount
+            SELECT floor(ue.timecreated / 86400) * 86400 as timepoint, SUM(e.cost{$func}) as amount
             FROM {user_enrolments} ue, {enrol} e,{course} c,{user} u
             WHERE e.courseid = c.id AND e.cost IS NOT NULL AND ue.enrolid = e.id AND u.id = ue.userid $sql_filter
             GROUP BY timepoint
@@ -8284,50 +8303,58 @@ class local_intelliboard_external extends external_api {
     }
 
     public function get_visits_perweek($params){
-        global $DB;
+        global $DB, $CFG;
+
+
+        $month_func = ($CFG->dbtype == 'pgsql') ? "EXTRACT(MONTH FROM to_timestamp(l.timepoint)) + 1" : "MONTH(FROM_UNIXTIME(l.timepoint))";
+        $week_func = ($CFG->dbtype == 'pgsql') ? "EXTRACT(DAY from date_trunc('week', to_timestamp(l.timepoint)) -
+                   date_trunc('week', date_trunc('month', to_timestamp(l.timepoint)))) / 7 + 1" : "FLOOR(((DAY(FROM_UNIXTIME(l.timepoint)) - 1) / 7) + 1)";
+
         if ($params->externalid) {
             $sql = $this->get_teacher_sql($params, ["t.userid" => "users", "t.courseid" => "courses"]);
 
             return $DB->get_records_sql("
-                SELECT @x:=@x+1 as id,
-                    MONTH(FROM_UNIXTIME(l.timepoint)) AS monthpoint,
-                    FLOOR(((DAY(FROM_UNIXTIME(l.timepoint)) - 1) / 7) + 1) AS weekpoint,
+                SELECT max(l.id),
+                    $month_func AS monthpoint,
+                    $week_func AS weekpoint,
                     COUNT(DISTINCT t.userid) AS sessions, SUM(t.visits) AS visits
-                FROM (SELECT @x:= 0) AS x, {local_intelliboard_tracking} t, {local_intelliboard_logs} l
+                FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
                 WHERE l.trackid = t.id $sql
                 GROUP BY monthpoint, weekpoint", $this->params);
         } else {
             return $DB->get_records_sql("
-                SELECT @x:=@x+1 as id,
-                    MONTH(FROM_UNIXTIME(l.timepoint)) AS monthpoint,
-                    FLOOR(((DAY(FROM_UNIXTIME(l.timepoint)) - 1) / 7) + 1) AS weekpoint,
+                SELECT max(l.id),
+                    $month_func AS monthpoint,
+                    $week_func AS weekpoint,
                     SUM(l.sessions) AS sessions, SUM(l.visits) AS visits
-                FROM (SELECT @x:= 0) AS x, {local_intelliboard_totals} l
+                FROM {local_intelliboard_totals} l
                 GROUP BY monthpoint, weekpoint", $this->params);
         }
     }
 
     public function get_visits_perday($params){
-        global $DB;
+        global $DB, $CFG;
+
+        $function = ($CFG->dbtype == 'pgsql') ? 'EXTRACT(isodow FROM to_timestamp(l.timepoint))-1' : 'WEEKDAY(FROM_UNIXTIME(l.timepoint))';
 
         if ($params->externalid) {
             $sql = $this->get_teacher_sql($params, ["t.userid" => "users", "t.courseid" => "courses"]);
 
             return $DB->get_records_sql("
-                SELECT @x:=@x+1 as id,
-                    WEEKDAY(FROM_UNIXTIME(l.timepoint)) as daypoint,
+                SELECT max(d.id) as id,
+                    $function as daypoint,
                     d.timepoint as hourpoint,
                     SUM(d.visits) AS visits
-                FROM (SELECT @x:= 0) AS x, {local_intelliboard_tracking} t, {local_intelliboard_logs} l, {local_intelliboard_details} d
+                FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l, {local_intelliboard_details} d
                 WHERE d.logid = l.id AND l.trackid = t.id $sql
                 GROUP BY daypoint, hourpoint", $this->params);
         } else {
             return $DB->get_records_sql("
-                SELECT @x:=@x+1 as id,
-                    WEEKDAY(FROM_UNIXTIME(l.timepoint)) as daypoint,
+                SELECT max(d.id) as id,
+                    $function as daypoint,
                     d.timepoint as hourpoint,
                     SUM(d.visits) AS visits
-                FROM (SELECT @x:= 0) AS x, {local_intelliboard_logs} l, {local_intelliboard_details} d
+                FROM {local_intelliboard_logs} l, {local_intelliboard_details} d
                 WHERE d.logid = l.id
                 GROUP BY daypoint, hourpoint", $this->params);
         }
@@ -9050,8 +9077,8 @@ class local_intelliboard_external extends external_api {
         }
 
         return $DB->get_records_sql("
-            SELECT @x:=@x+1 as id, c.id as courseid, c.fullname, FLOOR(ue.timecreated / $ext) * $ext AS timepointval, COUNT(DISTINCT ue.id) AS enrolled
-            FROM (SELECT @x:= 0) AS x, {course} c
+            SELECT (max(ue.timecreated) / c.id) as id, c.id as courseid, c.fullname, FLOOR(ue.timecreated / $ext) * $ext AS timepointval, COUNT(DISTINCT ue.id) AS enrolled
+            FROM {course} c
                 $sql_join
                 JOIN {enrol} en ON en.courseid = c.id $sql
                 JOIN {user_enrolments} ue ON ue.enrolid = en.id
@@ -9082,8 +9109,8 @@ class local_intelliboard_external extends external_api {
         $sql .= $this->get_filter_in_sql($params->custom2, "d.data");
 
         return $DB->get_records_sql("
-            SELECT @x:=@x+1 as id, FLOOR(u.timecreated / $ext) * $ext AS timepointval, d.data, COUNT(DISTINCT u.id) users
-            FROM (SELECT @x:= 0) AS x, {user} u
+            SELECT (max(u.timecreated) / u.id) as id, FLOOR(u.timecreated / $ext) * $ext AS timepointval, d.data, COUNT(DISTINCT u.id) users
+            FROM {user} u
                 JOIN {user_info_data} AS d ON u.id = d.userid
                 JOIN {user_info_field} AS f ON d.fieldid = f.id
             WHERE d.data <> 'null' AND d.data <> '' $sql
