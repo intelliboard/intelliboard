@@ -73,12 +73,4 @@
 		</tr>
 		<?php endforeach; ?>
 	</tbody>
-	<tfoot>
-		<tr>
-			<td colspan="6">
-				<a style="float:left" href="learners.php"><?php echo get_string('more_users', 'local_intelliboard'); ?></a>
-				<span style="float:right;color:#ddd;"><?php echo get_string('showing_1_to_10', 'local_intelliboard'); ?></span>
-			</td>
-		</tr>
-	</tfoot>
 </table>
