@@ -27,7 +27,7 @@
 <table class="table">
 	<thead>
 		<tr>
-			<th>Name</th>
+			<th align="left"><?php echo get_string('learner_name', 'local_intelliboard');?></th>
 			<th align="center"><?php echo get_string('progress', 'local_intelliboard');?></th>
 			<th align="center"><?php echo get_string('score', 'local_intelliboard');?></th>
 			<th align="center"><?php echo get_string('visits', 'local_intelliboard');?></th>
@@ -69,8 +69,21 @@
 					 <?php echo $row->timespend; ?>
 				</span>
 			</td>
-			<td><?php echo date("m/d/Y", $row->timecreated); ?></td>
+			<td><?php echo ($row->timecreated) ? date("m/d/Y", $row->timecreated) : '-'; ?></td>
 		</tr>
 		<?php endforeach; ?>
 	</tbody>
+	<?php if (!empty($report43['data'])): ?>
+	<tfoot>
+		<tr>
+			<td colspan="5"></td>
+			<td align="right">
+				<div class="paging">
+					<a class="prev <?php echo ($page<=1)?'disabled':''; ?>" href="index.php?page=<?php echo $page-1; ?>&type=users">Prev</a>
+					<a class="next <?php echo (count($report43['data']) < $length)?'disabled':''; ?>" href="index.php?page=<?php echo $page+1; ?>&type=users">Next</a>
+				</div>
+			</td>
+		</tr>
+	</tfoot>
+	<?php endif; ?>
 </table>

@@ -38,6 +38,10 @@ $url = optional_param('url', '', PARAM_URL);
 $time = optional_param('time', 'monthly', PARAM_RAW);
 $filter = optional_param('filter', 0, PARAM_INT);
 
+$page = optional_param('page', 0, PARAM_INT);
+$length = optional_param('length', 10, PARAM_INT);
+$type = optional_param('type', '', PARAM_RAW);
+
 if($action == 'noalert'){
 	$USER->noalert = true;
 }
@@ -73,14 +77,24 @@ $params = (object) array(
 $plugin = new local_intelliboard_external();
 
 if($action == 'report43'){
+	$params->length = $length;
+	if ($type == 'users' and $page > 1) {
+		$params->start = (($page-1) * $length);
+	}
 	$avg = $plugin->get_dashboard_avg($params);
 	$params->timestart = 0;
 	$report43 = $plugin->report43($params);
+	$page = ($page)?$page:1;
 	include("views/report43.php");
 	exit;
 }elseif($action == 'report44'){
+	$params->length = $length;
+	if ($type == 'courses' and $page > 1) {
+		$params->start = (($page-1) * $length);
+	}
 	$params->timestart = 0;
 	$report44 = $plugin->report44($params);
+	$page = ($page)?$page:1;
 	include("views/report44.php");
 	exit;
 }
@@ -257,8 +271,8 @@ echo $OUTPUT->header();
 		chart.draw(data, options);
 	}
 	jQuery(document).ready(function(){
-		jQuery('#report43').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report43');
-		jQuery('#report44').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report44');
+		jQuery('#report43').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report43&type=users&page=<?php echo $page; ?>&type=<?php echo $type; ?>');
+		jQuery('#report44').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report44&type=users&page=<?php echo $page; ?>&type=<?php echo $type; ?>');
 	});
 </script>
 <?php

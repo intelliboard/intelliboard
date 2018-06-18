@@ -32,4 +32,12 @@
 		<div class="intelliboard-progress"><span style="width:<?php echo ($row->completed) ? (($row->completed / $row->users) * 100) : 0; ?>%"></span></div>
 	</li>
 	<?php endforeach; ?>
+	<?php if (!empty($report44['data'])): ?>
+	<li class="clearfix">
+		<div class="paging" style="float: right;">
+			<a class="prev <?php echo ($page<=1)?'disabled':''; ?>" href="index.php?page=<?php echo $page-1; ?>&type=courses">Prev</a>
+			<a class="next <?php echo (count($report44['data']) < $length)?'disabled':''; ?>" href="index.php?page=<?php echo $page+1; ?>&type=courses">Next</a>
+		</div>
+	</li>
+	<?php endif; ?>
 </ul>
