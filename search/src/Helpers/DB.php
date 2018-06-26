@@ -12,13 +12,6 @@ class DB {
         'cohorts?', 'guest', 'teachers?', 'data'
     );
 
-    private static $operators = array(
-        'regexp' => array(
-            \DataExtractor::MYSQL_MODE => 'REGEXP',
-            \DataExtractor::POSTGRES_MODE => '~*'
-        )
-    );
-
     private static $virtualColumns;
     private static $virtualTables;
 
@@ -123,6 +116,7 @@ class DB {
 
         $result = json_decode(json_encode($DB->get_records_sql($result, $data['params'])),true);
 
+        static::removeInitialization();
         if (!$additionalFields) {
             $result = array_filter($result, function($item) {
                 return $item['value'] !== '';
@@ -142,7 +136,7 @@ class DB {
 
     public static function getTable($table, $settings, $getter) {
 
-        if (self::$virtualTables[$table]) {
+        if (!empty(self::$virtualTables[$table])) {
             $function = self::$virtualTables[$table];
             $alias = $function($settings, $getter);
         } else {
@@ -158,7 +152,7 @@ class DB {
             $destination = null;
             $key = $table . '_' . $column;
 
-            if (isset(self::$virtualColumns[$key])) {
+            if (!empty(self::$virtualColumns[$key])) {
 
                 if(is_callable(self::$virtualColumns[$key])) {
                     $function = self::$virtualTables[$table];
@@ -258,7 +252,7 @@ class DB {
                 $search = $column;
             }
 
-            $pattern = $pattern? $pattern : ":sentence " . static::getOperator("regexp") . " CONCAT('[[:<:]]', :column, '[[:>:]]')";
+            $pattern = $pattern? $pattern : ":sentence " . \get_filter(1) . " CONCAT('[[:<:]]', :column, '[[:>:]]')";
 
             $getter->add('filters', str_replace(array(':column', ':sentence'), array($search, "'$sentence'"), $pattern));
             $getter->add('filters', "$column <> ''");
@@ -275,7 +269,20 @@ class DB {
             }
 
             $sentence = " $sentence ";
-            $getter->add('columns', "INSERT('$sentence', POSITION(CONCAT(' ', LOWER({$column})) IN '$sentence'), CHAR_LENGTH($column) + 1, ' ') as replacement");
+
+            $getter->add(
+                'columns',
+                \get_operator(11, "' '", array(
+                    'sentence' => $sentence,
+                    'position' => "POSITION(CONCAT(' ', LOWER({$column})) IN '$sentence')",
+                    'length' => "CHAR_LENGTH($column) + 1"
+                )) . ' as replacement'
+            );
+            $getter->add(
+                'columns',
+                "CHAR_LENGTH($column) as length_char"
+            );
+
             $data = $getter->release();
             $sql  = $data['sql'] . " ORDER BY CHAR_LENGTH($column) DESC LIMIT 1";
             $variant = json_decode(json_encode($DB->get_record_sql($sql, $data['params'])), true);
@@ -606,6 +613,7 @@ class DB {
 
     protected static function addAdditionalFields ($getter, $column, $additionalFields = array(), $alias = false) {
         $alias = $alias? $alias . '.' : '';
+
         if ($additionalFields) {
             foreach ($additionalFields as $name => $field) {
                 $field = preg_replace('/\s+/', '', $field);
@@ -677,19 +685,6 @@ class DB {
             return array($table);
         }
 
-    }
-
-    protected static function getOperator($operator)
-    {
-        global $CFG;
-
-        $val = static::$operators[$operator];
-
-        if (is_array($val)) {
-            $val = $val[$CFG->dbtype];
-        }
-
-        return $val;
     }
 
 }

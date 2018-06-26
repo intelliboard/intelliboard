@@ -27,3 +27,7 @@
 $config = [];
 $config['app_url'] = 'https://app.intelliboard.net/';
 $config['api_url'] = 'https://api.intelliboard.net/';
+$config['app_url_us'] = 'https://us-app.intelliboard.net/';
+$config['app_url_eu'] = 'https://eu-app.intelliboard.net/';
+$config['app_url_au'] = 'https://au-app.intelliboard.net/';
+$config['app_url_ca'] = 'https://ca-app.intelliboard.net/';

@@ -20,7 +20,7 @@ class DataExtractor
 
     private $mode = self::MYSQL_MODE;
 
-    public function __construct($scenarios, $arguments, $params, $mode = null)
+    public function __construct($scenarios, $arguments, $params, $settings, $mode = null)
     {
         $this->scenarios = $scenarios;
         $this->rawValues = $arguments;
@@ -41,7 +41,7 @@ class DataExtractor
             $result['response'][$key] = $this->getData($value);
         }
 
-        if ($this->params['debug']) {
+        if (!empty($this->params['debug'])) {
             $result['debug'] = $this->requests;
         }
 
@@ -51,22 +51,28 @@ class DataExtractor
 
     public function getData($scenario) {
         global $DB;
-
-
         $this->arguments = array();
 
         $sql = $this->construct($scenario);
 
         $values = $this->prepareArguments($sql, $this->arguments);
-        $countSql = $this->count($sql);
-
         $data = $DB->get_records_sql($sql, $values);
-        $count = $DB->count_records_sql($countSql, $values);
 
-        $result = array(
-            'data' => $data,
-            'count' => $count,
-        );
+        $result = compact('data');
+        $result['hasPrev'] = !empty($scenario['offset']);
+        if (!empty($this->params['pagination_numbers'])) {
+            $countSql = $this->count($sql);
+            $result['count'] = $DB->count_records_sql($countSql, $values);
+            $result['hasNext'] = !empty($scenario['offset']);
+        } else {
+            if (empty($scenario['limit']) || count($data) < $scenario['limit']) {
+                $result['hasNext'] = false;
+            } else {
+                $result['hasNext'] = true;
+                array_pop($data);
+            }
+            $result['count'] = 0;
+        }
 
         $this->requests[] = array('sql' => $sql, 'arguments' => $values);
         return $result;
@@ -74,7 +80,7 @@ class DataExtractor
 
     public function construct($scenario) {
 
-        $data       = $this->findElements($scenario);
+        $data = $this->findElements($scenario);
         $sql = $this->separator . 'SELECT '.  $data['columns'];
 
         if (!empty($scenario['tables'])) {
@@ -98,7 +104,7 @@ class DataExtractor
         }
 
         if (!empty($scenario['limit'])) {
-            $sql .= ' LIMIT ' . $scenario['limit'];
+            $sql .= ' LIMIT ' . (!empty($this->params->pagination_numbers)?  $scenario['limit'] : $scenario['limit'] + 1);
         }
 
         if (!empty($scenario['offset'])) {
