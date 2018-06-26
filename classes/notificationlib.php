@@ -195,7 +195,7 @@ class local_intelliboard_notificationlib extends external_api {
 
         $transaction = $DB->start_delegated_transaction();
 
-        if ($notification = $DB->get_record('local_intelliboard_ntf',array('externalid' => $id), 'id') ) {
+        if ($notification = $DB->get_record('local_intelliboard_ntf',array('externalid' => $id), 'id')) {
             $DB->delete_records('local_intelliboard_ntf', array('id' => $notification->id));
             $DB->delete_records('local_intelliboard_ntf_pms', array('notificationid' => $notification->id));
         }

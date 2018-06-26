@@ -66,14 +66,11 @@ class local_intelliboard_notification {
 
         $result = json_decode(json_encode($DB->get_records_sql($sql, $params)), true);
 
-        $result = array_map(function ($item) use ($paramSeparator, $valueSeparator) {
+        return array_map(function ($item) use ($paramSeparator, $valueSeparator) {
             $item['email'] = explode(',', $item['email']);
             $item['tags'] = json_decode($item['tags'], true);
             return $item;
         }, $result);
-
-        return $result;
-
     }
 
     public function send_notifications($notifications, $event = array(), $params = array())
@@ -88,7 +85,8 @@ class local_intelliboard_notification {
                     $events = $this->get_events_from_queue($notification, $params);
                 }
 
-                list($recipients, $results) = $this->{'notification' . $notification['type']}($notification, $events, $params);
+                $method = 'notification' . $notification['type'];
+                list($recipients, $results) = $this->$method($notification, $events, $params);
                 $this->notify($recipients, $results, $notification);
             }
         }
@@ -100,9 +98,10 @@ class local_intelliboard_notification {
         foreach($recipients as $i => $recipient) {
             $notification = $notifications[$i];
 
-            if ($notification['attachment']) {
+            if (!empty($notification['attachment'])) {
                 $notification['attachmentType'] = $notificationType['attachment'];
             }
+
             $notification['externalid'] = !empty($notificationType['externalid'])? $notificationType['externalid'] : $notificationType['id'];
             $notification['name'] = $notificationType['name'];
             $notification['userid'] = $notificationType['userid'];
@@ -466,7 +465,8 @@ class local_intelliboard_notification {
 
         $assigns = $DB->get_records_sql("SELECT * FROM {local_intelliboard_assign} WHERE userid = :userid", ['userid' => $user]);
         foreach ($assigns as $assign) {
-            ${'assign_' . $assign->type}[] = (int) $assign->instance;
+            $type = &${'assign_' . $assign->type};
+            $type[] = (int) $assign->instance;
         }
 
         $assign_users_list = implode(",", $assign_users);

@@ -467,3 +467,5 @@ $string['privacy:metadata:local_intelliboard_ntf_hst:timesent'] = 'Notification 
 
 $string['select_manager_role'] = 'Seleccionar rol de administrador';
 $string['group_aggregation'] = 'Agrupación de grupos';
+$string['ssodomain'] = 'Subdomain SSO';
+$string['ssodomain_desc'] = 'Single Sign On with separated Server/Account';

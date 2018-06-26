@@ -127,7 +127,7 @@ function intelliboard_data($type, $userid, $showing_user) {
         $completion = intelliboard_compl_sql("cmc.");
 
 
-        $query = "SELECT DISTINCT(c.id) AS id, c.fullname, MIN(ue.timemodified) AS timemodified,
+        $query = "SELECT MAX(c.id) AS id, c.fullname, MIN(ue.timemodified) AS timemodified,
                     (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid1) AS grade,
                     (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
                     (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid3 AND courseid = c.id) AS duration,
@@ -497,7 +497,7 @@ function intelliboard_learner_totals($userid){
                                   END)
                            ELSE CONCAT(ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0),'%')
                            END ) AS grade
-                        
+
                         FROM {user_enrolments} ue
                           JOIN {enrol} e ON e.id = ue.enrolid
                           JOIN {course} c ON c.id = e.courseid
