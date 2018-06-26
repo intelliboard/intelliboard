@@ -31,31 +31,47 @@ class local_intelliboard_search extends external_api {
 
     public static function get_param_values_parameters() {
         return new external_function_parameters(array(
-            'options' => new external_single_structure(array(
-                'table'  => new external_value(PARAM_ALPHANUMEXT, 'Table name'),
-                'column' => new external_value(PARAM_ALPHANUMEXT, 'Column name'),
-                'params' => new external_single_structure(self::intelliboard_params()),
-                'length' => new external_value(PARAM_ALPHANUM, 'How many values return'),
-                'like'  => new external_value(PARAM_ALPHANUM, 'Like filter'),
-                'id' => new external_value(PARAM_ALPHANUM, 'Search between existing ids'),
-                'filters' => new external_value(PARAM_TEXT, 'Additional Filters'),
-                'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters')
-            ))
+            'options' => new external_multiple_structure(
+                new external_single_structure(array(
+                    'table'  => new external_value(PARAM_ALPHANUMEXT, 'Table name'),
+                    'column' => new external_value(PARAM_ALPHANUMEXT, 'Column name'),
+                    'length' => new external_value(PARAM_ALPHANUM, 'How many values return'),
+                    'like'  => new external_value(PARAM_ALPHANUM, 'Like filter'),
+                    'id' => new external_value(PARAM_ALPHANUM, 'Search between existing ids'),
+                    'filters' => new external_value(PARAM_TEXT, 'Additional Filters'),
+                    'additionalFields' => new external_value(PARAM_TEXT, 'Additional Filters'),
+                    'key' => new external_value(PARAM_TEXT, 'Param Key'),
+                ))
+            ),
+            'params' => new external_single_structure(self::intelliboard_params())
         ));
     }
 
 
-    public static function get_param_values($options) {
+    public static function get_param_values($options, $params) {
+
         global $CFG;
         require_once($CFG->dirroot . '/local/intelliboard/search/src/autoload.php');
+        $result = array();
 
-        extract($options);
-        $filters = json_decode($filters, true);
-        $additionalFields = json_decode($additionalFields, true);
-        $params['length'] = $length;
-        $values = Helpers\DB::getParamsFromDB($table, $column, $params, $length, $like, $id, 0, $filters, $additionalFields);
+        foreach ($options as $item) {
+            $item['filters'] = json_decode($item['filters'], true);
+            $item['additionalFields'] = json_decode($item['additionalFields'], true);
 
-        return array('result' => json_encode($values));
+            $result[$item['key']] = Helpers\DB::getParamsFromDB(
+                $item['table'],
+                $item['column'],
+                $params,
+                $item['length'],
+                $item['like'],
+                $item['id'],
+                0,
+                $item['filters'],
+                $item['additionalFields']
+            );
+        }
+
+        return array('result' => json_encode($result));
     }
 
     public static function get_param_values_returns() {
@@ -69,18 +85,22 @@ class local_intelliboard_search extends external_api {
             array(
                 'scenarios' => new external_value(PARAM_TEXT, 'DB requests'),
                 'arguments' => new external_value(PARAM_TEXT, 'DB arguments'),
-                'debug'     => new external_value(PARAM_BOOL, 'Should plugin return debug info?')
+                'settings'  => new external_single_structure(array(
+                    'debug'  => new external_value(PARAM_ALPHANUM, 'Debug'),
+                    'pagination_numbers' => new external_value(PARAM_ALPHANUM, 'Paginatiom'),
+                ))
             )
         );
     }
 
-    public static function get_data_by_query($scenarios, $arguments, $debug = false) {
+    public static function get_data_by_query($scenarios, $arguments, $settings) {
+
         global $CFG;
         require_once($CFG->dirroot . '/local/intelliboard/search/src/autoload.php');
 
         $scenarios = json_decode($scenarios, true);
         $arguments = json_decode($arguments, true);
-        $extractor = new DataExtractor($scenarios, $arguments, compact( 'debug'), $CFG->dbtype);
+        $extractor = new DataExtractor($scenarios, $arguments, $settings, $CFG->dbtype);
 
         $response = $extractor->extract();
 
@@ -151,7 +171,8 @@ class local_intelliboard_search extends external_api {
 
             foreach($patterns['patterns'] as $pattern) {
                 $additionalFields = !empty($pattern['additionalFields'])? $pattern['additionalFields'] : array();
-                $processed = Helpers\DB::extractParamsFromSentence($pattern['table'], $pattern['column'], $sentence, $params, $pluralize, $escapeSystem, $additionalFields, null, $patterns['prefix']);
+                $prefix = isset($patterns['prefix'])? $patterns['prefix'] : null;
+                $processed = Helpers\DB::extractParamsFromSentence($pattern['table'], $pattern['column'], $sentence, $params, $pluralize, $escapeSystem, $additionalFields, null, $prefix);
 
                 if (!empty($processed['result'])) {
                     $response['result'][$patterns['name']] = $processed['result'];
@@ -188,6 +209,7 @@ class local_intelliboard_search extends external_api {
     }
 
     public static function process_auto_complete_db($table, $column, $remainder, $params){
+
         global $CFG;
         require_once($CFG->dirroot . '/local/intelliboard/search/src/autoload.php');
 
@@ -218,6 +240,7 @@ class local_intelliboard_search extends external_api {
     }
 
     public static function check_installed_plugins($plugins){
+
         $pluginManager = core_plugin_manager::instance();
 
         return array_filter($plugins, function($plugin) use($pluginManager) {
@@ -240,6 +263,7 @@ class local_intelliboard_search extends external_api {
     }
 
     public static function get_gradebook_fields($course){
+
         global $DB;
 
         $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1");

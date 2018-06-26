@@ -189,10 +189,6 @@ class ColumnsContainer extends BaseContainer {
 
                 return "REPLACE({$params['string']}, {$params['needle']}, {$params['replace']})";
             },
-            33 => array(
-                DataExtractor::MYSQL_MODE => 'REGEXP',
-                DataExtractor::POSTGRES_MODE => '~*'
-            )
         );
 
         $columns = array(

@@ -103,6 +103,13 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
+
+        $name = 'local_intelliboard/ssodomain';
+        $title = new lang_string('ssodomain', 'local_intelliboard');
+        $description = new lang_string('ssodomain_desc', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/filter1';
@@ -357,8 +364,8 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
-        $roles_user = $DB->get_records_sql("SELECT r.* 
-                                            FROM {role} r 
+        $roles_user = $DB->get_records_sql("SELECT r.*
+                                            FROM {role} r
                                               LEFT JOIN {role_context_levels} rcl ON rcl.roleid=r.id
                                             WHERE rcl.contextlevel=:contextlevel GROUP BY r.id",array('contextlevel'=>CONTEXT_USER));
         $roles_user = role_fix_names($roles_user);
