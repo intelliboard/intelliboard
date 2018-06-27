@@ -240,7 +240,6 @@ class local_intelliboard_search extends external_api {
     }
 
     public static function check_installed_plugins($plugins){
-
         $pluginManager = core_plugin_manager::instance();
 
         return array_filter($plugins, function($plugin) use($pluginManager) {

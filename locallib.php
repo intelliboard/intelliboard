@@ -477,16 +477,16 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
     global $CFG;
 
     $operators = [
-        1 => array(
+        'TIME_TO_SEC' => array(
             MYSQL_TYPE => 'TIME_TO_SEC',
             POSTGRES_TYPE => function($value, $params) {
                 return "extract ('epoch' from TO_TIMESTAMP($value, 'HH24:MI:SS')::TIME)";
             }),
-        2 => array(
+        'SEC_TO_TIME' => array(
             MYSQL_TYPE => 'SEC_TO_TIME',
             POSTGRES_TYPE => ''
         ),
-        3 => array(
+        'GROUP_CONCAT' => array(
             MYSQL_TYPE => function($value, $params = array('separator' => ', '), DataExtractor $extractor) {
 
                 if (empty($params['order'])) {
@@ -504,13 +504,13 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
                 return "string_agg($value::character varying, '" . $params['separator'] . "')";
             }
         ),
-        4 => array(
+        'WEEKDAY' => array(
             MYSQL_TYPE => 'WEEKDAY',
             POSTGRES_TYPE => function($value, $params) {
                 return "extract(dow from $value::timestamp)";
             }
         ),
-        5 => array(
+        'DAYOFWEEK' => array(
             MYSQL_TYPE => function($value, $params) {
                 return "(DAYOFWEEK($value) - 1)";
             },
@@ -518,7 +518,7 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
                 return "EXTRACT(DOW FROM $value)";
             }
         ),
-        6 => array(
+        'DATE_FORMAT_A' => array(
             MYSQL_TYPE => function($value, $params) {
                 return "DATE_FORMAT($value, '%a')";
             },
@@ -526,7 +526,7 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
                 return "to_char($value, 'Day')";
             }
         ),
-        7 => array(
+        'FROM_UNIXTIME' => array(
             MYSQL_TYPE => function($value, $params = array()) {
 
                 $format = isset($params['format'])? $params['format'] : '%Y-%m-%d %T';
@@ -534,40 +534,13 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
             },
             POSTGRES_TYPE => "to_timestamp"
         ),
-        8 => array(
+        'MONTH' => array(
             MYSQL_TYPE => "MONTH",
             POSTGRES_TYPE => function($value, $params) {
                 return "date_part('month', $value)";
             }
         ),
-        9 => array(
-            MYSQL_TYPE => function($value, $params = array('separator' => ',', 'count' => 1)) {
-                $params['separator'] = isset($params['separator'])? $params['separator'] : ',';
-                $params['count'] = isset($params['count'])? $params['count'] : 1;
-                return "SUBSTRING_INDEX($value, '" . $params['separator'] . "', " . $params['count'] . ")";
-            },
-            POSTGRES_TYPE => function($value, $params = array('separator' => ',', 'count' => 1)) {
-                return "split_part($value, '" . $params['separator'] . "', " . $params['count'] . ")";
-            }
-        ),
-        10 => array(
-            MYSQL_TYPE => function($value, $params = array()) {
-                $params['separator'] = isset($params['separator'])? $params['separator'] : '_';
-                $params['count'] = isset($params['count'])? $params['count'] : 1;
-
-                return
-                    "REPLACE (SUBSTRING(
-                            SUBSTRING_INDEX($value, '" . $params['separator'] . "', " . $params['count'] . "),
-                            CHAR_LENGTH(
-                                SUBSTRING_INDEX($value, '{$params['separator']}', " . $params['count'] - 1 . ")
-                            ) + 1
-                        ), '{$params['separator']}', '')";
-            },
-            POSTGRES_TYPE => function($value, $params = array('separator' => ',', 'count' => 1)) {
-                return "split_part($value, '" . $params['separator'] . "', " . $params['count'] . ")";
-            }
-        ),
-        11 => array(
+        'INSERT' => array(
             MYSQL_TYPE => function($value, $params) {
                 $sentence = $params['sentence'];
                 $position = isset($params['position'])? $params['position'] : 1;
@@ -581,6 +554,18 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
                 $length   = isset($params['length'])? $params['length'] : "CHAR_LENGTH($value)";
 
                 return "OVERLAY('$sentence' placing $value from $position for $length)";
+            }
+        ),
+        'DAY' => array(
+            MYSQL_TYPE => 'DAY',
+            POSTGRES_TYPE => function($value, $params) {
+                return "date_part('day', $value)";
+            }
+        ),
+        'YEAR' => array(
+            MYSQL_TYPE => 'YEAR',
+            POSTGRES_TYPE => function($value, $params) {
+                return "date_part('year', $value)";
             }
         )
     ];
