@@ -272,7 +272,7 @@ class DB {
 
             $getter->add(
                 'columns',
-                \get_operator(11, "' '", array(
+                \get_operator("INSERT", "' '", array(
                     'sentence' => $sentence,
                     'position' => "POSITION(CONCAT(' ', LOWER({$column})) IN '$sentence')",
                     'length' => "CHAR_LENGTH($column) + 1"
