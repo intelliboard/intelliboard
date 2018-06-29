@@ -355,7 +355,8 @@ class local_intelliboard_external extends external_api {
 
     public function report1($params)
     {
-        $columns = array_merge(array("u.firstname","u.lastname", "u.email", "c.fullname", "enrols", "l.visits", "l.timespend", "grade", "cc.timecompleted","ue.timecreated", "ul.timeaccess", "ue.timeend", "cc.timecompleted","u.idnumber","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
+        global $CFG;
+        $columns = array_merge(array("u.firstname","u.lastname", "u.email", "c.fullname", "enrols", "l.visits", "l.timespend", "grade", "cc.timecompleted","ue.timecreated", "ul.timeaccess", "ue.timeend", "cc.timecompleted","u.idnumber","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","teacher"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -403,6 +404,12 @@ class local_intelliboard_external extends external_api {
             $sql_join .= " LEFT JOIN (SELECT t.userid,t.courseid, SUM(t.timespend) AS timespend, SUM(t.visits) AS visits FROM
                                 {local_intelliboard_tracking} t GROUP BY t.courseid, t.userid) l ON l.courseid = c.id AND l.userid = u.id";
         }
+        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg( DISTINCT CONCAT(u.firstname,' ',u.lastname), ', ')";
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u.firstname,' ',u.lastname) SEPARATOR ', ')";
+        }
 
         return $this->get_report_data("
             SELECT ue.id,
@@ -427,7 +434,13 @@ class local_intelliboard_external extends external_api {
                 e.enrol AS enrols,
                 c.id AS cid,
                 c.fullname AS course,
-                c.timemodified AS start_date
+                c.timemodified AS start_date,
+                (SELECT $group_concat
+                    FROM {role_assignments} AS ra
+                        JOIN {user} u ON ra.userid = u.id
+                        JOIN {context} AS ctx ON ctx.id = ra.contextid
+                    WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles
+                ) AS teacher
                 $sql_columns
             FROM {user_enrolments} ue
                 JOIN {enrol} e ON e.id = ue.enrolid
@@ -643,7 +656,8 @@ class local_intelliboard_external extends external_api {
     }
     public function report6($params)
     {
-        $columns = array_merge(array("u.firstname", "u.lastname", "email", "c.fullname", "started", "grade", "grade", "completed", "grade", "complete", "visits", "timespend"), $this->get_filter_columns($params));
+        global $CFG;
+        $columns = array_merge(array("u.firstname", "u.lastname", "email", "c.fullname", "started", "grade", "grade", "completed", "grade", "complete", "visits", "timespend","teacher"), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "e.courseid");
@@ -656,6 +670,12 @@ class local_intelliboard_external extends external_api {
         $grade_avg_real = intelliboard_grade_sql(true, $params, 'g.', 0, 'gi.');
         $sql_columns = $this->get_columns($params, "u.id");
         $completion = $this->get_completion($params, "cmc.");
+        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg( DISTINCT CONCAT(u.firstname,' ',u.lastname), ', ')";
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u.firstname,' ',u.lastname) SEPARATOR ', ')";
+        }
 
         $sql_join = "";
         if($params->cohortid){
@@ -686,7 +706,13 @@ class local_intelliboard_external extends external_api {
                 u.lastname,
                 c.enablecompletion,
                 (SELECT COUNT(DISTINCT cmc.id) FROM {course_modules_completion} cmc, {course_modules} cm WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id $completion AND cm.completion > 0 AND cm.course = c.id AND cmc.userid = u.id) AS completed,
-                (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid=c.id) AS average
+                (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid=c.id) AS average,
+                (SELECT $group_concat
+                  FROM {role_assignments} AS ra
+                    JOIN {user} u ON ra.userid = u.id
+                    JOIN {context} AS ctx ON ctx.id = ra.contextid
+                  WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles
+                ) AS teacher
                 $sql_columns
             FROM {user_enrolments} ue
                 LEFT JOIN {user} u ON u.id = ue.userid
@@ -954,7 +980,7 @@ class local_intelliboard_external extends external_api {
                 JOIN {course} c ON c.id = ctx.instanceid
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                 LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ra.userid
-                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid
+                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid AND cc.timecompleted > 0
                 $sql_join
             WHERE c.id $sql_filter
             GROUP BY c.id $sql_having $sql_order", $params);
@@ -1725,7 +1751,8 @@ class local_intelliboard_external extends external_api {
     }
     public function report32($params)
     {
-        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "courses","lit.timesite","lit.timecourses","lit.timeactivities","u.timecreated"), $this->get_filter_columns($params));
+        global $CFG;
+        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "courses","lit.timesite","lit.timecourses","lit.timeactivities","u.timecreated","teacher"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1746,6 +1773,13 @@ class local_intelliboard_external extends external_api {
             $sql_filter .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
         }
 
+        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra_t.roleid");
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg( DISTINCT CONCAT(u_t.firstname,' ',u_t.lastname), ', ')";
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u_t.firstname,' ',u_t.lastname) SEPARATOR ', ')";
+        }
+
         return $this->get_report_data("
             SELECT u.id,
                 u.firstname,
@@ -1755,7 +1789,8 @@ class local_intelliboard_external extends external_api {
                 COUNT(DISTINCT ctx.instanceid) as courses,
                 MAX(lit.timesite) AS timesite,
                 MAX(lit.timecourses) AS timecourses,
-                MAX(lit.timeactivities) AS timeactivities
+                MAX(lit.timeactivities) AS timeactivities,
+                $group_concat AS teacher
                 $sql_columns
             FROM {role_assignments} ra
                 JOIN {user} u ON u.id = ra.userid
@@ -1767,6 +1802,8 @@ class local_intelliboard_external extends external_api {
                     FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
                     WHERE l.trackid = t.id
                     GROUP BY t.userid) as lit ON lit.userid = u.id
+                LEFT JOIN {role_assignments} AS ra_t ON ra.contextid = ctx.id $sql_teacher_roles
+                LEFT JOIN {user} u_t ON ra_t.userid = u_t.id
                 $sql_join
             WHERE u.id > 0 $sql_filter
             GROUP BY u.id $sql_having $sql_order", $params);
@@ -2050,6 +2087,16 @@ class local_intelliboard_external extends external_api {
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_columns = $this->get_columns($params, "u.id");
 
+        if($params->custom3 == 1){
+            $certificate_table = 'customcert';
+            $cert_issues_table = 'customcert_issues';
+            $cert_id_field = 'customcertid';
+        }else{
+            $certificate_table = 'certificate';
+            $cert_issues_table = 'certificate_issues';
+            $cert_id_field = 'certificateid';
+        }
+
         return $this->get_report_data("
             SELECT ci.id,
                 u.firstname,
@@ -2069,8 +2116,8 @@ class local_intelliboard_external extends external_api {
                 c.id as cid,
                 c.fullname as course
                 $sql_columns
-            FROM {certificate_issues} ci
-                LEFT JOIN {certificate} ce ON ce.id = ci.certificateid
+            FROM {{$cert_issues_table}} ci
+                LEFT JOIN {{$certificate_table}} ce ON ce.id = ci.$cert_id_field
                 LEFT JOIN {user} u ON u.id = ci.userid
                 LEFT JOIN {course} c ON c.id = ce.course
             WHERE ci.id > 0 $sql_filter $sql_having $sql_order", $params);
@@ -2500,19 +2547,29 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "mc.course");
         $sql_filter .= $this->get_filterdate_sql($params, "mci.timecreated");
 
+        if($params->custom3 == 1){
+            $certificate_table = 'customcert';
+            $cert_issues_table = 'customcert_issues';
+            $cert_id_field = 'customcertid';
+        }else{
+            $certificate_table = 'certificate';
+            $cert_issues_table = 'certificate_issues';
+            $cert_id_field = 'certificateid';
+        }
+
         return $this->get_report_data("
             SELECT DISTINCT mci.id,
                 mc.course AS mc_course,
                 mco.fullname AS mco_name,
                 mc.name AS mc_name,
                 mci.userid AS mci_userid,
-                mci.certificateid AS mci_certid,
+                mci.{$cert_id_field} AS mci_certid,
                 mu.firstname AS mu_firstname,
                 mu.lastname AS mu_lastname,
                 mu.email AS mu_email,
                 mci.timecreated AS issue_date
-            FROM {certificate} mc
-                LEFT JOIN {certificate_issues} AS mci ON mci.certificateid = mc.id
+            FROM {{$certificate_table}} mc
+                LEFT JOIN {{$cert_issues_table}} AS mci ON mci.{$cert_id_field} = mc.id
                 LEFT OUTER JOIN {user} AS mu ON mci.userid = mu.id
                 LEFT OUTER JOIN {course} AS mco ON mc.course = mco.id
             WHERE mci.id > 0 $sql_filter $sql_having $sql_order", $params);
@@ -3454,7 +3511,8 @@ class local_intelliboard_external extends external_api {
     }
     public function report97($params)
     {
-        $columns = array_merge(array("c.id", "c.fullname", "c.startdate", "ue.enrolled", "x.users", "timespend", "visits"), $this->get_filter_columns($params));
+        global $CFG;
+        $columns = array_merge(array("c.id", "c.fullname", "c.startdate", "ue.enrolled", "x.users", "timespend", "visits","teacher"), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
@@ -3465,6 +3523,13 @@ class local_intelliboard_external extends external_api {
         $sql_enrolfilter .= $this->get_filter_enrol_sql($params, "e.");
         $sql_timefilter = $this->get_filterdate_sql($params, "l.timepoint");
 
+        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg( DISTINCT CONCAT(u.firstname,' ',u.lastname), ', ')";
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u.firstname,' ',u.lastname) SEPARATOR ', ')";
+        }
+
         return $this->get_report_data("
             SELECT c.id,
                    c.fullname,
@@ -3472,7 +3537,13 @@ class local_intelliboard_external extends external_api {
                    x.users,
                    ue.enrolled,
                    x.timespend,
-                   x.visits
+                   x.visits,
+                   (SELECT $group_concat
+                      FROM {role_assignments} AS ra
+                        JOIN {user} u ON ra.userid = u.id
+                        JOIN {context} AS ctx ON ctx.id = ra.contextid
+                      WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles
+                   ) AS teacher
             FROM {course} c
             LEFT JOIN (SELECT e.courseid, COUNT(DISTINCT ue.userid) AS enrolled
                 FROM {user_enrolments} ue, {enrol} e
@@ -4455,7 +4526,8 @@ class local_intelliboard_external extends external_api {
     }
     function report104($params)
     {
-        $columns = array_merge(array("u.firstname","u.lastname"), $this->get_filter_columns($params));
+        global $CFG;
+        $columns = array_merge(array("u.firstname","u.lastname"), $this->get_filter_columns($params),array('teacher'));
         $modules = $this->get_course_modules($params);
         $sql_select = '';
         foreach($modules['modules'] as $module){
@@ -4473,6 +4545,13 @@ class local_intelliboard_external extends external_api {
         $sql_columns = $this->get_columns($params, "u.id");
         $sql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
 
+        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra_t.roleid");
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg( DISTINCT CONCAT(u_t.firstname,' ',u_t.lastname), ', ')";
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u_t.firstname,' ',u_t.lastname) SEPARATOR ', ')";
+        }
+
         $data = $this->get_report_data("
             SELECT
               u.id,
@@ -4480,7 +4559,12 @@ class local_intelliboard_external extends external_api {
               u.username,
               u.idnumber,
               u.firstname,
-              u.lastname
+              u.lastname,
+              (SELECT $group_concat
+                FROM {role_assignments} AS ra_t
+                  JOIN {user} u_t ON ra_t.userid = u_t.id
+                WHERE ra_t.contextid = ctx.id $sql_teacher_roles
+              ) AS teacher
               $sql_select
               $sql_columns
 
@@ -8440,8 +8524,8 @@ class local_intelliboard_external extends external_api {
 
         return $DB->get_records_sql("
                 SELECT CONCAT(
-                " . get_operator('DAY', get_operator('FROM_UNIXTINE', 'l.timepoint')) . ", '_', 
-                " . get_operator('MONTH', get_operator('FROM_UNIXTINE', 'l.timepoint')) . ", '_', 
+                " . get_operator('DAY', get_operator('FROM_UNIXTINE', 'l.timepoint')) . ", '_',
+                " . get_operator('MONTH', get_operator('FROM_UNIXTINE', 'l.timepoint')) . ", '_',
                 " . get_operator('YEAR', get_operator('FROM_UNIXTINE', 'l.timepoint')) . ") as id,
                     " . get_operator('DAY', get_operator('FROM_UNIXTINE', 'l.timepoint')) . " as daypoint,
                     " . get_operator('MONTH', get_operator('FROM_UNIXTINE', 'l.timepoint')) . " as monthpoint,
@@ -8852,7 +8936,7 @@ class local_intelliboard_external extends external_api {
                                                              {grade_grades} g
                                                       WHERE  gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND g.userid = :userid
                                                       GROUP BY gi.itemmodule
-                                      
+
                                                      ",$this->params);
 
                 $completion = $this->get_completion($params, "cmc.");
@@ -8868,7 +8952,7 @@ class local_intelliboard_external extends external_api {
                                                            LEFT JOIN (SELECT cm.course, COUNT(cm.id) AS modules FROM {course_modules} cm WHERE cm.visible = 1 AND cm.completion > 0 GROUP BY cm.course) AS cmm ON cmm.course = c.id
                                                            LEFT JOIN (SELECT cm.course, cmc.userid, COUNT(cmc.id) AS completed FROM {course_modules} cm, {course_modules_completion} cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 $completion GROUP BY cm.course, cmc.userid) as cmc ON cmc.course = c.id AND cmc.userid = ue.userid
                                                        WHERE ue.userid = :userid
-                                
+
                                                        ORDER BY c.fullname
                                                       ",$this->params, 0, 100);
             }else{
@@ -8986,7 +9070,7 @@ class local_intelliboard_external extends external_api {
                                                         LEFT JOIN {context} ctx ON ra.contextid = ctx.id
                                                         LEFT JOIN {course} c ON c.id = ctx.instanceid
                                                       WHERE ctx.instanceid = c.id $filter1
-        
+
                                                      ", $this->params);
         }
         return $course;
