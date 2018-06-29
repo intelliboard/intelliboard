@@ -57,6 +57,12 @@ echo $OUTPUT->header();
 			<iframe id="iframe" src="<?php echo intelliboard_url(); ?>reports/share/<?php echo $intelliboard->db . '/' . $report; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1" width="100%" height="800" frameborder="0"></iframe>
 			<span id="iframe-loading"><?php echo get_string('loading2', 'local_intelliboard'); ?></span>
 		</div>
+		<?php elseif(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
+			<div id="adminsettings">
+				<?php foreach($intelliboard->reports as $key=>$val): ?>
+					<div><h3><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val); ?></a></h3></div>
+				<?php endforeach; ?>
+			</div>
 		<?php else: ?>
 			<div class="alert alert-block alert-info" role="alert"><?php echo get_string('reportselect', 'local_intelliboard'); ?></div>
 		<?php endif; ?>
