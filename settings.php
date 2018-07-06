@@ -26,7 +26,7 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$settings = new admin_settingpage('local_intelliboard', new lang_string('settings', 'local_intelliboard'));
+$settings = new admin_settingpage('local_intelliboard', new lang_string('pluginname', 'local_intelliboard'));
 
 $ADMIN->add('root', new admin_category('intelliboardroot', new lang_string('intelliboardroot', 'local_intelliboard')));
 $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcontrolpanel', new lang_string('dashboard', 'local_intelliboard'),
@@ -42,8 +42,7 @@ $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcompetency',
 
 
 if (!$ADMIN->locate('intelliboard') and $ADMIN->locate('localplugins')){
-	$ADMIN->add('localplugins', new admin_category('intelliboard', new lang_string('pluginname', 'local_intelliboard')));
-	$ADMIN->add('intelliboard', $settings);
+	$ADMIN->add('localplugins', $settings);
 }
 
 if($ADMIN->fulltree){
@@ -301,6 +300,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/instructor_redirect';
+        $title = new lang_string('instructor_redirect', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/ts1', new lang_string('ts1', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/t0';
@@ -378,6 +382,11 @@ if($ADMIN->fulltree){
         $title = new lang_string('t09', 'local_intelliboard');
         $desc = new lang_string('select_manager_role', 'local_intelliboard');
         $setting = new admin_setting_configselect($name, $title, $desc, 0, $roles_user_arr);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/student_redirect';
+        $title = new lang_string('student_redirect', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
         $settings->add(new admin_setting_heading('local_intelliboard/ts2', new lang_string('ts2', 'local_intelliboard'), ''));

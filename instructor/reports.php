@@ -59,7 +59,7 @@ echo $OUTPUT->header();
 			<span id="iframe-loading"><?php echo get_string('loading2', 'local_intelliboard'); ?></span>
 		</div>
 	</div>
-	<?php include("views/footer.php"); ?>
+	<?php include("../views/footer.php"); ?>
 </div>
 <?php
 echo $OUTPUT->footer();

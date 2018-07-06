@@ -50,4 +50,8 @@ $observers = [
         'eventname' => '\mod_assign\event\assessable_submitted',
         'callback'  => 'local_intelliboard_observer::assign_attempt_submitted',
     ),
+    array (
+        'eventname' => 'core\event\user_loggedin',
+        'callback'  => 'local_intelliboard_observer::user_loggedin',
+    ),
 ];

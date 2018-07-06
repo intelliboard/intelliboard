@@ -544,6 +544,8 @@ $string['select_manager_role'] = 'Select manager role';
 $string['group_aggregation'] = 'Group aggregation';
 $string['ssodomain'] = 'Subdomain SSO';
 $string['ssodomain_desc'] = 'Single Sign On with separated Server/Account';
+$string['instructor_redirect'] = 'Instructor redirect';
+$string['student_redirect'] = 'Student redirect';
 
 
 
