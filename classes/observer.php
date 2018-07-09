@@ -104,6 +104,52 @@ class local_intelliboard_observer
         self::process_event(15, $event, array(), array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
     }
 
+    public static function user_loggedin(\core\event\user_loggedin $event)
+    {
+        global $CFG;
+
+        $eventData = $event->get_data();
+        if(get_config('local_intelliboard', 'instructor_redirect')){
+            $instructor_roles = get_config('local_intelliboard', 'filter10');
+            if (!empty($instructor_roles)) {
+                $access = false;
+                $roles = explode(',', $instructor_roles);
+                if (!empty($roles)) {
+                    foreach ($roles as $role) {
+                        if ($role and user_has_role_assignment($eventData['userid'], $role)){
+                            $access = true;
+                            break;
+                        }
+                    }
+                    if ($access) {
+                        redirect("$CFG->wwwroot/local/intelliboard/instructor/index.php");
+                    }
+                }
+            }
+        }
+
+        if(get_config('local_intelliboard', 'student_redirect')){
+            $student_roles = get_config('local_intelliboard', 'filter11');
+            if(!empty($student_roles)){
+                $access = false;
+                $roles = explode(',', $student_roles);
+                if(!empty($roles)){
+                    foreach($roles as $role){
+                        if($role and user_has_role_assignment($eventData['userid'], $role)){
+                            $access = true;
+                            break;
+                        }
+                    }
+                    if($access){
+                        redirect("$CFG->wwwroot/local/intelliboard/student/index.php");
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     protected static function process_event($type, $event, $filter = array(), $ex_params = array())
     {
 

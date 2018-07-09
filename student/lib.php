@@ -337,7 +337,7 @@ function intelliboard_learner_courses($userid){
 }
 
 function intelliboard_learner_totals($userid){
-    global $DB;
+    global $DB, $CFG;
 
     $params = array();
     $params['userid1'] = $userid;
@@ -366,21 +366,35 @@ function intelliboard_learner_totals($userid){
                                     (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.userid = :userid10 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid) as grade", $params);
 
     if(get_config('local_intelliboard', 't08')){
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg(g.feedback, '; ')";
+            $substring_index = "split_part(scale,',', cast(ROUND(AVG(g.finalgrade)) as int))";
+            $case_round = "cast(ROUND(SUM(g.finalgrade), 0) as text)";
+            $cast_as_int_start = 'cast(';
+            $cast_as_int_end = ' as int)';
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT g.feedback ORDER BY g.feedback ASC SEPARATOR '; ')";
+            $substring_index = "SUBSTRING_INDEX(SUBSTRING_INDEX(scale, ',', ROUND(AVG(g.finalgrade))), ',', -1)";
+            $case_round = "ROUND(SUM(g.finalgrade), 0)";
+            $cast_as_int_start = '';
+            $cast_as_int_end = '';
+        }
+
         $sum_grade = $DB->get_record_sql("SELECT
-                          (CASE WHEN (AVG((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'))=MIN((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype')))
-                                     OR (AVG((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype')) IS NULL AND MIN((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype')) IS NULL)
-                            THEN (CASE MIN((SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'))
-                                  WHEN 1 THEN ROUND(SUM(g.finalgrade), 0)
-                                  WHEN 12 THEN ROUND(SUM(g.finalgrade), 0)
-                                  WHEN 13 THEN ROUND(SUM(g.finalgrade), 0)
+                          (CASE WHEN (AVG({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end})=MIN({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end}))
+                                     OR (AVG({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end}) IS NULL AND MIN({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end}) IS NULL)
+                            THEN (CASE MIN({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end})
+                                  WHEN 1 THEN {$case_round}
+                                  WHEN 12 THEN {$case_round}
+                                  WHEN 13 THEN {$case_round}
                                   WHEN 2 THEN CONCAT(ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0),'%')
                                   WHEN 21 THEN CONCAT(ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0),
                                                       '% (',CASE MIN(gi.gradetype)
-                                                            WHEN 1 THEN ROUND(AVG(g.finalgrade), 0)
+                                                            WHEN 1 THEN {$case_round}
                                                             WHEN 2 THEN (SELECT
-                                                                           SUBSTRING_INDEX(SUBSTRING_INDEX(scale, ',', ROUND(AVG(g.finalgrade))), ',', -1)
+																		{$substring_index}
                                                                          FROM {scale} s WHERE s.id=MIN(gi.scaleid))
-                                                            WHEN 3 THEN GROUP_CONCAT(DISTINCT g.feedback ORDER BY g.feedback ASC SEPARATOR '; ')
+                                                            WHEN 3 THEN {$group_concat}
                                                             END,')')
                                   WHEN 23 THEN CONCAT(ROUND(AVG(CASE WHEN (g.rawgrademax-g.rawgrademin) > 0 THEN ((g.finalgrade-g.rawgrademin)/(g.rawgrademax-g.rawgrademin))*100 ELSE g.finalgrade END), 0),
                                                       '% (',CASE WHEN (SELECT gl.letter
@@ -461,11 +475,11 @@ function intelliboard_learner_totals($userid){
                                                         ELSE ''
                                                         END
                                                       END ,' (', CASE MIN(gi.gradetype)
-                                                                 WHEN 1 THEN ROUND(MIN(g.finalgrade), 0)
+                                                                 WHEN 1 THEN {$case_round}
                                                                  WHEN 2 THEN (SELECT
-                                                                                SUBSTRING_INDEX(SUBSTRING_INDEX(scale, ',', ROUND(MIN(g.finalgrade))), ',', -1)
+																				{$substring_index}
                                                                               FROM {scale} s WHERE s.id=MIN(gi.scaleid))
-                                                                 WHEN 3 THEN GROUP_CONCAT(DISTINCT g.feedback ORDER BY g.feedback ASC SEPARATOR '; ')
+                                                                 WHEN 3 THEN {$group_concat}
                                                                  END, ')')
                                   WHEN 32 THEN CONCAT(CASE WHEN (SELECT gl.letter
                                                                  FROM {grade_letters} gl, {context} ctx
@@ -503,7 +517,7 @@ function intelliboard_learner_totals($userid){
                           JOIN {course} c ON c.id = e.courseid
                           JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='course'
                           JOIN {grade_grades} g ON g.itemid=gi.id AND g.userid=ue.userid
-                        WHERE ue.userid = :userid1 AND c.visible = 1 AND c.id IN(2,21)", $params);
+                        WHERE ue.userid = :userid1 AND c.visible = 1", $params);
 
         $data->sum_grade = (!empty($sum_grade->grade))?$sum_grade->grade:'-';
     }
