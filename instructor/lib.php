@@ -318,35 +318,23 @@ function intelliboard_instructor_stats()
     $grade_avg = intelliboard_grade_sql(true);
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
-    return $DB->get_record_sql("
-        SELECT
-        SUM(x.enrolled) AS enrolled,
-        SUM(x.completed) AS completed,
-        SUM(x.grades) AS grades,
-        COUNT(DISTINCT x.courseid) AS courses,
-        AVG(x.grade) AS grade
-        FROM
-            (SELECT
-                u.id AS id,
-                c.id AS courseid,
-                COUNT(DISTINCT ra.userid) as enrolled,
-                COUNT(DISTINCT cc.userid) as completed,
-                COUNT(DISTINCT g.id) as grades,
-                $grade_avg AS grade
-            FROM {role_assignments} ra
-                LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                LEFT JOIN {course} c ON c.id = ctx.instanceid
-                LEFT JOIN {user} u ON u.id = :userid2
-                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
-                LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
-                LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                $join_sql1
-            WHERE c.visible = 1 AND c.id IN (
-                SELECT DISTINCT ctx.instanceid
-                FROM {role_assignments} ra, {context} ctx
-                WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql2
-            GROUP BY c.id, u.id) x
-        GROUP BY x.id", $params);
+    return $DB->get_record_sql("SELECT
+            COUNT(DISTINCT c.id) as courses,
+            COUNT(DISTINCT ra.userid) as enrolled,
+            COUNT(DISTINCT cc.userid) as completed,
+            COUNT(DISTINCT g.id) as grades,
+            $grade_avg AS grade
+        FROM {role_assignments} ra
+            LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+            LEFT JOIN {course} c ON c.id = ctx.instanceid
+            LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
+            LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
+            LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
+            $join_sql1
+        WHERE c.visible = 1 AND c.id IN (
+            SELECT DISTINCT ctx.instanceid
+            FROM {role_assignments} ra, {context} ctx
+            WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql2", $params);
 }
 function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $daterange = '')
 {
@@ -410,7 +398,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
             SELECT
                 c.id,
                 c.fullname,
-                (SELECT count(distinct ra.userid) as learners 
+                (SELECT count(distinct ra.userid) as learners
                   FROM {role_assignments} ra
                     JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                     $join_sql1

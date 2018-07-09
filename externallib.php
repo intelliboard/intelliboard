@@ -1752,7 +1752,7 @@ class local_intelliboard_external extends external_api {
     public function report32($params)
     {
         global $CFG;
-        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "courses","lit.timesite","lit.timecourses","lit.timeactivities","u.timecreated","teacher"), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "courses","timesite","timecourses","timeactivities","u.timecreated","teacher"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1762,9 +1762,21 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $sql_join_filter = "";
 
-        if((isset($params->custom) and $params->custom == 1) or $params->userid){
-            $sql_join_filter = $this->get_filterdate_sql($params, "l.timepoint");
-        }else{
+        if ((isset($params->custom) and $params->custom == 1) or $params->userid) {
+            $sql_join_date = $this->get_filterdate_sql($params, "l.timepoint");
+            $sql_join_filter = "SELECT t.userid,
+                        SUM(l.timespend) as timesite,
+                        SUM(CASE WHEN t.courseid > 0 THEN l.timespend ELSE null END) as timecourses ,
+                        SUM(CASE WHEN t.page = 'module' THEN l.timespend ELSE null END) as timeactivities
+                    FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
+                    WHERE l.trackid = t.id $sql_join_date
+                    GROUP BY t.userid";
+        } else {
+            $sql_join_filter = "SELECT userid,
+                        SUM(timespend) as timesite,
+                        SUM(CASE WHEN courseid > 0 THEN timespend ELSE null END) as timecourses,
+                        SUM(CASE WHEN page = 'module' THEN timespend ELSE null END) as timeactivities
+                    FROM {local_intelliboard_tracking} GROUP BY userid";
             $sql_filter .= $this->get_filterdate_sql($params, "u.timecreated");
         }
         $sql_join = "";
@@ -1795,13 +1807,7 @@ class local_intelliboard_external extends external_api {
             FROM {role_assignments} ra
                 JOIN {user} u ON u.id = ra.userid
                 JOIN {context} AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                LEFT JOIN (SELECT t.userid,
-                        SUM(l.timespend) as timesite,
-                        SUM(CASE WHEN t.courseid > 0 THEN l.timespend ELSE null END) as timecourses ,
-                        SUM(CASE WHEN t.page = 'module' THEN l.timespend ELSE null END) as timeactivities
-                    FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
-                    WHERE l.trackid = t.id
-                    GROUP BY t.userid) as lit ON lit.userid = u.id
+                LEFT JOIN ($sql_join_filter) as lit ON lit.userid = u.id
                 LEFT JOIN {role_assignments} AS ra_t ON ra.contextid = ctx.id $sql_teacher_roles
                 LEFT JOIN {user} u_t ON ra_t.userid = u_t.id
                 $sql_join
@@ -2242,8 +2248,8 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
         $sql_filter .= $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
-        $grade_avg = intelliboard_grade_sql(true, $params, 'g.', 0, 'gi.',true);
-        $grade_avg_real = intelliboard_grade_sql(true, $params, 'g.', 0, 'gi.');
+        $grade_avg = intelliboard_grade_sql(true, $params, 'g.', 2, 'gi.',true);
+        $grade_avg_real = intelliboard_grade_sql(true, $params, 'g.', 2, 'gi.');
         $completion = $this->get_completion($params, "cmc.");
 
         $grades = array();
@@ -9725,6 +9731,8 @@ class local_intelliboard_external extends external_api {
         }
         if ($CFG->dbtype == 'pgsql') {
             $func = 'array_agg';
+        } elseif($CFG->dbtype == 'mssql') {
+            $func = 'COUNT';
         } else {
             $func = 'GROUP_CONCAT';
         }

@@ -469,3 +469,5 @@ $string['select_manager_role'] = 'Seleccionar rol de administrador';
 $string['group_aggregation'] = 'Agrupación de grupos';
 $string['ssodomain'] = 'Subdomain SSO';
 $string['ssodomain_desc'] = 'Single Sign On with separated Server/Account';
+$string['instructor_redirect'] = 'Redireccionamiento del instructor';
+$string['student_redirect'] = 'Redirección del estudiante';
