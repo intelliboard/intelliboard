@@ -25,11 +25,25 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+require_once($CFG->dirroot . '/local/intelliboard/locallib.php');
 
-class local_intelliboard_notification {
+class local_intelliboard_notification
+{
 
     protected $history = array();
+
+    public static function save_history($recipient, $notification)
+    {
+        global $DB;
+
+        $DB->insert_record('local_intelliboard_ntf_hst', array(
+            'notificationid' => $notification->externalid,
+            'notificationname' => $notification->name,
+            'userid' => $notification->userid,
+            'email' => $recipient->email,
+            'timesent' => time()
+        ));
+    }
 
     public function get_instant_notifications($type, $filters = array(), $excluded = array())
     {
@@ -77,7 +91,7 @@ class local_intelliboard_notification {
     {
         if ($notifications) {
             foreach ($notifications as $notification) {
-                 $events = array();
+                $events = array();
 
                 if ($event) {
                     $events[] = $event->get_data();
@@ -93,16 +107,138 @@ class local_intelliboard_notification {
 
     }
 
+    protected function get_events_from_queue($notification, $params)
+    {
+        global $DB;
+
+        $function = 'notification' . $notification['type'] . '_event';
+
+        if (method_exists($this, $function)) {
+            $data = $this->$function($notification);
+
+            $filter = $this->filter_by_owner($notification['userid'], array(
+                'users' => 't.userid',
+                'courses' => 't.courseid'
+            ), $params);
+
+            $data['sql'] .= $filter ? ' WHERE ' . $filter : '';
+
+            $events = json_decode(json_encode($DB->get_records_sql(
+                $data['sql'], $data['params']
+            )), true);
+
+            $events = array_map(function ($event) {
+
+                foreach ($event as $name => $value) {
+                    $nameArr = explode('_', $name);
+
+                    if ($nameArr[0] === 'other') {
+                        $event['other'][$nameArr[1]] = $value;
+                    }
+                }
+                return $event;
+            }, $events);
+        } else {
+            $events = array();
+        }
+
+        return $events;
+    }
+
+    protected function filter_by_owner($user, $columns, $params)
+    {
+        global $DB;
+
+        $query = [];
+        $assign_users = [];
+        $assign_courses = [];
+        $assign_cohorts = [];
+
+        $assigns = $DB->get_records_sql("SELECT * FROM {local_intelliboard_assign} WHERE userid = :userid",
+            ['userid' => $user]);
+        foreach ($assigns as $assign) {
+            $type = &${'assign_' . $assign->type};
+            $type[] = (int)$assign->instance;
+        }
+
+        $assign_users_list = implode(",", $assign_users);
+        $assign_courses_list = implode(",", $assign_courses);
+        $assign_cohorts_list = implode(",", $assign_cohorts);
+
+        foreach ($columns as $type => $column) {
+            if ($type == "users") {
+                $list = [];
+
+                if ($assign_cohorts_list) {
+                    $list = array_merge($list,
+                        $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN ($assign_cohorts_list)"));
+                }
+
+                if ($assign_courses_list) {
+                    list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles, 'ra.roleid');
+                    $list = array_merge($list,
+                        $DB->get_fieldset_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN ($assign_courses_list)",
+                            $values));
+                }
+
+                $assign_users = array_merge(array_unique($assign_users), array_unique($list));
+
+                if ($assign_users) {
+                    $query[] = "$column IN (" . implode(",", $assign_users) . ")";
+                }
+            } elseif ($type == "courses") {
+                $list = [];
+                $assign_courses = array_unique($assign_courses);
+
+                if ($assign_users_list) {
+                    list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles, 'ra.roleid');
+                    $list = array_merge($list,
+                        $DB->get_fieldset_sql("SELECT DISTINCT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ra.userid IN ($assign_users_list)",
+                            $values));
+                }
+                if ($assign_cohorts_list) {
+                    $users_list = $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN ($assign_cohorts_list)");
+                    list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles, 'ra.roleid');
+                    $list = array_merge($list,
+                        $DB->get_fieldset_sql("SELECT DISTINCT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ra.userid IN (" . implode(",",
+                                $users_list) . ")", $values));
+                }
+
+                $assign_courses = array_merge(array_unique($assign_courses), array_unique($list));
+                if ($assign_courses) {
+                    $query[] = "$column IN (" . implode(",", $assign_courses) . ")";
+                }
+            } elseif ($type == "cohorts" && $assign_cohorts) {
+                $query[] = "$column IN (" . implode(",", $assign_cohorts) . ")";
+            }
+        }
+
+        return $query ? " (" . implode(" AND ", $query) . ") " : '';
+    }
+
+    private function get_filter_in_sql($items, $column)
+    {
+        global $DB;
+
+        if ($items) {
+            $result = $DB->get_in_or_equal($items, SQL_PARAMS_QM);
+            $result[0] = " $column " . $result[0] . " ";
+            return $result;
+        }
+
+        return array('sql' => '', 'params' => array());
+    }
+
     protected function notify($recipients, $notifications, $notificationType)
     {
-        foreach($recipients as $i => $recipient) {
+        foreach ($recipients as $i => $recipient) {
             $notification = $notifications[$i];
 
             if (!empty($notification['attachment'])) {
                 $notification['attachmentType'] = $notificationType['attachment'];
             }
 
-            $notification['externalid'] = !empty($notificationType['externalid'])? $notificationType['externalid'] : $notificationType['id'];
+            $notification['externalid'] = !empty($notificationType['externalid']) ? $notificationType['externalid'] : $notificationType['id'];
             $notification['name'] = $notificationType['name'];
             $notification['userid'] = $notificationType['userid'];
 
@@ -111,19 +247,6 @@ class local_intelliboard_notification {
 
             \core\task\manager::queue_adhoc_task($task);
         }
-    }
-
-    public static function save_history($recipient, $notification)
-    {
-        global $DB;
-
-        $DB->insert_record('local_intelliboard_ntf_hst', array(
-            'notificationid' => $notification->externalid,
-            'notificationname' => $notification->name,
-            'userid' => $notification->userid,
-            'email' => $recipient->email,
-            'timesent' => time()
-        ));
     }
 
     protected function notification2(&$notification, $events = array())
@@ -143,6 +266,84 @@ class local_intelliboard_notification {
         $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
 
         return array($recipients, $notifications);
+    }
+
+    private function get_recipients_by_emails($emails)
+    {
+        $template = get_admin();
+
+        return array_map(function ($email) use ($template) {
+            $user = clone $template;
+            $user->email = $email;
+
+            return $user;
+        }, $emails);
+    }
+
+    protected function prepare_notification($notification, $params = array(), $attachment = array())
+    {
+
+        $buffer = array();
+
+        if ($params) {
+            foreach ($params as $item) {
+                $buffer[] = $this->transform_tags($notification['message'], $notification['tags'], $item);
+            }
+        } else {
+            if ($attachment) {
+                $buffer[] = $notification['message'];
+            } else {
+                $buffer[] = str_replace('[date]',
+                    get_string('last_' . $this->get_border_date_string($notification['frequency']),
+                        'local_intelliboard'), get_string('no_data_notification', 'local_intelliboard'));
+            }
+        }
+
+        $result = array();
+        $result['subject'] = $notification['subject'];
+        $result['message'] = implode('<hr>', $buffer);
+
+        $result['attachment'] = $notification['attachment'] ? $attachment : false;
+        return $result;
+    }
+
+    protected function transform_tags($message, $tags, $values)
+    {
+        $keys = array_map(function ($tag) {
+            return '[' . $tag . ']';
+        }, array_keys($tags));
+
+        if (isset($values[0])) {
+            $values = $values[0];
+        }
+
+        $values = array_map(function ($value) use ($values) {
+            return '<strong>' . $values[$value] . '</strong>';
+        }, $tags);
+
+        return str_replace($keys, $values, $message);
+    }
+
+    protected function get_border_date_string($frequency)
+    {
+
+        $frequency = (int)$frequency;
+
+        switch ($frequency) {
+            case 2:
+                return 'hour';
+            case 3:
+                return 'day';
+            case 4:
+                return 'week';
+            case 5:
+                return 'month';
+            case 6:
+                return 'year';
+            default:
+                return false;
+        }
+
     }
 
     protected function notification12(&$notification, $events = array())
@@ -208,7 +409,8 @@ class local_intelliboard_notification {
         $params[] = $dueTime;
         $filterUser = '';
 
-        if (!$DB->count_records('local_intelliboard_assign', array('type' => 'courses', 'userid' => $notification['userid']))) {
+        if (!$DB->count_records('local_intelliboard_assign',
+            array('type' => 'courses', 'userid' => $notification['userid']))) {
 
             $availableUsers = array_map(function ($user) {
                 return $user->id;
@@ -219,7 +421,7 @@ class local_intelliboard_notification {
                   SELECT chm.userid FROM {local_intelliboard_assign} lia, {cohort_members} chm
                   WHERE lia.type = 'cohorts' AND lia.userid = ? AND chm.cohortid = lia.instance
                 )
-            ", array($notification['userid'],$notification['userid']));
+            ", array($notification['userid'], $notification['userid']));
 
             if ($availableUsers) {
                 $filterUser = 'AND u.id IN(' . trim(str_repeat('?,', count($availableUsers)), ',') . ')';
@@ -250,13 +452,13 @@ class local_intelliboard_notification {
 
         $notifications = array();
 
-        $users = array_map(function($user) use (&$notifications, $notification) {
+        $users = array_map(function ($user) use (&$notifications, $notification) {
             $activity_names = explode(':|:', $user->activity_names);
             $activity_duedates = explode(':|:', $user->activity_duedates);
             $activities = new stdClass();
             $activities->header = array(
-                (object) array('name' => 'Name'),
-                (object) array('name' => 'Due Date')
+                (object)array('name' => 'Name'),
+                (object)array('name' => 'Due Date')
             );
             $activities->body = array();
 
@@ -290,7 +492,8 @@ class local_intelliboard_notification {
                 case 'assign':
                     $activity = $DB->get_record_sql(
                         'SELECT a.name FROM {assign} a
-                         INNER JOIN {assign_submission} ass ON ass.assignment = a.id WHERE ass.id = ?', array($data['objectid'])
+                         INNER JOIN {assign_submission} ass ON ass.assignment = a.id WHERE ass.id = ?',
+                        array($data['objectid'])
                     )->name;
                     break;
                 case 'quiz':
@@ -327,7 +530,7 @@ class local_intelliboard_notification {
             'courses' => 'c.id'
         ), $request_params);
 
-        $filterUser = $filterUser? ' AND ' . $filterUser : '';
+        $filterUser = $filterUser ? ' AND ' . $filterUser : '';
 
         $users = array_values($DB->get_records_sql('
                 SELECT cmc.id,
@@ -349,18 +552,22 @@ class local_intelliboard_notification {
         $recipients = array();
         $notifications = array();
 
-        foreach($users as $user) {
+        foreach ($users as $user) {
             if (!$recipients[$user->email]) {
                 $recipients[$user->email] = $user;
                 $notifications[$user->email] = new stdClass();
                 $notifications[$user->email]->header = array(
-                    (object) array("name" => 'Activity'),
-                    (object) array("name" => 'Course'),
-                    (object) array("name" => 'Grade')
+                    (object)array("name" => 'Activity'),
+                    (object)array("name" => 'Course'),
+                    (object)array("name" => 'Grade')
                 );
             }
 
-            $notifications[$user->email]->body[] = array('activity' => $user->activity, 'course' => $user->course, 'grade' => $user->grade);
+            $notifications[$user->email]->body[] = array(
+                'activity' => $user->activity,
+                'course' => $user->course,
+                'grade' => $user->grade
+            );
         }
 
         foreach ($notifications as $i => $item) {
@@ -371,34 +578,12 @@ class local_intelliboard_notification {
 
     }
 
-    protected function prepare_notification($notification, $params = array(), $attachment = array()) {
-
-        $buffer = array();
-
-        if ($params) {
-            foreach ($params as $item) {
-                $buffer[] = $this->transform_tags($notification['message'], $notification['tags'], $item);
-            }
-        } else if ($attachment){
-            $buffer[] = $notification['message'];
-        } else {
-            $buffer[] = str_replace('[date]', get_string('last_' . $this->get_border_date_string($notification['frequency']), 'local_intelliboard'), get_string('no_data_notification', 'local_intelliboard'));
-        }
-
-        $result = array();
-        $result['subject'] = $notification['subject'];
-        $result['message'] = implode('<hr>', $buffer);
-
-        $result['attachment'] = $notification['attachment']? $attachment : false;
-        return $result;
-    }
-
     protected function get_border_date($frequency)
     {
 
-        $frequency = (int) $frequency;
+        $frequency = (int)$frequency;
 
-        switch($frequency) {
+        switch ($frequency) {
             case 2:
                 return strtotime('-1 hours');
             case 3:
@@ -415,144 +600,25 @@ class local_intelliboard_notification {
 
     }
 
-    protected function get_border_date_string($frequency)
-    {
-
-        $frequency = (int) $frequency;
-
-        switch($frequency) {
-            case 2:
-                return 'hour';
-            case 3:
-                return 'day';
-            case 4:
-                return 'week';
-            case 5:
-                return 'month';
-            case 6:
-                return 'year';
-            default:
-                return false;
-        }
-
-    }
-
-    protected function transform_tags($message, $tags, $values)
-    {
-        $keys = array_map(function($tag) {
-            return '[' . $tag . ']';
-        }, array_keys($tags));
-
-        if (isset($values[0])) {
-            $values = $values[0];
-        }
-
-        $values = array_map(function($value) use ($values) {
-            return '<strong>' . $values[$value] . '</strong>';
-        }, $tags);
-
-        return str_replace($keys, $values, $message);
-    }
-
-    protected function filter_by_owner($user, $columns, $params)
+    protected function notification23(&$notification, $events = array())
     {
         global $DB;
 
-        $query = [];
-        $assign_users = [];
-        $assign_courses = [];
-        $assign_cohorts = [];
+        $event = $events[0];
+        $user = $DB->get_record('user', array('id' => $event['relateduserid']));
 
-        $assigns = $DB->get_records_sql("SELECT * FROM {local_intelliboard_assign} WHERE userid = :userid", ['userid' => $user]);
-        foreach ($assigns as $assign) {
-            $type = &${'assign_' . $assign->type};
-            $type[] = (int) $assign->instance;
-        }
+        $result = array(
+            'user' => fullname($user),
+            'courseName' => $DB->get_record('course', array('id' => $event['contextinstanceid']),
+                'fullname')->fullname,
+            'timeEnrolled' => date('Y/m/d', 'H:i:s')
+        );
 
-        $assign_users_list = implode(",", $assign_users);
-        $assign_courses_list = implode(",", $assign_courses);
-        $assign_cohorts_list = implode(",", $assign_cohorts);
+        $recipients = $this->get_recipients_by_emails($notification['email']);
+        $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
 
-        foreach ($columns as $type => $column) {
-            if ($type == "users") {
-                $list = [];
+        return array($recipients, $notifications);
 
-                if ($assign_cohorts_list) {
-                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN ($assign_cohorts_list)"));
-                }
-
-                if ($assign_courses_list) {
-                    list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
-                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN ($assign_courses_list)", $values));
-                }
-
-                $assign_users = array_merge(array_unique($assign_users), array_unique($list));
-
-                if ($assign_users) {
-                    $query[] = "$column IN (".implode(",", $assign_users).")";
-                }
-            } elseif($type == "courses") {
-                $list = [];
-                $assign_courses = array_unique($assign_courses);
-
-                if ($assign_users_list) {
-                    list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
-                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT DISTINCT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ra.userid IN ($assign_users_list)", $values));
-                }
-                if ($assign_cohorts_list) {
-                    $users_list = $DB->get_fieldset_sql("SELECT userid FROM {cohort_members} WHERE cohortid IN ($assign_cohorts_list)");
-                    list($learner_roles, $values) = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
-                    $list = array_merge($list, $DB->get_fieldset_sql("SELECT DISTINCT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ra.userid IN (" . implode(",", $users_list) .  ")", $values));
-                }
-
-                $assign_courses = array_merge(array_unique($assign_courses), array_unique($list));
-                if ($assign_courses) {
-                    $query[] = "$column IN (".implode(",", $assign_courses).")";
-                }
-            } elseif($type == "cohorts" && $assign_cohorts) {
-                $query[] = "$column IN (".implode(",", $assign_cohorts).")";
-            }
-        }
-
-        return $query? " (".implode(" AND ", $query).") " : '';
-    }
-
-    protected function get_events_from_queue($notification, $params)
-    {
-        global $DB;
-
-        $function = 'notification' . $notification['type'] . '_event';
-
-        if (method_exists($this, $function)) {
-            $data = $this->$function($notification);
-
-            $filter = $this->filter_by_owner($notification['userid'], array(
-                'users' => 't.userid',
-                'courses' => 't.courseid'
-            ), $params);
-
-            $data['sql'] .= $filter? ' WHERE ' . $filter : '';
-
-            $events = json_decode(json_encode($DB->get_records_sql(
-                $data['sql'], $data['params']
-            )), true);
-
-            $events = array_map(function($event) {
-
-                foreach ($event as $name => $value) {
-                    $nameArr = explode('_', $name);
-
-                    if ($nameArr[0] === 'other') {
-                        $event['other'][$nameArr[1]] = $value;
-                    }
-                }
-                return $event;
-            }, $events);
-        } else {
-            $events = array();
-        }
-
-        return $events;
     }
 
     protected function notification12_event($notification)
@@ -599,7 +665,8 @@ class local_intelliboard_notification {
         $params = array($this->get_border_date($notification['frequency']));
 
         if (!empty($notification['params']['course'])) {
-            $sql .= " AND gi.courseid IN(" . rtrim(str_repeat('?,', count($notification['params']['course'])), ',') . ")";
+            $sql .= " AND gi.courseid IN(" . rtrim(str_repeat('?,', count($notification['params']['course'])),
+                    ',') . ")";
             $params = array_merge($params, $notification['params']['course']);
         }
 
@@ -651,31 +718,6 @@ class local_intelliboard_notification {
         );
 
         return compact('sql', 'params');
-    }
-
-    private function get_filter_in_sql($items, $column)
-    {
-        global $DB;
-
-        if($items){
-            $result = $DB->get_in_or_equal($items, SQL_PARAMS_QM);
-            $result[0] = " $column " . $result[0] . " ";
-            return $result;
-        }
-
-        return array('sql' => '', 'params' => array());
-    }
-
-    private function get_recipients_by_emails($emails)
-    {
-        $template = get_admin();
-
-        return array_map(function($email) use ($template) {
-            $user = clone $template;
-            $user->email = $email;
-
-            return $user;
-        }, $emails);
     }
 
 }
