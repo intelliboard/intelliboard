@@ -745,7 +745,7 @@ class local_intelliboard_external extends external_api {
             $sql_columns .= ", '0' as grade";
             $sql_join = "";
         }else{
-            $sql_columns .= ", gc.grade AS grade";
+            $sql_columns .= ", MIN(gc.grade) AS grade";
             $sql_join = "
                     LEFT JOIN (SELECT gi.courseid, g.userid, $grade_single AS grade
                     FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
@@ -753,7 +753,10 @@ class local_intelliboard_external extends external_api {
         }
 
         return $this->get_report_data("
-            SELECT ue.id, ue.userid,u.email,
+            SELECT
+                MIN(ue.id) AS id,
+                u.id AS userid,
+                u.email,
                 ((cmca.cmcnuma / cma.cmnuma)*100 ) as assignments,
                 ((cmc.cmcnums / cmx.cmnumx)*100 ) as participations,
                 ((COUNT(DISTINCT lit.id) / cm.cmnums)*100 ) as visits,
@@ -773,7 +776,7 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnums FROM {course_modules} cm, {course_modules_completion} cmc WHERE cmc.coursemoduleid = cm.id AND cm.visible  =  1 $completion1 GROUP BY cm.course, cmc.userid) cmc ON cmc.course = c.id AND cmc.userid = u.id
                 LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnuma FROM {course_modules} cm, {course_modules_completion} cmc WHERE cmc.coursemoduleid = cm.id AND cm.module = 1 AND cm.visible  =  1 $completion2 GROUP BY cm.course, cmc.userid) as cmca ON cmca.course = c.id AND cmca.userid = u.id
                 $sql_join
-            WHERE ue.id > 0 $sql_filter GROUP BY ue.id, ue.userid, u.email, e.courseid, cm.cmnums, cmca.cmcnuma, cmc.cmcnums, cma.cmnuma, cmx.cmnumx, lit.id, visits, cma.cmnuma, gc.grade, c.fullname, u.firstname, u.lastname $sql_having $sql_order", $params);
+            WHERE ue.id > 0 $sql_filter GROUP BY u.id,c.id $sql_having $sql_order", $params);
     }
     public function report8($params)
     {
@@ -1893,7 +1896,7 @@ class local_intelliboard_external extends external_api {
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
+        $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter .= $this->get_filterdate_sql($params, "l.timepoint");
 
         return $this->get_report_data("
@@ -2205,7 +2208,7 @@ class local_intelliboard_external extends external_api {
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
-
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
@@ -2217,6 +2220,7 @@ class local_intelliboard_external extends external_api {
                 COUNT(DISTINCT ue.userid) users,
                 COUNT(DISTINCT cc.userid) as completed
             FROM {user_enrolments} ue
+                INNER JOIN {user} u ON u.id = ue.userid
                 LEFT JOIN {enrol} e ON e.id = ue.enrolid
                 LEFT JOIN {course} c ON c.id = e.courseid
                 LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid AND cc.timecompleted > 0
@@ -2954,7 +2958,7 @@ class local_intelliboard_external extends external_api {
             $sql_join = "";
         } else {
             $sql_columns .= ", l.timespend, l.visits";
-            $sql_join = " LEFT JOIN (SELECT t.userid, t.courseid, SUM(l.timespend) AS timespend, SUM(l.visits) AS visits FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l WHERE l.trackid = t.id AND (t.page = 'module' or t.page = 'course') GROUP BY t.userid, t.courseid) l ON l.userid = u.id AND l.courseid = c.id";
+            $sql_join = " LEFT JOIN (SELECT userid, courseid, SUM(timespend) AS timespend, SUM(visits) AS visits FROM {local_intelliboard_tracking} WHERE page = 'module' or page = 'course' GROUP BY userid, courseid) l ON l.userid = u.id AND l.courseid = c.id";
         }
 
         if ($params->custom == 2) {
@@ -6326,6 +6330,8 @@ class local_intelliboard_external extends external_api {
         $responce_user_field = (get_config('mod_questionnaire', 'version')<2017050101)?'username':'userid';
 
         $columns = array_merge(array(
+            "r.submitted",
+            "u.idnumber",
             "u.firstname",
             "u.lastname",
             "u.email",
@@ -6852,7 +6858,7 @@ class local_intelliboard_external extends external_api {
     }
     function report143($params)
     {
-        $columns = array_merge(array("u.firstname","u.lastname"), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname","u.lastname","u.idnumber"), $this->get_filter_columns($params));
         $modules = $this->get_course_modules($params);
         $sql_select = '';
         $grade = intelliboard_grade_sql(false, $params,'gg.');
@@ -7391,10 +7397,8 @@ class local_intelliboard_external extends external_api {
         global $DB;
 
         $sql = $this->get_teacher_sql($params, ["c.id" => "courses"]);
-        if(!empty($params->courseid)){
-            $sql_enabled = $this->get_filter_in_sql($params->courseid,'q.course',false);
-            $sql = " WHERE $sql_enabled";
-        }
+        $sql .= $this->get_filter_in_sql($params->courseid,'q.course');
+
 
         $data = $DB->get_records_sql("
             SELECT q.id,
@@ -7402,7 +7406,7 @@ class local_intelliboard_external extends external_api {
                 c.id AS courseid,
                 c.fullname AS coursename
             FROM {quiz} q
-                JOIN {course} c ON c.id = q.course $sql", $this->params);
+                JOIN {course} c ON c.id = q.course WHERE c.id > 0 $sql", $this->params);
 
         return array('data'=>$data);
     }
@@ -7472,7 +7476,7 @@ class local_intelliboard_external extends external_api {
     public function get_incorrect_answers($params){
         global $DB;
 
-        $sql_params = array('questionid'=>$params->filter);
+        $sql_params = array('questionid'=>$params->filter, 'quiz'=>$params->custom);
         return $DB->get_records_sql("
                     SELECT
                       qas.id,
@@ -7480,10 +7484,11 @@ class local_intelliboard_external extends external_api {
                       u.id AS userid,
                       u.firstname,
                       u.lastname
-                    FROM {question_attempts} qua
+                    FROM {quiz_attempts} qa
+                      JOIN {question_attempts} qua ON qua.questionusageid=qa.uniqueid
                       JOIN {question_attempt_steps} qas ON qas.questionattemptid=qua.id AND qas.fraction IS NOT NULL
                       JOIN {user} u ON u.id=qas.userid
-                    WHERE qua.questionid = :questionid AND qas.state NOT LIKE '%partial' AND qas.state NOT LIKE '%right'"
+                    WHERE qa.quiz=:quiz AND qua.questionid = :questionid AND qas.state NOT LIKE '%partial' AND qas.state NOT LIKE '%right'"
                 , $sql_params);
     }
     public function analytic4($params){
@@ -7652,34 +7657,33 @@ class local_intelliboard_external extends external_api {
         global $DB;
         $columns = array("que.id", "que.name", "que.questiontext");
         $order_sql = $this->get_order_sql($params, $columns);
-        $limit_sql = $this->get_limit_sql($params);
         $params->custom = clean_param($params->custom,PARAM_INT);
         $this->params['custom1'] = $params->custom;
         $this->params['custom2'] = $params->custom;
         $this->params['custom3'] = $params->custom;
 
-        $sql = "SELECT qas.id,
-        IF((qa.userid=max_att.userid AND qa.attempt=max_att.attempt) AND (qa.userid=min_att.userid AND qa.attempt=min_att.attempt),'first-last',
-       IF(qa.userid=min_att.userid AND qa.attempt=min_att.attempt,'first','last')
-        ) AS `attempt_category`,
-        que.id AS questionid,
-        que.name,
-        que.questiontext,
-        AVG(((qas.fraction-qua.minfraction)/(qua.maxfraction-qua.minfraction))*100) as scale,
-        COUNT(qa.id) AS count_users
-    FROM {quiz} q
-     JOIN (SELECT id,userid, MAX(attempt) AS attempt
-       FROM {quiz_attempts}
-        WHERE quiz=:custom1 AND userid != 2 GROUP BY userid ) AS max_att
-     JOIN (SELECT id,userid, MIN(attempt) AS attempt
-       FROM {quiz_attempts}
-        WHERE quiz=:custom2 AND userid != 2 GROUP BY userid ) AS min_att ON max_att.userid=min_att.userid
-     LEFT JOIN {quiz_attempts} qa ON qa.quiz=q.id AND ((qa.userid=max_att.userid AND qa.attempt=max_att.attempt) OR (qa.userid=min_att.userid AND qa.attempt=min_att.attempt))
-     LEFT JOIN {question_attempts} qua ON qua.questionusageid=qa.uniqueid
-     LEFT JOIN {question_attempt_steps} qas ON qas.questionattemptid=qua.id AND qas.sequencenumber = (SELECT MAX(sequencenumber) FROM {question_attempt_steps} WHERE questionattemptid = qua.id)
-     LEFT JOIN {question} que ON que.id=qua.questionid
-    WHERE q.id=:custom3
-    GROUP BY `attempt_category`,que.id $order_sql $limit_sql";
+        $sql = "SELECT MIN(qas.id) as id,
+                    IF((qa.userid=max_att.userid AND qa.attempt=max_att.attempt) AND (qa.userid=min_att.userid AND qa.attempt=min_att.attempt),'first-last',
+                       IF(qa.userid=min_att.userid AND qa.attempt=min_att.attempt,'first','last')
+                        ) AS `attempt_category`,
+                    que.id AS questionid,
+                    que.name,
+                    que.questiontext,
+                    AVG(((qas.fraction-qua.minfraction)/(qua.maxfraction-qua.minfraction))*100) as scale,
+                    COUNT(qa.id) AS count_users
+                FROM {quiz} q
+                 JOIN (SELECT userid, MAX(attempt) AS attempt
+                       FROM {quiz_attempts}
+                        WHERE quiz=:custom1 AND userid != 2 GROUP BY userid ) AS max_att
+                 JOIN (SELECT userid, MIN(attempt) AS attempt
+                       FROM {quiz_attempts}
+                        WHERE quiz=:custom2 AND userid != 2 GROUP BY userid ) AS min_att ON max_att.userid=min_att.userid
+                 LEFT JOIN {quiz_attempts} qa ON qa.quiz=q.id AND ((qa.userid=max_att.userid AND qa.attempt=max_att.attempt) OR (qa.userid=min_att.userid AND qa.attempt=min_att.attempt))
+                 LEFT JOIN {question_attempts} qua ON qua.questionusageid=qa.uniqueid
+                 LEFT JOIN {question_attempt_steps} qas ON qas.questionattemptid=qua.id AND qas.sequencenumber = (SELECT MAX(sequencenumber) FROM {question_attempt_steps} WHERE questionattemptid = qua.id)
+                 LEFT JOIN {question} que ON que.id=qua.questionid
+                WHERE q.id=:custom3
+                GROUP BY `attempt_category`,que.id $order_sql";
 
         $question_info = $DB->get_records_sql($sql, $this->params);
         $size = $this->count_records($sql, 'questionid', $this->params);
@@ -8701,7 +8705,7 @@ class local_intelliboard_external extends external_api {
                 sum(l.visits) AS visits
             FROM {local_intelliboard_tracking} l
                 JOIN {course} c ON c.id = l.courseid
-            GROUP BY c.id $sql_order", $this->params, 0, 100);
+            GROUP BY c.id ORDER BY visits DESC", $this->params, 0, 100);
     }
 
     public function get_visits_perweek($params){

@@ -26,7 +26,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+require_once($CFG->dirroot . '/local/intelliboard/locallib.php');
 
 class local_intelliboard_observer
 {
@@ -36,6 +36,16 @@ class local_intelliboard_observer
         $relatedUser = $data['relateduserid'];
 
         self::process_event(2, $event, array(), array('users' => $relatedUser, 'courses' => $data['courseid']));
+    }
+
+    protected static function process_event($type, $event, $filter = array(), $ex_params = array())
+    {
+
+        $notification = new local_intelliboard_notification();
+        $excluded = exclude_not_owners($ex_params);
+        $notifications = $notification->get_instant_notifications($type, $filter, $excluded);
+
+        $notification->send_notifications($notifications, $event);
     }
 
     public static function role_unassigned(core\event\role_unassigned $event)
@@ -54,7 +64,8 @@ class local_intelliboard_observer
             'course' => $eventData['courseid']
         );
 
-        self::process_event(12, $event, $data, array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
+        self::process_event(12, $event, $data,
+            array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
     }
 
     public static function user_graded(\core\event\user_graded $event)
@@ -72,7 +83,8 @@ class local_intelliboard_observer
                 'course' => $eventData['courseid']
             );
 
-            self::process_event(13, $event, $data, array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
+            self::process_event(13, $event, $data,
+                array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
         }
 
     }
@@ -95,13 +107,26 @@ class local_intelliboard_observer
             return;
         }
 
-        self::process_event(15, $event, array(), array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
+        self::process_event(15, $event, array(),
+            array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
     }
 
     public static function assign_attempt_submitted(\mod_assign\event\assessable_submitted $event)
     {
         $eventData = $event->get_data();
-        self::process_event(15, $event, array(), array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
+        self::process_event(15, $event, array(),
+            array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
+    }
+
+    public static function user_enrolment_created(\core\event\user_enrolment_created $event)
+    {
+        $eventData = $event->get_data();
+        $filters = array(
+            'course' => $eventData['contextinstanceid']
+        );
+
+        self::process_event(23, $event, $filters,
+            array('users' => $eventData['relateduserid'], 'courses' => $eventData['contextinstanceid']));
     }
 
     public static function user_loggedin(\core\event\user_loggedin $event)
@@ -109,14 +134,14 @@ class local_intelliboard_observer
         global $CFG;
 
         $eventData = $event->get_data();
-        if(get_config('local_intelliboard', 'instructor_redirect')){
+        if (get_config('local_intelliboard', 'instructor_redirect')) {
             $instructor_roles = get_config('local_intelliboard', 'filter10');
             if (!empty($instructor_roles)) {
                 $access = false;
                 $roles = explode(',', $instructor_roles);
                 if (!empty($roles)) {
                     foreach ($roles as $role) {
-                        if ($role and user_has_role_assignment($eventData['userid'], $role)){
+                        if ($role and user_has_role_assignment($eventData['userid'], $role)) {
                             $access = true;
                             break;
                         }
@@ -128,19 +153,19 @@ class local_intelliboard_observer
             }
         }
 
-        if(get_config('local_intelliboard', 'student_redirect')){
+        if (get_config('local_intelliboard', 'student_redirect')) {
             $student_roles = get_config('local_intelliboard', 'filter11');
-            if(!empty($student_roles)){
+            if (!empty($student_roles)) {
                 $access = false;
                 $roles = explode(',', $student_roles);
-                if(!empty($roles)){
-                    foreach($roles as $role){
-                        if($role and user_has_role_assignment($eventData['userid'], $role)){
+                if (!empty($roles)) {
+                    foreach ($roles as $role) {
+                        if ($role and user_has_role_assignment($eventData['userid'], $role)) {
                             $access = true;
                             break;
                         }
                     }
-                    if($access){
+                    if ($access) {
                         redirect("$CFG->wwwroot/local/intelliboard/student/index.php");
                     }
                 }
@@ -148,17 +173,5 @@ class local_intelliboard_observer
         }
 
         return true;
-    }
-
-    protected static function process_event($type, $event, $filter = array(), $ex_params = array())
-    {
-
-        $notification = new local_intelliboard_notification();
-
-        $excluded = exclude_not_owners($ex_params);
-
-        $notifications = $notification->get_instant_notifications($type, $filter, $excluded);
-
-        $notification->send_notifications($notifications, $event);
     }
 }

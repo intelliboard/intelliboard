@@ -26,32 +26,36 @@
 
 
 $observers = [
-    array (
+    array(
         'eventname' => '\core\event\role_assigned',
-        'callback'  => 'local_intelliboard_observer::role_assigned',
+        'callback' => 'local_intelliboard_observer::role_assigned',
     ),
-    array (
+    array(
         'eventname' => '\mod_forum\event\post_created',
-        'callback'  => 'local_intelliboard_observer::post_created',
+        'callback' => 'local_intelliboard_observer::post_created',
     ),
-    array (
+    array(
         'eventname' => '\core\event\role_unassigned',
-        'callback'  => 'local_intelliboard_observer::role_unassigned',
+        'callback' => 'local_intelliboard_observer::role_unassigned',
     ),
-    array (
+    array(
         'eventname' => '\core\event\user_graded',
-        'callback'  => 'local_intelliboard_observer::user_graded',
+        'callback' => 'local_intelliboard_observer::user_graded',
     ),
-    array (
+    array(
         'eventname' => '\mod_quiz\event\attempt_submitted',
-        'callback'  => 'local_intelliboard_observer::quiz_attempt_submitted',
+        'callback' => 'local_intelliboard_observer::quiz_attempt_submitted',
     ),
-    array (
+    array(
         'eventname' => '\mod_assign\event\assessable_submitted',
-        'callback'  => 'local_intelliboard_observer::assign_attempt_submitted',
+        'callback' => 'local_intelliboard_observer::assign_attempt_submitted',
     ),
-    array (
+    array(
         'eventname' => 'core\event\user_loggedin',
-        'callback'  => 'local_intelliboard_observer::user_loggedin',
+        'callback' => 'local_intelliboard_observer::user_loggedin',
+    ),
+    array(
+        'eventname' => 'core\event\user_enrolment_created',
+        'callback' => 'local_intelliboard_observer::user_enrolment_created',
     ),
 ];
