@@ -25,6 +25,7 @@ class DB
     private static $virtualColumns;
     private static $virtualTables;
     private static $initialized = array();
+    private static $assigns = array();
 
     public static function processAutoCompleteDb($table, $column, $remainder, $params = array())
     {
@@ -213,7 +214,7 @@ class DB
 
     protected static function start($table, $column, $settings)
     {
-        global $CFG;
+        global $CFG, $DB;
 
         if (!static::$initialized) {
 
@@ -239,6 +240,21 @@ class DB
             $column = static::getColumn($column, $table, $settings);
 
             static::$initialized = array($table, $column, $getter, $types, $alias);
+        }
+
+        if (!static::$assigns) {
+            $assigns = $DB->get_records_sql("SELECT * FROM {local_intelliboard_assign} WHERE userid = :userid", ['userid' => $settings['external_id']]);
+
+            static::$assigns = [];
+            foreach ( $assigns as  $assign) {
+                if ($assign->type == 'users') {
+                    static::$assigns['users'][] = (int) $assign->instance;
+                } elseif ($assign->type == 'courses') {
+                    static::$assigns['courses'][] = (int) $assign->instance;
+                } elseif ($assign->type == 'cohorts') {
+                    static::$assigns['cohorts'][] = (int) $assign->instance;
+                }
+            }
         }
 
         return static::$initialized;
@@ -443,6 +459,8 @@ class DB
         $additionalFields = array()
     ) {
 
+        global $DB;
+
         $courseFilter = !empty($paramFilters['course']) ? $paramFilters['course'] : false;
         $roleFilter = !empty($paramFilters['role']) ? $paramFilters['role'] : false;
         $activityFilter = !empty($paramFilters['activity']) ? $paramFilters['activity'] : false;
@@ -518,16 +536,39 @@ class DB
                 $getter->setParam('data', $userInfoDataFilter);
             }
 
-            if (!empty($settings['external_id'])) {
-                $getter->setParam('external_id_1', $settings['external_id']);
-                $getter->setParam('external_id_2', $settings['external_id']);
-                $getter->add('filters', "
-                    ($alias.id IN (SELECT instance FROM {local_intelliboard_assign} WHERE userid = :external_id_1 AND type = 'users')
-                     OR $alias.id IN (SELECT m.userid FROM {local_intelliboard_assign} a, {cohort_members} m WHERE m.cohortid = a.instance AND a.userid = :external_id_2 AND a.type = 'cohorts'))
-                ");
+            if (!empty($settings['external_id']) && static::$assigns) {
+
+                $instances = [];
+                if (!empty(static::$assigns['users'])) {
+                    $instances = static::$assigns['users'];
+                }
+
+                if (!empty(static::$assigns['cohorts'])) {
+                    $cohortGetter = new ParamGetter();
+                    $cohortGetter->add('columns', 'DISTINCT userid')
+                        ->add('tables', '{cohort_members}');
+                    ParamGetter::in_sql($cohortGetter, 'filters', 'cohortid', static::$assigns['cohorts']);
+                    $cohortGetter = $cohortGetter->release();
+                    $instances = array_merge($instances, $DB->get_fieldset_sql($cohortGetter['sql'], $cohortGetter['params']));
+                }
+
+                if (!empty(static::$assigns['courses'])) {
+                    $innerGetter = new ParamGetter();
+                    $innerGetter->add('columns', 'DISTINCT ra.userid')
+                        ->add('tables', '{role_assignments} ra')
+                        ->add('tables', 'INNER JOIN {context} ctx ON ctx.id = ra.contextid')
+                        ->add('filters', 'ctx.contextlevel = 50');
+
+                    ParamGetter::in_sql($innerGetter, 'filters', 'ra.roleid', explode(',', $settings['learner_roles']));
+                    ParamGetter::in_sql($innerGetter, 'filters', 'ctx.instanceid', static::$assigns['courses']);
+                    $innerGetter = $innerGetter->release();
+                    $instances = array_merge($instances, $DB->get_fieldset_sql($innerGetter['sql'], $innerGetter['params']));
+                }
+
+                ParamGetter::in_sql($getter, 'filters', "$alias.id", $instances);
             }
 
-            $getter->add('tables', 'INNER JOIN {context} cx ON cx.instanceid = u.id AND contextlevel = 30');
+            $getter->add('tables', 'INNER JOIN {context} ctx ON ctx.instanceid = u.id AND contextlevel = 30');
 
         }
 
@@ -548,9 +589,10 @@ class DB
                 $getter->setParam('group', $groupFilter);
             }
 
+            $getter->add('tables',
+                'INNER JOIN {context} AS ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50');
+
             if ($teacherFilter) {
-                $getter->add('tables',
-                    'INNER JOIN {context} AS ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50');
 
                 $sql = 'INNER JOIN {role_assignments} AS ra ON ra.contextid = ctx.id AND ra.roleid';
                 $roles = explode(',', $settings['teacher_roles']);
@@ -570,13 +612,56 @@ class DB
                 $getter->add('filters', 'c.visible =  1');
             }
 
-            if (!empty($settings['external_id'])) {
-                $getter->setParam('external_id', $settings['external_id']);
-                $getter->add('filters',
-                    "($alias.id IN (SELECT instance FROM {local_intelliboard_assign} WHERE userid = :external_id AND type = 'courses'))");
+            if (!empty($settings['external_id']) && static::$assigns) {
+
+                $instances = [];
+                if (!empty(static::$assigns['courses'])) {
+                    $instances = static::$assigns['courses'];
+                }
+
+                if (!empty(static::$assigns['users'])) {
+                    $innerGetter = new ParamGetter();
+                    $innerGetter->add('columns', 'DISTINCT ctx.instanceid')
+                        ->add('tables', '{role_assignments} ra')
+                        ->add('tables', 'INNER JOIN {context} ctx ON ctx.id = ra.contextid')
+                        ->add('filters', 'ctx.contextlevel = 50');
+
+                    ParamGetter::in_sql($innerGetter, 'filters', 'ra.roleid', explode(',', $settings['learner_roles']));
+                    ParamGetter::in_sql($innerGetter, 'filters', 'ra.userid', static::$assigns['users']);
+                    $innerGetter = $innerGetter->release();
+                    $instances = array_merge($instances, $DB->get_fieldset_sql($innerGetter['sql'], $innerGetter['params']));
+                }
+
+                if (!empty(static::$assigns['cohorts'])) {
+                    $innerGetter = new ParamGetter();
+                    $innerGetter->add('columns', 'DISTINCT ctx.instanceid')
+                        ->add('tables', '{role_assignments} ra')
+                        ->add('tables', 'INNER JOIN {context} ctx ON ctx.id = ra.contextid')
+                        ->add('filters', 'ctx.contextlevel = 50');
+                    ParamGetter::in_sql($innerGetter, 'filters', 'ra.roleid', explode(',', $settings['learner_roles']));
+
+                    $cohortGetter = new ParamGetter();
+                    $cohortGetter->add('columns', 'userid')
+                        ->add('tables', '{cohort_members}');
+                    ParamGetter::in_sql($cohortGetter, 'filters', 'cohortid', static::$assigns['cohorts']);
+                    $cohortGetter = $cohortGetter->release();
+                    $cohortUsers = $DB->get_fieldset_sql($cohortGetter['sql'], $cohortGetter['params']);
+
+                    ParamGetter::in_sql($innerGetter, 'filters', 'ra.userid', $cohortUsers);
+
+                    $innerGetter = $innerGetter->release();
+                    $instances = array_merge($instances, $DB->get_fieldset_sql($innerGetter['sql'], $innerGetter['params']));
+                }
+
+                ParamGetter::in_sql($getter, 'filters', 'c.id', $instances);
             }
 
-            $getter->add('tables', 'LEFT JOIN {context} cx ON cx.instanceid = c.id AND contextlevel = 50');
+        }
+
+        if (in_array('cohort', $types) && !empty($settings['external_id']) && !empty(static::$assigns['cohorts'])) {
+            $instances = static::$assigns['cohorts'];
+
+            ParamGetter::in_sql($getter, 'filters', 'c.id', $instances);
         }
 
         if (in_array('activity', $types)) {

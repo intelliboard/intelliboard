@@ -57,15 +57,13 @@ class DataExtractor
 
         $values = $this->prepareArguments($sql, $this->arguments);
         $data = $DB->get_records_sql($sql, $values);
-
-        $result = compact('data');
         $result['hasPrev'] = !empty($scenario['offset']);
         if (!empty($this->params['pagination_numbers'])) {
             $countSql = $this->count($sql);
             $result['count'] = $DB->count_records_sql($countSql, $values);
             $result['hasNext'] = !empty($scenario['offset']);
         } else {
-            if (empty($scenario['limit']) || count($data) < $scenario['limit']) {
+            if (empty($scenario['limit']) || count($data) <= $scenario['limit']) {
                 $result['hasNext'] = false;
             } else {
                 $result['hasNext'] = true;
@@ -73,7 +71,7 @@ class DataExtractor
             }
             $result['count'] = 0;
         }
-
+        $result['data'] = $data;
         $this->requests[] = array('sql' => $sql, 'arguments' => $values);
         return $result;
     }
@@ -104,7 +102,7 @@ class DataExtractor
         }
 
         if (!empty($scenario['limit'])) {
-            $sql .= ' LIMIT ' . (!empty($this->params->pagination_numbers)?  $scenario['limit'] : $scenario['limit'] + 1);
+            $sql .= ' LIMIT ' . (empty($this->params->pagination_numbers) && (empty($scenario['type']) || $scenario['type'] === 'table')?  $scenario['limit'] + 1 : $scenario['limit']);
         }
 
         if (!empty($scenario['offset'])) {

@@ -334,5 +334,83 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2018060405, 'local', 'intelliboard');
     }
 
+
+    if ($oldversion < 2018080100) {
+		$table = new xmldb_table('local_intelliboard_reports');
+		$table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+		$table->add_field('status', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+		$table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+		$table->add_field('sqlcode', XMLDB_TYPE_TEXT, null, null, null, null, null);
+		$table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+		$table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+		if (!$dbman->table_exists($table)) {
+			$dbman->create_table($table);
+		}
+		upgrade_plugin_savepoint(true, 2018080100, 'local', 'intelliboard');
+	}
+
+    if ($oldversion < 2018091501) {
+        $table = new xmldb_table('local_intelliboard_bbb_meet');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('meetingname', XMLDB_TYPE_CHAR, '256', null, null, null, null);
+        $table->add_field('meetingid', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('internalmeetingid', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('createtime', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+        $table->add_field('createdate', XMLDB_TYPE_CHAR, '256', null, null, null, null);
+        $table->add_field('voicebridge', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('dialnumber', XMLDB_TYPE_CHAR, '256', null, null, null, null);
+        $table->add_field('attendeepw', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('moderatorpw', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('running', XMLDB_TYPE_CHAR, '25', null, null, null, null);
+        $table->add_field('duration', XMLDB_TYPE_CHAR, '256', null, null, null, null);
+        $table->add_field('hasuserjoined', XMLDB_TYPE_CHAR, '25', null, null, null, null);
+        $table->add_field('recording', XMLDB_TYPE_CHAR, '25', null, null, null, null);
+        $table->add_field('hasbeenforciblyended', XMLDB_TYPE_CHAR, '25', null, null, null, null);
+        $table->add_field('starttime', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+        $table->add_field('endtime', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+        $table->add_field('participantcount', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('listenercount', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('voiceparticipantcount', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('videocount', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('maxusers', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('moderatorcount', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+        $table->add_field('cmid', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+        $table->add_field('bigbluebuttonbnid', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+        $table->add_field('ownerid', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2018091501, 'local', 'intelliboard');
+    }
+
+
+    if ($oldversion < 2018091502) {
+        $table = new xmldb_table('local_intelliboard_bbb_atten');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_CHAR, '200', null, null, null, null);
+        $table->add_field('fullname', XMLDB_TYPE_CHAR, '1024', null, null, null, null);
+        $table->add_field('role', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('ispresenter', XMLDB_TYPE_CHAR, '20', null, null, null, null);
+        $table->add_field('islisteningonly', XMLDB_TYPE_CHAR, '20', null, null, null, null);
+        $table->add_field('hasjoinedvoice', XMLDB_TYPE_CHAR, '20', null, null, null, null);
+        $table->add_field('hasvideo', XMLDB_TYPE_CHAR, '20', null, null, null, null);
+        $table->add_field('meetingid', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('localmeetingid', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+        $table->add_field('arrivaltime', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+        $table->add_field('departuretime', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2018091502, 'local', 'intelliboard');
+    }
+
 	return true;
 }

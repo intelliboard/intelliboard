@@ -17,6 +17,7 @@ class ParamGetter {
             $array = &$this->$type;
             $array[] = $data;
         }
+        return $this;
     }
 
     public function release() {

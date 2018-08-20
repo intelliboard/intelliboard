@@ -488,10 +488,28 @@ $string['last_hour'] = 'hour';
 $string['last_day'] = 'day';
 
 
+
+
+$string['privacy:metadata:local_intelliboard_assign'] = 'Intelliboard assigns-subaccounts table';
+$string['privacy:metadata:local_intelliboard_details'] = 'Intelliboard alt/logs/by-hour table';
+$string['privacy:metadata:local_intelliboard_logs'] = 'Intelliboard alt/logs/by-day table';
+$string['privacy:metadata:local_intelliboard_totals'] = 'Intelliboard alt/logs/total table';
+$string['privacy:metadata:local_intelliboard_tracking'] = 'Intelliboard alt/logs/all-time table';
+$string['privacy:metadata:local_intelliboard_reports'] = 'Intelliboard custom sql reports table';
+$string['privacy:metadata:local_intelliboard_ntf'] = 'Intelliboard notifications main table';
+$string['privacy:metadata:local_intelliboard_ntf_hst'] = 'Intelliboard notifications history table';
+$string['privacy:metadata:local_intelliboard_ntf_pms'] = 'Intelliboard notifications dynamic params table';
+
+$string['privacy:metadata:local_intelliboard_assign:userid'] = 'USER ID of record';
 $string['privacy:metadata:local_intelliboard_assign:rel'] = 'Rel type of record';
 $string['privacy:metadata:local_intelliboard_assign:type'] = 'Moodle Instance Type';
 $string['privacy:metadata:local_intelliboard_assign:instance'] = 'Connected Moodle Instance ID';
 $string['privacy:metadata:local_intelliboard_assign:timecreated'] = 'Records Timestamp';
+
+$string['privacy:metadata:local_intelliboard_reports:status'] = 'Status of report - activated/not activated';
+$string['privacy:metadata:local_intelliboard_reports:name'] = 'Name of custom report';
+$string['privacy:metadata:local_intelliboard_reports:sqlcode'] = 'BASE64 encoded SQL code';
+$string['privacy:metadata:local_intelliboard_reports:timecreated'] = 'Creation time';
 
 $string['privacy:metadata:local_intelliboard_details:logid'] = 'Table ID [local_intelliboard_logs]';
 $string['privacy:metadata:local_intelliboard_details:visits'] = 'The number of visits, mouse clicks, per day';
@@ -548,4 +566,68 @@ $string['instructor_redirect'] = 'Instructor redirect';
 $string['student_redirect'] = 'Student redirect';
 
 
+
+$string['sqlreport'] = 'SQL report';
+$string['sqlreportcreate'] = 'Create report';
+$string['sqlreports'] = 'SQL reports';
+$string['sqlreportname'] = 'Report name';
+$string['sqlreportcode'] = 'SQL';
+$string['sqlreportdate'] = 'Created On';
+$string['sqlreportactive'] = 'Activated';
+$string['sqlreportinactive'] = 'Deactivated';
+
+$string['remove_message'] = 'SQL report has been deleted';
+$string['delete_message'] = 'Delete SQL report?';
+$string['success_message'] = 'SQL report has been saved';
+
+
+// BigBlueButton meetings
+$string['bbbapiendpoint'] = 'BBB API endpoint';
+$string['bbbserversecret'] = 'BBB server secret';
+$string['check_active_meetings'] = 'Check active meetings';
+$string['bbbmeetings'] = 'BigBlueButton meetings';
+$string['enablebbbmeetings'] = 'Enable monitoring of BigBlueButton meetings';
+
+$string['privacy:metadata:local_intelliboard_bbb_meet'] = 'Log about BigBlueButton meetings';
+$string['privacy:metadata:local_intelliboard_bbb_meet:id'] = 'ID of meeting log';
+$string['privacy:metadata:local_intelliboard_bbb_meet:meetingname'] = 'Meeting name';
+$string['privacy:metadata:local_intelliboard_bbb_meet:meetingid'] = 'Meeting ID';
+$string['privacy:metadata:local_intelliboard_bbb_meet:internalmeetingid'] = 'Internal (in BBB server) Meeting ID';
+$string['privacy:metadata:local_intelliboard_bbb_meet:createtime'] = 'Create time (timestamp)';
+$string['privacy:metadata:local_intelliboard_bbb_meet:createdate'] = 'Create date (string)';
+$string['privacy:metadata:local_intelliboard_bbb_meet:voicebridge'] = 'The extension number for the voice bridge (use if connected to phone system)';
+$string['privacy:metadata:local_intelliboard_bbb_meet:dialnumber'] = 'The dial access number that participants can call in using regular phone.';
+$string['privacy:metadata:local_intelliboard_bbb_meet:attendeepw'] = 'The password that will be required for attendees to join the meeting';
+$string['privacy:metadata:local_intelliboard_bbb_meet:moderatorpw'] = 'The password that will be required for moderators to join the meeting or for certain administrative actions';
+$string['privacy:metadata:local_intelliboard_bbb_meet:running'] = 'Status of meeting (active|stopped)';
+$string['privacy:metadata:local_intelliboard_bbb_meet:duration'] = 'Meeting duration';
+$string['privacy:metadata:local_intelliboard_bbb_meet:hasuserjoined'] = 'Flag. Users joined to meeting';
+$string['privacy:metadata:local_intelliboard_bbb_meet:recording'] = 'Flag. Meeting will be recorded';
+$string['privacy:metadata:local_intelliboard_bbb_meet:hasbeenforciblyended'] = 'Flag. Meeting has been forcibly ended';
+$string['privacy:metadata:local_intelliboard_bbb_meet:starttime'] = 'Start time of meeting';
+$string['privacy:metadata:local_intelliboard_bbb_meet:endtime'] = 'End time of meeting';
+$string['privacy:metadata:local_intelliboard_bbb_meet:participantcount'] = 'Number of attendees';
+$string['privacy:metadata:local_intelliboard_bbb_meet:listenercount'] = 'Number of listeners';
+$string['privacy:metadata:local_intelliboard_bbb_meet:voiceparticipantcount'] = 'Number of participants with connected microphone';
+$string['privacy:metadata:local_intelliboard_bbb_meet:videocount'] = 'Number of participants with connected video camera';
+$string['privacy:metadata:local_intelliboard_bbb_meet:maxusers'] = 'Max number of participants';
+$string['privacy:metadata:local_intelliboard_bbb_meet:moderatorcount'] = 'Number of moderators';
+$string['privacy:metadata:local_intelliboard_bbb_meet:courseid'] = 'Course ID';
+$string['privacy:metadata:local_intelliboard_bbb_meet:cmid'] = 'Course module ID';
+$string['privacy:metadata:local_intelliboard_bbb_meet:bigbluebuttonbnid'] = 'Row ID in table bigbluebuttonbn';
+$string['privacy:metadata:local_intelliboard_bbb_meet:ownerid'] = 'Owner ID (user which created the meeting)';
+
+$string['privacy:metadata:local_intelliboard_bbb_atten'] = 'Log about attendees of BigBlueButton meetings';
+$string['privacy:metadata:local_intelliboard_bbb_atten:id'] = 'Attendee ID';
+$string['privacy:metadata:local_intelliboard_bbb_atten:userid'] = 'User ID (row in table "user")';
+$string['privacy:metadata:local_intelliboard_bbb_atten:fullname'] = 'Full name of meeting attendee';
+$string['privacy:metadata:local_intelliboard_bbb_atten:role'] = 'Role of meeting attendee';
+$string['privacy:metadata:local_intelliboard_bbb_atten:ispresenter'] = 'Flag. Attendee is presenter';
+$string['privacy:metadata:local_intelliboard_bbb_atten:islisteningonly'] = 'Flag. Attendee has no connected microphone or webcam';
+$string['privacy:metadata:local_intelliboard_bbb_atten:hasjoinedvoice'] = 'Flag. Attendee has connected microphone';
+$string['privacy:metadata:local_intelliboard_bbb_atten:hasvideo'] = 'Flag. Attendee has connected webcam';
+$string['privacy:metadata:local_intelliboard_bbb_atten:meetingid'] = 'Meeting ID (ID in BigBlueButton server)';
+$string['privacy:metadata:local_intelliboard_bbb_atten:localmeetingid'] = 'Meeting ID (ID in table local_intelliboard_bbb_meet)';
+$string['privacy:metadata:local_intelliboard_bbb_atten:arrivaltime'] = 'Time when user connected to meeting';
+$string['privacy:metadata:local_intelliboard_bbb_atten:departuretime'] = 'Time when user disconnected from meeting';
 
