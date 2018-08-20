@@ -368,10 +368,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
-        $roles_user = $DB->get_records_sql("SELECT r.*
+        $roles_user = $DB->get_records_sql("SELECT r.id, r.name, r.shortname, r.description, r.sortorder, r.archetype
                                             FROM {role} r
-                                              LEFT JOIN {role_context_levels} rcl ON rcl.roleid=r.id
-                                            WHERE rcl.contextlevel=:contextlevel GROUP BY r.id",array('contextlevel'=>CONTEXT_USER));
+                                              JOIN {role_context_levels} rcl ON rcl.roleid=r.id
+                                            WHERE rcl.contextlevel=:contextlevel GROUP BY r.id, r.name, r.shortname, r.description, r.sortorder, r.archetype",array('contextlevel'=>CONTEXT_USER));
+
         $roles_user = role_fix_names($roles_user);
         $roles_user_arr = array('0'=>get_string('disable'));
         foreach($roles_user as $role){
@@ -724,5 +725,28 @@ if($ADMIN->fulltree){
         $title = new lang_string('scale_percentage', 'local_intelliboard');
         $default = 0;
         $setting = new admin_setting_configtext($name, $title, '', $default);
+        $settings->add($setting);
+
+        // BBB meetings
+        $settings->add(new admin_setting_heading('local_intelliboard/bbbmeetings', get_string('bbbmeetings', 'local_intelliboard'), ''));
+
+        $name = 'local_intelliboard/enablebbbmeetings';
+        $title = get_string('enablebbbmeetings', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
+        // BBB API endpoint
+        $name = 'local_intelliboard/bbbapiendpoint';
+        $title = get_string('bbbapiendpoint', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
+        $settings->add($setting);
+
+        // BBB server secret
+        $name = 'local_intelliboard/bbbserversecret';
+        $title = get_string('bbbserversecret', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
         $settings->add($setting);
 }

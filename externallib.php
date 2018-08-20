@@ -146,7 +146,7 @@ class local_intelliboard_external extends external_api {
         }
 
         //Available functions
-        $functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report18_graph','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','get_competency','get_competency_templates','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report92','report93','report94','report95','report96','report97','report98','report99','report99_graph','report100','report101','report102','report103','report104','report105','report106','report107','report108','report109','report110','report111','report112','report113','report114','report114_graph','report115','report116','report117','report118','report119','report120','report121','report122','report123','report124','report125','report126','report127','report128','get_course_modules','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_visits_perday','get_visits_perweek','get_live_info','get_course_instructors','get_course_discussions','get_course_questionnaire','get_course_survey','get_course_questionnaire_questions','get_course_survey_questions','get_cohort_users','get_users','get_grade_letters','get_questions','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_users_count','get_most_visited_courses','get_enrollments_per_course','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_userids','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_learner','get_learners','get_learner_courses','get_course','get_activity_learners','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_site_avg','get_site_activity','count_records','analytic9','get_course_sections','get_course_user_groups','get_course_assignments','get_data_question_answers','get_course_databases','get_databases_question','get_history_items','get_history_grades','monitor27','monitor28','monitor29','monitor30','monitor31', 'get_assign_users', 'get_assign_courses', 'get_assign_cohorts', 'get_course_grade_categories','get_visits_per_day_by_entity','report137','get_role_users','report139_header','report139','get_course_feedback','report140','get_feedback_questions','report141','report142','report143','report149','get_incorrect_answers','report150','report151','report152');
+        $functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report18_graph','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','get_competency','get_competency_templates','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report92','report93','report94','report95','report96','report97','report98','report99','report99_graph','report100','report101','report102','report103','report104','report105','report106','report107','report108','report109','report110','report111','report112','report113','report114','report114_graph','report115','report116','report117','report118','report119','report120','report121','report122','report123','report124','report125','report126','report127','report128','get_course_modules','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_visits_perday','get_visits_perweek','get_live_info','get_course_instructors','get_course_discussions','get_course_questionnaire','get_course_survey','get_course_questionnaire_questions','get_course_survey_questions','get_cohort_users','get_users','get_grade_letters','get_questions','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_users_count','get_most_visited_courses','get_enrollments_per_course','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_userids','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_learner','get_learners','get_learner_courses','get_course','get_activity_learners','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_site_avg','get_site_activity','count_records','analytic9','get_course_sections','get_course_user_groups','get_course_assignments','get_data_question_answers','get_course_databases','get_databases_question','get_history_items','get_history_grades','monitor27','monitor28','monitor29','monitor30','monitor31', 'get_assign_users', 'get_assign_courses', 'get_assign_cohorts', 'get_course_grade_categories','get_visits_per_day_by_entity','report137','get_role_users','report139_header','report139','get_course_feedback','report140','get_feedback_questions','report141','report142','report143','report149','get_incorrect_answers','report150','report151','report152','report154');
 
         $function = (isset($params->function)) ? $params->function : '';
         if(in_array($function, $functions)){
@@ -6901,6 +6901,106 @@ class local_intelliboard_external extends external_api {
             'data'    => $data);
     }
 
+    public function report144($params) {
+        $columns = array_merge(
+            array(
+                "sessionname",
+                "date",
+                "length",
+                "owner",
+                "numberofattendees",
+                "numberofactiveattendees"
+            ),
+            $this->get_filter_columns($params)
+        );
+
+        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_having  = $this->get_filter_sql($params, $columns);
+        $sql_filter  = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filterdate_sql($params, "m.starttime");
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "m.courseid", true, true);
+
+        $sql = "SELECT m.id,
+                       m.meetingname AS sessionname,
+                       m.starttime AS date,
+                       ((m.endtime - m.starttime) / 60) AS length,
+                       c.visible,
+                       u.deleted,
+                       u.suspended,
+                       u.username,
+                       m.courseid,
+                       CONCAT(u.firstname, ' ', u.lastname) as owner,
+                       (SELECT count(id)
+                          FROM {local_intelliboard_bbb_atten}
+                         WHERE localmeetingid = m.id)
+                       AS numberofattendees,
+                       (SELECT count(id)
+                          FROM {local_intelliboard_bbb_atten}
+                          WHERE `localmeetingid` = m.id AND `islisteningonly` = 'false')
+                       AS numberofactiveattendees
+                       {$sql_columns}
+                  FROM {local_intelliboard_bbb_meet} AS m
+            INNER JOIN {course} AS c ON c.id = m.courseid
+             LEFT JOIN {user} AS u ON u.id = m.ownerid
+                 WHERE m.endtime IS NOT NULL {$sql_filter} {$sql_having} {$sql_order}";
+
+        return $this->get_report_data($sql, $this->params);
+    }
+
+    public function report145($params) {
+        if(!$params->custom) {
+            return ['data' => []];
+        }
+
+        $columns = array_merge(
+            array(
+                "participant",
+                "userrole",
+                "ba.ispresenter",
+                "voice",
+                "ba.hasvideo",
+                "isactive",
+                "timespend"
+            ),
+            $this->get_filter_columns($params)
+        );
+
+        $sql_having  = $this->get_filter_sql($params, $columns);
+        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter  = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filterdate_sql($params, "m.starttime");
+        $sql_filter .= $this->get_filter_in_sql($params->custom, 'ba.localmeetingid', true, true);
+
+        $sql = "SELECT ba.id,
+                       ba.fullname AS participant,
+                       ba.role AS userrole,
+                       ba.ispresenter,
+                       ba.hasjoinedvoice AS voice,
+                       ba.hasvideo,
+                       c.visible,
+                       u.deleted,
+                       u.suspended,
+                       u.username,
+                       m.starttime,
+                       ba.localmeetingid,
+                       ba.islisteningonly AS isactive,
+                       ((ba.departuretime - ba.arrivaltime) / 60) AS timespend
+                       {$sql_columns}
+                  FROM {local_intelliboard_bbb_atten} AS ba
+            INNER JOIN {local_intelliboard_bbb_meet} AS m ON m.id = ba.localmeetingid
+            INNER JOIN {course} AS c ON c.id = m.courseid
+            INNER JOIN {user} AS u ON u.id = ba.userid
+                 WHERE ba.id > 0 {$sql_filter} {$sql_having} {$sql_order}";
+
+        return $this->get_report_data($sql, $this->params);
+    }
+
 
     function report149($params)
     {
@@ -7094,6 +7194,57 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {local_intelliboard_tracking} t2 ON t2.page = 'course' AND t2.courseid = c.id AND t2.userid = ra.userid AND t1.id IS NULL
             WHERE c.id > 0 $sql_filter
             GROUP BY c.id $sql_having $sql_order", $params);
+    }
+    function report154($params)
+    {
+        $columns = ["la.timeseen", "c.fullname", "c.shortname", "u.firstname", "u.lastname", "u.email", "u.username", "t.firstname", "t.lastname", "t.email", "t.username", "l.name", "lp.title", "useranswer", "teacher_feedback"];
+
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, 'c.id');
+        $sql_filter .= $this->get_filterdate_sql($params, "la.timeseen");
+        $sql_filter .= $this->get_filter_in_sql($params->users, "t.id");
+        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+        $sql_teacher_roles .= $this->get_filter_in_sql($params->users, "ra.userid");
+
+        return $this->get_report_data("
+            SELECT
+              la.id,
+              la.timeseen,
+              c.id AS courseid,
+              c.fullname,
+              c.shortname,
+              u.id AS userid,
+              u.firstname,
+              u.lastname,
+              u.email,
+              u.username,
+              t.id AS teacher_userid,
+              t.firstname AS teacher_firstname,
+              t.lastname As teacher_lastname,
+              t.email AS teacher_email,
+              t.username AS teacher_username,
+              l.name AS lesson_name,
+              lp.title AS question_name,
+              CASE WHEN LOCATE(';}',la.useranswer)>0 THEN SUBSTRING_INDEX(SUBSTRING_INDEX(la.useranswer,';',8),':',-1) ELSE la.useranswer END AS useranswer,
+              CASE WHEN LOCATE(';}',la.useranswer)>0 THEN SUBSTRING_INDEX(SUBSTRING_INDEX(la.useranswer,';',12),':',-1) ELSE '' END AS teacher_feedback
+            FROM {lesson} l
+              JOIN {lesson_attempts} la ON la.lessonid=l.id
+              JOIN {course} c ON c.id=l.course
+              JOIN {user} u ON u.id=la.userid
+              JOIN {lesson_pages} lp ON lp.id=la.pageid
+              LEFT JOIN (SELECT a.courseid, u.firstname, u.lastname, u.email, u.username, u.id
+                         FROM
+                           (SELECT ctx.instanceid AS courseid, MIN(ra.userid) AS userid
+                             FROM {role_assignments} AS ra
+                              JOIN {context} AS ctx ON ctx.id = ra.contextid
+                             WHERE ctx.contextlevel = 50 $sql_teacher_roles
+                             GROUP BY ctx.instanceid) a
+                         JOIN {user} u ON u.id = a.userid
+                        ) t ON t.courseid=c.id
+            WHERE l.id>0 $sql_filter $sql_having $sql_order", $params);
     }
 
     function get_course_feedback($params){
@@ -9560,6 +9711,248 @@ class local_intelliboard_external extends external_api {
             WHERE d.data <> 'null' AND d.data <> '' $sql
             GROUP BY timepointval, d.data", $this->params);
     }
+    public function monitor32($params) {
+        global $DB;
+
+        $sql_filter  = $this->get_filterdate_sql($params, "bm.starttime");
+        $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+
+        $sql = "SELECT bm.*, COUNT(bm.id) AS numberofparticipants
+                  FROM {local_intelliboard_bbb_meet} AS bm
+            INNER JOIN {course} AS c ON c.id = bm.courseid
+             LEFT JOIN {local_intelliboard_bbb_atten} AS bat ON bat.localmeetingid = bm.id
+                 WHERE bm.id > 0 {$sql_filter}
+              GROUP BY bm.id";
+
+        return $DB->get_records_sql($sql, $this->params);
+    }
+    public function monitor33($params) {
+        global $DB;
+
+        $sql_filter  = $this->get_filterdate_sql($params, "m.starttime");
+        $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+
+        $sql = "SELECT m.id,
+                       m.meetingname,
+                       m.courseid,
+                       SUM(CASE
+                                WHEN ba.islisteningonly = 'false' THEN 1 ELSE 0
+                       END) AS activeusers,
+                       SUM(CASE
+                               WHEN ba.islisteningonly = 'true' THEN 1 ELSE 0
+                       END) AS passiveusers,
+                       (SELECT count(u.id)
+                          FROM {user} AS u
+                          JOIN {user_enrolments} ej1_ue ON ej1_ue.userid = u.id
+                          JOIN {enrol} ej1_e ON (ej1_e.id = ej1_ue.enrolid)
+                         WHERE u.deleted = 0 AND ej1_e.courseid = m.courseid
+                       ) AS totalusers
+                  FROM {local_intelliboard_bbb_meet} AS m
+            INNER JOIN {course} AS c ON c.id = m.courseid
+             LEFT JOIN {local_intelliboard_bbb_atten} AS ba ON ba.localmeetingid = m.id
+                 WHERE m.id > 0 {$sql_filter}
+              GROUP BY m.id, m.meetingname, m.courseid";
+
+        return $DB->get_records_sql($sql, $this->params);
+    }
+    public function monitor34($params) {
+        global $DB;
+
+        $sql_filter  = $this->get_filterdate_sql($params, "m.starttime");
+        $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+
+        $result['monitortype'] = 'bbbreport_courses_statistic';
+
+        $sql = "SELECT (SELECT count(id)
+                          FROM {local_intelliboard_bbb_meet}
+                         WHERE `endtime` IS NULL)
+                       AS activemeetings,
+                       (SELECT count(id)
+                          FROM {local_intelliboard_bbb_meet}
+                         WHERE `starttime` BETWEEN ? AND ?)
+                       AS organizedtoday,
+                       (SELECT count(id)
+                          FROM {local_intelliboard_bbb_meet}
+                         WHERE `endtime` BETWEEN ? AND ?)
+                       AS finishedthisweek";
+
+        $todaystart = strtotime('today');
+        $todayend = strtotime('today + 1 day');
+        $startofweek = strtotime("this week monday");
+        $endofweek = strtotime("this week sunday + 1 day");
+
+        $res = $DB->get_record_sql(
+            $sql,
+            [$todaystart, $todayend, $startofweek, $endofweek]
+        );
+
+        $result['numberofactivemeetings'] = $res->activemeetings;
+        $result['organizedtoday'] = $res->organizedtoday;
+        $result['finishedthisweek'] = $res->finishedthisweek;
+
+        // get organized meetings filtered by range of time and grouped by course
+        $sql = "SELECT c.fullname,
+                       c.id,
+                       (SELECT count(m.id)
+                          FROM {local_intelliboard_bbb_meet} AS m
+                         WHERE m.courseid = c.id
+                       ) AS numberofmeetings
+                  FROM {course} AS c";
+
+        $meetings = $DB->get_records_sql($sql, $this->params);
+        $result['numofmeetingsbycourse'] = $meetings;
+
+        return $result;
+    }
+    public function monitor35($params) {
+        global $DB;
+
+        $sql_filter  = $this->get_filterdate_sql($params, "ba.arrivaltime");
+        $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses", "u.id" => "users"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+
+        $sql = "SELECT ba.id, ba.arrivaltime,
+                       (
+                       CASE
+                           WHEN ba.userid NOT IN (SELECT ba1.userid
+                                                    FROM {local_intelliboard_bbb_atten} AS ba1
+                                                   WHERE ba1.arrivaltime < ba.arrivaltime
+                                                  )
+                           THEN 'firsttime'
+                           ELSE 'returning'
+                       END
+                       ) AS visit
+                  FROM {local_intelliboard_bbb_atten} AS ba
+            INNER JOIN {local_intelliboard_bbb_meet} AS m ON m.id = ba.localmeetingid
+            INNER JOIN {course} AS c ON c.id = m.courseid
+            INNER JOIN {user} AS u ON u.id = ba.userid
+                 WHERE ba.id > 0 {$sql_filter}";
+
+        return $DB->get_records_sql($sql, $this->params);
+    }
+    public function monitor36($params) {
+        global $DB;
+
+        $sql_filter  = $this->get_filterdate_sql($params, "m.starttime");
+        $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+
+        // meetings info
+        $sql = "SELECT m.id AS meetingid,
+                       m.meetingname,
+                       SUM(
+                           CASE WHEN ba.hasjoinedvoice = 'true' THEN 1 ELSE 0 END
+                       ) AS participantsspeaking,
+                       SUM(
+                           CASE WHEN ba.hasvideo = 'true' THEN 1 ELSE 0 END
+                       ) AS participantshasvideo,
+                       SUM(
+                           CASE WHEN ba.islisteningonly = 'true' THEN 1 ELSE 0 END
+                       ) AS participantslisteningonly,
+                       COUNT(ba.id) AS numberofparticipans,
+                       SUM(
+                            CASE WHEN ba.islisteningonly <> 'true' THEN 1 ELSE 0 END
+                       ) AS numberofactiveparticipants
+                  FROM {local_intelliboard_bbb_meet} AS m
+            INNER JOIN {course} AS c ON c.id = m.courseid
+             LEFT JOIN {local_intelliboard_bbb_atten} AS ba ON ba.localmeetingid = m.id
+                 WHERE m.endtime IS NOT NULL{$sql_filter}
+              GROUP BY m.id, m.meetingname";
+        return $DB->get_records_sql($sql, $this->params);
+    }
+    public function monitor37($params) {
+        global $DB;
+
+        $sql_filter  = $this->get_filterdate_sql($params, "ba.arrivaltime");
+        $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+
+        $sql = "SELECT it.useros, COUNT(DISTINCT ba.userid) AS amountofuse
+                  FROM {local_intelliboard_bbb_atten} AS ba
+            INNER JOIN {local_intelliboard_tracking} AS it ON it.userid = ba.userid AND it.page = 'site'
+            INNER JOIN {local_intelliboard_bbb_meet} AS m ON m.id = ba.localmeetingid
+            INNER JOIN {course} AS c ON c.id = m.courseid
+            INNER JOIN {user} AS u ON u.id = ba.userid
+                 WHERE ba.id > 0{$sql_filter}
+              GROUP BY it.useros";
+
+        $oslist = $DB->get_records_sql($sql, $this->params);
+
+        $devicesinfo = [
+            'monitortype' => 'bbbreport_devices_info',
+            'devices_info' => [
+                \local_intelliboard\tools\os_classifier::TYPE_DESKTOP => 0,
+                \local_intelliboard\tools\os_classifier::TYPE_MOBILE => 0,
+                \local_intelliboard\tools\os_classifier::TYPE_OTHER => 0,
+            ]
+        ];
+
+        foreach($oslist as $os) {
+            $devicesinfo['devices_info'][\local_intelliboard\tools\os_classifier::getOSType($os->useros)] += $os->amountofuse;
+        }
+
+        return $devicesinfo;
+    }
+    public function monitor38($params) {
+        global $DB;
+
+        $sql_filter  = $this->get_filterdate_sql($params, "ba.arrivaltime");
+        $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+
+        $sql = "SELECT g.id,
+                       g.name,
+                       CASE WHEN t.speaking IS NULL THEN 0 ELSE t.speaking END AS speaking,
+                       CASE WHEN t.hasvideo IS NULL THEN 0 ELSE t.hasvideo END AS hasvideo,
+                       CASE WHEN t.listeningonly IS NULL THEN 0 ELSE t.listeningonly END AS listeningonly,
+                       CASE WHEN t.presenting IS NULL THEN 0 ELSE t.presenting END AS presenting,
+                       CASE WHEN t.totalusers IS NULL THEN 0 ELSE t.totalusers END AS totalusers
+                  FROM {groups} AS g
+             LEFT JOIN
+                       (SELECT gm.groupid,
+                               SUM(CASE WHEN ba.islisteningonly = 'true' THEN 1 ELSE 0 END) as listeningonly,
+                               SUM(CASE WHEN ba.ispresenter = 'true' THEN 1 ELSE 0 END) as presenting,
+                               SUM(CASE WHEN ba.hasjoinedvoice = 'true' THEN 1 ELSE 0 END) as speaking,
+                               SUM(CASE WHEN ba.hasvideo = 'true' THEN 1 ELSE 0 END) as hasvideo,
+                               COUNT(ba.id) AS totalusers
+                          FROM {local_intelliboard_bbb_atten} AS ba
+                    INNER JOIN {local_intelliboard_bbb_meet} AS m ON m.id = ba.localmeetingid
+                    INNER JOIN {course} AS c ON c.id = m.courseid
+                    INNER JOIN {groups_members} AS gm ON ba.userid = gm.userid
+                      GROUP BY gm.groupid
+                       ) AS t ON g.id = t.groupid";
+
+        return $DB->get_records_sql($sql, $this->params);
+    }
+    public function monitor39($params) {
+        global $DB;
+
+        $sql_filter  = $this->get_filterdate_sql($params, "ba.arrivaltime");
+        $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses", "u.id" => "users"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+
+        $sql = "SELECT it.useros, COUNT(DISTINCT ba.userid) AS amountofuse
+                  FROM {local_intelliboard_bbb_atten} AS ba
+            INNER JOIN {local_intelliboard_tracking} AS it ON it.userid = ba.userid AND it.page = 'site'
+            INNER JOIN {local_intelliboard_bbb_meet} AS m ON m.id = ba.localmeetingid
+            INNER JOIN {course} AS c ON c.id = m.courseid
+            INNER JOIN {user} AS u ON u.id = ba.userid
+                 WHERE ba.id > 0{$sql_filter}
+              GROUP BY it.useros";
+
+        $osinfo = $DB->get_records_sql($sql, $this->params);
+
+        return [
+            'monitortype' => 'bbbreport_os_info',
+            'osinfo' => $osinfo,
+        ];
+    }
     public function get_userinfo($params)
     {
         global $DB;
@@ -10009,7 +10402,7 @@ class local_intelliboard_external extends external_api {
         }
         if ($CFG->dbtype == 'pgsql') {
             $func = 'array_agg';
-        } elseif($CFG->dbtype == 'mssql') {
+        } elseif($CFG->dbtype == 'mssql' or $CFG->dbtype == 'sqlsrv') {
             $func = 'COUNT';
         } else {
             $func = 'GROUP_CONCAT';

@@ -18,14 +18,24 @@
  * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
  *
- * @package    local_intelliboard
- * @copyright  2017 IntelliBoard, Inc
+ * @package    local_bbbreport
+ * @copyright  2018 Sebale
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    https://intelliboard.net/
  */
 
-$plugin->version = 2018092002;
-$plugin->requires = 2017111300;
-$plugin->release = '5.2';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+defined('MOODLE_INTERNAL') || die();
+
+// other meetings - meetings, where not added "Join open", "Join closed" or both fields
+
+$tasks = [
+    [
+        'classname' => 'local_intelliboard\task\check_active_bbb_meetings',
+        'blocking' => 0,
+        'minute' => '*',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*'
+    ]
+];

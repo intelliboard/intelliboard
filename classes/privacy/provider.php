@@ -86,6 +86,14 @@ class provider implements
             'timepoint' => 'privacy:metadata:local_intelliboard_totals:timepoint',
         ], 'privacy:metadata:local_intelliboard_totals');
 
+        // The 'local_intelliboard_reports' table stores information custom admin reports.
+        $items->add_database_table('local_intelliboard_reports', [
+            'status' => 'privacy:metadata:local_intelliboard_reports:status',
+            'name' => 'privacy:metadata:local_intelliboard_reports:name',
+            'sqlcode' => 'privacy:metadata:local_intelliboard_reports:sqlcode',
+            'timecreated' => 'privacy:metadata:local_intelliboard_reports:timecreated',
+        ], 'privacy:metadata:local_intelliboard_reports');
+
         // The 'local_intelliboard_tracking' table stores the metadata about visits and time.
         $items->add_database_table('local_intelliboard_tracking', [
             'userid' => 'privacy:metadata:local_intelliboard_tracking:userid',
@@ -125,6 +133,54 @@ class provider implements
             'email' => 'privacy:metadata:local_intelliboard_ntf_hst:email',
             'timesent' => 'privacy:metadata:local_intelliboard_ntf_hst:timesent',
         ], 'privacy:metadata:local_intelliboard_ntf_hst');
+
+         // The 'local_intelliboard_bbb_meet' table stores information about BigBlueButton meetings.
+        $items->add_database_table('local_intelliboard_bbb_meet', [
+            'id' => 'privacy:metadata:local_intelliboard_bbb_meet:id',
+            'meetingname' => 'privacy:metadata:local_intelliboard_bbb_meet:meetingname',
+            'meetingid' => 'privacy:metadata:local_intelliboard_bbb_meet:meetingid',
+            'internalmeetingid' => 'privacy:metadata:local_intelliboard_bbb_meet:internalmeetingid',
+            'createtime' => 'privacy:metadata:local_intelliboard_bbb_meet:createtime',
+            'createdate' => 'privacy:metadata:local_intelliboard_bbb_meet:createdate',
+            'voicebridge' => 'privacy:metadata:local_intelliboard_bbb_meet:voicebridge',
+            'dialnumber' => 'privacy:metadata:local_intelliboard_bbb_meet:dialnumber',
+            'attendeepw' => 'privacy:metadata:local_intelliboard_bbb_meet:attendeepw',
+            'moderatorpw' => 'privacy:metadata:local_intelliboard_bbb_meet:moderatorpw',
+            'running' => 'privacy:metadata:local_intelliboard_bbb_meet:running',
+            'duration' => 'privacy:metadata:local_intelliboard_bbb_meet:duration',
+            'hasuserjoined' => 'privacy:metadata:local_intelliboard_bbb_meet:hasuserjoined',
+            'recording' => 'privacy:metadata:local_intelliboard_bbb_meet:recording',
+            'hasbeenforciblyended' => 'privacy:metadata:local_intelliboard_bbb_meet:hasbeenforciblyended',
+            'starttime' => 'privacy:metadata:local_intelliboard_bbb_meet:starttime',
+            'endtime' => 'privacy:metadata:local_intelliboard_bbb_meet:endtime',
+            'participantcount' => 'privacy:metadata:local_intelliboard_bbb_meet:participantcount',
+            'listenercount' => 'privacy:metadata:local_intelliboard_bbb_meet:listenercount',
+            'voiceparticipantcount' => 'privacy:metadata:local_intelliboard_bbb_meet:voiceparticipantcount',
+            'videocount' => 'privacy:metadata:local_intelliboard_bbb_meet:videocount',
+            'maxusers' => 'privacy:metadata:local_intelliboard_bbb_meet:maxusers',
+            'moderatorcount' => 'privacy:metadata:local_intelliboard_bbb_meet:moderatorcount',
+            'courseid' => 'privacy:metadata:local_intelliboard_bbb_meet:courseid',
+            'cmid' => 'privacy:metadata:local_intelliboard_bbb_meet:cmid',
+            'bigbluebuttonbnid' => 'privacy:metadata:local_intelliboard_bbb_meet:bigbluebuttonbnid',
+            'ownerid' => 'privacy:metadata:local_intelliboard_bbb_meet:ownerid',
+        ], 'privacy:metadata:local_intelliboard_bbb_meet');
+
+        // The 'local_intelliboard_bbb_atten' table stores information about
+        // attendees of BigBlueButton meetings.
+        $items->add_database_table('local_intelliboard_bbb_atten', [
+            'id' => 'privacy:metadata:local_intelliboard_bbb_atten:id',
+            'userid' => 'privacy:metadata:local_intelliboard_bbb_atten:userid',
+            'fullname' => 'privacy:metadata:local_intelliboard_bbb_atten:fullname',
+            'role' => 'privacy:metadata:local_intelliboard_bbb_atten:role',
+            'ispresenter' => 'privacy:metadata:local_intelliboard_bbb_atten:ispresenter',
+            'islisteningonly' => 'privacy:metadata:local_intelliboard_bbb_atten:islisteningonly',
+            'hasjoinedvoice' => 'privacy:metadata:local_intelliboard_bbb_atten:hasjoinedvoice',
+            'hasvideo' => 'privacy:metadata:local_intelliboard_bbb_atten:hasvideo',
+            'meetingid' => 'privacy:metadata:local_intelliboard_bbb_atten:meetingid',
+            'localmeetingid' => 'privacy:metadata:local_intelliboard_bbb_atten:localmeetingid',
+            'arrivaltime' => 'privacy:metadata:local_intelliboard_bbb_atten:arrivaltime',
+            'departuretime' => 'privacy:metadata:local_intelliboard_bbb_atten:departuretime',
+        ], 'privacy:metadata:local_intelliboard_bbb_atten');
 
         return $items;
     }
