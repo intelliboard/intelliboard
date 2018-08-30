@@ -107,6 +107,7 @@ $t36 = get_config('local_intelliboard', 't36');
 $t37 = get_config('local_intelliboard', 't37');
 $t38 = get_config('local_intelliboard', 't38');
 $scale_real = get_config('local_intelliboard', 'scale_real');
+$scale_percentage_round = get_config('local_intelliboard', 'scale_percentage_round');
 
 $courses = intelliboard_learner_courses($showing_user->id);
 $totals = intelliboard_learner_totals($showing_user->id);
@@ -307,7 +308,7 @@ echo $OUTPUT->header();
                                                     <?php if($scale_real):?>
                                                         <?php echo $item->grade; ?>
                                                     <?php else:?>
-                                                        <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                                        <div class="circle-progress"  data-percent="<?php echo round($item->grade, $scale_percentage_round); ?>"></div>
                                                     <?php endif;?>
                                                 </td>
                                             <?php endif; ?>
@@ -367,7 +368,7 @@ echo $OUTPUT->header();
                                                     <?php if($scale_real):?>
                                                         <?php echo $item->grade; ?>
                                                     <?php else:?>
-                                                        <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                                        <div class="circle-progress"  data-percent="<?php echo round($item->grade, $scale_percentage_round); ?>"></div>
                                                     <?php endif;?>
                                                 </td>
                                             <?php endif; ?>
@@ -455,47 +456,66 @@ echo $OUTPUT->header();
                                 </tr>
                             <?php endif; ?>
                             <?php foreach($courses_report['data'] as $item): ?>
-                                <tr class="">
-                                    <td width="1%"><i class="intelliboard-icon <?php echo (!$item->timecompleted)?'f6 ion-social-buffer':'f4 ion-android-done'; ?>"></i></td>
-                                    <td>
-                                        <a href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo s($item->id); ?>"><?php echo format_string($item->fullname); ?></a>
-                                    </td>
-                                    <?php if($t35): ?>
-                                    <?php
-                                        $completion = 0;
-                                        if ($item->timecompleted) {
-                                            $completion = 100;
-                                        } elseif ($item->completedmodules) {
-                                            $completion = ($item->completedmodules / $item->modules) * 100;
-                                        }
-                                        ?>
-                                        <td width="100">
-                                            <div class="intelliboard-progress g1 xl intelliboard-tooltip"  title="<?php echo "Activities: ".s($item->modules).", Completed: ".s($item->completedmodules); ?>"><span style="width:<?php echo $completion; ?>%"></span></div>
+                                <?php if($item->type == 'course'): ?>
+                                    <tr class="">
+                                        <td width="1%"><i class="intelliboard-icon <?php echo (!$item->timecompleted)?'f6 ion-social-buffer':'f4 ion-android-done'; ?>"></i></td>
+                                        <td>
+                                            <a href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo s($item->id); ?>"><?php echo format_string($item->fullname); ?></a>
                                         </td>
-                                    <?php endif; ?>
+                                        <?php if($t35): ?>
+                                        <?php
+                                            $completion = 0;
+                                            if ($item->timecompleted) {
+                                                $completion = 100;
+                                            } elseif ($item->completedmodules) {
+                                                $completion = ($item->completedmodules / $item->modules) * 100;
+                                            }
+                                            ?>
+                                            <td width="100">
+                                                <div class="intelliboard-progress g1 xl intelliboard-tooltip"  title="<?php echo "Activities: ".s($item->modules).", Completed: ".s($item->completedmodules); ?>"><span style="width:<?php echo $completion; ?>%"></span></div>
+                                            </td>
+                                        <?php endif; ?>
 
+                                        <?php if($t36): ?>
+                                            <td class="align-center">
+                                                <?php if($scale_real):?>
+                                                    <?php echo $item->grade; ?>
+                                                <?php else:?>
+                                                    <div class="circle-progress"  data-percent="<?php echo round($item->grade,$scale_percentage_round); ?>"></div>
+                                                <?php endif;?>
+                                            </td>
+                                        <?php endif; ?>
+
+                                        <?php if($t37): ?>
+                                            <td align="right">
+                                                <?php echo date("m/d/Y", $item->timemodified); ?>
+                                            </td>
+                                        <?php endif; ?>
+
+                                        <?php if($t38): ?>
+                                            <td align="right">
+                                                <?php echo ($item->timecompleted) ? date("m/d/Y", $item->timecompleted):'-'; ?>
+                                            </td>
+                                        <?php endif; ?>
+                                    </tr>
+                                <?php elseif($item->type == 'category'): ?>
+                                    <tr class="">
+                                    <td></td>
+                                    <td colspan="<?php echo ($t35)?2:1; ?>">
+                                        <?php echo get_string('course_category', 'local_intelliboard').': '.format_string($item->fullname); ?>
+                                    </td>
                                     <?php if($t36): ?>
-                                        <td class="align-center">
+                                        <td class="align-center" colspan="4">
                                             <?php if($scale_real):?>
                                                 <?php echo $item->grade; ?>
                                             <?php else:?>
-                                                <div class="circle-progress"  data-percent="<?php echo (int)$item->grade; ?>"></div>
+                                                <div class="circle-progress"  data-percent="<?php echo round($item->grade,$scale_percentage_round); ?>"></div>
                                             <?php endif;?>
                                         </td>
                                     <?php endif; ?>
+                                    </tr>
+                                <?php endif; ?>
 
-                                    <?php if($t37): ?>
-                                        <td align="right">
-                                            <?php echo date("m/d/Y", $item->timemodified); ?>
-                                        </td>
-                                    <?php endif; ?>
-
-                                    <?php if($t38): ?>
-                                        <td align="right">
-                                            <?php echo ($item->timecompleted) ? date("m/d/Y", $item->timecompleted):'-'; ?>
-                                        </td>
-                                    <?php endif; ?>
-                                </tr>
                             <?php endforeach; ?>
                             </tbody>
                             <tfoot>

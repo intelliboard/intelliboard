@@ -50,6 +50,11 @@ if ($mentor_role>0){
         }
     }
 }
+$user_courses = enrol_get_users_courses($showing_user->id);
+$sum_courses = get_user_preferences('enabeled_sum_courses_'.$showing_user->id, '');
+$sum_courses = (!empty($sum_courses))?explode(',', $sum_courses):array();
+
+user_preference_allow_ajax_update('enabeled_sum_courses_'.$showing_user->id, PARAM_SEQUENCE);
 
 ?>
 
@@ -97,7 +102,23 @@ if ($mentor_role>0){
 			<?php endif; ?>
 
 			<?php if(get_config('local_intelliboard', 't08')): ?>
-			<li><?php echo $totals->sum_grade; ?><span><?php echo get_string('courses_sum_grade', 'local_intelliboard');?></span></li>
+			<li class="dropdown">
+                <a href="javascript:;" data-toggle="dropdown" ><?php echo $totals->sum_grade; ?></a>
+                <span><?php echo get_string('courses_sum_grade', 'local_intelliboard');?></span>
+                <div class="dropdown-menu">
+                    <ul class="sum-courses-list">
+                        <?php foreach($user_courses as $course):?>
+                            <li class="course-item clearfix">
+                                <label>
+                                    <input type="checkbox" value="<?php echo $course->id?>" <?php echo (empty($sum_courses) || in_array($course->id, $sum_courses))?'checked="checked"':''; ?>>
+                                    <?php echo $course->fullname;?>
+                                </label>
+                            </li>
+                        <?php endforeach;?>
+                    </ul>
+                    <button><?php echo get_string('save');?></button>
+                </div>
+            </li>
 			<?php endif; ?>
 
 			<?php if(get_config('local_intelliboard', 't07')): ?>
@@ -152,6 +173,21 @@ if ($mentor_role>0){
                     return false;
                 }
                 jQuery(this).parent().find('ul').toggle();
+            });
+
+            jQuery('.sum-courses-list label').click(function (e) {
+                e.stopPropagation();
+            });
+            jQuery('.sheader .stats .dropdown-menu button').click(function (e) {
+                e.stopPropagation();
+                var checkedVals = jQuery('.sum-courses-list input:checkbox:checked').map(function() {
+                    return this.value;
+                }).get();
+                M.cfg.developerdebug = false;
+                M.util.set_user_preference('enabeled_sum_courses_<?php echo $showing_user->id;?>', checkedVals);
+                setTimeout(function () {
+                    window.location.reload();
+                },600);
             });
         });
     </script>

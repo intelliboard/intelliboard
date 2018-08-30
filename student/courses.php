@@ -107,6 +107,7 @@ $t22 = get_config('local_intelliboard', 't22');
 $t47 = get_config('local_intelliboard', 't47');
 $course_chart = get_config('local_intelliboard', 'course_chart');
 $course_activities = get_config('local_intelliboard', 'course_activities');
+$scale_percentage_round = get_config('local_intelliboard', 'scale_percentage_round');
 
 echo $OUTPUT->header();
 ?>
@@ -153,7 +154,7 @@ echo $OUTPUT->header();
 						</div>
 						<?php if($t19): ?>
 						<div class="grade" title="<?php echo get_string('current_grade','local_intelliboard');?>">
-							<div class="circle-progress"  data-percent="<?php echo ($scale_real)?$item->grade:(int)$item->grade; ?>"></div>
+							<div class="circle-progress"  data-percent="<?php echo ($scale_real)?$item->grade:round($item->grade, $scale_percentage_round); ?>"></div>
 						</div>
 						<?php endif; ?>
 					</div>

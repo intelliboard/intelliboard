@@ -247,6 +247,13 @@
 .intelliboard-dropdown ul li:hover{background-color: #f6f6f6; }
 
 .sheader .info .intelliboard-dropdown{float: left;margin-bottom: 5px;}
+.sheader .stats .sum-courses-list li.course-item{text-align: left;padding: 8px 16px;display: block;}
+.sheader .stats .sum-courses-list li.course-item label{padding-left: 23px;}
+.sheader .stats .sum-courses-list li.course-item label input{margin-left: -25px;}
+.sheader .stats .sum-courses-list{max-height: 300px;overflow: auto;margin-bottom: 10px;}
+.sheader .stats .sum-courses-list{max-height: 300px;overflow: auto;margin-bottom: 10px;}
+.sheader .stats .dropdown-menu{min-width: 180px;}
+.sheader .stats .dropdown-menu button{margin: 0;}
 
 .s-progress{float: right;width: 180px;}
 .s-progress div{position:relative; border-bottom:3px solid #eee; margin-top: 6px;font-size:13px;}

@@ -60,7 +60,7 @@ function intelliboard_data($type, $userid, $showing_user) {
             $params['timestart'] = $timestart;
             $params['timefinish'] = $timefinish;
         }
-        $grade_single = intelliboard_grade_sql();
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
         $query = "SELECT a.id, a.name, a.duedate, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
                     FROM {course} c, {assign} a
                         LEFT JOIN {modules} m ON m.name = 'assign'
@@ -96,7 +96,7 @@ function intelliboard_data($type, $userid, $showing_user) {
             $params['timestart'] = $timestart;
             $params['timefinish'] = $timefinish;
         }
-        $grade_single = intelliboard_grade_sql();
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
 
         $query = "SELECT gi.id, a.name, a.timeclose, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
                   FROM {course} c, {quiz} a
@@ -122,12 +122,15 @@ function intelliboard_data($type, $userid, $showing_user) {
         $params['userid4'] = $userid;
         $params['userid5'] = $userid;
 
-        $grade_single = intelliboard_grade_sql();
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
 
         $completion = intelliboard_compl_sql("cmc.");
 
-
-        $query = "SELECT MAX(c.id) AS id, c.fullname, MIN(ue.timemodified) AS timemodified,
+        $order_by = 'ORDER BY c.sortorder';
+        if(get_config('local_intelliboard', 't52')){
+            $order_by = 'ORDER BY c.sortorder,c.category';
+        }
+        $query = "SELECT MAX(c.id) AS id, c.fullname, MIN(ue.timemodified) AS timemodified, c.category, 'course' as type,
                     (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid1) AS grade,
                     (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
                     (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid3 AND courseid = c.id) AS duration,
@@ -136,9 +139,43 @@ function intelliboard_data($type, $userid, $showing_user) {
                   FROM {user_enrolments} ue
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid
                     LEFT JOIN {course} c ON c.id = e.courseid
-                  WHERE ue.userid = :userid2 AND c.visible = 1 $sql GROUP BY c.id ORDER BY c.sortorder";
+                  WHERE ue.userid = :userid2 AND c.visible = 1 $sql GROUP BY c.id $order_by";
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
+
+        if(get_config('local_intelliboard', 't52')){
+            $categories = array();
+            foreach($data as $item){
+                $categories[$item->category] = true;
+            }
+
+            $grade_avg = intelliboard_grade_sql(true);
+            $grade_category = $DB->get_records_sql("SELECT c.category, cc.name, $grade_avg AS grade 
+                                                    FROM {course} c 
+                                                      JOIN {course_categories} cc ON cc.id=c.category
+                                                      LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+                                                      LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                                                    WHERE c.category IN(".implode(',', array_keys($categories)).")
+                                                    GROUP BY c.category");
+
+            $i=0;
+            $inserted_cats=0;
+            $old_cat = 0;
+            foreach($data as $record){
+                if(($i == 1 && $old_cat == 0) || $old_cat != $record->category){
+                    $cat = $grade_category[$record->category];
+                    $cat_row = new stdClass();
+                    $cat_row->type = 'category';
+                    $cat_row->fullname = $cat->name;
+                    $cat_row->grade = $cat->grade;
+
+                    array_splice( $data, $i+$inserted_cats, 0, array($cat_row) );
+                    $inserted_cats++;
+                }
+                $old_cat = $record->category;
+                $i++;
+            }
+        }
     }elseif ($type == 'courses') {
         $sql = "";
         if($search){
@@ -161,8 +198,8 @@ function intelliboard_data($type, $userid, $showing_user) {
         $params['userid5'] = $userid;
         $params['userid6'] = $userid;
 
-        $grade_single = intelliboard_grade_sql();
-        $grade_avg = intelliboard_grade_sql(true);
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
+        $grade_avg = intelliboard_grade_sql(true, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
         $completion = intelliboard_compl_sql("cmc.");
 
         $teacher_roles = get_config('local_intelliboard', 'filter10');
@@ -379,6 +416,11 @@ function intelliboard_learner_totals($userid){
             $cast_as_int_start = '';
             $cast_as_int_end = '';
         }
+        $sum_courses = get_user_preferences('enabeled_sum_courses_'.$userid, '');
+        $where = '';
+        if(!empty($sum_courses)){
+            $where = " AND c.id IN($sum_courses)";
+        }
 
         $sum_grade = $DB->get_record_sql("SELECT
                           (CASE WHEN (AVG({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end})=MIN({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end}))
@@ -517,7 +559,7 @@ function intelliboard_learner_totals($userid){
                           JOIN {course} c ON c.id = e.courseid
                           JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='course'
                           JOIN {grade_grades} g ON g.itemid=gi.id AND g.userid=ue.userid
-                        WHERE ue.userid = :userid1 AND c.visible = 1", $params);
+                        WHERE ue.userid = :userid1 AND c.visible = 1 $where", $params);
 
         $data->sum_grade = (!empty($sum_grade->grade))?$sum_grade->grade:'-';
     }
