@@ -41,8 +41,12 @@ $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcompetency',
         $CFG->wwwroot.'/local/intelliboard/competencies/index.php', 'local/intelliboard:competency'));
 
 
+
 if (!$ADMIN->locate('intelliboard') and $ADMIN->locate('localplugins')){
-	$ADMIN->add('localplugins', $settings);
+    $ADMIN->add('localplugins', new admin_category('intelliboard', new lang_string('pluginname', 'local_intelliboard')));
+    $ADMIN->add('intelliboard', $settings);
+    $ADMIN->add('intelliboard', new admin_externalpage('intelliboardsql', new lang_string('sqlreports', 'local_intelliboard'),
+        $CFG->wwwroot.'/local/intelliboard/sqlreports.php'));
 }
 
 if($ADMIN->fulltree){
@@ -472,6 +476,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/t52';
+        $title = new lang_string('t52', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
         $name = 'local_intelliboard/t12';
         $title = new lang_string('t12', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
@@ -723,6 +732,12 @@ if($ADMIN->fulltree){
 
         $name = 'local_intelliboard/scale_percentage';
         $title = new lang_string('scale_percentage', 'local_intelliboard');
+        $default = 0;
+        $setting = new admin_setting_configtext($name, $title, '', $default);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/scale_percentage_round';
+        $title = new lang_string('scale_percentage_round', 'local_intelliboard');
         $default = 0;
         $setting = new admin_setting_configtext($name, $title, '', $default);
         $settings->add($setting);

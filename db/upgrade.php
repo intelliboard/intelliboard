@@ -341,6 +341,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 		$table->add_field('status', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
 		$table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
 		$table->add_field('sqlcode', XMLDB_TYPE_TEXT, null, null, null, null, null);
+		$table->add_field('appid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
 		$table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
 
 		$table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
@@ -411,6 +412,17 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         }
         upgrade_plugin_savepoint(true, 2018091502, 'local', 'intelliboard');
     }
+
+
+    if ($oldversion < 2018092600) {
+		$table = new xmldb_table('local_intelliboard_reports');
+		$field = new xmldb_field('appid');
+        if (!$dbman->field_exists($table, $field)) {
+            $field->set_attributes(XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $dbman->add_field($table, $field);
+        }
+		upgrade_plugin_savepoint(true, 2018092600, 'local', 'intelliboard');
+	}
 
 	return true;
 }

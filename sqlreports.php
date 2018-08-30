@@ -19,13 +19,35 @@
  *
  *
  * @package    local_intelliboard
- * @copyright  2017 IntelliBoard, Inc
+ * @copyright  2018 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    https://intelliboard.net/
  */
 
-$plugin->version = 2018092600;
-$plugin->requires = 2011120500;
-$plugin->release = '5.2.1';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+require('../../config.php');
+require_once($CFG->libdir.'/adminlib.php');
+require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+require_once($CFG->dirroot . '/local/intelliboard/output/tables/reports_table.php');
+
+require_login();
+admin_externalpage_setup('intelliboardsql');
+
+if (!is_siteadmin()) {
+    throw new moodle_exception('invalidaccess', 'error');
+}
+
+$intelliboard = intelliboard(['task'=>'sqlreports']);
+
+$table = new reports_table('reports_table');
+$table->show_download_buttons_at(array());
+$table->is_downloading(false);
+$table->is_collapsible = false;
+
+echo $OUTPUT->header();
+
+echo $OUTPUT->heading(get_string('sqlreports', 'local_intelliboard'));
+
+$table->out(20, true);
+
+echo $OUTPUT->footer();
+
