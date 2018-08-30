@@ -396,7 +396,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2018091502, 'local', 'intelliboard');
     }
 
-    if ($oldversion < 2018092601) {
+    if ($oldversion < 2018092603) {
     	$table = new xmldb_table('local_intelliboard_reports');
         if ($dbman->table_exists($table)) {
             $dbman->drop_table($table);
@@ -414,7 +414,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 		if (!$dbman->table_exists($table)) {
 			$dbman->create_table($table);
 		}
-		upgrade_plugin_savepoint(true, 2018092601, 'local', 'intelliboard');
+		upgrade_plugin_savepoint(true, 2018092603, 'local', 'intelliboard');
 	}
 
 	return true;
