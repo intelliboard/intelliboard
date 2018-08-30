@@ -67,11 +67,13 @@
 			function init(){
 				that.each(function(){
 					var $this = $(this),
-						perc = Math.round($this.data('percent')), //get the percentage from the element
+						real_number = $this.data('percent'),
+						perc = Math.round(real_number), //get the percentage from the element
 						deg = perc * 3.6,
 						stop = defaults.animate ? 0 : deg,
-						$chart = $(template.replace('{{percentage}}',(isNaN(perc) || perc>100)?$this.data('percent'):perc+'%'));
+						$chart = $(template.replace('{{percentage}}',(isNaN(real_number))?real_number:Math.max(real_number, perc)+'%'));
 						$chart.css(styles.cirContainer).find('.ab').css(styles.cir).find('.cir').css(styles.cirCover).find('.perc').css(styles.percent);
+
 					$this.append($chart);
 					setTimeout(function(){
 						animateChart(deg,parseInt(stop),$chart.find('.ab')); //both values set to the same value to keep the function from looping and animating

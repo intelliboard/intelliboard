@@ -155,6 +155,7 @@ $string['t35'] = 'Enable [Course Progress][Progress] widget column';
 $string['t36'] = 'Enable [Course Progress][Grade] widget column';
 $string['t37'] = 'Enable [Course Progress][Enrolled] widget column';
 $string['t38'] = 'Enable [Course Progress][Completed] widget column';
+$string['t52'] = 'Enable [Course Progress][Category] widget rows';
 $string['t39'] = 'Enable [Progress][Goal Grade] option';
 $string['t40'] = 'Enable [Progress][Class Avg.] option';
 $string['t41'] = 'Enable [Activity Grades header] Completed on';
@@ -227,7 +228,7 @@ $string['failed'] = 'Failed';
 $string['completed_courses'] = 'Completed courses';
 $string['courses_in_progress'] = 'Courses in progress';
 $string['courses_avg_grade'] = 'Courses avg. grade';
-$string['courses_sum_grade'] = 'Courses sum. grade';
+$string['courses_sum_grade'] = 'Course Sum Grade by Grade Scale Value';
 $string['grades'] = 'Grades';
 $string['messages'] = 'Messages';
 $string['x_completions'] = '{$a} Completions';
@@ -579,6 +580,7 @@ $string['sqlreportinactive'] = 'Deactivated';
 $string['remove_message'] = 'SQL report has been deleted';
 $string['delete_message'] = 'Delete SQL report?';
 $string['success_message'] = 'SQL report has been saved';
+$string['scale_percentage_round'] = 'Percentage round';
 
 
 // BigBlueButton meetings
