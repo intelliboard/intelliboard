@@ -508,7 +508,7 @@ class local_intelliboard_external extends external_api {
     }
     public function report3($params)
     {
-        $columns = array_merge(array("activity", "m.name", "completed", "visits", "timespend", "grade", "cm.added"), $this->get_filter_columns($params));
+        $columns = array_merge(array("activity", "m.name", "completed", "visits", "timespend", "grade", "cm.added", "c.fullname"), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
