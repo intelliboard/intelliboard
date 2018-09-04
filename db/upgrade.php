@@ -417,5 +417,18 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 		upgrade_plugin_savepoint(true, 2018092601, 'local', 'intelliboard');
 	}
 
+    if ($oldversion < 2018092604) {
+        $table = new xmldb_table('local_intelliboard_ntf');
+
+        $field = new xmldb_field('cc');
+        $field->set_attributes(XMLDB_TYPE_TEXT, null, null, null, null, null);
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2018092604, 'local', 'intelliboard');
+    }
+
 	return true;
 }
