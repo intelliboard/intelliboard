@@ -43,7 +43,7 @@ class local_intelliboard_report extends external_api {
                         'appid' => new external_value(PARAM_INT, 'External app ID'),
                         'debug' => new external_value(PARAM_INT, 'Debug Mode'),
                         'start' => new external_value(PARAM_INT, 'Report pagination'),
-                        'length' => new external_value(PARAM_INT, 'Report pagination'),
+                        'length' => new external_value(PARAM_INT, 'Report pagination')
                     )
                 )
             )
@@ -78,7 +78,6 @@ class local_intelliboard_report extends external_api {
                     $CFG->debug = (E_ALL | E_STRICT);
                     $CFG->debugdisplay = 1;
                 }
-
                 if ($params->debug === 2) {
                     $data = $report->sqlcode;
                 } elseif(isset($params->start) and $params->length != 0 and $params->length != -1){
@@ -121,7 +120,7 @@ class local_intelliboard_report extends external_api {
                     array(
                         'appid' => new external_value(PARAM_INT, 'External app ID'),
                         'name' => new external_value(PARAM_TEXT, 'Report name'),
-                        'sqlcode' => new external_value(PARAM_BASE64, 'SQL code of custom report')
+                        'sqlcode' => new external_value(PARAM_TEXT, 'SQL code of custom report')
                     )
                 )
             )
@@ -145,6 +144,9 @@ class local_intelliboard_report extends external_api {
         self::validate_context(context_system::instance());
 
         $report = (object) $params['report'];
+
+        //Deactivate report every time
+        $report->status = 0;
 
         if ($data = $DB->get_record('local_intelliboard_reports', ['appid' => $report->appid])) {
             $report->id = $data->id;

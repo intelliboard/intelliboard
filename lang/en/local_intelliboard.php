@@ -546,6 +546,7 @@ $string['privacy:metadata:local_intelliboard_ntf:type'] = 'Notification type';
 $string['privacy:metadata:local_intelliboard_ntf:externalid'] = 'Notification ExternalNID';
 $string['privacy:metadata:local_intelliboard_ntf:userid'] = 'Notification ExternalAppID';
 $string['privacy:metadata:local_intelliboard_ntf:email'] = 'Notification email';
+$string['privacy:metadata:local_intelliboard_ntf:cc'] = 'Notification cc';
 $string['privacy:metadata:local_intelliboard_ntf:subject'] = 'Notification subject';
 $string['privacy:metadata:local_intelliboard_ntf:message'] = 'Notification message';
 $string['privacy:metadata:local_intelliboard_ntf:state'] = 'Notification status';
@@ -565,6 +566,32 @@ $string['ssodomain'] = 'Subdomain SSO';
 $string['ssodomain_desc'] = 'Single Sign On with separated Server/Account';
 $string['instructor_redirect'] = 'Instructor redirect';
 $string['student_redirect'] = 'Student redirect';
+$string['myorders'] = 'Orders';
+$string['myseats'] = 'Seats';
+$string['mywaitlist'] = 'Waitlist';
+$string['mysubscriptions'] = 'Subscriptions';
+$string['seatscode'] = 'Seats code';
+$string['numberofseats'] = 'Number of seats';
+$string['downloadinvoice'] = 'Download Invoice';
+$string['product'] = 'Product';
+$string['key'] = 'Key';
+$string['created'] = 'Created';
+$string['seatnumber'] = 'Seats Number';
+$string['seatsused'] = 'Seat Used';
+$string['details'] = 'Details';
+$string['username'] = 'User Name';
+$string['used'] = 'Used';
+$string['status'] = 'Status';
+$string['subscriptiondate'] = 'Subscription date';
+$string['price'] = 'Price';
+$string['recurringperiod'] = 'Recurring period';
+$string['billingcycles'] = 'Billing cycles';
+$string['active'] = 'Active';
+$string['suspended'] = 'Suspended';
+$string['canceled'] = 'Canceled';
+$string['expired'] = 'Expired';
+$string['process'] = 'Process';
+$string['cancel_subscription'] = 'Cancel subscription';
 
 
 
@@ -632,4 +659,3 @@ $string['privacy:metadata:local_intelliboard_bbb_atten:meetingid'] = 'Meeting ID
 $string['privacy:metadata:local_intelliboard_bbb_atten:localmeetingid'] = 'Meeting ID (ID in table local_intelliboard_bbb_meet)';
 $string['privacy:metadata:local_intelliboard_bbb_atten:arrivaltime'] = 'Time when user connected to meeting';
 $string['privacy:metadata:local_intelliboard_bbb_atten:departuretime'] = 'Time when user disconnected from meeting';
-

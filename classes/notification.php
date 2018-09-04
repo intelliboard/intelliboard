@@ -81,16 +81,16 @@ class local_intelliboard_notification
         $result = json_decode(json_encode($DB->get_records_sql($sql, $params)), true);
 
         return array_map(function ($item) use ($paramSeparator, $valueSeparator) {
-            $item['email'] = explode(',', $item['email']);
-            $item['tags'] = json_decode($item['tags'], true);
+            $item['email'] = isset($item['email'])? explode(',', $item['email']) : [];
+            $item['cc']    = isset($item['cc'])? explode(',', $item['cc']) : [];
+            $item['tags']  = json_decode($item['tags'], true);
             return $item;
         }, $result);
     }
 
     public function send_notifications($notifications, $event = array(), $params = array())
     {
-        if ($notifications) {
-            foreach ($notifications as $notification) {
+        foreach ($notifications as $notification) {
                 $events = array();
 
                 if ($event) {
@@ -102,9 +102,7 @@ class local_intelliboard_notification
                 $method = 'notification' . $notification['type'];
                 list($recipients, $results) = $this->$method($notification, $events, $params);
                 $this->notify($recipients, $results, $notification);
-            }
         }
-
     }
 
     protected function get_events_from_queue($notification, $params)
@@ -262,14 +260,15 @@ class local_intelliboard_notification
             'action' => $event['action']
         );
 
-        $recipients = $this->get_recipients_by_emails($notification['email']);
+        $recipients = $this->get_recipients_for_notification($notification);
         $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
 
         return array($recipients, $notifications);
     }
 
-    private function get_recipients_by_emails($emails)
+    private function get_recipients_for_notification($notification)
     {
+        $emails = array_merge($notification['email'], $notification['cc']);
         $template = get_admin();
 
         return array_map(function ($email) use ($template) {
@@ -360,7 +359,7 @@ class local_intelliboard_notification
             );
         }
 
-        $recipients = $this->get_recipients_by_emails($notification['email']);
+        $recipients = $this->get_recipients_for_notification($notification);
         $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, $result));
 
         return array($recipients, $notifications);
@@ -510,7 +509,7 @@ class local_intelliboard_notification
             );
         }
 
-        $recipients = $this->get_recipients_by_emails($notification['email']);
+        $recipients = $this->get_recipients_for_notification($notification);
         $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
 
         return array($recipients, $notifications);
@@ -614,7 +613,7 @@ class local_intelliboard_notification
             'timeEnrolled' => date('Y/m/d', 'H:i:s')
         );
 
-        $recipients = $this->get_recipients_by_emails($notification['email']);
+        $recipients = $this->get_recipients_for_notification($notification);
         $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
 
         return array($recipients, $notifications);

@@ -115,6 +115,7 @@ class provider implements
             'externalid' => 'privacy:metadata:local_intelliboard_ntf:externalid',
             'userid' => 'privacy:metadata:local_intelliboard_ntf:userid',
             'email' => 'privacy:metadata:local_intelliboard_ntf:email',
+            'cc' => 'privacy:metadata:local_intelliboard_ntf:cc',
             'subject' => 'privacy:metadata:local_intelliboard_ntf:subject',
             'message' => 'privacy:metadata:local_intelliboard_ntf:message',
             'state' => 'privacy:metadata:local_intelliboard_ntf:state',
