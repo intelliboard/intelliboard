@@ -7289,7 +7289,7 @@ class local_intelliboard_external extends external_api {
 
     function report156($params)
     {
-        $columns = array("u.id","u.email", "user_name");
+        $columns = array_merge(array("u.id", "c.fullname", "c.shortname", "u.email", "user_name"), $this->get_filter_columns($params));
         $modules = $this->get_course_modules($params);
         $sql_select = '';
         foreach($modules['modules'] as $module){
@@ -7299,7 +7299,7 @@ class local_intelliboard_external extends external_api {
             $sql_select .= ", (SELECT timemodified FROM {course_modules_completion} WHERE userid = u.id AND coursemoduleid = $module->id $completion) AS completed_$module->id";
             $columns[] = "completed_$module->id";
         }
-        $columns[] = "c.fullname";
+
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
@@ -7314,7 +7314,9 @@ class local_intelliboard_external extends external_api {
               u.id,
               u.email,
               CONCAT(u.firstname,' ',u.lastname) AS user_name,
-              c.fullname
+              c.fullname,
+              c.shortname,
+              lit.id as accessed
               $sql_select
               $sql_columns
 
@@ -7322,6 +7324,7 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {role_assignments} ra ON ctx.id = ra.contextid $sql
               LEFT JOIN {user} u ON u.id=ra.userid
               LEFT JOIN {course} c ON c.id=ctx.instanceid
+              LEFT JOIN {local_intelliboard_tracking} lit ON lit.page = 'course' AND lit.param = c.id AND lit.userid = ra.userid
             WHERE ctx.contextlevel = 50 AND u.id IS NOT NULL $sql_filter $sql_having $sql_order", $params,false);
 
         $additional_data = $this->get_report_data("
@@ -7498,6 +7501,8 @@ class local_intelliboard_external extends external_api {
         $where_sql = "";
         $select_sql = "";
 
+        $params->custom2 = clean_param($params->custom2, PARAM_TEXT);
+
         if(!empty($params->custom) || $params->custom === 0){
             $select_sql = "LEFT JOIN {role_assignments} ra ON log.contextid=ra.contextid and ra.userid=log.userid";
             $params->custom = clean_param($params->custom, PARAM_SEQUENCE);
@@ -7518,6 +7523,7 @@ class local_intelliboard_external extends external_api {
         $where_sql .= $this->get_filterdate_sql($params, 'timecreated');
 
         if ($CFG->dbtype == 'pgsql') {
+            $DB->execute("SET SESSION TIME ZONE '$params->custom2'");
             $data = $DB->get_records_sql("
                   SELECT MIN(log.id) AS id,
                        COUNT(log.id) AS count,
@@ -7537,6 +7543,7 @@ class local_intelliboard_external extends external_api {
                   ORDER BY time_of_day, day
                 ", $this->params);
         } else {
+            $DB->execute("SET @@session.time_zone = :timezone", array('timezone'=>$params->custom2));
             $data = $DB->get_records_sql("
                   SELECT MIN(log.id) AS id,
                          COUNT(log.id) AS count,

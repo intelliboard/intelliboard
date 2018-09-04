@@ -39,7 +39,8 @@ class local_intelliboard_notificationlib extends external_api {
                             'type'       => new external_value(PARAM_INT, 'Notification type'),
                             'name'       => new external_value(PARAM_TEXT, 'Notification name'),
                             'userid'     => new external_value(PARAM_INT, 'User that created notification'),
-                            'email'      => new external_value(PARAM_TEXT, 'Email where this notification should to go'),
+                            'email'      => new external_value(PARAM_TEXT, 'Emails where this notification should to go'),
+                            'cc'         => new external_value(PARAM_TEXT, 'Copy emails where this notification should to go'),
                             'subject'    => new external_value(PARAM_TEXT, 'Notification subject'),
                             'message'    => new external_value(PARAM_RAW, 'Notification message'),
                             'attachment' => new external_value(PARAM_TEXT, 'Notification attachment'),
@@ -51,7 +52,7 @@ class local_intelliboard_notificationlib extends external_api {
                 ),
                 'params' => new external_single_structure(
                     array(
-                        'learner_roles'         => new external_value(PARAM_SEQUENCE, 'Learner Roles'),
+                        'learner_roles' => new external_value(PARAM_SEQUENCE, 'Learner Roles'),
                     )
                 )
             )
@@ -60,9 +61,9 @@ class local_intelliboard_notificationlib extends external_api {
 
     public static function send_notifications($notifications, $params) {
         $notifications = array_map(function($notification) {
-            $notification['params'] = json_decode($notification['params'], true);
-            $notification['tags'] = json_decode($notification['tags'], true);
-            $notification['email'] = json_decode($notification['email'], true);
+            foreach (array('params', 'tags', 'email', 'cc') as $key) {
+                $notification[$key] = json_decode($notification[$key], true);
+            }
             return $notification;
         }, $notifications);
 
@@ -93,9 +94,10 @@ class local_intelliboard_notificationlib extends external_api {
                         array(
                             'type'       => new external_value(PARAM_INT, 'Notification type'),
                             'name'       => new external_value(PARAM_TEXT, 'Notification name'),
-                            'externalid'  => new external_value(PARAM_INT, 'Notification Intelliboard ID'),
+                            'externalid' => new external_value(PARAM_INT, 'Notification Intelliboard ID'),
                             'userid'     => new external_value(PARAM_INT, 'User that created notification'),
-                            'email'      => new external_value(PARAM_TEXT, 'Email where this notification should to go'),
+                            'email'      => new external_value(PARAM_TEXT, 'Emails where this notification should to go'),
+                            'cc'         => new external_value(PARAM_TEXT, 'Copy emails where this notification should to go'),
                             'state'      => new external_value(PARAM_INT, 'Notification state'),
                             'subject'    => new external_value(PARAM_TEXT, 'Notification subject'),
                             'message'    => new external_value(PARAM_RAW, 'Notification message'),
@@ -120,22 +122,21 @@ class local_intelliboard_notificationlib extends external_api {
 
         $transaction = $DB->start_delegated_transaction();
 
-        if (isset($notification['email']) && !$notification['email']) {
-            $notification['email'] = null;
+        foreach (['email', 'cc'] as $key) {
+            if (empty($notification[$key])) {
+                $notification[$key] = null;
+            }
         }
 
         $notification = (object) $notification;
         $params = empty($notification->params)? array() : json_decode($notification->params, true);
-
         unset($notification->params);
 
         if ($old = $DB->get_record('local_intelliboard_ntf',array('externalid' => $notification->externalid), 'id') ) {
             $id = $old->id;
             $notification->id = $old->id;
             $DB->update_record('local_intelliboard_ntf', $notification);
-
             $DB->delete_records('local_intelliboard_ntf_pms', array('notificationid' => $notification->id));
-
         } else {
             $id = $DB->insert_record('local_intelliboard_ntf', $notification);
         }
@@ -156,7 +157,6 @@ class local_intelliboard_notificationlib extends external_api {
         }
 
         $DB->insert_records('local_intelliboard_ntf_pms', $paramsToSave);
-
         $transaction->allow_commit();
 
         return compact('id');
