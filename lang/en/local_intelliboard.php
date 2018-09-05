@@ -659,3 +659,4 @@ $string['privacy:metadata:local_intelliboard_bbb_atten:meetingid'] = 'Meeting ID
 $string['privacy:metadata:local_intelliboard_bbb_atten:localmeetingid'] = 'Meeting ID (ID in table local_intelliboard_bbb_meet)';
 $string['privacy:metadata:local_intelliboard_bbb_atten:arrivaltime'] = 'Time when user connected to meeting';
 $string['privacy:metadata:local_intelliboard_bbb_atten:departuretime'] = 'Time when user disconnected from meeting';
+ $string['messageprovider:intelliboard_notification'] = "Intelliboard notification";
