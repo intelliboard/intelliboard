@@ -140,31 +140,31 @@ function intelliboard_url($server = '')
 function intelliboard($params, $function = 'sso'){
 	global $CFG;
 
-    require('config.php');
-	require_once($CFG->libdir . '/filelib.php');
+		require('config.php');
+		require_once($CFG->libdir . '/filelib.php');
 
-    $api = get_config('local_intelliboard', 'api');
-    $url = ($api) ? $config['api_url'] : $config['app_url'];
+		$api = get_config('local_intelliboard', 'api');
+		$url = ($api) ? $config['api_url'] : $config['app_url'];
 
-    $params['email'] = get_config('local_intelliboard', 'te1');
-	$params['apikey'] = get_config('local_intelliboard', 'apikey');
-    $params['url'] = $CFG->wwwroot;
-	$params['lang'] = current_language();
+		$params['email'] = get_config('local_intelliboard', 'te1');
+		$params['apikey'] = get_config('local_intelliboard', 'apikey');
+		$params['url'] = $CFG->wwwroot;
+		$params['lang'] = current_language();
 
-	$curl = new curl;
-	$json = $curl->post($url . 'moodleApi/' . $function, $params, []);
+		$curl = new curl;
+		$json = $curl->post($url . 'moodleApi/' . $function, $params, []);
 
-	$data = (object)json_decode($json);
-	$data->status = (isset($data->status))?$data->status:'';
-	$data->token = (isset($data->token))?$data->token:'';
-    $data->reports = (isset($data->reports))?(array)$data->reports:null;
-    $data->sets = (isset($data->reports))?(array)$data->sets:null;
-	$data->alerts = (isset($data->alerts))?(array)$data->alerts:null;
-	$data->alert = (isset($data->alert))?$data->alert:'';
-    $data->data = (isset($data->data))? (array) $data->data : null;
-	$data->shoppingcartkey = (isset($data->shoppingcartkey))? (array) $data->shoppingcartkey : null;
+		$data = (object)json_decode($json);
+		$data->status = (isset($data->status))?$data->status:'';
+		$data->token = (isset($data->token))?$data->token:'';
+		$data->reports = (isset($data->reports))?(array)$data->reports:null;
+		$data->sets = (isset($data->reports))?(array)$data->sets:null;
+		$data->alerts = (isset($data->alerts))?(array)$data->alerts:null;
+		$data->alert = (isset($data->alert))?$data->alert:'';
+		$data->data = (isset($data->data))? (array) $data->data : null;
+		$data->shoppingcartkey = (isset($data->shoppingcartkey))? (array) $data->shoppingcartkey : null;
 
-	return $data;
+		return $data;
 }
 function chart_options(){
     $res = array();
