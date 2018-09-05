@@ -639,3 +639,4 @@ $string['canceled'] = 'Canceled';
 $string['expired'] = 'Expired';
 $string['process'] = 'Process';
 $string['cancel_subscription'] = 'Cancel subscription';
+ $string['messageprovider:intelliboard_notification'] = "Intelliboard notification";
