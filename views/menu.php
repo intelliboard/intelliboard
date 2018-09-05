@@ -28,6 +28,14 @@
 	$id = optional_param('id', 0, PARAM_INT);
 	echo (!isset($USER->noalert) and $intelliboard->alert) ? $intelliboard->alert : '';
 ?>
+
+<?php if ($intelliboard->alerts): ?>
+	<?php foreach($intelliboard->alerts as $key => $value): ?>
+			<div class="alert alert-<?php echo format_string($value); ?>"><?php echo format_string($key); ?></div>
+	<?php endforeach; ?>
+<?php endif; ?>
+
+
 <ul class="intelliboard-menu">
 	<li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
 
