@@ -49,7 +49,7 @@ class local_intelliboard_external extends external_api {
                             'timefinish' => new external_value(PARAM_INT, 'Time finish param', VALUE_OPTIONAL, 0),
                             'start' => new external_value(PARAM_INT, 'Pagination start', VALUE_OPTIONAL, 0),
                             'length' => new external_value(PARAM_INT, 'Pagination length', VALUE_OPTIONAL, 0),
-                            'columns' => new external_value(PARAM_SEQUENCE, 'Profile columns', VALUE_OPTIONAL, 0),
+                            'columns' => new external_value(PARAM_RAW, 'Profile columns', VALUE_OPTIONAL, 0),
                             'completion' => new external_value(PARAM_SEQUENCE, 'Completion status param', VALUE_OPTIONAL, 0),
                             'filter_columns' => new external_value(PARAM_SEQUENCE, 'Filter columns param', VALUE_OPTIONAL, 0),
                             'filter_profile' => new external_value(PARAM_INT, 'Filter profile column param', VALUE_OPTIONAL, 0),
@@ -228,10 +228,16 @@ class local_intelliboard_external extends external_api {
             $data = "";
             $columns = explode(",", $params->columns);
             foreach($columns as $column){
-                $this->prfx = $this->prfx + 1;
-                $key = "column$column".$this->prfx;
-                $this->params[$key] = $column;
-                $data .= ", (SELECT d.data FROM {user_info_data} d, {user_info_field} f WHERE f.id = :$key AND d.fieldid = f.id AND d.userid = $field) AS field$column";
+                if($column == clean_param($column,PARAM_SEQUENCE)){
+                    $this->prfx = $this->prfx + 1;
+                    $key = "column$column" . $this->prfx;
+                    $this->params[$key] = $column;
+                    $data .= ", (SELECT d.data FROM {user_info_data} d, {user_info_field} f WHERE f.id = :$key AND d.fieldid = f.id AND d.userid = $field) AS field$column";
+                }else{
+                    $alias = explode('.',$field);
+                    $column = clean_param($column, PARAM_ALPHA);
+                    $data .= ", ".$alias[0].".".$column." AS field".$column;
+                }
             }
             return $data;
         }else{
