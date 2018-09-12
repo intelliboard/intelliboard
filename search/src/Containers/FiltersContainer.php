@@ -87,7 +87,7 @@ class FiltersContainer extends BaseContainer {
                 $id = ':filter' . static::$filtersCount;
                 static::$filtersCount++;
 
-                if (!empty($filter['argument'])) {
+                if (!isset($filter['value'])) {
                     $value = $extractor->getRawValue($filter['argument']);
                 } else {
                     $value = $filter['value'];
