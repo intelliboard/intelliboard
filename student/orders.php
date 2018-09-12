@@ -39,7 +39,6 @@ if ($search) {
 }
 
 require_login();
-require_capability('local/intelliboard:showorders', context_system::instance());
 
 if(!get_config('local_intellicart', 'enabled')){
     throw new moodle_exception('invalidaccess', 'error');
