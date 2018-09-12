@@ -42,8 +42,12 @@ class local_intelliboard_report extends external_api {
                     array(
                         'appid' => new external_value(PARAM_INT, 'External app ID'),
                         'debug' => new external_value(PARAM_INT, 'Debug Mode'),
-                        'start' => new external_value(PARAM_INT, 'Report pagination'),
-                        'length' => new external_value(PARAM_INT, 'Report pagination')
+                        'sortdir' => new external_value(PARAM_ALPHA, 'Sorting dir ASC/DESC', VALUE_OPTIONAL, ''),
+                        'sortcol' => new external_value(PARAM_INT, 'Sorting column', VALUE_OPTIONAL, 1),
+                        'filterval' => new external_value(PARAM_TEXT, 'Filter column', VALUE_OPTIONAL, ''),
+                        'filtercol' => new external_value(PARAM_TEXT, 'Filter column', VALUE_OPTIONAL, ''),
+                        'start' => new external_value(PARAM_INT, 'Report pagination start'),
+                        'length' => new external_value(PARAM_INT, 'Report pagination length')
                     )
                 )
             )
@@ -74,6 +78,27 @@ class local_intelliboard_report extends external_api {
             if ($report->sqlcode) {
                 $query = base64_decode($report->sqlcode);
 
+                $filters = [];
+                if (strrpos($query, ':sorting') !== false) {
+                  $params->sortcol = $params->sortcol + 1;
+                  if ($params->sortdir and $params->sortcol) {
+                    $sorting = " ORDER BY {$params->sortcol} {$params->sortdir}";
+                    $query = str_replace(":sorting", $sorting, $query);
+                  } else {
+                    $query = str_replace(":sorting", "", $query);
+                  }
+                }
+
+                if (strrpos($query, ':filter') !== false) {
+                  if ($params->filterval and $params->filtercol) {
+                    $filters[$params->filtercol] = "%".$params->filterval."%";
+                    $like = " AND " . $DB->sql_like($params->filtercol, ":" . $params->filtercol, false, false);
+                    $query = str_replace(":filter", $like, $query);
+                  } else {
+                    $query = str_replace(":filter", "", $query);
+                  }
+                }
+
                 if ($params->debug === 1) {
                     $CFG->debug = (E_ALL | E_STRICT);
                     $CFG->debugdisplay = 1;
@@ -81,9 +106,9 @@ class local_intelliboard_report extends external_api {
                 if ($params->debug === 2) {
                     $data = $report->sqlcode;
                 } elseif(isset($params->start) and $params->length != 0 and $params->length != -1){
-                    $data = $DB->get_records_sql($query, [], $params->start, $params->length);
+                    $data = $DB->get_records_sql($query, $filters, $params->start, $params->length);
                 } else {
-                    $data = $DB->get_records_sql($query);
+                    $data = $DB->get_records_sql($query, $filters);
                 }
             }
         }

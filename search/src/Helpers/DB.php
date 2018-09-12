@@ -346,14 +346,18 @@ class DB
         $key = $table . '_' . $column;
 
         if (!empty(self::$virtualColumns[$key])) {
-
-            if (is_callable(self::$virtualColumns[$key])) {
-                $function = self::$virtualTables[$table];
+            if(is_callable(self::$virtualColumns[$key])) {
+                $function    = self::$virtualTables[$table];
                 $destination = $function($settings);
             } else {
                 $destination = self::$virtualColumns[$key];
             }
-
+        } else if ($table === 'user' && !static::columnExists($table, $column) && $columnId = static::customColumnExists($column)) {
+            $destination = "(
+                SELECT uid.data 
+                FROM {user_info_data} uid
+                WHERE uid.fieldid = $columnId AND uid.userid = u.id
+            )";
         } else {
             $destination = $column;
         }
@@ -818,6 +822,23 @@ class DB
         $buffer .= ']';
 
         return $buffer;
+    }
+
+    protected static function columnExists($table, $column)
+    {
+        global $DB;
+        $dbman = $DB->get_manager();
+
+        return $dbman->field_exists($table, $column);
+    }
+
+    protected static function customColumnExists($column)
+    {
+        global $DB;
+        return $DB->get_field_sql('SELECT id FROM {user_info_field} WHERE shortname = :name1 OR name = :name2 LIMIT 1', array(
+            'name1' => $column,
+            'name2' => $column
+        ));
     }
 
 }
