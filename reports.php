@@ -34,6 +34,7 @@ require_capability('local/intelliboard:view', context_system::instance());
 
 $report = optional_param('id', '', PARAM_RAW);
 $intelliboard = intelliboard(['task'=>'reports']);
+$report_type = $intelliboard->reports[$report]->type;
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/reports.php", array('id'=>$report)));
 $PAGE->set_pagelayout('report');
@@ -54,13 +55,13 @@ echo $OUTPUT->header();
 		<?php endif; ?>
 		<?php if ($report): ?>
 		<div id="iframe">
-			<iframe id="iframe" src="<?php echo intelliboard_url(); ?>reports/share/<?php echo $intelliboard->db . '/' . $report; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1" width="100%" height="800" frameborder="0"></iframe>
+			<iframe id="iframe" src="<?php echo intelliboard_url().$report_type; ?>/share/<?php echo $intelliboard->db . '/' . $report; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1" width="100%" height="800" frameborder="0"></iframe>
 			<span id="iframe-loading"><?php echo get_string('loading2', 'local_intelliboard'); ?></span>
 		</div>
 		<?php elseif(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
 			<div id="adminsettings">
 				<?php foreach($intelliboard->reports as $key=>$val): ?>
-					<div><h3><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val); ?></a></h3></div>
+					<div><h3><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val->name); ?></a></h3></div>
 				<?php endforeach; ?>
 			</div>
 		<?php else: ?>

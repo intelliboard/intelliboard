@@ -113,6 +113,12 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/debug';
+        $title = new lang_string('debug', 'local_intelliboard');
+        $description = new lang_string('debug_desc', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/filter1';
