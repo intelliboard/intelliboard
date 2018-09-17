@@ -144,6 +144,8 @@ function intelliboard($params, $function = 'sso'){
 		require_once($CFG->libdir . '/filelib.php');
 
 		$api = get_config('local_intelliboard', 'api');
+		$debug = get_config('local_intelliboard', 'debug');
+		$debugmode = optional_param('debug', '', PARAM_RAW);
 		$url = ($api) ? $config['api_url'] : $config['app_url'];
 
 		$params['email'] = get_config('local_intelliboard', 'te1');
@@ -151,9 +153,22 @@ function intelliboard($params, $function = 'sso'){
 		$params['url'] = $CFG->wwwroot;
 		$params['lang'] = current_language();
 
-		$curl = new curl;
-		$json = $curl->post($url . 'moodleApi/' . $function, $params, []);
 
+		if ($debug and $debugmode) {
+			ob_start();
+			$curl = new curl(['debug'=>true]);
+			$out = fopen('php://output', 'w');
+			$json = $curl->post($url . 'moodleApi/' . $function, $params, [
+				'CURLOPT_VERBOSE'=> true,
+				'CURLOPT_STDERR'=>$out
+			]);
+			fclose($out);
+			$output = ob_get_clean();
+		} else {
+			$curl = new curl;
+			$json = $curl->post($url . 'moodleApi/' . $function, $params, []);
+			$output = $json;
+		}
 		$data = (object)json_decode($json);
 		$data->status = (isset($data->status))?$data->status:'';
 		$data->token = (isset($data->token))?$data->token:'';
@@ -163,6 +178,8 @@ function intelliboard($params, $function = 'sso'){
 		$data->alert = (isset($data->alert))?$data->alert:'';
 		$data->data = (isset($data->data))? (array) $data->data : null;
 		$data->shoppingcartkey = (isset($data->shoppingcartkey))? (array) $data->shoppingcartkey : null;
+		$data->curlinfo = $curl->info;
+		$data->debugging = $output;
 
 		return $data;
 }

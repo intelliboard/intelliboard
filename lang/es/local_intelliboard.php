@@ -640,3 +640,6 @@ $string['expired'] = 'Expired';
 $string['process'] = 'Process';
 $string['cancel_subscription'] = 'Cancel subscription';
  $string['messageprovider:intelliboard_notification'] = "Intelliboard notification";
+
+$string['debug'] = "Debug CURL requests";
+$string['debug_desc'] = "";

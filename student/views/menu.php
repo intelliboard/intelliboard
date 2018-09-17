@@ -29,7 +29,7 @@ if(file_exists($CFG->dirroot . '/local/intellicart/locallib.php')) {
     require_once($CFG->dirroot . '/local/intellicart/locallib.php');
 }
 
-$id = optional_param('id', 0, PARAM_INT);
+$id = optional_param('id', 0, PARAM_RAW);
 $alt_name = get_config('local_intelliboard', 'grades_alt_text');
 $def_name = get_string('grades', 'local_intelliboard');
 $grade_name = ($alt_name) ? $alt_name : $def_name;
@@ -158,7 +158,7 @@ $subscriptionsurl = (new moodle_url('/local/intelliboard/student/subscriptions.p
 	<li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'reports')?'class="active"':''; ?>><?php echo get_string('reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
 		<ul>
 			<?php foreach($intelliboard->reports as $key=>$val): ?>
-				<li><a href="reports.php?id=<?php echo $key; ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val); ?></a></li>
+				<li><a href="reports.php?id=<?php echo $key; ?>" <?php echo ($id === $key)?'class="active"':''; ?>><?php echo format_string($val->name); ?></a></li>
 			<?php endforeach; ?>
 		</ul>
 	</li>

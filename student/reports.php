@@ -33,10 +33,19 @@ require_login();
 require_capability('local/intelliboard:students', context_system::instance());
 
 $report = optional_param('id', '', PARAM_RAW);
-$intelliboard = intelliboard(['task'=>'reports', 'mode' => 1]);
-$params = http_build_query(['users'=>$USER->id ]);
+$other_user = optional_param('user', 0, PARAM_INT);
+$showing_user = $USER;
+if(get_config('local_intelliboard', 't09')>0 && $other_user>0 && intelliboard_instructor_have_access($USER->id)){
+    $showing_user = core_user::get_user($other_user, '*', MUST_EXIST);
+}
 
-$totals = intelliboard_learner_totals($USER->id);
+$report = optional_param('id', '', PARAM_RAW);
+$intelliboard = intelliboard(['task'=>'reports', 'mode' => 1]);
+$report_type = $intelliboard->reports[$report]->type;
+$params = http_build_query(['users'=>$showing_user->id ]);
+
+$totals = intelliboard_learner_totals($showing_user->id);
+
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/student/reports.php"));
 $PAGE->set_pagetype('reports');
@@ -61,7 +70,7 @@ echo $OUTPUT->header();
 		<?php endif; ?>
 
 		<div id="iframe">
-			<iframe id="iframe" src="<?php echo intelliboard_url(); ?>reports/share/<?php echo $intelliboard->db . '/' . $report; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1&<?php echo $params; ?>" width="100%" height="800" frameborder="0"></iframe>
+			<iframe id="iframe" src="<?php echo intelliboard_url().$report_type; ?>/share/<?php echo $intelliboard->db . '/' . $report; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1&<?php echo $params; ?>" width="100%" height="800" frameborder="0"></iframe>
 			<span id="iframe-loading"><?php echo get_string('loading2', 'local_intelliboard'); ?></span>
 		</div>
 	</div>

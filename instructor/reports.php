@@ -35,6 +35,7 @@ intelliboard_instructor_access();
 $report = optional_param('id', '', PARAM_RAW);
 $intelliboard = intelliboard(['task'=>'reports', 'mode' => 2]);
 $params = http_build_query(['userid'=>$USER->id ]);
+$report_type = $intelliboard->reports[$report]->type;
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/instructor/reports.php"));
 $PAGE->set_pagetype('reports');
@@ -55,7 +56,7 @@ echo $OUTPUT->header();
 		<?php endif; ?>
 
 		<div id="iframe">
-			<iframe id="iframe" src="<?php echo intelliboard_url(); ?>reports/share/<?php echo $intelliboard->db . '/' . $report; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1&<?php echo $params; ?>" width="100%" height="800" frameborder="0"></iframe>
+			<iframe id="iframe" src="<?php echo intelliboard_url().$report_type; ?>/share/<?php echo $intelliboard->db . '/' . $report; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1&<?php echo $params; ?>" width="100%" height="800" frameborder="0"></iframe>
 			<span id="iframe-loading"><?php echo get_string('loading2', 'local_intelliboard'); ?></span>
 		</div>
 	</div>
