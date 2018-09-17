@@ -25,9 +25,21 @@
  */
 ?>
 <?php
-	$id = optional_param('id', 0, PARAM_INT);
+	$id = optional_param('id', 0, PARAM_RAW);
+	$debug = get_config('local_intelliboard', 'debug');
+	$debugmode = optional_param('debug', '', PARAM_RAW);
+
 	echo (!isset($USER->noalert) and $intelliboard->alert) ? $intelliboard->alert : '';
 ?>
+
+<?php if ($debug and $debugmode and isset($intelliboard->debugging)): ?>
+	<pre>
+		<code>
+			<?php echo $intelliboard->debugging; ?>
+		</code>
+	</pre>
+<?php endif; ?>
+
 
 <?php if ($intelliboard->alerts): ?>
 	<?php foreach($intelliboard->alerts as $key => $value): ?>
@@ -53,7 +65,7 @@
 	<li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'reports')?'class="active"':''; ?>><?php echo get_string('reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
 		<ul>
 			<?php foreach($intelliboard->reports as $key=>$val): ?>
-				<li><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val); ?></a></li>
+				<li><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id === $key)?'class="active"':''; ?>><?php echo format_string($val->name); ?></a></li>
 			<?php endforeach; ?>
 		</ul>
 	</li>

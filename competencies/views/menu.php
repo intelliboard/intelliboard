@@ -24,7 +24,7 @@
  * @website    https://intelliboard.net/
  */
 
-	$id = optional_param('id', 0, PARAM_INT);
+	$id = optional_param('id', 0, PARAM_RAW);
 ?>
 <ul class="intelliboard-menu">
 	<li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
@@ -38,7 +38,7 @@
 		<ul>
 			<?php if(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
 				<?php foreach($intelliboard->reports as $key=>$val): ?>
-					<li><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val); ?></a></li>
+					<li><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id === $key)?'class="active"':''; ?>><?php echo format_string($val->name); ?></a></li>
 				<?php endforeach; ?>
 			<?php endif; ?>
 		</ul>
