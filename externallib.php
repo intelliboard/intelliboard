@@ -146,7 +146,7 @@ class local_intelliboard_external extends external_api {
         }
 
         //Available functions
-        $functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report18_graph','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','get_competency','get_competency_templates','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report92','report93','report94','report95','report96','report97','report98','report99','report99_graph','report100','report101','report102','report103','report104','report105','report106','report107','report108','report109','report110','report111','report112','report113','report114','report114_graph','report115','report116','report117','report118','report119','report120','report121','report122','report123','report124','report125','report126','report127','report128','get_course_modules','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_visits_perday','get_visits_perweek','get_live_info','get_course_instructors','get_course_discussions','get_course_questionnaire','get_course_survey','get_course_questionnaire_questions','get_course_survey_questions','get_cohort_users','get_users','get_grade_letters','get_questions','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_users_count','get_most_visited_courses','get_enrollments_per_course','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_userids','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_learner','get_learners','get_learner_courses','get_course','get_activity_learners','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_site_avg','get_site_activity','count_records','analytic9','get_course_sections','get_course_user_groups','get_course_assignments','get_data_question_answers','get_course_databases','get_databases_question','get_history_items','get_history_grades','monitor27','monitor28','monitor29','monitor30','monitor31', 'get_assign_users', 'get_assign_courses', 'get_assign_cohorts', 'get_course_grade_categories','get_visits_per_day_by_entity','report137','get_role_users','report139_header','report139','get_course_feedback','report140','get_feedback_questions','report141','report142','report143','report149','get_incorrect_answers','report150','report151','report152','report154', 'monitor32', 'monitor33', 'monitor34', 'monitor35', 'monitor36', 'monitor37', 'monitor38', 'monitor39', 'report144', 'report145', 'report155', 'report156', 'report157', 'report158', 'report159', 'report160', 'report161', 'report162');
+        $functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report18_graph','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','get_competency','get_competency_templates','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report92','report93','report94','report95','report96','report97','report98','report99','report99_graph','report100','report101','report102','report103','report104','report105','report106','report107','report108','report109','report110','report111','report112','report113','report114','report114_graph','report115','report116','report117','report118','report119','report120','report121','report122','report123','report124','report125','report126','report127','report128','get_course_modules','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_visits_perday','get_visits_perweek','get_live_info','get_course_instructors','get_course_discussions','get_course_questionnaire','get_course_survey','get_course_questionnaire_questions','get_course_survey_questions','get_cohort_users','get_users','get_grade_letters','get_questions','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_users_count','get_most_visited_courses','get_enrollments_per_course','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_userids','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_learner','get_learners','get_learner_courses','get_course','get_activity_learners','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_site_avg','get_site_activity','count_records','analytic9','get_course_sections','get_course_user_groups','get_course_assignments','get_data_question_answers','get_course_databases','get_databases_question','get_history_items','get_history_grades','monitor27','monitor28','monitor29','monitor30','monitor31', 'get_assign_users', 'get_assign_courses', 'get_assign_cohorts', 'get_course_grade_categories','get_visits_per_day_by_entity','report137','get_role_users','report139_header','report139','get_course_feedback','report140','get_feedback_questions','report141','report142','report143','report149','get_incorrect_answers','report150','report151','report152','report154', 'monitor32', 'monitor33', 'monitor34', 'monitor35', 'monitor36', 'monitor37', 'monitor38', 'monitor39', 'report144', 'report145', 'report155', 'report156', 'report157', 'report158', 'report159', 'report160', 'report161', 'report162', 'report163');
 
         $function = (isset($params->function)) ? $params->function : '';
         if(in_array($function, $functions)){
@@ -1827,13 +1827,6 @@ class local_intelliboard_external extends external_api {
             $sql_filter .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
         }
 
-        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra_t.roleid");
-        if ($CFG->dbtype == 'pgsql') {
-            $group_concat = "string_agg( DISTINCT CONCAT(u_t.firstname,' ',u_t.lastname), ', ')";
-        } else {
-            $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u_t.firstname,' ',u_t.lastname) SEPARATOR ', ')";
-        }
-
         return $this->get_report_data("
             SELECT u.id,
                 u.firstname,
@@ -1843,15 +1836,12 @@ class local_intelliboard_external extends external_api {
                 COUNT(DISTINCT ctx.instanceid) as courses,
                 MAX(lit.timesite) AS timesite,
                 MAX(lit.timecourses) AS timecourses,
-                MAX(lit.timeactivities) AS timeactivities,
-                $group_concat AS teacher
+                MAX(lit.timeactivities) AS timeactivities
                 $sql_columns
             FROM {role_assignments} ra
                 JOIN {user} u ON u.id = ra.userid
                 JOIN {context} AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                 LEFT JOIN ($sql_join_filter) as lit ON lit.userid = u.id
-                LEFT JOIN {role_assignments} AS ra_t ON ra.contextid = ctx.id $sql_teacher_roles
-                LEFT JOIN {user} u_t ON ra_t.userid = u_t.id
                 $sql_join
             WHERE u.id > 0 $sql_filter
             GROUP BY u.id $sql_having $sql_order", $params);
@@ -1957,7 +1947,7 @@ class local_intelliboard_external extends external_api {
             $this->params['lsta'] = strtotime("-1 days");
         }
         $sql_filter .= " AND ul.lastaccess < :lsta";
-
+        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra_t.roleid");
 
 
         return $this->get_report_data("
@@ -7773,6 +7763,60 @@ class local_intelliboard_external extends external_api {
         return $this->get_report_data($sql, $this->params);
     }
 
+    public function report163($params)
+    {
+        $columns = array_merge(array("u.firstname", "u.lastname", "u.username", "c.shortname", "c.fullname", "gi.itemname", "grade", "graduated", "lit.firstaccess"), $this->get_filter_columns($params));
+
+        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
+        $sql_filter .= $this->get_filter_in_sql($params->custom2, "m.id");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $grade_single = intelliboard_grade_sql(false, $params);
+
+        if($params->custom == 1) {
+            $sql_filter .= $this->get_filterdate_sql($params, "g.timemodified");
+        } elseif($params->custom == 2) {
+            $sql_filter .= $this->get_filterdate_sql($params, "lit.firstaccess");
+        }
+
+        return $this->get_report_data("
+                SELECT concat_ws('', cm.id, u.id, c.id) as unique_id,
+                       gi.itemname AS activity_name,
+                       g.userid,
+                       u.username,
+                       u.firstname,
+                       u.lastname,
+                       c.fullname,
+                       c.shortname,
+                       g.timemodified as graduated,
+                       $grade_single AS grade,
+                       gi.itemtype,
+                       CASE WHEN m.name='assign' THEN sg.timemodified ELSE 0 END AS need_grade_assignment,
+                       lit.firstaccess
+                       $sql_columns
+
+                FROM {course} c
+                  JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
+                  JOIN {role_assignments} ra ON ra.contextid = ctx.id
+                  JOIN {user} u ON u.id=ra.userid
+
+                  LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND (gi.itemtype = 'mod' OR gi.itemtype = 'course')
+                  LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
+
+                  LEFT JOIN {modules} m ON m.name = gi.itemmodule
+                  LEFT JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
+                  LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
+                  LEFT JOIN {assign_submission} ass ON ass.userid=u.id AND ass.assignment=cm.instance AND ass.status='submitted' AND ass.latest = 1
+                  LEFT JOIN {assign_grades} sg ON ass.assignment = sg.assignment AND ass.userid = sg.userid AND sg.attemptnumber = ass.attemptnumber AND (ass.timemodified >= sg.timemodified OR sg.timemodified IS NULL OR sg.grade IS NULL)
+
+                  LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND ((lit.param=c.id AND lit.page='course' AND gi.itemtype = 'course') OR (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod'))
+                WHERE c.id>0 $sql_filter $sql_having $sql_order", $params);
+    }
+
     function get_course_feedback($params){
         global $DB;
 
@@ -8319,6 +8363,8 @@ class local_intelliboard_external extends external_api {
         $this->params['custom1'] = $params->custom;
         $this->params['custom2'] = $params->custom;
         $this->params['custom3'] = $params->custom;
+        $this->params['custom4'] = $params->custom;
+        $this->params['custom5'] = $params->custom;
 
         $data = $DB->get_records_sql("
                   SELECT qa.id,
@@ -8346,19 +8392,27 @@ class local_intelliboard_external extends external_api {
 
         $overall_info = $DB->get_record_sql("
                           SELECT
-                            (SELECT AVG((((q.grade/q.sumgrades)*qa.sumgrades)/q.grade)*100) AS average
-                                FROM {quiz_attempts} qa
-                                    LEFT JOIN {quiz} q ON q.id=qa.quiz
-                                WHERE qa.userid<>2 AND qa.quiz=:custom1 AND qa.attempt=1 AND qa.state='finished'
-                            ) AS average_first_att,
-                            (SELECT COUNT(qa.id)
-                                FROM {quiz_attempts} qa
-                                WHERE qa.userid<>2 AND qa.quiz=:custom2 AND qa.state='finished'
-                            ) AS count_att,
-                            (SELECT COUNT(qa.attempt)/COUNT(DISTINCT qa.userid)
-                                FROM {quiz_attempts} qa
-                                WHERE qa.userid<>2 AND qa.quiz=:custom3
-                            ) AS avg_att
+                                (SELECT AVG((((q.grade/q.sumgrades)*qa.sumgrades)/q.grade)*100) AS average
+                                    FROM {quiz_attempts} qa
+                                        LEFT JOIN {quiz} q ON q.id=qa.quiz
+                                    WHERE qa.userid<>2 AND qa.quiz=:custom1 AND qa.attempt=1 AND qa.state='finished'
+                                ) AS average_first_att,
+                                (SELECT AVG((((q.grade/q.sumgrades)*qa.sumgrades)/q.grade)*100) AS average
+                                    FROM {quiz_attempts} qa
+                                     LEFT JOIN {quiz} q ON q.id=qa.quiz
+                                     JOIN (SELECT userid, MAX(attempt) AS attempt
+                                           FROM {quiz_attempts}
+                                           WHERE quiz=:custom5 GROUP BY userid ) AS max_att
+                                    WHERE qa.userid<>2 AND qa.quiz=:custom4 AND qa.attempt=max_att.attempt AND qa.userid=max_att.userid AND qa.state='finished'
+                                ) AS average_last_att,
+                                (SELECT COUNT(qa.id)
+                                    FROM {quiz_attempts} qa
+                                    WHERE qa.userid<>2 AND qa.quiz=:custom2 AND qa.state='finished'
+                                ) AS count_att,
+                                (SELECT COUNT(qa.attempt)/COUNT(DISTINCT qa.userid)
+                                    FROM {quiz_attempts} qa
+                                    WHERE qa.userid<>2 AND qa.quiz=:custom3
+                                ) AS avg_att
                        ", $this->params);
 
         return array("data" => $data, 'overall_info'=>$overall_info);
