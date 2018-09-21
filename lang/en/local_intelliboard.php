@@ -663,3 +663,6 @@ $string['messageprovider:intelliboard_notification'] = "Intelliboard notificatio
 
 $string['debug'] = "Debug CURL requests";
 $string['debug_desc'] = "";
+
+$string['intellicart'] = "IntelliCart integration";
+$string['intellicart_desc'] = "Allow students to see IntelliCart reports.";
