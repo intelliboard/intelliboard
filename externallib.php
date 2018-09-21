@@ -873,7 +873,7 @@ class local_intelliboard_external extends external_api {
         global $CFG;
         $columns = array_merge(array("q.name","u.firstname","u.lastname", "u.email", "c.fullname", "qa.state", "qa.timestart", "qa.timefinish", "duration", "grade"), $this->get_filter_columns($params));
 
-        $sql_filter = $this->get_teacher_sql($params, ["q.course" => "courses"]);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "q.course" => "courses"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "q.course");
         $sql_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
@@ -4423,8 +4423,11 @@ class local_intelliboard_external extends external_api {
             "lit.timespend",
             "ass_s.timecreated",
             "ass_g.grade",
+            "first_submission_file.filename",
             "cmc.completionstate",
-            "ass_sl.timemodified"), $this->get_filter_columns($params));
+            "ass_sl.timemodified",
+            "ass_gl.grade",
+            "last_submission_file.filename"), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
@@ -4437,9 +4440,11 @@ class local_intelliboard_external extends external_api {
         if ($CFG->dbtype == 'pgsql') {
             $row_number = "row_number() OVER ()";
             $row_number_select = "";
+            $group_concat = "string_agg( DISTINCT CONCAT(f.filename), ', ')";
         } else {
             $row_number = "@x:=@x+1";
             $row_number_select = "(SELECT @x:= 0) AS x, ";
+            $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(f.filename) SEPARATOR ', ')";
         }
 
         return $this->get_report_data("
@@ -4456,9 +4461,11 @@ class local_intelliboard_external extends external_api {
               lit.timespend,
               ass_s.timecreated AS date_first_submission,
               ass_g.grade AS grade_first_submission,
+              first_submission_file.filename AS first_submission_file,
               cmc.completionstate,
               ass_sl.timemodified AS date_last_submission,
               ass_gl.grade AS grade_last_submission,
+              last_submission_file.filename AS last_submission_file,
               ass_s.attemptnumber,
               ass_sl.attemptnumber AS attemptnumber2,
               sc.scale
@@ -4473,9 +4480,17 @@ class local_intelliboard_external extends external_api {
 
                 LEFT JOIN {assign_submission} ass_s ON ass_s.assignment=ass.id AND ass_s.attemptnumber=0 AND ass_s.userid = u.id AND ass_s.status = 'submitted'
                 LEFT JOIN {assign_grades} ass_g ON ass_g.userid=ass_s.userid AND ass_g.assignment=ass_s.assignment AND ass_g.attemptnumber=ass_s.attemptnumber
+                LEFT JOIN (SELECT f.itemid, $group_concat AS filename
+                             FROM {files} f
+                             WHERE f.component='assignsubmission_file' AND f.filearea='submission_files' AND f.filesize>0
+                             GROUP BY f.itemid) first_submission_file ON first_submission_file.itemid=ass_s.id
 
                 LEFT JOIN {assign_submission} ass_sl ON ass_sl.assignment=ass.id AND ass_sl.latest=1 AND ass_sl.userid=ass_s.userid AND ass_sl.id <> ass_s.id
                 LEFT JOIN {assign_grades} ass_gl ON ass_gl.userid=ass_sl.userid AND ass_gl.assignment=ass_sl.assignment AND ass_gl.attemptnumber=ass_sl.attemptnumber
+                LEFT JOIN (SELECT f.itemid, $group_concat AS filename
+                             FROM {files} f
+                             WHERE f.component='assignsubmission_file' AND f.filearea='submission_files' AND f.filesize>0
+                             GROUP BY f.itemid) last_submission_file ON last_submission_file.itemid=ass_sl.id
 
                 JOIN {modules} m ON m.name='assign'
                 LEFT JOIN {course_modules} cm ON cm.course=ass.course AND cm.module=m.id AND cm.instance=ass.id
@@ -6732,6 +6747,7 @@ class local_intelliboard_external extends external_api {
             "u.firstname",
             "u.lastname",
             "c.fullname",
+            "c.shortname",
             "numtakensessions",
             "points",
             "atd_percent",
@@ -6757,6 +6773,7 @@ class local_intelliboard_external extends external_api {
               u.lastname,
               c.id AS course_id,
               c.fullname AS course_name,
+              c.shortname AS course_shortname,
               COUNT(DISTINCT atl.id) AS numtakensessions,
               SUM(stg.grade)         AS points,
               MAX(stm.maxgrade)      AS maxpoints,
@@ -9460,7 +9477,7 @@ class local_intelliboard_external extends external_api {
     public function get_most_visited_courses($params){
         global $DB;
 
-        $sql = $this->get_teacher_sql($params, ["lit.userid" => "users", "lit.courseid" => "courses"]);
+        $sql = $this->get_teacher_sql($params, ["l.userid" => "users", "l.courseid" => "courses"]);
         $sql .= $this->get_filter_course_sql($params, "c.");
 
         return $DB->get_records_sql("

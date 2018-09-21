@@ -25,16 +25,20 @@
  */
 
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
-if(file_exists($CFG->dirroot . '/local/intellicart/locallib.php')) {
-    require_once($CFG->dirroot . '/local/intellicart/locallib.php');
-}
+
 
 $id = optional_param('id', 0, PARAM_RAW);
 $alt_name = get_config('local_intelliboard', 'grades_alt_text');
 $def_name = get_string('grades', 'local_intelliboard');
 $grade_name = ($alt_name) ? $alt_name : $def_name;
 $scale_real = get_config('local_intelliboard', 'scale_real');
+$intellicart = get_config('local_intelliboard', 'intellicart');
 $other_user = optional_param('user', 0, PARAM_INT);
+
+
+if($intellicart && file_exists($CFG->dirroot . '/local/intellicart/locallib.php')) {
+    require_once($CFG->dirroot . '/local/intellicart/locallib.php');
+}
 
 $mentor_role = get_config('local_intelliboard', 't09');
 $show_students = false;
@@ -42,8 +46,8 @@ if ($mentor_role>0){
     $show_students = intelliboard_instructor_have_access($USER->id);
 
     if($show_students){
-        $students = $DB->get_records_sql("SELECT u.* 
-                                          FROM {role_assignments} ra 
+        $students = $DB->get_records_sql("SELECT u.*
+                                          FROM {role_assignments} ra
                                             JOIN {context} c ON c.id=ra.contextid
                                             JOIN {user} u ON u.id=c.instanceid
                                           WHERE ra.roleid=:role AND ra.userid=:userid",array('role'=>$mentor_role, 'userid'=>$USER->id));
@@ -58,13 +62,18 @@ $sum_courses = get_user_preferences('enabeled_sum_courses_'.$showing_user->id, '
 $sum_courses = (!empty($sum_courses))?explode(',', $sum_courses):array();
 
 user_preference_allow_ajax_update('enabeled_sum_courses_'.$showing_user->id, PARAM_SEQUENCE);
-$intellicartenabled = (
-    file_exists($CFG->dirroot . '/local/intellicart/locallib.php') &&
-    local_intellicart_enable('', true)
-);
-$showwaitlist = get_config('local_intellicart', 'enablewaitlist');
-$showseats = get_config('local_intellicart', 'enableseatsvendors');
-$showsubscriptions = get_config('local_intellicart', 'enablesubscription');
+
+if (!$intellicart) {
+  $intellicartenabled = false;
+} else {
+  $intellicartenabled = (
+      file_exists($CFG->dirroot . '/local/intellicart/locallib.php') &&
+      local_intellicart_enable('', true)
+  );
+  $showwaitlist = get_config('local_intellicart', 'enablewaitlist');
+  $showseats = get_config('local_intellicart', 'enableseatsvendors');
+  $showsubscriptions = get_config('local_intellicart', 'enablesubscription');
+}
 $ordersurl = (new moodle_url('/local/intelliboard/student/orders.php'))->out();
 $seatsurl = (new moodle_url('/local/intelliboard/student/seats.php'))->out();
 $waitlisturl = (new moodle_url('/local/intelliboard/student/waitlist.php'))->out();
