@@ -673,7 +673,7 @@ echo $OUTPUT->header();
                 ['Status', 'Courses'],
                 ['Completed',<?php echo (int)$totals->completed; ?>],
                 ['In progress',<?php echo (int)$totals->inprogress; ?>],
-                ['Not started',<?php echo intval($totals->enrolled)-(intval($totals->inprogress) + intval($totals->completed)); ?>],
+                ['Not started',<?php $t = intval($totals->enrolled)-(intval($totals->inprogress) + intval($totals->completed)); echo ($t>0)?$t:0 ?>],
             ]);
             var options = <?php echo format_string($factorInfo->CourseSuccessCalculation); ?>;
             var chart = new google.visualization.PieChart(document.getElementById('chart3'));
