@@ -43,7 +43,7 @@ class local_intelliboard_assign extends external_api {
                         array(
                             'userid' => new external_value(PARAM_INT, 'External user ID'),
                             'type' => new external_value(PARAM_ALPHA, 'Instance type'),
-                            'instance' => new external_value(PARAM_INT, 'Local user ID')
+                            'instance' => new external_value(PARAM_TEXT, 'Local category/course/cohort/profile_field value')
                         )
                     )
                 )
@@ -97,7 +97,7 @@ class local_intelliboard_assign extends external_api {
                 array(
                     'userid' => new external_value(PARAM_INT, 'External user ID'),
                     'type' => new external_value(PARAM_ALPHA, 'Instance type'),
-                    'instance' => new external_value(PARAM_INT, 'Local user ID')
+                    'instance' => new external_value(PARAM_TEXT, 'Local category/course/cohort/profile_field value')
                 )
             )
         );
@@ -117,7 +117,7 @@ class local_intelliboard_assign extends external_api {
                         array(
                             'userid' => new external_value(PARAM_INT, 'External user ID'),
                             'type' => new external_value(PARAM_ALPHA, 'Instance type'),
-                            'instance' => new external_value(PARAM_INT, 'Local user ID'),
+                            'instance' => new external_value(PARAM_TEXT, 'Local category/course/cohort/profile_field value'),
                         )
                     )
                 )

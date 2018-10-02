@@ -79,7 +79,7 @@
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="rel" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="type" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="instance" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="instance" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
@@ -160,17 +160,17 @@
     <TABLE NAME="local_intelliboard_bbb_meet" COMMENT="BigBlueButton meetings">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="meetingname" TYPE="char" LENGTH="256" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="meetingname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="meetingid" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="internalmeetingid" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="createtime" TYPE="int" LENGTH="15" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="createdate" TYPE="char" LENGTH="256" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="createdate" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="voicebridge" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="dialnumber" TYPE="char" LENGTH="256" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="dialnumber" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="attendeepw" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="moderatorpw" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="running" TYPE="char" LENGTH="25" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="duration" TYPE="char" LENGTH="256" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="duration" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="hasuserjoined" TYPE="char" LENGTH="25" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="recording" TYPE="char" LENGTH="25" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="hasbeenforciblyended" TYPE="char" LENGTH="25" NOTNULL="false" SEQUENCE="false"/>
