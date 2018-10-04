@@ -122,63 +122,30 @@ function local_intelliboard_extend_navigation(global_navigation $nav){
 
 function local_intelliboard_user_details()
 {
-    if (isset($_SERVER['HTTP_USER_AGENT'])) {
-		$user_agent = strtolower($_SERVER['HTTP_USER_AGENT']);
-	} else {
-		$user_agent = '';
-	}
+
 
     $platform    =   "Unknown OS Platform";
-	$os_array       =   array(
-                            '/windows nt 10.0/i'    =>  'Windows 10',
-                            '/windows nt 6.3/i'     =>  'Windows 8.1',
-                            '/windows nt 6.2/i'     =>  'Windows 8',
-                            '/windows nt 6.1/i'     =>  'Windows 7',
-                            '/windows nt 6.0/i'     =>  'Windows Vista',
-                            '/windows nt 5.2/i'     =>  'Windows Server 2003/XP x64',
-                            '/windows nt 5.1/i'     =>  'Windows XP',
-                            '/windows xp/i'         =>  'Windows XP',
-                            '/windows nt 5.0/i'     =>  'Windows 2000',
-                            '/windows me/i'         =>  'Windows ME',
-                            '/win98/i'              =>  'Windows 98',
-                            '/win95/i'              =>  'Windows 95',
-                            '/win16/i'              =>  'Windows 3.11',
-                            '/macintosh|mac os x/i' =>  'Mac OS X',
-                            '/mac_powerpc/i'        =>  'Mac OS 9',
-                            '/linux/i'              =>  'Linux',
-                            '/ubuntu/i'             =>  'Ubuntu',
-                            '/iphone/i'             =>  'iPhone',
-                            '/ipod/i'               =>  'iPod',
-                            '/ipad/i'               =>  'iPad',
-                            '/android/i'            =>  'Android',
-                            '/blackberry/i'         =>  'BlackBerry',
-                            '/webos/i'              =>  'Mobile'
-                        );
-    foreach ($os_array as $regex => $value) {
-        if (preg_match($regex, $user_agent)) {
-            $platform    =   $value;
-        }
-    }
-	$browser        =   "Unknown Browser";
-    $browser_array  =   array(
-                            '/msie|trident/i'   =>  'Internet Explorer',
-                            '/firefox/i'        =>  'Firefox',
-                            '/chrome/i'         =>  'Chrome',
-                            '/safari/i'         =>  'Safari',
-                            '/edge/i'           =>  'Microsoft Edge',
-                            '/opera/i'          =>  'Opera',
-                            '/opr/i'          =>  'Opera',
-                            '/netscape/i'       =>  'Netscape',
-                            '/maxthon/i'        =>  'Maxthon',
-                            '/konqueror/i'      =>  'Konqueror',
-                            '/mobile/i'         =>  'Mobile browser'
-                        );
-    foreach ($browser_array as $regex => $value) {
-        if (preg_match($regex, $user_agent)) {
-            $browser    =   $value;
-            break;
-        }
-    }
+		$browser = "Unknown Browser";
+
+		try {
+			$regexes = local_intelliboard_get_regexes();
+			$agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+	    foreach ($regexes->os_parsers as $regex) {
+	        $flag = isset($regex->regex_flag) ? $regex->regex_flag : '';
+	        if (preg_match('@' . $regex->regex . '@' . $flag, $agent, $matches)) {
+	            $platform = (isset($regex->os_replacement))?str_replace('$1', $matches[1], $regex->os_replacement):$matches[1];
+	            $platform .= ' '.((isset($regex->os_v1_replacement))?str_replace('$1', @$matches[2], $regex->os_v1_replacement):@$matches[2]);
+	            break;
+	        }
+	    }
+	    foreach ($regexes->user_agent_parsers as $regex) {
+	        $flag = isset($regex->regex_flag) ? $regex->regex_flag : '';
+	        if (preg_match('@' . $regex->regex . '@' . $flag, $agent, $matches)) {
+	            $browser = (isset($regex->family_replacement))?str_replace('$1', $matches[1], @$regex->family_replacement):$matches[1];
+	            break;
+	        }
+	    }
+		} catch (Exception $e) {}
 
 	if (isset($_SERVER["HTTP_X_FORWARDED_FOR"])){
 		$ip = $_SERVER["HTTP_X_FORWARDED_FOR"];
@@ -201,6 +168,13 @@ function local_intelliboard_user_details()
         'userlang'     => $userlang
     );
 }
+
+function local_intelliboard_get_regexes(){
+    global $CFG;
+
+    return json_decode(file_get_contents($CFG->dirroot .'/local/intelliboard/classes/regexes.json'));
+}
+
 function local_intelliboard_insert_tracking($ajaxRequest = false){
     global $CFG, $PAGE, $SITE, $DB, $USER;
 
