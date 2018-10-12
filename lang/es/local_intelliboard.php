@@ -641,8 +641,17 @@ $string['process'] = 'Process';
 $string['cancel_subscription'] = 'Cancel subscription';
  $string['messageprovider:intelliboard_notification'] = "Intelliboard notification";
 
-$string['debug'] = "Debug CURL requests";
-$string['debug_desc'] = "";
+ $string['verifypeer'] = "CURLOPT SSL VERIFYPEER";
+ $string['verifypeer_desc'] = "This option determines whether curl verifies the authenticity of the peer's certificate.";
+ $string['verifyhost'] = "CURLOPT SSL VERIFYHOST";
+ $string['verifyhost_desc'] = "This option determines whether libcurl verifies that the server cert is for the server it is known as.";
+ $string['cipherlist'] = "CURLOPT SSL CIPHER LIST";
+ $string['cipherlist_desc'] = "Specify ciphers to use for TLS";
+ $string['sslversion'] = "CURLOPT SSLVERSION";
+ $string['sslversion_desc'] = "Pass a long as parameter to control which version range of SSL/TLS versions to use";
 
-$string['intellicart'] = "IntelliCart integration";
-$string['intellicart_desc'] = "Allow students to see IntelliCart reports.";
+ $string['debug'] = "Debug CURL requests";
+ $string['debug_desc'] = "";
+
+ $string['intellicart'] = "IntelliCart integration";
+ $string['intellicart_desc'] = "Allow students to see IntelliCart reports.";

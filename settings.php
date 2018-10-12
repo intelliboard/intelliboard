@@ -88,15 +88,17 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
         $settings->add($setting);
 
-        $name = 'local_intelliboard/tls12';
-        $title = new lang_string('tls12', 'local_intelliboard');
-        $description = new lang_string('tls12_desc', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-        $settings->add($setting);
+        $settings->add(new admin_setting_heading('local_intelliboard/advanced', new lang_string('adv_settings', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/sso';
         $title = new lang_string('sso', 'local_intelliboard');
         $description = new lang_string('sso_desc', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/intellicart';
+        $title = new lang_string('intellicart', 'local_intelliboard');
+        $description = new lang_string('intellicart_desc', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
@@ -119,11 +121,30 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
-        $name = 'local_intelliboard/intellicart';
-        $title = new lang_string('intellicart', 'local_intelliboard');
-        $description = new lang_string('intellicart_desc', 'local_intelliboard');
+        $name = 'local_intelliboard/verifypeer';
+        $title = new lang_string('verifypeer', 'local_intelliboard');
+        $description = new lang_string('verifypeer_desc', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
+
+        $name = 'local_intelliboard/verifyhost';
+        $title = new lang_string('verifyhost', 'local_intelliboard');
+        $description = new lang_string('verifyhost_desc', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/cipherlist';
+        $title = new lang_string('cipherlist', 'local_intelliboard');
+        $description = new lang_string('cipherlist_desc', 'local_intelliboard');
+        $setting = new admin_setting_configtext($name, $title, $description, '');
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/sslversion';
+        $title = new lang_string('sslversion', 'local_intelliboard');
+        $description = new lang_string('sslversion_desc', 'local_intelliboard');
+        $setting = new admin_setting_configtext($name, $title, $description, '');
+        $settings->add($setting);
+
 
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));
 

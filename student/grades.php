@@ -71,7 +71,7 @@ $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 $totals = intelliboard_learner_totals($showing_user->id);
 if($id){
 	$table = new intelliboard_activities_grades_table('table', $showing_user->id, $id, s($search));
-	$course = intelliboard_learner_course($showing_user->id, $id);
+	$courseObj = intelliboard_learner_course($showing_user->id, $id);
 }else{
 	$table = new intelliboard_courses_grades_table('table', $showing_user->id, s($search));
 }
@@ -88,21 +88,21 @@ echo $OUTPUT->header();
 <div class="intelliboard-page intelliboard-student">
 	<?php include("views/menu.php"); ?>
 		<div class="intelliboard-overflow grades-table">
-			<?php if(isset($course)): ?>
+			<?php if(isset($courseObj)): ?>
 				<div class="intelliboard-course-header clearfix">
 					<div class="grade">
-						<div class="circle-progress-course"  data-percent="<?php echo ($scale_real)?$course->grade:(int)$course->grade; ?>"></div>
+						<div class="circle-progress-course"  data-percent="<?php echo ($scale_real)?$courseObj->grade:(int)$courseObj->grade; ?>"></div>
 					</div>
 					<div class="details">
-						<h3><?php echo format_string($course->fullname); ?></h3>
+						<h3><?php echo format_string($courseObj->fullname); ?></h3>
 						<p>
-							<?php if($course->enablecompletion and get_config('local_intelliboard', 't41')): ?>
-								<?php echo ($course->timecompleted) ? " <i class='green-color ion-android-done'></i> ". get_string('completed_on', 'local_intelliboard', date('m/d/Y', $course->timecompleted)): " <i class='orange-color ion-android-radio-button-on'></i> ".get_string('incomplete', 'local_intelliboard'); ?>
+							<?php if($courseObj->enablecompletion and get_config('local_intelliboard', 't41')): ?>
+								<?php echo ($courseObj->timecompleted) ? " <i class='green-color ion-android-done'></i> ". get_string('completed_on', 'local_intelliboard', date('m/d/Y', $courseObj->timecompleted)): " <i class='orange-color ion-android-radio-button-on'></i> ".get_string('incomplete', 'local_intelliboard'); ?>
 							<?php endif; ?>
 							<?php if(get_config('local_intelliboard', 't42')): ?>
 							&nbsp; &nbsp; &nbsp;
 
-							<?php echo ($course->timeaccess) ? " <i class='ion-android-person'></i> ".get_string('last_access_on_course', 'local_intelliboard', date('F d, Y h:i', $course->timeaccess)) : "" ?>
+							<?php echo ($courseObj->timeaccess) ? " <i class='ion-android-person'></i> ".get_string('last_access_on_course', 'local_intelliboard', date('F d, Y h:i', $courseObj->timeaccess)) : "" ?>
 							<?php endif; ?>
 						</p>
 					</div>
