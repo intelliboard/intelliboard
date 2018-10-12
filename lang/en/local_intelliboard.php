@@ -661,6 +661,15 @@ $string['privacy:metadata:local_intelliboard_bbb_atten:arrivaltime'] = 'Time whe
 $string['privacy:metadata:local_intelliboard_bbb_atten:departuretime'] = 'Time when user disconnected from meeting';
 $string['messageprovider:intelliboard_notification'] = "Intelliboard notification";
 
+$string['verifypeer'] = "CURLOPT SSL VERIFYPEER";
+$string['verifypeer_desc'] = "This option determines whether curl verifies the authenticity of the peer's certificate.";
+$string['verifyhost'] = "CURLOPT SSL VERIFYHOST";
+$string['verifyhost_desc'] = "This option determines whether libcurl verifies that the server cert is for the server it is known as.";
+$string['cipherlist'] = "CURLOPT SSL CIPHER LIST";
+$string['cipherlist_desc'] = "Specify ciphers to use for TLS";
+$string['sslversion'] = "CURLOPT SSLVERSION";
+$string['sslversion_desc'] = "Pass a long as parameter to control which version range of SSL/TLS versions to use";
+
 $string['debug'] = "Debug CURL requests";
 $string['debug_desc'] = "";
 

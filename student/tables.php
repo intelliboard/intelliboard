@@ -54,7 +54,7 @@ class intelliboard_courses_grades_table extends table_sql {
         }if(get_config('local_intelliboard', 't28')){
            $columns[] =  'grade';
            $headers[] =  get_string('score', 'local_intelliboard');
-        }if(get_config('local_intelliboard', 't28')){
+        }if(get_config('local_intelliboard', 't29')){
            $columns[] =  'timecompleted';
            $headers[] =  get_string('course_completion_status', 'local_intelliboard');
         }
@@ -271,7 +271,7 @@ class intelliboard_user_orders_table extends table_sql {
         $params = array(
             'userid' => $USER->id,
         );
-        
+
         $where = '';
         if($search) {
             $where = ' AND '.$DB->sql_like('ch.item_name', ':search1', false, false, false);
@@ -394,7 +394,7 @@ class intelliboard_user_orders_table extends table_sql {
 
         return $buttons ? implode(' ', $buttons) : '-';
     }
-    
+
     function start_html() {
         // Render button to allow user to reset table preferences.
         echo $this->render_reset_button();
@@ -442,9 +442,9 @@ class intelliboard_user_waitlist_table extends table_sql {
 
         $this->define_columns($columns);
         $this->define_headers($headers);
-        
+
         $sqlparams = ['userid' => $USER->id];
-        
+
         $where = '';
         if($search) {
             $where = ' AND '.$DB->sql_like('p.name', ':search1', false, false, false);
@@ -484,7 +484,7 @@ class intelliboard_user_waitlist_table extends table_sql {
             ['productid'=>$values->productid, 'sent' => 0, 'timemodified' => $values->timemodified]
         );
     }
-    
+
     function col_actions($values) {
         global $OUTPUT;
 
@@ -504,7 +504,7 @@ class intelliboard_user_waitlist_table extends table_sql {
 
         return implode(' ', $buttons);
     }
-    
+
     function start_html() {
         // Render button to allow user to reset table preferences.
         echo $this->render_reset_button();
@@ -562,13 +562,13 @@ class intelliboard_user_seats_table extends table_sql {
             'ltype' => \local_intellicart\log::TYPE_USEDSEAT,
             'lstatus' => \local_intellicart\log::STATUS_COMPLETED
         ];
-        
+
         $searchwhere = '';
         if($search) {
             $searchwhere = ' AND '.$DB->sql_like('p.name', ':search1', false, false, false);
             $sqlparams['search1'] = "%{$search}%";
         }
-        
+
         $fields = "s.*,"
                 . "s.id as sid,"
                 . "l.used,"
@@ -576,8 +576,8 @@ class intelliboard_user_seats_table extends table_sql {
         $from = "{local_intellicart_seats} s
                 LEFT JOIN {local_intellicart_products} p ON p.id = s.productid
                 LEFT JOIN (
-                            SELECT COUNT(id) as used, instanceid 
-                              FROM {local_intellicart_logs} 
+                            SELECT COUNT(id) as used, instanceid
+                              FROM {local_intellicart_logs}
                              WHERE type = :ltype AND status = :lstatus
                           GROUP BY instanceid
                            ) l ON l.instanceid = s.id";
@@ -623,7 +623,7 @@ class intelliboard_user_seats_table extends table_sql {
 
         return implode(' ', $buttons);
     }
-    
+
     function start_html() {
         // Render button to allow user to reset table preferences.
         echo $this->render_reset_button();
@@ -723,15 +723,15 @@ class intelliboard_used_seats_table extends table_sql {
     }
 
     function col_timemodified($values) {
-        return ($values->timemodified) ? 
-               userdate($values->timemodified, get_string('strftimedate', 'langconfig')) : 
+        return ($values->timemodified) ?
+               userdate($values->timemodified, get_string('strftimedate', 'langconfig')) :
                '-';
     }
 
     function col_status($values) {
         return ($values->status) ? get_string('status_'.$values->status, 'local_intellicart') : '';
     }
-    
+
     function start_html() {
         // Render button to allow user to reset table preferences.
         echo $this->render_reset_button();
