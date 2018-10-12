@@ -6513,67 +6513,77 @@ class local_intelliboard_external extends external_api {
     function report128($params)
     {
         global $CFG;
-        require($CFG->libdir.'/gradelib.php');
-
-        $columns = array("u.firstname","u.lastname","u.idnumber");
-        $courses = explode(',', $params->courseid);
-        $items = array();
-        foreach($courses as $course){
-            $items += (array)grade_item::fetch_all(array('itemtype' => 'category', 'courseid' => $course)) + (array)grade_item::fetch_all(array('itemtype' => 'course', 'courseid' => $course));
+        if($params->custom == 1){
+            error_reporting(E_ALL);
+            ini_set('display_errors', '1');
+            $CFG->debug = 32767;
+            $CFG->debugdisplay = true;
         }
+        try {
+            require($CFG->libdir.'/gradelib.php');
 
-        $items_sql = '';
-        $unique_items = array();
-        foreach($items as $item){
-            if(!$item){
-                continue;
+            $columns = array("u.firstname","u.lastname","u.idnumber");
+            $courses = explode(',', $params->courseid);
+            $items = array();
+            foreach($courses as $course){
+                $items += (array)grade_item::fetch_all(array('itemtype' => 'category', 'courseid' => $course)) + (array)grade_item::fetch_all(array('itemtype' => 'course', 'courseid' => $course));
             }
-            $items_sql .= "(SELECT gg.finalgrade FROM {grade_grades} gg LEFT JOIN {grade_items} gi ON gi.id = gg.itemid WHERE gg.userid=u.id AND gi.courseid=c.id AND gg.itemid=$item->id) AS grade_".$item->itemtype."_$item->id,";
-            $unique_items[$item->get_name(true)] = "grade_".$item->itemtype."_".$item->id;
-        }
-        foreach($unique_items as $unique_item){
-            $columns[] = $unique_item;
-        }
-        $columns[] = 'c.fullname';
 
-        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
-        $sql_filter .= $this->get_filter_course_sql($params, "c.");
-        $sql_filter .= $this->get_filter_user_sql($params, "u.");
-        $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
-        $sql_filter .= $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
-        $sql_having = $this->get_filter_sql($params, $columns);
-        $sql_order = $this->get_order_sql($params, $columns);
+            $items_sql = '';
+            $unique_items = array();
+            foreach($items as $item){
+                if(!$item){
+                    continue;
+                }
+                $items_sql .= "(SELECT gg.finalgrade FROM {grade_grades} gg LEFT JOIN {grade_items} gi ON gi.id = gg.itemid WHERE gg.userid=u.id AND gi.courseid=c.id AND gg.itemid=$item->id) AS grade_".$item->itemtype."_$item->id,";
+                $unique_items[$item->get_name(true)] = "grade_".$item->itemtype."_".$item->id;
+            }
+            foreach($unique_items as $unique_item){
+                $columns[] = $unique_item;
+            }
+            $columns[] = 'c.fullname';
+
+            $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+            $sql_filter .= $this->get_filter_course_sql($params, "c.");
+            $sql_filter .= $this->get_filter_user_sql($params, "u.");
+            $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
+            $sql_filter .= $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
+            $sql_having = $this->get_filter_sql($params, $columns);
+            $sql_order = $this->get_order_sql($params, $columns);
 
 
-        $data = $this->get_report_data("SELECT CONCAT(u.id,c.id) AS uniqueid,
-                              u.id,
-                              u.firstname,
-                              u.lastname,
-                              u.idnumber,
-                              c.id AS courseid,
-                              $items_sql
-                              c.fullname
-                            FROM {course} c
-                              JOIN {context} con ON con.contextlevel = 50 AND con.instanceid = c.id
-                              JOIN {role_assignments} ra ON ra.contextid = con.id
-                              JOIN {user} u ON u.id=ra.userid
-                            WHERE c.id>0 $sql_filter $sql_having $sql_order",$params,false);
+            $data = $this->get_report_data("SELECT CONCAT(u.id,c.id) AS uniqueid,
+                                  u.id,
+                                  u.firstname,
+                                  u.lastname,
+                                  u.idnumber,
+                                  c.id AS courseid,
+                                  $items_sql
+                                  c.fullname
+                                FROM {course} c
+                                  JOIN {context} con ON con.contextlevel = 50 AND con.instanceid = c.id
+                                  JOIN {role_assignments} ra ON ra.contextid = con.id
+                                  JOIN {user} u ON u.id=ra.userid
+                                WHERE c.id>0 $sql_filter $sql_having $sql_order",$params,false);
 
-        foreach ($data as &$record) {
-            $array = $record;
-            foreach($array as $item=>$value){
-                $id = (int)str_replace ( array('grade_category_','grade_course_') , '' , $item );
-                if ($id > 0 && !empty($value)) {
-                    $grade_grade = grade_grade::fetch(array('itemid'=>$id,'userid'=>$record->id));
+            foreach ($data as &$record) {
+                $array = $record;
+                foreach($array as $item=>$value){
+                    $id = (int)str_replace ( array('grade_category_','grade_course_') , '' , $item );
+                    if ($id > 0 && !empty($value)) {
+                        $grade_grade = grade_grade::fetch(array('itemid'=>$id,'userid'=>$record->id));
 
-                    $name = $items[$id]->get_name(true);
-                    $record->{$name} = grade_format_gradevalue($value,$items[$id],true,$CFG->grade_displaytype,$CFG->grade_decimalpoints);
-                    $record->{$name} .= ' of '.grade_format_gradevalue($grade_grade->get_grade_max(), $grade_grade->grade_item, true,$CFG->grade_displaytype,$CFG->grade_decimalpoints);
+                        $name = $items[$id]->get_name(true);
+                        $record->{$name} = grade_format_gradevalue($value,$items[$id],true,$CFG->grade_displaytype,$CFG->grade_decimalpoints);
+                        $record->{$name} .= ' of '.grade_format_gradevalue($grade_grade->get_grade_max(), $grade_grade->grade_item, true,$CFG->grade_displaytype,$CFG->grade_decimalpoints);
+                    }
                 }
             }
-        }
 
-        return array('data'=>$data);
+            return array('data'=>$data);
+        } catch (Exception $e) {
+            return array('data'=> array(0=>'Exception: ',  $e->getMessage()));
+        }
     }
 
     function report137($params)
