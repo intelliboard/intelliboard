@@ -153,25 +153,41 @@ function intelliboard($params, $function = 'sso'){
 		$params['url'] = $CFG->wwwroot;
 		$params['lang'] = current_language();
 
-
+		$options =[];
+		if (get_config('local_intelliboard', 'verifypeer')) {
+			$options['CURLOPT_SSL_VERIFYPEER'] = false;
+		}
+		if (get_config('local_intelliboard', 'verifyhost')) {
+			$options['CURLOPT_SSL_VERIFYHOST'] = false;
+		}
+		$cipherlist = get_config('local_intelliboard', 'cipherlist');
+		$sslversion = get_config('local_intelliboard', 'sslversion');
+		
+		if ($cipherlist) {
+			$options['CURLOPT_SSL_CIPHER_LIST'] = $cipherlist;
+		}
+		if ($sslversion) {
+			$options['CURLOPT_SSLVERSION'] = $sslversion;
+		}
 		if ($debug and $debugmode) {
 			ob_start();
 			$curl = new curl(['debug'=>true]);
 			$out = fopen('php://output', 'w');
-			$json = $curl->post($url . 'moodleApi/' . $function, $params, [
-				'CURLOPT_VERBOSE'=> true,
-				'CURLOPT_STDERR'=>$out
-			]);
+
+			$options['CURLOPT_VERBOSE'] = true;
+			$options['CURLOPT_STDERR'] = $out;
+
+			$json = $curl->post($url . 'moodleApi/' . $function, $params, $options);
 			fclose($out);
 			$output = ob_get_clean();
 		} else {
 			$curl = new curl;
-			$json = $curl->post($url . 'moodleApi/' . $function, $params, []);
+			$json = $curl->post($url . 'moodleApi/' . $function, $params, $options);
 			$output = $json;
 		}
 		$data = (object)json_decode($json);
 		$data->status = (isset($data->status))?$data->status:'';
-		$data->token = (isset($data->token))?$data->token:'';
+        $data->token = (isset($data->token))?$data->token:'';
 		$data->reports = (isset($data->reports))?(array)$data->reports:null;
 		$data->sets = (isset($data->reports))?(array)$data->sets:null;
 		$data->alerts = (isset($data->alerts))?(array)$data->alerts:null;

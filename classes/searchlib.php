@@ -76,7 +76,7 @@ class local_intelliboard_search extends external_api {
 
     public static function get_param_values_returns() {
         return new external_single_structure(array(
-            'result' => new external_value(PARAM_TEXT, 'Serialized Found Values')
+            'result' => new external_value(PARAM_RAW, 'Serialized Found Values')
         ));
     }
 
@@ -112,7 +112,7 @@ class local_intelliboard_search extends external_api {
 
     public static function get_data_by_query_returns() {
         return new external_single_structure(array(
-            'response' => new external_value(PARAM_TEXT, 'DB records'),
+            'response' => new external_value(PARAM_RAW, 'DB records'),
             'debug' => new external_value(PARAM_RAW, 'Debug info')
         ));
     }
@@ -191,8 +191,8 @@ class local_intelliboard_search extends external_api {
     public static function extract_db_params_from_sentence_returns() {
         return new external_single_structure(
             array(
-                'sentence' => new external_value(PARAM_TEXT, 'Sentence after extracting parameter'),
-                'result' => new external_value(PARAM_TEXT, 'Result JSON')
+                'sentence' => new external_value(PARAM_RAW, 'Sentence after extracting parameter'),
+                'result' => new external_value(PARAM_RAW, 'Result JSON')
             )
         );
     }
@@ -223,7 +223,7 @@ class local_intelliboard_search extends external_api {
                 'endings'  => new external_multiple_structure(
                     new external_value(PARAM_TEXT, 'Possible ending to this argument, if argument is bigger than remainder of sentence')
                 ),
-                'found' => new external_value(PARAM_TEXT, 'Found value')
+                'found' => new external_value(PARAM_RAW, 'Found value')
             )
         );
     }
