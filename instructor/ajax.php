@@ -271,7 +271,7 @@ if($action == 'get_total_students'){
     $data = $DB->get_records_sql("
                 SELECT
                   cs.id,
-                  MAX(cs.section),
+                  MAX(cs.section) AS section,
                   SUM(lil.timespend) as timespend
                 FROM {role_assignments} ra
                     LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
@@ -328,7 +328,7 @@ if($action == 'get_total_students'){
         $courses = $DB->get_records_sql("
                 SELECT
                   cs.id,
-                  MAX(cs.section),
+                  MAX(cs.section) AS section,
                   SUM(lit.timespend) AS timespend
                 FROM {course_modules} cm
                   LEFT JOIN {modules} m ON m.id = cm.module
