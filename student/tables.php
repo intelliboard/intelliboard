@@ -154,7 +154,7 @@ class intelliboard_courses_grades_table extends table_sql {
 class intelliboard_activities_grades_table extends table_sql {
     public $scale_real;
 
-    function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '') {
+    function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '', $mod = 0) {
         global $PAGE, $DB;
 
         parent::__construct($uniqueid);
@@ -181,7 +181,10 @@ class intelliboard_activities_grades_table extends table_sql {
 
         $sql = "";
         $params = array();
-        if($search){
+        if ($mod) {
+            $sql .= " AND cm.module IN (1,15,16,17,20,23)";
+        }
+        if ($search) {
             $sql .= " AND " . $DB->sql_like('gi.itemname', ":itemname", false, false);
             $params['itemname'] = "%$search%";
         }
