@@ -163,7 +163,7 @@ class intelliboard_courses_grades_table extends table_sql {
 class intelliboard_activities_grades_table extends table_sql {
     public $scale_real;
 
-    function __construct($uniqueid, $courseid = 0, $search = '') {
+    function __construct($uniqueid, $courseid = 0, $search = '', $mod = 0) {
         global $CFG, $PAGE, $DB;
 
         parent::__construct($uniqueid);
@@ -194,11 +194,13 @@ class intelliboard_activities_grades_table extends table_sql {
 
         $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3'=>$courseid, 'c4'=>$courseid);
         $sql = "";
-        if($search){
+        if ($search) {
             $sql .= " AND " . $DB->sql_like('m.name', ":activity", false, false);
             $params['activity'] = "%$search%";
         }
-
+        if ($mod) {
+            $sql .= " AND cm.module IN (1,15,16,17,20,23)";
+        }
         list($sql1, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
 
@@ -380,7 +382,7 @@ class intelliboard_activity_grades_table extends table_sql {
 class intelliboard_learners_grades_table extends table_sql {
     public $scale_real;
 
-    function __construct($uniqueid, $courseid = 0, $search = '') { 
+    function __construct($uniqueid, $courseid = 0, $search = '') {
         global $CFG, $PAGE, $DB;
 
         parent::__construct($uniqueid);
@@ -498,7 +500,7 @@ class intelliboard_learners_grades_table extends table_sql {
 class intelliboard_learner_grades_table extends table_sql {
     public $scale_real;
 
-    function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '') {
+    function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '', $mod = 0) {
         global $CFG, $PAGE, $DB;
 
         parent::__construct($uniqueid);
@@ -535,11 +537,13 @@ class intelliboard_learner_grades_table extends table_sql {
             'c2'=>$courseid
         );
         $sql = "";
-        if($search){
+        if ($search) {
             $sql .= " AND " . $DB->sql_like('m.name', ":activity", false, false);
             $params['activity'] = "%$search%";
         }
-
+        if ($mod) {
+            $sql .= " AND cm.module IN (1,15,16,17,20,23)";
+        }
 
         $sql_columns = "";
         $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1");

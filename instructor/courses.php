@@ -30,6 +30,7 @@ require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/tables.php');
 
 $courseid = optional_param('id', 0, PARAM_INT);
+$mod = optional_param('mod', 0, PARAM_INT);
 $userid = optional_param('userid', 0, PARAM_INT);
 $cmid = optional_param('cmid', 0, PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHA);
@@ -51,7 +52,7 @@ $factorInfo = chart_options();
 $scale_real = get_config('local_intelliboard', 'scale_real');
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/instructor/courses.php",
-			array("search"=>$search, "action"=>$action, "id"=>$courseid, "userid"=>$userid, "cmid"=>$cmid, "sesskey"=> sesskey())));
+			array("search"=>$search, "action"=>$action, "id"=>$courseid, "userid"=>$userid, "cmid"=>$cmid, "mod"=>$mod, "sesskey"=> sesskey())));
 $PAGE->set_pagetype('courses');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -62,7 +63,7 @@ $PAGE->requires->js('/local/intelliboard/assets/js/jquery.circlechart.js');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 
 if($action === 'learner'){
-	$table = new intelliboard_learner_grades_table('table', $userid, $courseid, $search);
+	$table = new intelliboard_learner_grades_table('table', $userid, $courseid, $search, $mod);
 	$data = intelliboard_learner_data($userid, $courseid);
 	$user = $DB->get_record('user', array('id'=>$userid));
 }elseif($action === 'activity'){
@@ -72,7 +73,7 @@ if($action === 'learner'){
 	$table = new intelliboard_learners_grades_table('table', $courseid, $search);
 	$course = intelliboard_course_learners_total($courseid);
 }elseif($action == 'activities'){
-	$table = new intelliboard_activities_grades_table('table', $courseid, $search);
+	$table = new intelliboard_activities_grades_table('table', $courseid, $search, $mod);
 	$course = intelliboard_activities_data($courseid);
 }else{
 	$table = new intelliboard_courses_grades_table('table', $search);
@@ -113,7 +114,7 @@ echo $OUTPUT->header();
 									<li><span><?php echo get_string('in18', 'local_intelliboard'); ?> </span><?php echo (int)$data->visits; ?></li>
 
 
-								<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php?search&action=learners&id='.$data->courseid; ?>" class="btn btn-default btn-back"><i class="ion-android-arrow-back"></i> <?php echo get_string('in20', 'local_intelliboard'); ?></a>
+								<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php?search&action=learners&id='.$id; ?>" class="btn btn-default btn-back"><i class="ion-android-arrow-back"></i> <?php echo get_string('in20', 'local_intelliboard'); ?></a>
 							</ul>
 						<?php elseif($action === 'activity'): ?>
 							<div class="activity"><?php echo substr($data->module, 0,1); ?></div>
@@ -176,12 +177,19 @@ echo $OUTPUT->header();
 					</div>
 				<?php endif; ?>
 
-
-
 			<div class="intelliboard-search clearfix">
 				<form action="<?php echo $PAGE->url; ?>" method="GET">
 					<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
 
+					<?php if ($action == 'activities' or $action == 'learner'): ?>
+						<select name="mod" class="pull-left form-control" onchange="this.form.submit()" style="margin-right:3px;">
+							<option value="0"><?php echo get_string('allmod', 'local_intelliboard');?></option>
+							<option value="1" <?php echo ($mod)?'selected="selected"':''; ?>><?php echo get_string('customod', 'local_intelliboard');?></option>
+						</select>
+					<?php endif; ?>
+
+					<input name="userid" type="hidden" value="<?php echo $userid; ?>" />
+					<input name="cmid" type="hidden" value="<?php echo $cmid; ?>" />
 					<input name="id" type="hidden" value="<?php echo $courseid; ?>" />
 					<input name="action" type="hidden" value="<?php echo $action; ?>" />
 
