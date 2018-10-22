@@ -31,6 +31,7 @@ require_once($CFG->dirroot .'/local/intelliboard/student/tables.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 
 $id = optional_param('id', 0, PARAM_INT);
+$mod = optional_param('mod', 0, PARAM_INT);
 $search = clean_raw(optional_param('search', '', PARAM_TEXT));
 $other_user = optional_param('user', 0, PARAM_INT);
 
@@ -57,7 +58,7 @@ $params = array(
 $intelliboard = intelliboard($params);
 $factorInfo = chart_options();
 
-$PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>s($search), "id"=>$id, "sesskey"=> sesskey(), "user"=>$other_user)));
+$PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>s($search), "id"=>$id, "mod"=>$mod, "sesskey"=> sesskey(), "user"=>$other_user)));
 $PAGE->set_pagetype('grades');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -70,7 +71,7 @@ $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 
 $totals = intelliboard_learner_totals($showing_user->id);
 if($id){
-	$table = new intelliboard_activities_grades_table('table', $showing_user->id, $id, s($search));
+	$table = new intelliboard_activities_grades_table('table', $showing_user->id, $id, s($search), $mod);
 	$courseObj = intelliboard_learner_course($showing_user->id, $id);
 }else{
 	$table = new intelliboard_courses_grades_table('table', $showing_user->id, s($search));
@@ -112,12 +113,19 @@ echo $OUTPUT->header();
 			<?php endif; ?>
 			<div class="intelliboard-search clearfix">
 				<form action="<?php echo $PAGE->url; ?>" method="GET">
+					<?php if ($id): ?>
+						<select name="mod" class="pull-left form-control" onchange="this.form.submit()" style="margin-right:3px;">
+							<option value="0"><?php echo get_string('allmod', 'local_intelliboard');?></option>
+							<option value="1" <?php echo ($mod)?'selected="selected"':''; ?>><?php echo get_string('customod', 'local_intelliboard');?></option>
+						</select>
+					<?php endif; ?>
 					<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
 					<input name="id" type="hidden" value="<?php echo $id; ?>" />
 					<span class="pull-left"><input class="form-control" name="search" type="text" value="<?php echo format_string($search); ?>" placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>" /></span>
 					<button class="btn btn-default"><?php echo get_string('search');?></button>
 				</form>
 			</div>
+			<div class="clear"></div>
 
 			<?php $table->out(10, true); ?>
 		</div>

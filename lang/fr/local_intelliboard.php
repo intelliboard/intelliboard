@@ -654,3 +654,6 @@ $string['debug_desc'] = "";
 
 $string['intellicart'] = "IntelliCart integration";
 $string['intellicart_desc'] = "Allow students to see IntelliCart reports.";
+
+$string['allmod'] = "All activities";
+$string['customod'] = "Custom activities";

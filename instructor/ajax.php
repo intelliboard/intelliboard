@@ -136,7 +136,26 @@ if($action == 'get_total_students'){
 
     $params = array('course'=>$course,'timestart'=>$timestart, 'timefinish'=>$timefinish);
     list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
-    $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
+
+    $join_sql1 = '';
+    $join_sql2 = '';
+    $select_sql2 = '';
+    if(get_config('local_intelliboard', 'group_aggregation')){
+        $join_sql1 = "JOIN (SELECT gm.userid,c.id AS courseid
+                        FROM {course} c
+                          LEFT JOIN {groups} g ON g.courseid=c.id
+                          LEFT JOIN {groups_members} gm ON g.id=gm.groupid AND gm.groupid IN (SELECT groupid FROM {groups_members} WHERE userid = $USER->id)
+                        GROUP BY gm.userid,c.id
+                       ) group_user ON (group_user.userid=ra.userid AND group_user.courseid=ctx.instanceid) OR (group_user.userid IS NULL AND group_user.courseid=ctx.instanceid)";
+        $join_sql2 = "LEFT JOIN (SELECT gm.userid,c.id AS courseid
+                        FROM {course} c
+                          LEFT JOIN {groups} g ON g.courseid=c.id
+                          LEFT JOIN {groups_members} gm ON g.id=gm.groupid AND gm.groupid IN (SELECT groupid FROM {groups_members} WHERE userid = $USER->id)
+                        GROUP BY gm.userid,c.id
+                       ) group_user ON group_user.courseid=ctx.instanceid";
+        $select_sql2 = "AND ((group_user.userid=ra.userid AND group_user.courseid=ctx.instanceid) OR (group_user.userid IS NULL AND group_user.courseid=ctx.instanceid))";
+    }
+
     $enrolled_users = $DB->get_record_sql("SELECT COUNT(DISTINCT ra.userid) AS users 
                                             FROM {role_assignments} ra 
                                               LEFT JOIN {context} ctx ON ctx.instanceid=:course AND ctx.contextlevel=50 AND ra.contextid=ctx.id
@@ -153,16 +172,15 @@ if($action == 'get_total_students'){
     $data = $DB->get_records_sql("
                 SELECT
                   cm.id,
-                  (SELECT COUNT(DISTINCT CASE WHEN lil.id IS NOT NULL THEN ra.userid ELSE NULL END)
-                    FROM {local_intelliboard_tracking} lit
-                      LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id AND lil.timepoint BETWEEN :timestart AND :timefinish
-                      LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=lit.courseid
-                      LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=lit.userid $sql1
-                      $join_sql1
-                    WHERE lit.courseid=cm.course AND lit.param=cm.id AND lit.page='module') AS students_attempt
+                  COUNT(DISTINCT CASE WHEN lil.id IS NOT NULL $select_sql2 THEN ra.userid ELSE NULL END) AS students_attempt
                   $sql_columns
                 FROM {course_modules} cm
-                  LEFT JOIN {modules} m ON m.id = cm.module           
+                  LEFT JOIN {modules} m ON m.id = cm.module    
+                  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=cm.course AND lit.param=cm.id AND lit.page='module'    
+                  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id AND lil.timepoint BETWEEN :timestart AND :timefinish
+                  LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=lit.courseid
+                  LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=lit.userid $sql1
+                  $join_sql2   
                 WHERE cm.course=:course
                 GROUP BY cm.id,m.name",$params);
 
