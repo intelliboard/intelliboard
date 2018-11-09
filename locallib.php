@@ -162,7 +162,7 @@ function intelliboard($params, $function = 'sso'){
 		}
 		$cipherlist = get_config('local_intelliboard', 'cipherlist');
 		$sslversion = get_config('local_intelliboard', 'sslversion');
-		
+
 		if ($cipherlist) {
 			$options['CURLOPT_SSL_CIPHER_LIST'] = $cipherlist;
 		}
