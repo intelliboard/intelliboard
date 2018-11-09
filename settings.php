@@ -699,7 +699,7 @@ if($ADMIN->fulltree){
 
         $name = 'local_intelliboard/competency_dashboard';
         $title = new lang_string('a29', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
 
