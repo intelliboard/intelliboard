@@ -185,6 +185,7 @@ function intelliboard($params, $function = 'sso'){
 			$json = $curl->post($url . 'moodleApi/' . $function, $params, $options);
 			$output = $json;
 		}
+
 		$data = (object)json_decode($json);
 		$data->status = (isset($data->status))?$data->status:'';
         $data->token = (isset($data->token))?$data->token:'';
@@ -199,9 +200,13 @@ function intelliboard($params, $function = 'sso'){
 
 		return $data;
 }
-function chart_options(){
+function chart_options()
+{
+		$timespent = get_string('timespent', 'local_intelliboard');
+		$grade = get_string('grade', 'local_intelliboard');
     $res = array();
-    $res['CourseProgressCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',title:'',legend:{position:'none'},vAxis: {title:'Grade'},hAxis:{title:''},seriesType:'bars',series:{1:{type:'line'}},chartArea:{width:'92%',height: '76%',right:10,top:10},colors:['#1d7fb3', '#1db34f'],backgroundColor:{fill:'transparent'}}";
+
+    $res['CourseProgressCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',title:'',legend:{position:'none'},vAxis: {title:'{$grade}'},hAxis:{title:''},seriesType:'bars',series:{1:{type:'line'}},chartArea:{width:'92%',height: '76%',right:10,top:10},colors:['#1d7fb3', '#1db34f'],backgroundColor:{fill:'transparent'}}";
 
     $res['ActivityProgressCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chartArea: {width: '95%',height: '76%',right:10,top:10},height: 250,hAxis: {format: 'dd MMM',gridlines: {},baselineColor: '#ccc',gridlineColor: '#ccc',},vAxis: {baselineColor: '#CCCCCC',gridlines: {count: 5,color: 'transparent',},minValue: 0},pointSize: 6,lineWidth: 2,colors: ['#1db34f', '#1d7fb3'],backgroundColor:{fill:'transparent'},tooltip: {isHtml: true},legend: { position: 'none' }}";
 
@@ -209,7 +214,7 @@ function chart_options(){
 
     $res['ActivityParticipationCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:{ position:'bottom', alignment:'center' },title:'',height:'350',chartArea: {width: '85%',height: '85%',right:10,top:10 },backgroundColor:{fill:'transparent'}}";
 
-    $res['CorrelationsCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:'none',colors:['#1d7fb3', '#1db34f'],pointSize:16,tooltip:{isHtml: true},title:'',height:'350',chartArea:{ width: '85%', height:'70%',right:10, top:10 },backgroundColor:{fill:'transparent'},hAxis:{ticks: [], baselineColor: 'none', title:'------ Time Spent ----'},vAxis:{title:'Grade'}}";
+    $res['CorrelationsCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:'none',colors:['#1d7fb3', '#1db34f'],pointSize:16,tooltip:{isHtml: true},title:'',height:'350',chartArea:{ width: '85%', height:'70%',right:10, top:10 },backgroundColor:{fill:'transparent'},hAxis:{ticks: [], baselineColor: 'none', title:'{$timespent}'},vAxis:{title:'{$grade}'}}";
 
     $res['CourseSuccessCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:{ position:'bottom',alignment:'center' },title: '',height:'350',chartArea:{width:'95%',height: '85%',right:10,top:10},backgroundColor:{fill:'transparent'}}";
 
@@ -579,14 +584,14 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
                 $position = isset($params['position'])? $params['position'] : 1;
                 $length   = isset($params['length'])? $params['length'] : "CHAR_LENGTH($value)";
 
-                return "INSERT('$sentence', $position, $length, $value)";
+                return "INSERT($sentence, $position, $length, $value)";
             },
             POSTGRES_TYPE => function($value, $params) {
                 $sentence = $params['sentence'];
                 $position = isset($params['position'])? $params['position'] : 1;
                 $length   = isset($params['length'])? $params['length'] : "CHAR_LENGTH($value)";
 
-                return "OVERLAY('$sentence' placing $value from $position for $length)";
+                return "OVERLAY($sentence placing $value from $position for $length)";
             }
         ),
         'DAY' => array(
