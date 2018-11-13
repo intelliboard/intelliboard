@@ -298,7 +298,7 @@ function intelliboard_instructor_modules()
         $inner = new stdClass();
         $inner->v = (int)$item->timespend;
         $inner->f = seconds_to_time(intval($item->timespend));
-        $data[] = array(format_string(ucfirst($item->name)), $inner);
+        $data[] = array(get_string('modulename', $item->name), $inner);
     }
     return $data;
 }

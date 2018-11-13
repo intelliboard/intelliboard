@@ -659,3 +659,13 @@ $string['cancel_subscription'] = 'Cancel subscription';
 
  $string['allmod'] = "All activities";
  $string['customod'] = "Custom activities";
+
+ $string['timespent'] = "------ Time Spent ----";
+ $string['inprogress'] = "In progress";
+ $string['notstarted'] = "Not started";
+ $string['modulename'] = "Module name";
+ $string['viewed'] = "Viewed";
+ $string['course'] = "Course";
+ $string['courseaverage'] = "Course Average";
+ $string['mygrade'] = "My Grade";
+ $string['myprogress'] = "My grade progress";
