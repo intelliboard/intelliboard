@@ -346,7 +346,7 @@ class local_intelliboard_external extends external_api {
         }
         return ($wrap) ? array("data" => $data) : $data;
     }
-    private function get_modules_sql($filter)
+    private function get_modules_sql($filter, $result = false)
     {
         global $DB;
 
@@ -354,6 +354,9 @@ class local_intelliboard_external extends external_api {
         $sql_mods = $this->get_filter_in_sql($list, "m.id");
         $sql_columns = "";
         $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1 $sql_mods", $this->params);
+        if ($result) {
+          return $modules;
+        }
         foreach($modules as $module){
             $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
@@ -4030,7 +4033,9 @@ class local_intelliboard_external extends external_api {
             "data3"            => $data3,
             "data6"            => $data6);
     }
-    public function report67($params){
+    public function report67($params)
+    {
+        global $DB;
         $columns = array_merge(array("l.timecreated", "l.userid", "u.firstname", "u.lastname", "u.email", "course", "c.shortname","category", "l.objecttable", "activity", "l.origin", "l.ip"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
@@ -4046,7 +4051,14 @@ class local_intelliboard_external extends external_api {
         $list = clean_param($params->custom, PARAM_SEQUENCE);
         if($list){
             $sql_columns .=  $this->get_modules_sql($list);
-            $sql_filter .= $this->get_filter_in_sql($list,'m.id');
+            $modules = $this->get_modules_sql($list, true);
+            $where = [];
+            foreach ($modules as $module) {
+              $where[] = $DB->sql_like('l.objecttable', ":".$module->name, false, false);
+              $this->params[$module->name] = "%".$module->name."%";
+            }
+            $sql_filter .= ' AND ('.implode(' OR ',$where).')';
+            //$sql_filter .= $this->get_filter_in_sql($list,'m.id');
         }else{
             $sql_columns .=  $this->get_modules_sql('');
         }
@@ -9119,8 +9131,9 @@ class local_intelliboard_external extends external_api {
                 }
             }
 
-            if(!empty($where))
+            if(!empty($where)) {
                 $where_sql = 'AND ('.implode('OR',$where).')';
+            }
 
             $order_sql = $this->get_order_sql($params, $coll);
             $limit_sql = $this->get_limit_sql($params);

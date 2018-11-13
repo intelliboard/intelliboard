@@ -670,10 +670,10 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(CourseSuccess);
         function CourseSuccess() {
             var data = google.visualization.arrayToDataTable([
-                ['Status', 'Courses'],
-                ['Completed',<?php echo (int)$totals->completed; ?>],
-                ['In progress',<?php echo (int)$totals->inprogress; ?>],
-                ['Not started',<?php $t = intval($totals->enrolled)-(intval($totals->inprogress) + intval($totals->completed)); echo ($t>0)?$t:0 ?>],
+                ['<?php echo get_string('status', 'local_intelliboard'); ?>', '<?php echo get_string('courses', 'local_intelliboard'); ?>'],
+                ['<?php echo get_string('completed', 'local_intelliboard'); ?>',<?php echo (int)$totals->completed; ?>],
+                ['<?php echo get_string('inprogress', 'local_intelliboard'); ?>',<?php echo (int)$totals->inprogress; ?>],
+                ['<?php echo get_string('notstarted', 'local_intelliboard'); ?>',<?php $t = intval($totals->enrolled)-(intval($totals->inprogress) + intval($totals->completed)); echo ($t>0)?$t:0 ?>],
             ]);
             var options = <?php echo format_string($factorInfo->CourseSuccessCalculation); ?>;
             var chart = new google.visualization.PieChart(document.getElementById('chart3'));
@@ -685,8 +685,8 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(Correlations);
         function Correlations() {
             var data = new google.visualization.DataTable();
-            data.addColumn('number', 'Grade');
-            data.addColumn('number', 'Time Spent (%)');
+            data.addColumn('number', '<?php echo get_string('grade', 'local_intelliboard'); ?>');
+            data.addColumn('number', '<?php echo get_string('in13', 'local_intelliboard'); ?>');
             data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
             data.addRows([<?php echo ($json_data2) ? implode(",", $json_data2):"";?>]);
             var options = <?php echo format_string($factorInfo->CorrelationsCalculation); ?>;
@@ -699,9 +699,9 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(ActivityParticipation);
         function ActivityParticipation() {
             var data = google.visualization.arrayToDataTable([
-                ['Module name', 'Total', 'Viewed', 'Completed'],
+                ['<?php echo get_string('modulename', 'local_intelliboard'); ?>', '<?php echo get_string('total', 'local_intelliboard'); ?>', '<?php echo get_string('viewed', 'local_intelliboard'); ?>', '<?php echo get_string('completed', 'local_intelliboard'); ?>'],
                 <?php foreach($modules_progress as $row):  ?>
-                ['<?php echo str_replace("'",'"',format_string(ucfirst($row->name))); ?>', <?php echo (int)$row->modules; ?>, <?php echo (int)$row->start_modules; ?>, <?php echo (int)$row->completed_modules; ?>],
+                ['<?php echo str_replace("'",'"', get_string('modulename', $row->name)); ?>', <?php echo (int)$row->modules; ?>, <?php echo (int)$row->start_modules; ?>, <?php echo (int)$row->completed_modules; ?>],
                 <?php endforeach; ?>
             ]);
             var options = <?php echo format_string($factorInfo->ActivityParticipationCalculation); ?>;
@@ -715,9 +715,9 @@ echo $OUTPUT->header();
         function LearningProgress() {
 
             var data = google.visualization.arrayToDataTable([
-                ['Module', 'Time spent'],
+                ['<?php echo get_string('modulename', 'local_intelliboard'); ?>', '<?php echo get_string('time_spent', 'local_intelliboard'); ?>'],
                 <?php foreach($modules_progress as $row):  ?>
-                ['<?php echo str_replace("'",'"',format_string(ucfirst($row->name))); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
+                ['<?php echo str_replace("'",'"', get_string('modulename', $row->name)); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
                 <?php endforeach; ?>
             ]);
             var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
@@ -730,7 +730,7 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(drawCourseProgress);
         function drawCourseProgress() {
             var data = google.visualization.arrayToDataTable([
-                ['Course', 'Course Average', 'My Grade'],
+                ['<?php echo get_string('course', 'local_intelliboard'); ?>', '<?php echo get_string('courseaverage', 'local_intelliboard'); ?>', '<?php echo get_string('mygrade', 'local_intelliboard'); ?>'],
                 <?php foreach($courses as $row):  ?>
                 ['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', <?php echo ($scale_real)?"{v: ".(int)$row->average.", f: '".$row->average_real."'}":(int)$row->average; ?>, <?php echo ($scale_real)?"{v: ".(int)$row->grade.", f: '".$row->grade_real."'}":(int)$row->grade; ?>],
                 <?php endforeach; ?>
@@ -747,10 +747,10 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(drawActivityProgress);
         function drawActivityProgress() {
             var data = new google.visualization.DataTable();
-            data.addColumn('date', 'Time');
-            data.addColumn('number', 'My grade progress');
+            data.addColumn('date', '<?php echo get_string('time', 'local_intelliboard'); ?>');
+            data.addColumn('number', '<?php echo get_string('myprogress', 'local_intelliboard'); ?>');
             data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-            data.addColumn('number', 'Average grade');
+            data.addColumn('number', '<?php echo get_string('average_grade', 'local_intelliboard'); ?>');
             data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
             data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
             var options = <?php echo format_string($factorInfo->ActivityProgressCalculation); ?>;

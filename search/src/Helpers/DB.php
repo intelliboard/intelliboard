@@ -31,7 +31,7 @@ class DB
     {
 
         $variants = static::extractParamsFromSentence($table, $column, $remainder, $params, 0, 0, array(),
-            ":sentence " . static::getOperator("regexp") . " CONCAT('^', :column, '[[:>:]]')")['result'];
+            ":sentence " . \get_filter(1) . " CONCAT('^', :column, '[[:>:]]')")['result'];
         $maxShift = 0;
         $found = '';
 
@@ -45,7 +45,7 @@ class DB
         }
 
         $variants = static::extractParamsFromSentence($table, $column, '^' . $remainder, $params, 0, 0, array(),
-            ":column " . static::getOperator("regexp") . " :sentence")['result'];
+            ":column " . \get_filter(1) . " :sentence")['result'];
         $endings = array_map(function ($item) use ($remainder) {
             return substr($item, mb_strlen($remainder));
         }, $variants);
@@ -128,8 +128,6 @@ class DB
             }
 
         } else {
-
-
             static::applyFilters($table, $column, $getter, $types, $alias, $params, array(), $additionalFields);
 
             if ($prefix) {
@@ -141,9 +139,9 @@ class DB
 
             $pattern = $pattern ? $pattern : ":sentence " . \get_filter(1) . " CONCAT('[[:<:]]', :column, '[[:>:]]')";
 
-            $getter->add('filters',
-                str_replace(array(':column', ':sentence'), array($search, "'$sentence'"), $pattern));
+            $getter->add('filters', str_replace(array(':column'), array($search), $pattern));
             $getter->add('filters', "$column <> ''");
+            $getter->setParam('sentence', $sentence);
 
             if ($escapeSystem) {
                 $systemWords = rtrim(array_reduce(static::$systemWords, function ($buffer, $item) use ($getter) {
@@ -161,11 +159,14 @@ class DB
             $getter->add(
                 'columns',
                 \get_operator("INSERT", "' '", array(
-                    'sentence' => $sentence,
-                    'position' => "POSITION(CONCAT(' ', LOWER({$column})) IN '$sentence')",
+                    'sentence' => ':sentence2',
+                    'position' => "POSITION(CONCAT(' ', LOWER({$column})) IN :sentence3)",
                     'length' => "CHAR_LENGTH($column) + 1"
                 )) . ' as replacement'
             );
+            $getter->setParam('sentence2', $sentence);
+            $getter->setParam('sentence3', $sentence);
+
             $getter->add(
                 'columns',
                 "CHAR_LENGTH($column) as length_char"
@@ -173,6 +174,7 @@ class DB
 
             $data = $getter->release();
             $sql = $data['sql'] . " ORDER BY CHAR_LENGTH($column) DESC LIMIT 1";
+
             $variant = json_decode(json_encode($DB->get_record_sql($sql, $data['params'])), true);
             $sentence = !empty($variant['replacement']) ? $variant['replacement'] : $sentence;
             $variants = $variant ? array(array_diff_key($variant, array('replacement' => 1))) : [];
