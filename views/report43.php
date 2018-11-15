@@ -79,8 +79,8 @@
 			<td colspan="5"></td>
 			<td align="right">
 				<div class="paging">
-					<a class="prev <?php echo ($page<=1)?'disabled':''; ?>" href="index.php?page=<?php echo $page-1; ?>&type=users">Prev</a>
-					<a class="next <?php echo (count($report43['data']) < $length)?'disabled':''; ?>" href="index.php?page=<?php echo $page+1; ?>&type=users">Next</a>
+					<a class="prev <?php echo ($page<=1)?'disabled':''; ?>" href="index.php?page=<?php echo $page-1; ?>&type=users"><?php echo get_string('prev') ?></a>
+					<a class="next <?php echo (count($report43['data']) < $length)?'disabled':''; ?>" href="index.php?page=<?php echo $page+1; ?>&type=users"><?php echo get_string('next') ?></a>
 				</div>
 			</td>
 		</tr>
