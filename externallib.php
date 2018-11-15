@@ -12321,9 +12321,13 @@ class local_intelliboard_external extends external_api {
         $sql1 .= $this->get_filter_user_sql($params, "", true);
         $sql3 .= $this->get_filter_course_sql($params, "");
         $sql4 .= $this->get_filter_module_sql($params, "");
+        $size = "0";
 
         if ($params->custom) {
             set_config("apikey", clean_param($params->custom, PARAM_ALPHANUMEXT), "local_intelliboard");
+        }
+        if (!$params->filter) {
+            $size = "(SELECT SUM(filesize) FROM {files} WHERE id > 0 $sql2)";
         }
         if ($CFG->dbtype == 'pgsql') {
             $func = 'array_agg';
@@ -12336,7 +12340,7 @@ class local_intelliboard_external extends external_api {
         $totals = $DB->get_record_sql("
             SELECT
                 (SELECT COUNT(*) FROM {user} WHERE id > 0 $sql1) AS users,
-                (SELECT SUM(filesize) FROM {files} WHERE id > 0 $sql2) AS size,
+                $size AS size,
                 (SELECT COUNT(*) FROM {course} WHERE category > 0 $sql3) AS courses,
                 (SELECT COUNT(*) FROM {course_modules} WHERE id > 0 $sql4) AS activities,
                 (SELECT COUNT(*) FROM {course_categories} WHERE visible = 1) AS categories,
