@@ -113,7 +113,7 @@ foreach($countries as $country){
 }
 $json_enrols = array();
 foreach($enrols as $enrol){
-	$json_enrols[] = "['".format_string(ucfirst($enrol->enrol))."', ".s($enrol->enrols)."]";
+	$json_enrols[] = "['". get_string('pluginname', 'enrol_'.$enrol->enrol)."', ".s($enrol->enrols)."]";
 }
 
 $json_data = array();

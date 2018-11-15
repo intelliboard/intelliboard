@@ -35,8 +35,8 @@
 	<?php if (!empty($report44['data'])): ?>
 	<li class="clearfix">
 		<div class="paging" style="float: right;">
-			<a class="prev <?php echo ($page<=1)?'disabled':''; ?>" href="index.php?page=<?php echo $page-1; ?>&type=courses">Prev</a>
-			<a class="next <?php echo (count($report44['data']) < $length)?'disabled':''; ?>" href="index.php?page=<?php echo $page+1; ?>&type=courses">Next</a>
+			<a class="prev <?php echo ($page<=1)?'disabled':''; ?>" href="index.php?page=<?php echo $page-1; ?>&type=courses"><?php echo get_string('prev') ?></a>
+			<a class="next <?php echo (count($report44['data']) < $length)?'disabled':''; ?>" href="index.php?page=<?php echo $page+1; ?>&type=courses"><?php echo get_string('next') ?></a>
 		</div>
 	</li>
 	<?php endif; ?>

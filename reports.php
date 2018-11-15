@@ -34,6 +34,7 @@ require_capability('local/intelliboard:view', context_system::instance());
 
 $report = optional_param('id', '', PARAM_RAW);
 $intelliboard = intelliboard(['task'=>'reports']);
+
 $report_type = $intelliboard->reports[$report]->type;
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/reports.php", array('id'=>$report)));

@@ -152,9 +152,9 @@ class intelliboard_courses_grades_table extends table_sql {
         global  $PAGE;
 
         $html = html_writer::start_tag("div",array("style"=>"width:200px; margin: 5px 0;"));
-        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'learners', 'id'=>$values->id)), 'Learners', array('class' =>'btn btn-default', 'title' => get_string('learners','local_intelliboard')));
+        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'learners', 'id'=>$values->id)), get_string('learners','local_intelliboard'), array('class' =>'btn btn-default', 'title' => get_string('learners','local_intelliboard')));
         $html .= "&nbsp";
-        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->id)), 'Activities', array('class' =>'btn btn-default', 'title' => get_string('activities','local_intelliboard')));
+        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->id)), get_string('activities','local_intelliboard'), array('class' =>'btn btn-default', 'title' => get_string('activities','local_intelliboard')));
         $html .= html_writer::end_tag("div");
         return $html;
     }
@@ -247,7 +247,9 @@ class intelliboard_activities_grades_table extends table_sql {
             return $html;
         }
     }
-
+    function col_module($values) {
+      return get_string('modulename', $values->module);
+    }
     function col_completed($values) {
       return intval($values->completed);
     }
