@@ -2772,7 +2772,7 @@ class local_intelliboard_external extends external_api {
 
         $data = $this->get_report_data("
             SELECT
-                (mf.id * u.id) as id,
+                CONCAT(mfv.id, '_', u.id) as id,
                 u.firstname,
                 u.lastname,
                 u.email,
