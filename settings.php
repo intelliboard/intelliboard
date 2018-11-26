@@ -45,8 +45,13 @@ $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcompetency',
 if (!$ADMIN->locate('intelliboard') and $ADMIN->locate('localplugins')){
     $ADMIN->add('localplugins', new admin_category('intelliboard', new lang_string('pluginname', 'local_intelliboard')));
     $ADMIN->add('intelliboard', $settings);
-    $ADMIN->add('intelliboard', new admin_externalpage('intelliboardsql', new lang_string('sqlreports', 'local_intelliboard'),
-        $CFG->wwwroot.'/local/intelliboard/sqlreports.php'));
+
+    if (isset($CFG->intelliboardsql) and $CFG->intelliboardsql == false) {
+        //skip
+    } else {
+      $ADMIN->add('intelliboard', new admin_externalpage('intelliboardsql', new lang_string('sqlreports', 'local_intelliboard'),
+      $CFG->wwwroot.'/local/intelliboard/sqlreports.php'));
+    }
 }
 
 if($ADMIN->fulltree){

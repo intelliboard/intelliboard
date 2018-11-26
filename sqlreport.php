@@ -35,6 +35,9 @@ admin_externalpage_setup('intelliboardsql');
 if (!is_siteadmin()) {
     throw new moodle_exception('invalidaccess', 'error');
 }
+if (isset($CFG->intelliboardsql) and $CFG->intelliboardsql == false) {
+    throw new moodle_exception('invalidaccess', 'error');
+}
 
 $id = required_param('id', PARAM_INT);
 $delete    = optional_param('delete', 0, PARAM_BOOL);

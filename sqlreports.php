@@ -35,6 +35,9 @@ admin_externalpage_setup('intelliboardsql');
 if (!is_siteadmin()) {
     throw new moodle_exception('invalidaccess', 'error');
 }
+if (isset($CFG->intelliboardsql) and $CFG->intelliboardsql == false) {
+    throw new moodle_exception('invalidaccess', 'error');
+}
 
 $intelliboard = intelliboard(['task'=>'sqlreports']);
 
@@ -50,4 +53,3 @@ echo $OUTPUT->heading(get_string('sqlreports', 'local_intelliboard'));
 $table->out(20, true);
 
 echo $OUTPUT->footer();
-
