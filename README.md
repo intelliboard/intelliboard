@@ -9,6 +9,8 @@ IntelliBoard.net is built to work with any LMS designed in Moodle with the goal 
 data analytics to single dashboard instantly. With power to turn this analytical data into simple and easy
 to read reports, IntelliBoard.net will become your primary reporting tool.
 
+To disable/hide SQL reports please use config - $CFG->intelliboardsql = false;
+
 
 Installation
 -----------
