@@ -34,7 +34,7 @@ class intelliboard_courses_grades_table extends table_sql {
 
         parent::__construct($uniqueid);
 
-        $headers = array('Course Name');
+        $headers = array(get_string('course_name', 'local_intelliboard'));
         $columns = array('course');
         if(get_config('local_intelliboard', 't23')){
             $columns[] =  'startdate';

@@ -366,7 +366,7 @@ class local_intelliboard_external extends external_api {
     public function report1($params)
     {
         global $CFG;
-        $columns = array_merge(array("u.firstname","u.lastname", "u.username",  "u.email", "c.fullname", "c.shortname", "enrols", "l.visits", "l.timespend", "grade", "cc.timecompleted","ue.timecreated", "ul.timeaccess", "ue.timeend", "cc.timecompleted","u.idnumber","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","teacher"), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname","u.lastname", "u.username",  "u.email", "c.fullname", "c.shortname", "enrols", "l.visits", "l.timespend", "grade", "cc.timecompleted", "enrolled", "ul.timeaccess", "ue.timeend", "cc.timecompleted","u.idnumber","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","teacher"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -420,10 +420,9 @@ class local_intelliboard_external extends external_api {
         } else {
             $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u.firstname,' ',u.lastname) SEPARATOR ', ')";
         }
-
         return $this->get_report_data("
             SELECT ue.id,
-                ue.timecreated AS enrolled,
+                (CASE WHEN ue.timestart > 0 THEN ue.timestart ELSE ue.timecreated END) AS enrolled,
                 ue.timeend,
                 ul.timeaccess,
                 $grade_single AS grade,
