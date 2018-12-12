@@ -593,6 +593,8 @@ class local_intelliboard_notification
                 return strtotime('-1 month');
             case 6:
                 return strtotime('-1 year');
+            case 7:
+                return strtotime('-3 month');
             default:
                 return time();
         }
