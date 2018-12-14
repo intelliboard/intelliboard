@@ -435,23 +435,24 @@ function get_modules_names() {
 
 function exclude_not_owners($columns) {
 
-    global $DB;
+    global $DB, $CFG;
     $owners_users = array();
     $owners_courses = array();
     $owners_cohorts = array();
 
+    $typeChange = $CFG->dbtype == 'pgsql'? '::text' : '';
+
     foreach ($columns as $type => $value) {
         if ($type == "users") {
-            $owners_users = array_merge($owners_users, $DB->get_fieldset_sql(" SELECT userid FROM {local_intelliboard_assign} WHERE type = 'users' AND instance = :userid", array('userid' => $value)));
-
+            $owners_users = array_merge($owners_users, $DB->get_fieldset_sql("SELECT userid FROM {local_intelliboard_assign} WHERE type = 'users' AND instance = :userid", array('userid' => $value)));
             $owners_users = array_merge($owners_users, $DB->get_fieldset_sql("SELECT lia.userid FROM {local_intelliboard_assign} lia
-              INNER JOIN {context} ctx ON lia.type = 'courses' AND ctx.instanceid = lia.instance AND ctx.contextlevel = 50
+              INNER JOIN {context} ctx ON  ctx.instanceid" . $typeChange . " = lia.instance AND ctx.contextlevel = 50
               INNER JOIN {role_assignments} ra ON ctx.id = ra.contextid
-              WHERE ra.userid = ?
+              WHERE ra.userid = ? AND lia.type = 'courses'
             ", array('userid' => $value)));
             $owners_users = array_merge($owners_users, $DB->get_fieldset_sql("SELECT lia.userid FROM {local_intelliboard_assign}  lia
-              INNER JOIN {cohort_members} cm ON lia.type = 'cohorts' AND cm.cohortid = lia.instance
-              WHERE cm.userid = ?
+              INNER JOIN {cohort_members} cm ON cm.cohortid" . $typeChange . " = lia.instance
+              WHERE cm.userid = ? AND lia.type = 'cohorts'
             ", array('userid' => $value)));
 
         } elseif ($type == 'courses') {
