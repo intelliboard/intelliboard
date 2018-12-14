@@ -138,6 +138,13 @@ $functions = array(
             'description' => 'Get notification history;',
             'type'        => 'read',
         ),
+        'local_intelliboard_clear_notifications' => array(
+            'classname'   => 'local_intelliboard_notificationlib',
+            'methodname'  => 'clear_notifications',
+            'classpath'   => 'local/intelliboard/classes/notificationlib.php',
+            'description' => 'Clear all saved notifications and history;',
+            'type'        => 'write',
+        ),
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
@@ -160,6 +167,7 @@ $services = array(
                         'local_intelliboard_save_notification',
                         'local_intelliboard_delete_notification',
                         'local_intelliboard_get_history',
+                        'local_intelliboard_clear_notifications'
                 ),
                 'restrictedusers' => 1,
                 'enabled'=>1,

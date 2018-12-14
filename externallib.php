@@ -719,6 +719,8 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "e.courseid");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
@@ -2403,17 +2405,17 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {user} u ON u.id = ci.userid
                 LEFT JOIN {course} c ON c.id = ce.course
                 JOIN {course_categories} cc ON cc.id=c.category
-                
+
                 LEFT JOIN {enrol} e ON e.courseid=c.id
                 LEFT JOIN {user_enrolments} ue ON ue.userid=u.id AND ue.enrolid=e.id
-                
+
                 LEFT JOIN {course_modules} cm ON cm.id=ce.printgrade
-                LEFT JOIN {modules} m ON m.id=cm.module 
+                LEFT JOIN {modules} m ON m.id=cm.module
                 LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='mod' AND gi.itemmodule=m.name AND gi.iteminstance=cm.instance
                 LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=u.id
                 LEFT JOIN {grade_items} gic ON gic.courseid=c.id AND gic.itemtype='course'
                 LEFT JOIN {grade_grades} ggc ON ggc.itemid=gic.id AND ggc.userid=u.id AND ggc.overridden=0
-            WHERE ci.id > 0 $sql_filter 
+            WHERE ci.id > 0 $sql_filter
             GROUP BY ci.id,u.id $sql_having $sql_order", $params);
     }
     public function report43($params)
@@ -2834,8 +2836,9 @@ class local_intelliboard_external extends external_api {
     //Custom Report
     public function report75($params)
     {
-        $columns = array("mco_name", "mc_name", "mci_userid", "mci_certid", "mu_firstname", "mu_lastname",  "mu_email", "issue_date");
+        $columns = array_merge(array("mco_name", "mc_name", "mci_userid", "mci_certid", "mu_firstname", "mu_lastname",  "mu_email", "issue_date"), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, "mu.id");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["mu.id" => "users", "mc.course" => "courses"]);
@@ -2863,6 +2866,7 @@ class local_intelliboard_external extends external_api {
                 mu.lastname AS mu_lastname,
                 mu.email AS mu_email,
                 mci.timecreated AS issue_date
+                $sql_columns
             FROM {{$certificate_table}} mc
                 LEFT JOIN {{$cert_issues_table}} AS mci ON mci.{$cert_id_field} = mc.id
                 LEFT OUTER JOIN {user} AS mu ON mci.userid = mu.id
@@ -10306,10 +10310,10 @@ class local_intelliboard_external extends external_api {
                     FROM {course} c
                       JOIN (SELECT
                               l.userid,
-                              MIN(l.timecreated) AS first_access,
+                              MIN(l.firstaccess) AS first_access,
                               MIN(l.courseid) AS courseid
-                            FROM {logstore_standard_log} l
-                            WHERE $sql_log_course AND l.contextlevel=70 AND l.crud='r' AND l.target='course_module' AND l.action='viewed'
+                            FROM {local_intelliboard_tracking} l
+                            WHERE $sql_log_course AND l.page='module'
                             GROUP BY l.userid
                         ) log ON log.courseid=c.id
                     WHERE $sql_filter", $this->params);
@@ -10328,7 +10332,7 @@ class local_intelliboard_external extends external_api {
                     FROM {course} c
                       JOIN {enrol} e ON e.courseid=c.id
                       JOIN {user_enrolments} ue ON ue.enrolid=e.id
-                      LEFT JOIN {logstore_standard_log} l ON l.courseid=c.id AND l.userid=ue.userid AND l.contextlevel=70 AND l.crud='r' AND l.target='course_module' AND l.action='viewed'
+                      LEFT JOIN {local_intelliboard_tracking} l ON l.courseid=c.id AND l.userid=ue.userid AND l.page='module'
                     WHERE $sql_filter AND l.id IS NULL ", $this->params);
 
         return array(
