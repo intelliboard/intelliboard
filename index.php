@@ -45,6 +45,14 @@ $type = optional_param('type', '', PARAM_RAW);
 if($action == 'noalert'){
 	$USER->noalert = true;
 }
+if($action == 'clear_ntf' and is_siteadmin()){
+	$DB->delete_records('local_intelliboard_ntf');
+	$DB->delete_records('local_intelliboard_ntf_hst');
+	$DB->delete_records('local_intelliboard_ntf_pms');
+
+	redirect(new moodle_url("/local/intelliboard/index.php"), get_string('deleted'));
+}
+
 
 $params = (object) array(
 	'filter_user_deleted'=>get_config('local_intelliboard', 'filter1'),

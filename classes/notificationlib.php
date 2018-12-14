@@ -302,4 +302,34 @@ class local_intelliboard_notificationlib extends external_api {
         );
     }
 
+
+    public static function clear_notifications_parameters() {
+        return new external_function_parameters(
+            array(
+                'removeHistory' =>  new external_value(PARAM_INT, 'set if remove history too'),
+            )
+        );
+    }
+
+    public static function clear_notifications($removeHistory) {
+        global $DB;
+
+        $transaction = $DB->start_delegated_transaction();
+
+        $DB->delete_records('local_intelliboard_ntf');
+        $DB->delete_records('local_intelliboard_ntf_pms');
+
+        if ($removeHistory) {
+            $DB->delete_records('local_intelliboard_ntf_hst');
+        }
+
+        $transaction->allow_commit();
+
+        return null;
+    }
+
+    public static function clear_notifications_returns() {
+        return null;
+    }
+
 }
