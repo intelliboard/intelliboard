@@ -2885,7 +2885,10 @@ class local_intelliboard_external extends external_api {
             "question",
             "answer",
             "feedback_time",
-            "course_name", "cc.timecompleted", "grade"),
+            "course_name",
+            "course_shortname",
+            "course_idnumber",
+            "cc.timecompleted", "grade"),
             $this->get_filter_columns($params)
         );
         $sql_columns = $this->get_columns($params, "u.id");
@@ -2913,7 +2916,10 @@ class local_intelliboard_external extends external_api {
                 mfi.name as question,
                 mfv.value as answer,
                 mf.name as feedback,
+                c.id as course_id,
+                c.idnumber as course_idnumber,
                 c.fullname as course_name,
+                c.shortname as course_shortname,
                 $grade_single AS grade
                 $sql_columns
             FROM {feedback} AS mf
