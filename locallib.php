@@ -495,12 +495,11 @@ function get_filter($id, $dbtype = null)
     $operator = $filters[$id];
 
     if (is_array($filters[$id])) {
-
         if (empty($filters[$id][$dbtype])) {
-            return null;
+            $operator = $filters[$id][MYSQL_TYPE];
+        } else {
+            $operator = $filters[$id][$dbtype];
         }
-
-        $operator = $filters[$id][$dbtype];
     }
 
     if (is_string($operator)) {
@@ -508,7 +507,6 @@ function get_filter($id, $dbtype = null)
     } else {
        return $operator();
     }
-
 }
 
 function get_operator($id, $value, $params = array(), $dbtype = null)
@@ -620,12 +618,11 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
     $operator = $operators[$id];
 
     if (is_array($operators[$id])) {
-
         if (empty($operators[$id][$dbtype])) {
-            return null;
+            $operator = $operators[$id][MYSQL_TYPE];
+        } else {
+            $operator = $operators[$id][$dbtype];
         }
-
-        $operator = $operators[$id][$dbtype];
     }
 
     if (is_string($operator)) {
