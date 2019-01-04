@@ -347,6 +347,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/instructor_course_shortname';
+        $title = new lang_string('instructor_course_shortname', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/ts1', new lang_string('ts1', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/t0';
