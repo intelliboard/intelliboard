@@ -85,10 +85,11 @@ if($action == 'modules'){
 	die(json_encode($data));
 }
 
+$instructor_course_shortname = get_config('local_intelliboard', 'instructor_course_shortname');
 $mycourses = intelliboard_instructor_get_my_courses();
 $list_of_my_courses = array();
 foreach($mycourses as $item){
-    $list_of_my_courses[$item->id] = $item->fullname;
+    $list_of_my_courses[$item->id] = ($instructor_course_shortname)?$item->shortname:$item->fullname;
 }
 if($course == 0){
     $course = key($list_of_my_courses);

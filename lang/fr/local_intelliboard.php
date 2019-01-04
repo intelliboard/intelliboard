@@ -667,3 +667,4 @@ $string['course'] = "Course";
 $string['courseaverage'] = "Course Average";
 $string['mygrade'] = "My Grade";
 $string['myprogress'] = "My grade progress";
+$string['instructor_course_shortname'] = "Show course short name instead course full name";

@@ -669,3 +669,4 @@ $string['cancel_subscription'] = 'Cancel subscription';
  $string['courseaverage'] = "Course Average";
  $string['mygrade'] = "My Grade";
  $string['myprogress'] = "My grade progress";
+$string['instructor_course_shortname'] = "Show course short name instead course full name";
