@@ -475,7 +475,7 @@ function intelliboard_instructor_get_my_courses(){
 
 
     return $DB->get_records_sql("
-                SELECT DISTINCT c.id,c.fullname
+                SELECT DISTINCT c.id,c.fullname,c.shortname
                 FROM {role_assignments} ra, {context} ctx, {course} c
                 WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid AND c.id=ctx.instanceid $sql
                 ORDER BY c.fullname", $params);
