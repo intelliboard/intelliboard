@@ -117,6 +117,29 @@ if($action == 'get_total_students'){
 
     $data->avg_timespend = seconds_to_time($data->avg_timespend);
 
+    $users_list = $DB->get_records_sql("
+                SELECT 
+                    u.*,
+                    CASE WHEN MAX(lil.timepoint) BETWEEN :timestart3 AND :timefinish3 THEN 1 ELSE 0 END AS active
+                   FROM {context} ctx 
+                     LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id $sql5
+                     LEFT JOIN {local_intelliboard_tracking} lit ON ctx.instanceid=lit.courseid AND ra.userid=lit.userid
+                     LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
+                     JOIN {user} u ON u.id=ra.userid
+                     $join_sql1
+                   WHERE ctx.contextlevel=50 AND ctx.instanceid IN (
+                           SELECT DISTINCT ctx.instanceid
+                           FROM {role_assignments} ra, {context} ctx
+                           WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid2 $sql2)
+                         AND ra.userid IS NOT NULL
+                   GROUP BY u.id", $params);
+
+    $data->users = array();
+    foreach($users_list as $user){
+        $key = ($user->active == 1)?'active':'not_active';
+        $data->users[$key] .= "<li><a href='".$CFG->wwwroot."/user/view.php?id=".$user->id."'>".fullname($user)."</a></li>";
+    }
+
 	die(json_encode($data));
 }elseif($action == 'get_learner_engagement'){
     if(!$course){

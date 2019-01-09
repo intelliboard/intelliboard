@@ -38,6 +38,9 @@ class intelliboard_courses_grades_table extends table_sql {
         $headers = array(get_string('course_name','local_intelliboard'));
         $columns = array('course');
 
+        $columns[] =  'course_shortname';
+        $headers[] =  get_string('shortname');
+
         $columns[] =  'category';
         $headers[] =  get_string('category','local_intelliboard');
 
@@ -86,7 +89,7 @@ class intelliboard_courses_grades_table extends table_sql {
         $params = array_merge($params,$sql_params);
         $grade_avg = intelliboard_grade_sql(true);
 
-        $fields = "c.id, c.fullname as course,
+        $fields = "c.id, c.fullname as course, c.shortname as course_shortname,
                 c.enablecompletion,
                 ca.name AS category,
                 (SELECT SUM(l.timespend) FROM {local_intelliboard_tracking} l WHERE l.courseid = c.id AND l.userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = c.id AND ctx.contextlevel = 50 AND ra.roleid $sql3)) AS timespend,
