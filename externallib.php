@@ -236,7 +236,7 @@ class local_intelliboard_external extends external_api {
                     $data .= ", (SELECT d.data FROM {user_info_data} d, {user_info_field} f WHERE f.id = :$key AND d.fieldid = f.id AND d.userid = $field) AS field$column";
                 }else{
                     $alias = explode('.',$field);
-                    $column = clean_param($column, PARAM_ALPHA);
+                    $column = clean_param($column, PARAM_ALPHANUM);
                     $data .= ", ".$alias[0].".".$column." AS field".$column;
                 }
             }
@@ -2839,14 +2839,32 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array("mco_name", "mc_name", "mci_userid", "mci_certid", "mu_firstname", "mu_lastname",  "mu_email", "issue_date"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "mu.id");
-        $sql_having = $this->get_filter_sql($params, $columns);
-        $sql_order = $this->get_order_sql($params, $columns);
-        $sql_filter = $this->get_teacher_sql($params, ["mu.id" => "users", "mc.course" => "courses"]);
-        $sql_filter .= $this->get_filter_in_sql($params->courseid, "mc.course");
-        $sql_filter .= $this->get_filterdate_sql($params, "mci.timecreated");
+        if($params->custom3 == 2){
+          $sql_columns = $this->get_columns($params, "u.id");
+          $sql_having = $this->get_filter_sql($params, $columns);
+          $sql_order = $this->get_order_sql($params, $columns);
+          $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+          $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
+          $sql_filter .= $this->get_filterdate_sql($params, "ci.timecreated");
 
-        if($params->custom3 == 1){
+          return $this->get_report_data("
+                  SELECT DISTINCT ci.id,
+                      c.id AS mc_course,
+                      c.fullname AS mco_name,
+                      ce.name AS mc_name,
+                      ci.userid AS mci_userid,
+                      ce.id AS mci_certid,
+                      u.firstname AS mu_firstname,
+                      u.lastname AS mu_lastname,
+                      u.email AS mu_email,
+                      ci.timecreated AS issue_date
+                      $sql_columns
+                    FROM {local_certificate} ce, {local_certificate_issues} ci, {course} c, {user} u
+                    WHERE
+                      ci.certificateid = ce.id AND
+                      u.id = ci.userid AND
+                      c.id IN (ce.courses) $sql_filter $sql_having $sql_order", $params);
+        }elseif($params->custom3 == 1){
             $certificate_table = 'customcert';
             $cert_issues_table = 'customcert_issues';
             $cert_id_field = 'customcertid';
@@ -2855,6 +2873,13 @@ class local_intelliboard_external extends external_api {
             $cert_issues_table = 'certificate_issues';
             $cert_id_field = 'certificateid';
         }
+
+        $sql_columns = $this->get_columns($params, "mu.id");
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["mu.id" => "users", "mc.course" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "mc.course");
+        $sql_filter .= $this->get_filterdate_sql($params, "mci.timecreated");
 
         return $this->get_report_data("
             SELECT DISTINCT mci.id,
@@ -2877,6 +2902,7 @@ class local_intelliboard_external extends external_api {
 
     public function report76($params)
     {
+        global $CFG, $DB;
         $columns = array_merge(array(
             "u.firstname",
             "u.lastname",
@@ -2917,6 +2943,7 @@ class local_intelliboard_external extends external_api {
                 mfi.name as question,
                 mfv.value as answer,
                 mf.name as feedback,
+                mf.id as feedback_id,
                 c.id as course_id,
                 c.idnumber as course_idnumber,
                 c.fullname as course_name,
@@ -2934,7 +2961,19 @@ class local_intelliboard_external extends external_api {
             LEFT JOIN {course_completions} cc ON cc.userid = u.id AND cc.course = c.id
             WHERE mf.id > 0 $sql_filter $sql_having $sql_order", $params, false);
 
-        return array("data" => $data);
+        if($params->custom == 1){
+            require_once ($CFG->dirroot."/mod/feedback/lib.php");
+            foreach($data as &$resp){
+                $feedback = $DB->get_record('feedback', array('id'=>$resp->feedback_id));
+                $feedbackstructure = new mod_feedback_structure($feedback, null);
+                $items = $feedbackstructure->get_items();
+                $itemobj = feedback_get_item_class($items[$resp->q_id]->typ);
+                $resp->answer = trim($itemobj->get_printval($items[$resp->q_id], (object) ['value' => $resp->answer] ));
+            }
+            return array("data" => $data);
+        }else{
+            return array("data" => $data);
+        }
     }
 
     public function report77($params)
@@ -5941,6 +5980,22 @@ class local_intelliboard_external extends external_api {
         $sql_filter6 .= $this->get_filter_course_sql($params, "c.");
 
         if ($CFG->dbtype == 'pgsql') {
+            if($params->custom == 1){
+                $time_of_day = "CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
+                                    CASE WHEN lid.timepoint>=6 AND lid.timepoint<12 THEN 2 ELSE
+                                        CASE WHEN lid.timepoint>=12 AND lid.timepoint<17 THEN 3 ELSE
+                                          CASE WHEN lid.timepoint>=17 AND lid.timepoint<=23 THEN 4 ELSE 0 END END END END";
+
+            }else{
+                $time_of_day = "CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
+                                    CASE WHEN lid.timepoint>=6 AND lid.timepoint<9 THEN 2 ELSE
+                                      CASE WHEN lid.timepoint>=9 AND lid.timepoint<12 THEN 3 ELSE
+                                        CASE WHEN lid.timepoint>=12 AND lid.timepoint<15 THEN 4 ELSE
+                                          CASE WHEN lid.timepoint>=15 AND lid.timepoint<18 THEN 5 ELSE
+                                            CASE WHEN lid.timepoint>=18 AND lid.timepoint<21 THEN 6 ELSE
+                                              CASE WHEN lid.timepoint>=21 AND lid.timepoint<=23 THEN 7 ELSE 0 END END END END END END END";
+            }
+
             return $this->get_report_data("
 				SELECT * FROM (SELECT
 				  CAST(CONCAT(MAX(lit.id),MAX(lid.id)) AS bigint) AS id,
@@ -5976,13 +6031,7 @@ class local_intelliboard_external extends external_api {
 				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 0 THEN lil.timespend ELSE 0 END) AS sunday_hours,
 				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 0 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS sunday_percent,
 
-				  CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
-					CASE WHEN lid.timepoint>=6 AND lid.timepoint<9 THEN 2 ELSE
-					  CASE WHEN lid.timepoint>=9 AND lid.timepoint<12 THEN 3 ELSE
-						CASE WHEN lid.timepoint>=12 AND lid.timepoint<15 THEN 4 ELSE
-						  CASE WHEN lid.timepoint>=15 AND lid.timepoint<18 THEN 5 ELSE
-							CASE WHEN lid.timepoint>=18 AND lid.timepoint<21 THEN 6 ELSE
-							  CASE WHEN lid.timepoint>=21 AND lid.timepoint<=23 THEN 7 ELSE 0 END END END END END END END AS time_of_day
+				  $time_of_day AS time_of_day
 				  $sql_columns1
 
 				FROM {local_intelliboard_tracking} lit
@@ -6006,13 +6055,7 @@ class local_intelliboard_external extends external_api {
 				  LEFT JOIN (SELECT
 								 lit.courseid,
 								 lit.userid,
-								 CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
-									CASE WHEN lid.timepoint>=6 AND lid.timepoint<9 THEN 2 ELSE
-									  CASE WHEN lid.timepoint>=9 AND lid.timepoint<12 THEN 3 ELSE
-										CASE WHEN lid.timepoint>=12 AND lid.timepoint<15 THEN 4 ELSE
-										  CASE WHEN lid.timepoint>=15 AND lid.timepoint<18 THEN 5 ELSE
-											CASE WHEN lid.timepoint>=18 AND lid.timepoint<21 THEN 6 ELSE
-											  CASE WHEN lid.timepoint>=21 AND lid.timepoint<=23 THEN 7 ELSE 0 END END END END END END END AS active_time_of_day,
+								 $time_of_day AS active_time_of_day,
 								 SUM(lid.timespend) AS sum_timespend,
 								 ROW_NUMBER () OVER (partition by lit.courseid, lit.userid ORDER BY SUM(lid.timespend) DESC) AS row_number
 
@@ -6035,20 +6078,8 @@ class local_intelliboard_external extends external_api {
 						u.id,
 						c.id,
 						cc.id,
-						CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
-							CASE WHEN lid.timepoint>=6 AND lid.timepoint<9 THEN 2 ELSE
-							  CASE WHEN lid.timepoint>=9 AND lid.timepoint<12 THEN 3 ELSE
-								CASE WHEN lid.timepoint>=12 AND lid.timepoint<15 THEN 4 ELSE
-								  CASE WHEN lid.timepoint>=15 AND lid.timepoint<18 THEN 5 ELSE
-									CASE WHEN lid.timepoint>=18 AND lid.timepoint<21 THEN 6 ELSE
-									  CASE WHEN lid.timepoint>=21 AND lid.timepoint<=23 THEN 7 ELSE 0 END END END END END END END
-				HAVING CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
-						CASE WHEN lid.timepoint>=6 AND lid.timepoint<9 THEN 2 ELSE
-						  CASE WHEN lid.timepoint>=9 AND lid.timepoint<12 THEN 3 ELSE
-							CASE WHEN lid.timepoint>=12 AND lid.timepoint<15 THEN 4 ELSE
-							  CASE WHEN lid.timepoint>=15 AND lid.timepoint<18 THEN 5 ELSE
-								CASE WHEN lid.timepoint>=18 AND lid.timepoint<21 THEN 6 ELSE
-								  CASE WHEN lid.timepoint>=21 AND lid.timepoint<=23 THEN 7 ELSE 0 END END END END END END END > 0
+						$time_of_day
+				HAVING $time_of_day > 0
 
 				UNION
 
@@ -6091,6 +6122,7 @@ class local_intelliboard_external extends external_api {
 
 				FROM {local_intelliboard_tracking} lit
 				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
+				  JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
 				  LEFT JOIN (SELECT
 								  lit.courseid,
 								  lit.userid,
@@ -6135,6 +6167,21 @@ class local_intelliboard_external extends external_api {
 				WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter2
 				GROUP BY lit.courseid,lit.userid,c.id,cc.id,u.id ) AS temp $sql_having $sql_order", $params);
         }else{
+            if($params->custom == 1){
+                $time_of_day = "IF(lid.timepoint>=0 && lid.timepoint<6,1,
+                                    IF(lid.timepoint>=6 && lid.timepoint<12,2,
+                                        IF(lid.timepoint>=12 && lid.timepoint<17,3,
+                                          IF(lid.timepoint>=17 && lid.timepoint<=23,4,0))))";
+            }else{
+                $time_of_day = "IF(lid.timepoint>=0 && lid.timepoint<6,1,
+                                    IF(lid.timepoint>=6 && lid.timepoint<9,2,
+                                      IF(lid.timepoint>=9 && lid.timepoint<12,3,
+                                        IF(lid.timepoint>=12 && lid.timepoint<15,4,
+                                          IF(lid.timepoint>=15 && lid.timepoint<18,5,
+                                            IF(lid.timepoint>=18 && lid.timepoint<21,6,
+                                              IF(lid.timepoint>=21 && lid.timepoint<=23,7,0)))))))";
+            }
+
             return $this->get_report_data("
 				SELECT * FROM (SELECT
 				  CONCAT(lit.id,lid.id) AS id,
@@ -6170,13 +6217,7 @@ class local_intelliboard_external extends external_api {
 				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 6,lil.timespend,0)) AS sunday_hours,
 				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 6,lil.timespend,0))*100/SUM(lil.timespend), 2) AS sunday_percent,
 
-				  IF(lid.timepoint>=0 && lid.timepoint<6,1,
-					IF(lid.timepoint>=6 && lid.timepoint<9,2,
-					  IF(lid.timepoint>=9 && lid.timepoint<12,3,
-						IF(lid.timepoint>=12 && lid.timepoint<15,4,
-						  IF(lid.timepoint>=15 && lid.timepoint<18,5,
-							IF(lid.timepoint>=18 && lid.timepoint<21,6,
-							  IF(lid.timepoint>=21 && lid.timepoint<=23,7,0))))))) AS time_of_day
+				  $time_of_day AS time_of_day
 				  $sql_columns1
 
 				FROM {local_intelliboard_tracking} lit
@@ -6206,13 +6247,7 @@ class local_intelliboard_external extends external_api {
 									   SELECT
 										 lit.courseid,
 										 lit.userid,
-										 IF(lid.timepoint>=0 && lid.timepoint<6,1,
-											IF(lid.timepoint>=6 && lid.timepoint<9,2,
-											   IF(lid.timepoint>=9 && lid.timepoint<12,3,
-												  IF(lid.timepoint>=12 && lid.timepoint<15,4,
-													 IF(lid.timepoint>=15 && lid.timepoint<18,5,
-														IF(lid.timepoint>=18 && lid.timepoint<21,6,
-														   IF(lid.timepoint>=21 && lid.timepoint<=23,7,0))))))) AS active_time_of_day,
+										 $time_of_day AS active_time_of_day,
 										 SUM(lid.timespend) AS sum_timespend
 
 									   FROM {local_intelliboard_tracking} lit
@@ -6276,6 +6311,7 @@ class local_intelliboard_external extends external_api {
 
 				FROM {local_intelliboard_tracking} lit
 				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
+				  JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
 				  LEFT JOIN (SELECT CONCAT(a.courseid,a.userid) AS id ,a.courseid,a.day,a.sum_timespend,a.userid
 							  FROM (
 								SELECT

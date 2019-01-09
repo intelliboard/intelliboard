@@ -261,6 +261,11 @@ echo $OUTPUT->header();
                         <i><?php echo get_string('in29', 'local_intelliboard'); ?></i>
                     </span>
                     <div id="summary-users-chart" class="summary-users-chart" ></div>
+                    <div id="summary-users-list" class="summary-users-list">
+                        <h3 class="title"></h3>
+                        <span class="close"><i class="ion-android-close"></i></span>
+                        <ul></ul>
+                    </div>
                 </div>
                 <ul class="instructor-summary  clearfix">
                     <li>
@@ -840,8 +845,23 @@ echo $OUTPUT->header();
                         legend: 'none'
                     };
                     var chart = new google.visualization.PieChart(document.getElementById('summary-users-chart'));
+                    google.visualization.events.addListener(chart, 'select', function () {
+                        var selectedItem = chart.getSelection()[0];
+                        if(selectedItem.row == 1){
+                            $('#summary-users-list ul').html(response.users.not_active);
+                            $('#summary-users-list .title').html('<?php echo get_string('in30', 'local_intelliboard'); ?>');
+                        }else{
+                            $('#summary-users-list ul').html(response.users.active);
+                            $('#summary-users-list .title').html('<?php echo get_string('in29', 'local_intelliboard'); ?>');
+                        }
+                        $('#summary-users-list').addClass('visible');
+                    });
                     chart.draw(data, options);
                 }
+            });
+
+            $('#summary-users-list .close').click(function () {
+                $('#summary-users-list').removeClass('visible');
             });
         }
 		</script>

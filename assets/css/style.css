@@ -211,9 +211,13 @@
 .intelli-instructor-header .summary h3{float: none;margin-bottom: 15px}
 .intelli-instructor-header .summary-chart-wrap{min-height: 100px;}
 .intelli-instructor-header .summary-chart{width: 100%;height: 200px;}
-.intelli-instructor-header .summary-chart-wrap{position: relative;}
+.intelli-instructor-header .summary-chart-wrap{position: relative;overflow: hidden;}
 .intelli-instructor-header .summary-chart-label{position: absolute;top: 0;left: 0; right:0; bottom: 0;margin: auto; text-align: center;width: 100%; z-index: 9999; height: 30px;font-weight: 100;line-height: 26px; font-size: 42px;}
 .intelli-instructor-header .summary-chart-label i{display: block;text-align: center;font-size: 11px;font-weight: 100; padding-top: 5px;font-style: normal;text-transform: uppercase;}
+.intelli-instructor-header .summary-users-list{position: absolute;z-index: 99999;background-color: #fff;width: 100%;height: 100%;overflow: auto;top: 100%;left: 0;transition: all 0.3s;}
+.intelli-instructor-header .summary-users-list.visible{top: 0;transition: all 0.3s;}
+.intelli-instructor-header .summary-users-list .close{position: absolute;right: 4px;top: 10px;}
+.intelli-instructor-header .summary-users-list ul{padding-left: 20px;list-style: none;margin: 0;max-height: calc(100% - 56px);overflow: auto;}
 .intelli-instructor-header .summary .intelliboard-dropdown{ position: absolute; right:0;}
 .intelli-instructor-header .summary .intelliboard-dropdown button{float: right; width: auto;}
 .intelli-instructor-header .summary .filter-box .daterange{width: 100%;box-sizing: border-box; height:auto;}
