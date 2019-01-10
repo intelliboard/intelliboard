@@ -162,25 +162,25 @@ echo $OUTPUT->header();
 		<h4 class="ion-person-stalker"><?php echo get_string('number_of_sessions', 'local_intelliboard');?></h4>
 		<p>
 			<i class="<?php if(isset($stat[0]->sessions_today)){ echo ($stat[1]->sessions_today<$stat[0]->sessions_today or $stat[1]->sessions_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_today', 'local_intelliboard', (int)$stat[1]->sessions_today);?>  &nbsp;
+            <?php echo get_string('number_today', 'local_intelliboard', (int) (isset($stat[1]->sessions_today)? $stat[1]->sessions_today : 0));?>  &nbsp;
 			<i class="<?php if(isset($stat[0]->sessions_week)){ echo ($stat[1]->sessions_week<$stat[0]->sessions_week or $stat[1]->sessions_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_this_week', 'local_intelliboard', (int)$stat[1]->sessions_week);?>
+            <?php echo get_string('number_this_week', 'local_intelliboard', (int) (isset($stat[1]->sessions_week)? $stat[1]->sessions_week : 0));?>
 		</p>
 
 		<h4 class="ion-ribbon-b"><?php echo get_string('course_completions', 'local_intelliboard');?></h4>
 		<p>
 			<i class="<?php if(isset($stat[0]->compl_today)){ echo ($stat[1]->compl_today<$stat[0]->compl_today or $stat[1]->compl_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_today', 'local_intelliboard', (int)$stat[1]->compl_today);?>
+            <?php echo get_string('number_today', 'local_intelliboard', (int) (isset($stat[1]->compl_today )? $stat[1]->compl_today : 0));?>
 			<i class="<?php if(isset($stat[0]->compl_week )){ echo ($stat[1]->compl_week<$stat[0]->compl_week or $stat[1]->compl_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_this_week', 'local_intelliboard', (int)$stat[1]->compl_week);?>
+            <?php echo get_string('number_this_week', 'local_intelliboard', (int) (isset($stat[1]->compl_week)? $stat[1]->compl_week : 0));?>
 		</p>
 
 		<h4 class="ion-university"><?php echo get_string('user_enrolments', 'local_intelliboard');?></h4>
 		<p>
 			<i class="<?php if(isset($stat[0]->enrolments_today)){echo ($stat[1]->enrolments_today<$stat[0]->enrolments_today or $stat[1]->enrolments_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_today', 'local_intelliboard', (int)$stat[1]->enrolments_today);?>
+            <?php echo get_string('number_today', 'local_intelliboard', (int) (isset($stat[1]->enrolments_today)? $stat[1]->enrolments_today : 0));?>
 			<i class="<?php if(isset($stat[0]->enrolments_today)){echo ($stat[1]->enrolments_week<$stat[0]->enrolments_week or $stat[1]->enrolments_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_this_week', 'local_intelliboard', (int)$stat[1]->enrolments_week);?>
+            <?php echo get_string('number_this_week', 'local_intelliboard', (int) (isset($stat[1]->enrolments_week)? $stat[1]->enrolments_week : 0));?>
 		</p>
 	</div>
 	<div id="intelliboard-chart" class="intelliboard-chart-body"></div>

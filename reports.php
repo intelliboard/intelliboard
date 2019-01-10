@@ -33,9 +33,19 @@ require_login();
 require_capability('local/intelliboard:view', context_system::instance());
 
 $report = optional_param('id', '', PARAM_RAW);
+$alias = optional_param('alias', '', PARAM_RAW);
 $intelliboard = intelliboard(['task'=>'reports']);
 
-$report_type = $intelliboard->reports[$report]->type;
+if ($alias and !empty($intelliboard->reports)) {
+	foreach($intelliboard->reports as $key=>$val) {
+		if ($val->alias == $alias) {
+			redirect(new moodle_url("/local/intelliboard/reports.php", array('id'=>$key)));
+			break;
+		}
+	}
+}
+
+$report_type = $intelliboard->reports[$report]->type??'';
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/reports.php", array('id'=>$report)));
 $PAGE->set_pagelayout('report');
