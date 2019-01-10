@@ -58,8 +58,10 @@ class intelliboard_courses_grades_table extends table_sql {
            $columns[] =  'timecompleted';
            $headers[] =  get_string('course_completion_status', 'local_intelliboard');
         }
-        $columns[] =  'actions';
-        $headers[] =  get_string('activity_grades', 'local_intelliboard');
+        if (!optional_param('download', '', PARAM_ALPHA)) {
+          $columns[] =  'actions';
+          $headers[] =  get_string('activity_grades', 'local_intelliboard');
+        }
 
         $this->define_headers($headers);
         $this->define_columns($columns);
@@ -94,15 +96,19 @@ class intelliboard_courses_grades_table extends table_sql {
         $average = intval($values->average);
         $goal = intval($values->gradepass);
 
-        $html = html_writer::start_tag("div",array("class"=>"info-progress","title"=>"Current grade:$gade | Class avg:$average | Goal Grade:$goal"));
-        $html .= html_writer::tag("span", "Current grade:$gade |", array("class"=>"current","style"=>"width:$gade%"));
-        if($average and get_config('local_intelliboard', 't40')){
-            $html .= html_writer::tag("span", "Class avg:$average |", array("class"=>"average","style"=>"width:$average%"));
+        if (!optional_param('download', '', PARAM_ALPHA)) {
+          $html = html_writer::start_tag("div",array("class"=>"info-progress","title"=>"Current grade:$gade | Class avg:$average | Goal Grade:$goal"));
+          $html .= html_writer::tag("span", "Current grade:$gade |", array("class"=>"current","style"=>"width:$gade%"));
+          if($average and get_config('local_intelliboard', 't40')){
+              $html .= html_writer::tag("span", "Class avg:$average |", array("class"=>"average","style"=>"width:$average%"));
+          }
+          if($goal and get_config('local_intelliboard', 't40')){
+              $html .= html_writer::tag("span", "Goal Grade:$goal", array("class"=>"goal","style"=>"width:$goal%"));
+          }
+          $html .= html_writer::end_tag("div");
+        } else {
+          $html = "Current grade:$gade | Class avg:$average | Goal Grade:$goal";
         }
-        if($goal and get_config('local_intelliboard', 't40')){
-            $html .= html_writer::tag("span", "Goal Grade:$goal", array("class"=>"goal","style"=>"width:$goal%"));
-        }
-        $html .= html_writer::end_tag("div");
         return $html;
     }
 
@@ -116,9 +122,13 @@ class intelliboard_courses_grades_table extends table_sql {
         return  ($values->timecompleted) ? get_string('completed_on', 'local_intelliboard', date('m/d/Y', $values->timemodified)) : get_string('incomplete', 'local_intelliboard');
     }
     function col_grade($values) {
-        $html = html_writer::start_tag("div",array("class"=>"grade"));
-        $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
-        $html .= html_writer::end_tag("div");
+        if (!optional_param('download', '', PARAM_ALPHA)) {
+          $html = html_writer::start_tag("div",array("class"=>"grade"));
+          $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
+          $html .= html_writer::end_tag("div");
+        } else {
+          $html = (int)$values->grade;
+        }
         return $html;
     }
     function col_completedmodules($values) {
@@ -141,8 +151,11 @@ class intelliboard_courses_grades_table extends table_sql {
     }
     function col_course($values) {
         global $CFG;
-
-        return html_writer::link(new moodle_url($CFG->wwwroot.'/course/view.php', array('id'=>$values->id)), format_string($values->course), array("target"=>"_blank"));
+        if (!optional_param('download', '', PARAM_ALPHA)) {
+          return html_writer::link(new moodle_url($CFG->wwwroot.'/course/view.php', array('id'=>$values->id)), format_string($values->course), array("target"=>"_blank"));
+        } else {
+          return format_string($values->course);
+        }
     }
     function col_actions($values) {
         global $PAGE;
@@ -213,10 +226,14 @@ class intelliboard_activities_grades_table extends table_sql {
         if($this->scale_real>0){
             return $values->grade;
         }else{
-            $html = html_writer::start_tag("div", array("class" => "grade"));
-            $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
-            $html .= html_writer::end_tag("div");
-            return $html;
+            if (!optional_param('download', '', PARAM_ALPHA)) {
+              $html = html_writer::start_tag("div", array("class" => "grade"));
+              $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
+              $html .= html_writer::end_tag("div");
+              return $html;
+            } else {
+              return (int)$values->grade;
+            }
         }
     }
 
@@ -229,8 +246,11 @@ class intelliboard_activities_grades_table extends table_sql {
     }
     function col_itemname($values) {
         global $CFG;
-
-        return html_writer::link(new moodle_url("$CFG->wwwroot/mod/$values->itemmodule/view.php", array('id'=>$values->cmid)), format_string($values->itemname), array("target"=>"_blank"));
+        if (!optional_param('download', '', PARAM_ALPHA)) {
+          return html_writer::link(new moodle_url("$CFG->wwwroot/mod/$values->itemmodule/view.php", array('id'=>$values->cmid)), format_string($values->itemname), array("target"=>"_blank"));
+        } else {
+          return format_string($values->itemname);
+        }
     }
 }
 

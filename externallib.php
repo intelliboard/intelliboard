@@ -5986,6 +5986,18 @@ class local_intelliboard_external extends external_api {
                                         CASE WHEN lid.timepoint>=12 AND lid.timepoint<17 THEN 3 ELSE
                                           CASE WHEN lid.timepoint>=17 AND lid.timepoint<=23 THEN 4 ELSE 0 END END END END";
 
+            }elseif($params->custom == 2){
+                $time_of_day = "CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
+                                    CASE WHEN lid.timepoint>=6 AND lid.timepoint<12 THEN 2 ELSE
+                                        CASE WHEN lid.timepoint>=12 AND lid.timepoint<17 THEN 3 ELSE
+                                          CASE WHEN lid.timepoint>=17 AND lid.timepoint<=23 THEN 4 ELSE 0 END END END END";
+                if(empty($sql_having)){
+                    $sql_having = " HAVING temp.time_of_day=0";
+                }else{
+                    $having_request = str_replace(' HAVING ', '',$sql_having);
+                    $sql_having = " HAVING (".$having_request.") AND temp.time_of_day=0";
+                }
+
             }else{
                 $time_of_day = "CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
                                     CASE WHEN lid.timepoint>=6 AND lid.timepoint<9 THEN 2 ELSE
@@ -6172,6 +6184,17 @@ class local_intelliboard_external extends external_api {
                                     IF(lid.timepoint>=6 && lid.timepoint<12,2,
                                         IF(lid.timepoint>=12 && lid.timepoint<17,3,
                                           IF(lid.timepoint>=17 && lid.timepoint<=23,4,0))))";
+            }elseif($params->custom == 2){
+                $time_of_day = "IF(lid.timepoint>=0 && lid.timepoint<6,1,
+                                    IF(lid.timepoint>=6 && lid.timepoint<12,2,
+                                        IF(lid.timepoint>=12 && lid.timepoint<17,3,
+                                          IF(lid.timepoint>=17 && lid.timepoint<=23,4,0))))";
+                if(empty($sql_having)){
+                    $sql_having = " HAVING temp.time_of_day=0";
+                }else{
+                    $having_request = str_replace(' HAVING ', '',$sql_having);
+                    $sql_having = " HAVING (".$having_request.") AND temp.time_of_day=0";
+                }
             }else{
                 $time_of_day = "IF(lid.timepoint>=0 && lid.timepoint<6,1,
                                     IF(lid.timepoint>=6 && lid.timepoint<9,2,
