@@ -169,6 +169,7 @@ function intelliboard($params, $function = 'sso'){
 		if ($sslversion) {
 			$options['CURLOPT_SSLVERSION'] = $sslversion;
 		}
+
 		if ($debug and $debugmode) {
 			ob_start();
 			$curl = new curl(['debug'=>true]);

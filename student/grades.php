@@ -34,6 +34,7 @@ $id = optional_param('id', 0, PARAM_INT);
 $mod = optional_param('mod', 0, PARAM_INT);
 $search = clean_raw(optional_param('search', '', PARAM_TEXT));
 $other_user = optional_param('user', 0, PARAM_INT);
+$download = optional_param('download', '', PARAM_ALPHA);
 
 require_login();
 require_capability('local/intelliboard:students', context_system::instance());
@@ -76,8 +77,19 @@ if($id){
 }else{
 	$table = new intelliboard_courses_grades_table('table', $showing_user->id, s($search));
 }
-$table->show_download_buttons_at(array());
-$table->is_downloading('', '', '');
+
+$alt_name = get_config('local_intelliboard', 'grades_alt_text');
+$def_name = get_string('grades', 'local_intelliboard');
+$grade_name = ($alt_name) ? $alt_name : $def_name;
+
+$table->show_download_buttons_at(array(TABLE_P_BOTTOM));
+$table->is_downloadable(true);
+$table->is_downloading($download, $grade_name, $grade_name);
+
+if ($download) {
+	$table->out(10, true);
+	exit;
+}
 
 $scale_real = get_config('local_intelliboard', 'scale_real');
 

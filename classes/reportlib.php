@@ -46,6 +46,8 @@ class local_intelliboard_report extends external_api {
                         'sortcol' => new external_value(PARAM_INT, 'Sorting column', VALUE_OPTIONAL, 1),
                         'filterval' => new external_value(PARAM_TEXT, 'Filter column', VALUE_OPTIONAL, ''),
                         'filtercol' => new external_value(PARAM_TEXT, 'Filter column', VALUE_OPTIONAL, ''),
+                        'timestart' => new external_value(PARAM_INT, 'Report filter date[start]', VALUE_OPTIONAL, 0),
+                        'timefinish' => new external_value(PARAM_INT, 'Report filter date[finish]', VALUE_OPTIONAL, 0),
                         'start' => new external_value(PARAM_INT, 'Report pagination start'),
                         'length' => new external_value(PARAM_INT, 'Report pagination length')
                     )
@@ -96,6 +98,22 @@ class local_intelliboard_report extends external_api {
                     $query = str_replace(":filter", $like, $query);
                   } else {
                     $query = str_replace(":filter", "", $query);
+                  }
+                }
+
+                if ($datefilter = strpos($query, ':datefilter[')) {
+                  $start =  $datefilter+12;
+                  $end =  strpos($query, ']', $datefilter) - $start;
+                  $col = substr($query, $start, $end);
+                  $val = ":datefilter[$col]";
+
+                  if ($params->timestart and $params->timefinish and $col) {
+                    $filters['timestart'] = $params->timestart;
+                    $filters['timefinish'] = $params->timefinish;
+                    $like = " AND $col BETWEEN :timestart AND :timefinish ";
+                    $query = str_replace($val, $like, $query);
+                  } else {
+                    $query = str_replace($val, "", $query);
                   }
                 }
 
