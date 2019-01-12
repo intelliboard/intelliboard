@@ -335,7 +335,7 @@ class local_intelliboard_external extends external_api {
     {
         global $DB;
 
-        if ($params->debug === 2){
+        if (isset($params->debug) and $params->debug === 2){
             return array($query, $this->params);
         }
 
@@ -2091,7 +2091,7 @@ class local_intelliboard_external extends external_api {
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
+        $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter .= $this->get_filterdate_sql($params, "l.timepoint");
 
         return $this->get_report_data("
@@ -2417,7 +2417,7 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {grade_items} gic ON gic.courseid=c.id AND gic.itemtype='course'
                 LEFT JOIN {grade_grades} ggc ON ggc.itemid=gic.id AND ggc.userid=u.id AND ggc.overridden=0
             WHERE ci.id > 0 $sql_filter
-            GROUP BY ci.id,u.id $sql_having $sql_order", $params);
+            GROUP BY ci.id,u.id,ce.id,c.id,cc.id $sql_having $sql_order", $params);
     }
     public function report43($params)
     {
@@ -3186,7 +3186,8 @@ class local_intelliboard_external extends external_api {
         $sql1 = $this->get_filterdate_sql($params, "lit.lastaccess");
 
         return $this->get_report_data("
-            SELECT (lit.id * ra.id) as id, lit.id AS lid, u.firstname,u.lastname, u.email, c.fullname, c.shortname, lit.visits, lit.timespend, lit.firstaccess,lit.lastaccess, cm.instance, m.name as module $sql_columns
+            SELECT CONCAT(ra.id, '-', cm.id) as id,
+             lit.id AS lid, u.firstname,u.lastname, u.email, c.fullname, c.shortname, lit.visits, lit.timespend, lit.firstaccess,lit.lastaccess, cm.instance, m.name as module $sql_columns
             FROM {role_assignments} AS ra
                 JOIN {user} u ON ra.userid = u.id
                 JOIN {context} AS ctx ON ctx.id = ra.contextid
@@ -8124,7 +8125,7 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
             SELECT
-              la.id,
+              CONCAT(la.id,'-',lp.id) AS id,
               la.timeseen,
               c.id AS courseid,
               c.fullname,
@@ -8382,9 +8383,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "co.id", true, true);
 
-        $sql = "SELECT t.activityname,
-                       t.coursename,
-                       t.contextid,
+        $sql = "SELECT MAX(t.fid) AS id, t.contextid, t.activityname, t.coursename,
                        SUM(CASE WHEN t.video = 1 THEN 1 ELSE 0 END) AS countvideo,
                        SUM(CASE WHEN t.audio = 1 THEN 1 ELSE 0 END) AS countaudio,
                        SUM(CASE WHEN t.whiteboard = 1 THEN 1 ELSE 0 END) AS countwhiteboard,
@@ -8393,7 +8392,7 @@ class local_intelliboard_external extends external_api {
                        SUM(CASE WHEN t.audio = 1 THEN t.filesize ELSE 0 END) AS audios_size,
                        SUM(CASE WHEN t.whiteboard = 1 THEN t.filesize ELSE 0 END) AS whiteboards_size,
                        SUM(CASE WHEN t.snapshot = 1 THEN t.filesize ELSE 0 END) AS snapshots_size
-                  FROM (SELECT DISTINCT f.contenthash, f.filesize, co.id, co.fullname AS coursename, f.contextid,
+                  FROM (SELECT DISTINCT f.contenthash, f.id as fid, f.filesize, co.id, co.fullname AS coursename, f.contextid,
                                CASE WHEN filename LIKE '%.mp4' THEN 1 ELSE 0 END AS video,
                                CASE WHEN filename LIKE 'poodllfile%.mp3' THEN 1 ELSE 0 END AS audio,
                                CASE WHEN filename LIKE 'upfile_literallycanvas_%.jpg' THEN 1 ELSE 0 END AS whiteboard,
@@ -8441,7 +8440,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "co.id", true, true);
 
-        $sql = "SELECT t.coursename,
+        $sql = "SELECT t.course, t.coursename,
                        SUM(CASE WHEN t.component = 'assignsubmission_onlinepoodll' THEN 1 ELSE 0 END) AS number_of_occurrences_sub,
                        SUM(CASE WHEN t.component = 'assignfeedback_poodll' THEN 1 ELSE 0 END) AS number_of_occurrences_feedback,
                        SUM(CASE WHEN t.component = 'question' THEN 1 ELSE 0 END) AS number_of_occurrences_question,
@@ -8938,7 +8937,7 @@ class local_intelliboard_external extends external_api {
         } else {
             $cohorts = "GROUP_CONCAT( DISTINCT coh.name)";
         }
-        $sql_columns .= ", coo.cohortname AS cohorts";
+        $sql_columns .= ", MAX(coo.cohortname) AS cohorts";
         $sql_cohort = $this->get_filter_in_sql($params->cohortid, "ch.cohortid");
         $sql_join = " LEFT JOIN (SELECT ch.userid, $cohorts as cohortname FROM {cohort} coh, {cohort_members} ch WHERE coh.id = ch.cohortid $sql_cohort GROUP BY ch.userid) coo ON coo.userid = u.id";
         if ($params->cohortid) {
@@ -9075,9 +9074,9 @@ class local_intelliboard_external extends external_api {
             $this->params[$timefinish] = $params->timefinish;
 
 
-            $sql_having = " HAVING time_started BETWEEN :$timestart AND :$timefinish ";
+            $sql_having = " HAVING MIN(fp.created) BETWEEN :$timestart AND :$timefinish ";
         }else{
-            $sql_having .= $this->get_filterdate_sql($params, 'time_started');
+            $sql_having .= $this->get_filterdate_sql($params, 'MIN(fp.created)');
         }
 
         return $this->get_report_data("
@@ -9109,7 +9108,7 @@ class local_intelliboard_external extends external_api {
                                   WHERE ctx.contextlevel=50 $sql_filter_roles
                                   GROUP BY lit.param) stat ON stat.module=cm.id
                     WHERE f.id>0 $sql_filter
-                    GROUP BY fd.id $sql_having $sql_order", $params);
+                    GROUP BY fd.id, c.id, f.name, u.id $sql_having $sql_order", $params);
 
     }
     function report172($params)

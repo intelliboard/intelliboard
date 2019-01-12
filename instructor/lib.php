@@ -857,6 +857,8 @@ function intelliboard_group_aggregation_sql($user_alias, $user_id, $course_alias
                         FROM {course} c
                           LEFT JOIN {groups} g ON g.courseid=c.id
                           LEFT JOIN {groups_members} gm ON g.id=gm.groupid AND gm.groupid IN (SELECT groupid FROM {groups_members} WHERE userid = $user_id)
+                          LEFT JOIN (SELECT g.courseid FROM {groups} g WHERE g.id IN (SELECT groupid FROM {groups_members} WHERE userid = $user_id)) cg ON cg.courseid=c.id
+                        WHERE cg.courseid IS NULL OR gm.userid IS NOT NULL
                         GROUP BY gm.userid,c.id
                        ) group_user ON (group_user.userid=$user_alias AND group_user.courseid=$course_alias) OR (group_user.userid IS NULL AND group_user.courseid=$course_alias)";
     }else{
