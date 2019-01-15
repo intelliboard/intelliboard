@@ -2558,7 +2558,7 @@ class local_intelliboard_external extends external_api {
                 $this->params[$grade0] = isset($grade[0]) ? clean_param($grade[0], PARAM_INT) : false;
                 $this->params[$grade1] = isset($grade[1]) ? clean_param($grade[1], PARAM_INT) : false;
                 if($grade0 !== false and $grade1 !== false ){
-                    $grades[] = "(g.finalgrade/g.rawgrademax)*100 BETWEEN :$grade0 AND :$grade1";
+                    $grades[] = "(g.finalgrade/CASE WHEN g.rawgrademax=0 THEN 1 ELSE g.rawgrademax END)*100 BETWEEN :$grade0 AND :$grade1";
                 }
             }
             if($grades){
@@ -10396,7 +10396,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses"]);
         $sql_log_course = $this->get_filter_in_sql($params->courseid,'l.courseid', false);
 
-        $this->params['time_current_week'] = strtotime('this week');
+        $this->params['time_current_week'] = strtotime('this week 00:00:00');
         $this->params['time_current_week_end'] = time();
         $this->params['time_current_month'] = mktime(0, 0, 0, date('m'), 1, date("Y"));
         $this->params['time_current_month_end'] = time();
@@ -10405,7 +10405,7 @@ class local_intelliboard_external extends external_api {
         $this->params['time_filter_second'] = $custom->timestart;
         $this->params['time_filter_second_end'] = ($custom->timefinish)?$custom->timefinish:time();
 
-        $this->params['time_last_week'] = strtotime('last week');
+        $this->params['time_last_week'] = strtotime('last week 00:00:00');
         $this->params['time_last_week_end'] = $this->params['time_current_week'];
         $this->params['time_last_month'] = mktime(0, 0, 0, date('m')-1, 1, date("Y"));
         $this->params['time_last_month_end'] = $this->params['time_current_month'];
@@ -11114,7 +11114,7 @@ class local_intelliboard_external extends external_api {
         global $DB, $CFG;
 
 
-        $month_func = ($CFG->dbtype == 'pgsql') ? "EXTRACT(MONTH FROM to_timestamp(l.timepoint)) + 1" : "MONTH(FROM_UNIXTIME(l.timepoint))";
+        $month_func = ($CFG->dbtype == 'pgsql') ? "EXTRACT(MONTH FROM to_timestamp(l.timepoint))" : "MONTH(FROM_UNIXTIME(l.timepoint))";
         $week_func = ($CFG->dbtype == 'pgsql') ? "EXTRACT(DAY from date_trunc('week', to_timestamp(l.timepoint)) -
                    date_trunc('week', date_trunc('month', to_timestamp(l.timepoint)))) / 7 + 1" : "FLOOR(((DAY(FROM_UNIXTIME(l.timepoint)) - 1) / 7) + 1)";
 
