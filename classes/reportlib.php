@@ -66,6 +66,10 @@ class local_intelliboard_report extends external_api {
     public static function run_report($report) {
         global $CFG, $DB;
 
+        if (isset($CFG->intelliboardsql) and $CFG->intelliboardsql == false) {
+            throw new moodle_exception('invalidaccess', 'error');
+        }
+
         $params = self::validate_parameters(self::run_report_parameters(), array('report' => $report));
 
         $transaction = $DB->start_delegated_transaction();
@@ -180,6 +184,10 @@ class local_intelliboard_report extends external_api {
     public static function save_report($report) {
         global $CFG, $DB;
 
+        if (isset($CFG->intelliboardsql) and $CFG->intelliboardsql == false) {
+            throw new moodle_exception('invalidaccess', 'error');
+        }
+
         $params = self::validate_parameters(self::save_report_parameters(), array('report' => $report));
 
         $transaction = $DB->start_delegated_transaction();
@@ -236,6 +244,10 @@ class local_intelliboard_report extends external_api {
      */
     public static function delete_report($params) {
         global $CFG, $DB;
+
+        if (isset($CFG->intelliboardsql) and $CFG->intelliboardsql == false) {
+            throw new moodle_exception('invalidaccess', 'error');
+        }
 
         $params = self::validate_parameters(self::delete_report_parameters(), array('appid' => $params));
 
