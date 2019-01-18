@@ -653,8 +653,15 @@ $string['cancel_subscription'] = 'Cancel subscription';
  $string['debug'] = "Debug CURL requests";
  $string['debug_desc'] = "";
 
+ /* IntelliCart */
  $string['intellicart'] = "IntelliCart integration";
  $string['intellicart_desc'] = "Allow students to see IntelliCart reports.";
+ $string['coursessessionspage'] = "Courses Sessions Page";
+ $string['coursessessions'] = "Courses Sessions";
+ $string['session_name'] = "Session Name";
+ $string['session_time'] = "Session Time";
+ $string['return_to_sessions'] = "Return to Sessions";
+ /* IntelliCart END*/
 
 
  $string['allmod'] = "All activities";

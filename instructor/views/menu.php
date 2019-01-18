@@ -25,12 +25,23 @@
  */
 
 $id = optional_param('id', 0, PARAM_RAW);
+
+$intellicartenabled = false;
+if(get_config('local_intelliboard', 'intellicart') && file_exists($CFG->dirroot . '/local/intellicart/locallib.php')) {
+    require_once($CFG->dirroot . '/local/intellicart/locallib.php');
+    $intellicartenabled = local_intellicart_enable('', true);
+}
+
 ?>
 <ul class="intelliboard-menu">
 	<li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
 
 	<?php if(get_config('local_intelliboard', 'n8')): ?>
 		<li><a href="courses.php" <?php echo ($PAGE->pagetype == 'courses')?'class="active"':''; ?>><?php echo get_string('courses', 'local_intelliboard');?></a></li>
+	<?php endif; ?>
+
+    <?php if(get_config('local_intelliboard', 'coursessessionspage') && $intellicartenabled): ?>
+		<li><a href="sessions.php" <?php echo ($PAGE->pagetype == 'sessions')?'class="active"':''; ?>><?php echo get_string('coursessessions', 'local_intelliboard');?></a></li>
 	<?php endif; ?>
 
 

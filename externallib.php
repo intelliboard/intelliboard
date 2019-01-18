@@ -7618,8 +7618,8 @@ class local_intelliboard_external extends external_api {
               c.shortname AS course_shortname,
               COUNT(DISTINCT atl.id) AS numtakensessions,
               SUM(stg.grade)         AS points,
-              MAX(stm.maxgrade)      AS maxpoints,
-              (100*SUM(stg.grade))/MAX(stm.maxgrade)      AS atd_percent,
+              SUM(stm.maxgrade)      AS maxpoints,
+              (100*SUM(stg.grade))/SUM(stm.maxgrade)      AS atd_percent,
               $grade_avg AS grade,
               (SELECT $group_concat
                         FROM {role_assignments} AS ra
@@ -7633,7 +7633,6 @@ class local_intelliboard_external extends external_api {
                 JOIN {role_assignments} ra ON ra.contextid = ctx.id
                 JOIN {user} u ON ra.userid = u.id
                 JOIN {attendance} a ON a.course=c.id
-
 
                 LEFT JOIN {attendance_sessions} ats ON ats.attendanceid=a.id
                 LEFT JOIN {attendance_log} atl ON atl.studentid=u.id AND ats.id=atl.sessionid
@@ -8568,8 +8567,8 @@ class local_intelliboard_external extends external_api {
                    MAX(atl.timetaken) AS last_taken,
                    COUNT(DISTINCT atl.id) AS numtakensessions,
                    SUM(stg.grade)         AS points,
-                   MAX(stm.maxgrade)      AS maxpoints,
-                   (100*SUM(stg.grade))/MAX(stm.maxgrade)      AS atd_percent,
+                   SUM(stm.maxgrade)      AS maxpoints,
+                   (100*SUM(stg.grade))/SUM(stm.maxgrade)      AS atd_percent,
                    (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
                                 FROM {role_assignments} AS ra
                                     JOIN {user} u ON ra.userid = u.id
