@@ -865,3 +865,131 @@ function intelliboard_group_aggregation_sql($user_alias, $user_id, $course_alias
         return '';
     }
 }
+
+function intelliboard_course_session_learners_total($sessionid, $courseid)
+{
+    global $DB;
+
+    $params = array('sessionid' => $sessionid, 'courseid' => $courseid);
+    list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
+    $params = array_merge($params,$sql_params);
+    $grade_avg = intelliboard_grade_sql(true);
+
+    return $DB->get_record_sql("
+        SELECT c.id,c.fullname, c.startdate, c.enablecompletion,
+            (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
+            (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
+            COUNT(DISTINCT ra.userid) as learners,
+            COUNT(DISTINCT g.userid) as learners_graduated,
+            COUNT(DISTINCT cc.id) as learners_completed,
+            $grade_avg AS grade,
+            SUM(l.timespend) as timespend,
+            SUM(l.visits) as visits
+        FROM {role_assignments} ra
+        LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
+        LEFT JOIN {course} c ON c.id = e.instanceid
+        LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid AND cc.timecompleted > 0
+        LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
+        LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
+        LEFT JOIN (SELECT t.userid,t.courseid, SUM(t.timespend) as timespend, SUM(t.visits) as visits FROM
+            {local_intelliboard_tracking} t GROUP BY t.courseid, t.userid) l ON l.courseid = c.id AND l.userid = ra.userid
+        LEFT JOIN {enrol_intellicart} ei ON ei.courseid = c.id AND ei.userid = ra.userid AND ei.unenroldate = 0
+            LEFT JOIN {local_intellicart_logs} il ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid AND il.type = 'product'
+        WHERE ra.roleid $sql_roles AND e.instanceid = :courseid AND il.sessionid = :sessionid GROUP BY c.id LIMIT 1", $params);
+}
+
+function intelliboard_course_session_activities_data($sessionid, $courseid)
+{
+    global $DB;
+
+    $params = array(
+            'courseid' => $courseid,
+            'courseid2' => $courseid,
+            'courseid3' => $courseid,
+            'courseid4' => $courseid,
+            'sid1' => $sessionid,
+            'csid1' => $courseid,
+            'sid2' => $sessionid,
+            'csid2' => $courseid,
+            'sid3' => $sessionid,
+            'csid3' => $courseid
+    );
+
+    list($sql1, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
+    $params = array_merge($params,$sql_params);
+    $grade_avg = intelliboard_grade_sql(true);
+    $completion = intelliboard_compl_sql("cmc.");
+
+    return $DB->get_record_sql("
+        SELECT
+            c.id AS courseid,
+            c.fullname,
+            c.startdate,
+            l.visits,
+            l.timespend,
+            (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
+            (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
+            (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
+            (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc
+                WHERE cm.visible = 1 AND cm.course = c.id $completion AND cmc.coursemoduleid = cm.id AND cmc.userid IN (SELECT ei.userid 
+                      FROM {local_intellicart_logs} il  
+                 LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid 
+                     WHERE il.type = 'product' AND ei.unenroldate = 0 AND ei.courseid = :csid1 AND il.sessionid = :sid1)) AS completed,
+            (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g
+                WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid IN (SELECT ei.userid 
+                      FROM {local_intellicart_logs} il  
+                 LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid 
+                     WHERE il.type = 'product' AND ei.unenroldate = 0 AND ei.courseid = :csid2 AND il.sessionid = :sid2)) AS grade
+        FROM {course} c
+            LEFT JOIN (
+                SELECT l.courseid, SUM(l.visits) AS visits, SUM(l.timespend) AS timespend
+                FROM {local_intelliboard_tracking} l WHERE l.courseid = :courseid2 AND l.userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :courseid4 AND ctx.contextlevel = 50 AND ra.userid IN (SELECT ei.userid 
+                      FROM {local_intellicart_logs} il  
+                 LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid 
+                     WHERE il.type = 'product' AND ei.unenroldate = 0 AND ei.courseid = :csid3 AND il.sessionid = :sid3) AND ra.roleid $sql1)
+                GROUP BY l.courseid) l ON l.courseid=c.id
+        WHERE c.id = :courseid GROUP BY c.id", $params);
+}
+
+function intelliboard_course_session_activity_data($cmid, $sessionid, $courseid)
+{
+    global $DB;
+
+    $params = array('cmid' => $cmid);
+    $cm = $DB->get_record_sql("SELECT cm.id, cm.instance, m.name FROM {course_modules} cm, {modules} m WHERE cm.id = :cmid AND m.id = cm.module", $params);
+
+    list($sql1, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
+    $params = array_merge($params,$sql_params);
+
+    $params['instance'] = $cm->instance;
+    $params['instance2'] = $cm->instance;
+    $params['module'] = $cm->name;
+    $params['courseid'] = $courseid;
+    $params['cmid2'] = $cmid;
+    $params['cmid3'] = $cmid;
+    $params['csid1'] = $courseid;
+    $params['sid1'] = $sessionid;
+    $params['csid2'] = $courseid;
+    $params['sid2'] = $sessionid;
+    $grade_avg = intelliboard_grade_sql(true);
+    $completion = intelliboard_compl_sql("", false);
+
+    return $DB->get_record_sql("
+        SELECT
+            cm.id, c.id AS courseid,
+            c.fullname as course,
+            i.name,
+            ca.name AS category,
+            cs.section,
+            m.name as module, l.visits, l.timespend,
+            (SELECT COUNT(id) FROM {course_modules_completion} WHERE $completion AND coursemoduleid=:cmid AND userid IN (SELECT ei.userid FROM {local_intellicart_logs} il LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid WHERE il.type = 'product' AND ei.unenroldate = 0 AND ei.courseid = :csid1 AND il.sessionid = :sid1)) AS completed,
+            (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.itemmodule = :module AND gi.iteminstance = :instance2 AND userid IN (SELECT ei.userid FROM {local_intellicart_logs} il LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid WHERE il.type = 'product' AND ei.unenroldate = 0 AND ei.courseid = :csid2 AND il.sessionid = :sid2)) AS grade
+        FROM {course_modules} cm
+            LEFT JOIN {modules} m ON m.id = cm.module
+            LEFT JOIN {course} c ON c.id = cm.course
+            LEFT JOIN {course_sections} cs ON cs.id = cm.section AND cs.course = c.id
+            LEFT JOIN {course_categories} ca ON ca.id = c.category
+            LEFT JOIN {".$cm->name."} i ON i.id = :instance
+            LEFT JOIN (SELECT l.param, SUM(l.visits) AS visits, SUM(l.timespend) AS timespend FROM {local_intelliboard_tracking} l WHERE l.page='module' AND l.param = :cmid2 AND l.userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :courseid AND ctx.contextlevel = 50 AND ra.roleid $sql1) GROUP BY l.param) l ON l.param=cm.id
+        WHERE cm.id = :cmid3", $params);
+}
