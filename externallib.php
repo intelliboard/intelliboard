@@ -927,7 +927,7 @@ class local_intelliboard_external extends external_api {
     public function report10($params)
     {
         global $CFG;
-        $columns = array_merge(array("q.name","u.firstname","u.lastname", "u.email", "c.fullname", "qa.state", "qa.timestart", "qa.timefinish", "duration", "grade", "cohortname"), $this->get_filter_columns($params));
+        $columns = array_merge(array("name","firstname","lastname", "email", "fullname", "qa.state", "qa.timestart", "qa.timefinish", "duration", "grade", "cohortname"), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "q.course" => "courses"]);
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -3271,7 +3271,7 @@ class local_intelliboard_external extends external_api {
             $sql_columns .= ", '0' as timespend, '0' as visits";
             $sql_join = "";
         } else {
-            $sql_columns .= ", MAX(l.timespend) AS timespend, MAX(l.visits) AS timespend";
+            $sql_columns .= ", MAX(l.timespend) AS timespend, MAX(l.visits) AS visits";
             $sql_join = " LEFT JOIN (SELECT userid, courseid, SUM(timespend) AS timespend, SUM(visits) AS visits FROM {local_intelliboard_tracking} WHERE page = 'module' or page = 'course' GROUP BY userid, courseid) l ON l.userid = u.id AND l.courseid = c.id";
         }
 
@@ -3331,7 +3331,7 @@ class local_intelliboard_external extends external_api {
             $sql_columns .= ", '0' as timespend, '0' as visits";
             $sql_join = "";
         }else{
-            $sql_columns .= ", MAX(l.timespend) AS timespend, MAX(l.visits) AS timespend";
+            $sql_columns .= ", MAX(l.timespend) AS timespend, MAX(l.visits) AS visits";
             $sql_join = " LEFT JOIN (SELECT l.userid, l.courseid, SUM(l.timespend) as timespend, SUM(l.visits) as visits FROM {local_intelliboard_tracking} l, {modules} m, {course_modules} cm WHERE l.page = 'module' and m.name = 'assign' AND cm.id = l.param AND cm.module = m.id $sql4 GROUP BY l.userid, l.courseid ) l ON l.userid = u.id AND l.courseid = c.id";
         }
 
@@ -7607,7 +7607,7 @@ class local_intelliboard_external extends external_api {
 
         $data = $this->get_report_data("
             SELECT
-              CONCAT(u.id,c.id) AS id,
+              CONCAT(u.id,'_',c.id) AS id,
               u.id AS userid,
               u.idnumber,
               u.username,
@@ -7618,8 +7618,8 @@ class local_intelliboard_external extends external_api {
               c.shortname AS course_shortname,
               COUNT(DISTINCT atl.id) AS numtakensessions,
               SUM(stg.grade)         AS points,
-              SUM(stm.maxgrade)      AS maxpoints,
-              (100*SUM(stg.grade))/SUM(stm.maxgrade)      AS atd_percent,
+              MAX(stm.maxgrade)      AS maxpoints,
+              (100*SUM(stg.grade))/MAX(stm.maxgrade)      AS atd_percent,
               $grade_avg AS grade,
               (SELECT $group_concat
                         FROM {role_assignments} AS ra
@@ -7639,14 +7639,20 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {attendance_statuses} stg ON stg.id = atl.statusid AND stg.deleted = 0 AND stg.visible = 1 AND stg.attendanceid=ats.attendanceid
 
                 LEFT JOIN (SELECT
-                                 ass.attendanceid,
-                                 ass.setnumber,
-                                 atl.studentid,
-                                 MAX(ass.grade) AS maxgrade
-                          FROM {attendance_statuses} ass
-                             JOIN {attendance_log} atl ON ass.id=atl.statusid
-                          WHERE ass.deleted = 0 AND ass.visible = 1
-                          GROUP BY ass.setnumber,ass.attendanceid,atl.studentid) stm ON stm.setnumber = ats.statusset AND stm.attendanceid=ats.attendanceid AND stm.studentid=u.id
+                                   t.course,
+                                   t.studentid,
+                                   SUM(t.maxgrade) AS maxgrade
+                            FROM (SELECT
+                                         att.course,
+                                         atl.studentid,
+                                         MAX(ass2.grade) AS maxgrade
+                                  FROM {attendance_log} atl
+                                      JOIN {attendance_statuses} ass ON ass.id=atl.statusid
+                                      JOIN {attendance_statuses} ass2 ON ass2.attendanceid=ass.attendanceid
+                                      JOIN {attendance} att ON att.id=ass.attendanceid
+                                  WHERE ass2.deleted = 0 AND ass2.visible = 1
+                                  GROUP BY ass.attendanceid,atl.studentid, atl.sessionid) t
+                            GROUP BY t.course,t.studentid) stm ON stm.studentid=u.id AND stm.course = c.id
 
                 JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='course'
                 LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=u.id
@@ -8553,7 +8559,7 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
             SELECT
-                   CONCAT(u.id,c.id,a.id) AS id,
+                   CONCAT(u.id,'_',c.id,'_',a.id) AS id,
                    u.id AS userid,
                    u.firstname,
                    u.lastname,
@@ -8567,8 +8573,8 @@ class local_intelliboard_external extends external_api {
                    MAX(atl.timetaken) AS last_taken,
                    COUNT(DISTINCT atl.id) AS numtakensessions,
                    SUM(stg.grade)         AS points,
-                   SUM(stm.maxgrade)      AS maxpoints,
-                   (100*SUM(stg.grade))/SUM(stm.maxgrade)      AS atd_percent,
+                   MAX(stm.maxgrade)      AS maxpoints,
+                   (100*SUM(stg.grade))/MAX(stm.maxgrade)      AS atd_percent,
                    (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
                                 FROM {role_assignments} AS ra
                                     JOIN {user} u ON ra.userid = u.id
@@ -8591,14 +8597,20 @@ class local_intelliboard_external extends external_api {
                LEFT JOIN {attendance_log} atl ON atl.studentid=u.id AND ats.id=atl.sessionid
                LEFT JOIN {attendance_statuses} stg ON stg.id = atl.statusid AND stg.deleted = 0 AND stg.visible = 1 AND stg.attendanceid=ats.attendanceid
                LEFT JOIN (SELECT
-                                 ass.attendanceid,
-                                 ass.setnumber,
-                                 atl.studentid,
-                                 MAX(ass.grade) AS maxgrade
-                          FROM {attendance_statuses} ass
-                             JOIN {attendance_log} atl ON ass.id=atl.statusid
-                          WHERE ass.deleted = 0 AND ass.visible = 1
-                          GROUP BY ass.setnumber,ass.attendanceid,atl.studentid) stm ON stm.setnumber = ats.statusset AND stm.attendanceid=ats.attendanceid AND stm.studentid=u.id
+                              t.attendanceid,
+                              t.studentid,
+                              SUM(t.maxgrade) AS maxgrade
+                            FROM (SELECT
+                                    ass2.attendanceid,
+                                    atl.studentid,
+                                    MAX(ass2.grade) AS maxgrade
+                                  FROM {attendance_log} atl
+                                         JOIN {attendance_statuses} ass ON ass.id=atl.statusid
+                                         JOIN {attendance_statuses} ass2 ON ass2.attendanceid=ass.attendanceid
+                                         JOIN {attendance} att ON att.id=ass.attendanceid
+                                  WHERE ass2.deleted = 0 AND ass2.visible = 1
+                                  GROUP BY ass2.attendanceid,atl.studentid, atl.sessionid) t
+                            GROUP BY t.attendanceid,t.studentid) stm ON stm.studentid=u.id AND stm.attendanceid = a.id
             WHERE u.id > 0 $sql_filter
             GROUP BY u.id,c.id,a.id, r.id $sql_having $sql_order", $params);
     }
@@ -9078,6 +9090,21 @@ class local_intelliboard_external extends external_api {
             $sql_having .= $this->get_filterdate_sql($params, 'MIN(fp.created)');
         }
 
+        if($params->sizemode){
+            $sql_select = "MIN(stat.students_accesed)";
+            $sql_join = "";
+        }else{
+            $sql_filter_roles2 = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
+            $sql_select = "MIN(log.students_accesed)";
+            $sql_join = "LEFT JOIN (SELECT l.objectid AS discussion,
+                                           COUNT(DISTINCT l.userid) AS students_accesed
+                                    FROM {context} ctx
+                                           JOIN {role_assignments} ra ON ra.contextid=ctx.id
+                                           LEFT JOIN {logstore_standard_log} l ON l.component='mod_forum' AND l.action='viewed' AND l.target='discussion' AND l.userid=ra.userid AND l.courseid=ctx.instanceid
+                                    WHERE ctx.contextlevel=50 $sql_filter_roles2
+                                    GROUP BY l.objectid) log ON log.discussion=fd.id";
+        }
+
         return $this->get_report_data("
                     SELECT
                           fd.id,
@@ -9089,7 +9116,7 @@ class local_intelliboard_external extends external_api {
                           u.firstname,
                           u.lastname,
                           MIN(fp.created) AS time_started,
-                          MIN(stat.students_accesed) AS students_accesed,
+                          $sql_select AS students_accesed,
                           MIN(stat.timespend) AS timespend,
                           COUNT(DISTINCT CASE WHEN fp.parent>0 THEN fp.id ELSE NULL END) AS posts
                     FROM {forum} f
@@ -9106,6 +9133,7 @@ class local_intelliboard_external extends external_api {
                                     LEFT JOIN {local_intelliboard_tracking} lit ON lit.page='module' AND lit.courseid=ctx.instanceid AND lit.userid=ra.userid
                                   WHERE ctx.contextlevel=50 $sql_filter_roles
                                   GROUP BY lit.param) stat ON stat.module=cm.id
+                      $sql_join
                     WHERE f.id>0 $sql_filter
                     GROUP BY fd.id, c.id, f.name, u.id $sql_having $sql_order", $params);
 
@@ -11202,6 +11230,7 @@ class local_intelliboard_external extends external_api {
         $sql_ue = $this->get_filter_enrol_sql($params, "ue.");
         $sql_ue .= $this->get_filterdate_sql($params, "ue.timemodified");
         $sql_cc = $this->get_filterdate_sql($params, "cc.timecompleted");
+        $sql_ue2 = $this->get_filter_enrol_sql($params, "ue2.");
 
         return $DB->get_records_sql("
             SELECT c.id,
@@ -11211,7 +11240,8 @@ class local_intelliboard_external extends external_api {
             FROM {course} c
                 LEFT JOIN {enrol} e ON e.courseid = c.id
                 LEFT JOIN {user_enrolments} ue ON ue.enrolid = e.id $sql_ue
-                LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid AND cc.timecompleted > 0 $sql_cc
+                LEFT JOIN {user_enrolments} ue2 ON ue2.enrolid = e.id $sql_ue2
+                LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue2.userid AND cc.timecompleted > 0 $sql_cc
             WHERE c.id > 0 $sql
             GROUP BY c.id", $this->params, 0, 100); // maximum
     }
