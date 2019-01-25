@@ -674,42 +674,67 @@ class local_intelliboard_external extends external_api {
     }
     public function report5($params)
     {
-        $columns = array_merge(array("teacher","courses","ff.videos","l1.urls","l0.evideos","l2.assignments","l3.quizes","l4.forums","l5.attendances"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+          "u.firstname",
+          "u.lastname",
+          "u.email",
+          "t.page",
+          "t.param",
+          "c.fullname",
+          "t.visits",
+          "t.timespend",
+          "t.firstaccess",
+          "t.lastaccess",
+          "t.useragent",
+          "t.useros",
+          "t.userlang",
+          "t.userip",
+          "u.timecreated"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "ctx.instanceid" => "courses"]);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
-        $sql_filter .= $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+        $sql_join = "";
+
+        if($params->custom == 3) {
+            $sql_filter_join = $this->get_filterdate_sql($params, "timepoint");
+            $sql_join = "JOIN (SELECT trackid FROM {local_intelliboard_logs} WHERE id > 0 $sql_filter_join GROUP BY trackid) l ON l.trackid = t.id";
+        } elseif($params->custom == 2) {
+          $sql_filter .= $this->get_filterdate_sql($params, "t.lastaccess");
+        } elseif($params->custom == 1) {
+          $sql_filter .= $this->get_filterdate_sql($params, "t.firstaccess");
+        } else {
+            $sql_filter .= $this->get_filterdate_sql($params, "u.timecreated");
+        }
 
 
         return $this->get_report_data("
-            SELECT u.id,
-                CONCAT(u.firstname, ' ', u.lastname) as teacher,
-                COUNT(DISTINCT ctx.instanceid) as courses,
-                MAX(f1.files) AS files,
-                MAX(ff.videos) AS videos,
-                MAX(l1.urls) AS urls,
-                MAX(l0.evideos) AS evideos,
-                MAX(l2.assignments) AS assignments,
-                MAX(l3.quizes) AS quizes,
-                MAX(l4.forums) AS forums,
-                MAX(l5.attendances) AS attendances
-                $sql_columns
-            FROM {role_assignments}  ra
-                LEFT JOIN {context} AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                LEFT JOIN {user} u ON u.id = ra.userid
-                LEFT JOIN (SELECT f.userid, count(distinct(f.filename)) files FROM {files} f WHERE filearea = 'content' GROUP BY f.userid) as f1 ON f1.userid = u.id
-                LEFT JOIN (SELECT f.userid, count(distinct(f.filename)) videos FROM {files} f WHERE f.mimetype LIKE '%video%' GROUP BY f.userid) as ff ON ff.userid = u.id
-                LEFT JOIN (SELECT l.userid, count(l.id) urls FROM {logstore_standard_log} l,{course_modules} cm, {modules} m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'url' AND l.action = 'created' GROUP BY l.userid) as l1 ON l1.userid = u.id
-                LEFT JOIN (SELECT l.userid, count(l.id) evideos FROM {logstore_standard_log} l,{course_modules} cm, {modules} m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'page' AND l.action = 'created'GROUP BY l.userid) as l0 ON l0.userid = u.id
-                LEFT JOIN (SELECT l.userid, count(l.id) assignments FROM {logstore_standard_log} l,{course_modules} cm, {modules} m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'assignment' AND l.action = 'created'GROUP BY l.userid) as l2 ON l2.userid = u.id
-                LEFT JOIN (SELECT l.userid, count(l.id) quizes FROM {logstore_standard_log} l,{course_modules} cm, {modules} m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'quiz' AND l.action = 'created'GROUP BY l.userid) as l3 ON l3.userid = u.id
-                LEFT JOIN (SELECT l.userid, count(l.id) forums FROM {logstore_standard_log} l,{course_modules} cm, {modules} m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'forum' AND l.action = 'created'GROUP BY l.userid) as l4 ON l4.userid = u.id
-                LEFT JOIN (SELECT l.userid, count(l.id) attendances FROM {logstore_standard_log} l,{course_modules} cm, {modules} m  WHERE cm.id = l.objectid AND m.id = cm.module AND m.name = 'attendance' AND l.action = 'created'GROUP BY l.userid) as l5 ON l5.userid = u.id
-            WHERE u.id > 0 $sql_filter
-            GROUP BY u.id $sql_having $sql_order", $params);
+          SELECT
+            t.id,
+            t.userid,
+            t.courseid,
+            t.page,
+            t.param,
+            t.visits,
+            t.timespend,
+            t.firstaccess,
+            t.lastaccess,
+            t.useragent,
+            t.useros,
+            t.userlang,
+            t.userip,
+            c.fullname,
+            u.firstname,
+            u.lastname,
+            u.email,
+            u.timecreated
+            $sql_columns
+          FROM {user} u, {local_intelliboard_tracking} t
+            LEFT JOIN {course} c ON c.id = t.courseid
+            $sql_join
+          WHERE u.id = t.userid $sql_filter $sql_having $sql_order", $params);
     }
     public function report6($params)
     {
@@ -2249,7 +2274,6 @@ class local_intelliboard_external extends external_api {
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
-        $sql_filter .= $this->get_filterdate_sql($params, "u.timecreated");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_columns = $this->get_columns($params, "u.id");
@@ -2268,6 +2292,21 @@ class local_intelliboard_external extends external_api {
         } else {
           $sql_columns .= ", '' as cohortname";
         }
+
+        $sql_join = "";
+
+        if($params->custom == 3) {
+            $sql_filter_join = $this->get_filterdate_sql($params, "timepoint");
+            $sql_join .= "JOIN (SELECT t.userid FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l WHERE t.id = l.trackid $sql_filter_join GROUP BY t.userid) l ON l.userid = u.id";
+        } elseif($params->custom == 2) {
+          $sql_filter .= $this->get_filterdate_sql($params, "u.lastaccess");
+        } elseif($params->custom == 1) {
+          $sql_filter .= $this->get_filterdate_sql($params, "u.firstaccess");
+        } else {
+            $sql_filter .= $this->get_filterdate_sql($params, "u.timecreated");
+        }
+
+
 
         return $this->get_report_data("
             SELECT u.id,
