@@ -31,7 +31,7 @@ class DB
     {
 
         $variants = static::extractParamsFromSentence($table, $column, $remainder, $params, 0, 0, array(),
-            ":sentence " . \get_filter(1) . " CONCAT('^', :column, '[[:>:]]')")['result'];
+            ":sentence " . \get_intelliboard_filter(1) . " CONCAT('^', :column, '[[:>:]]')")['result'];
         $maxShift = 0;
         $found = '';
 
@@ -45,7 +45,7 @@ class DB
         }
 
         $variants = static::extractParamsFromSentence($table, $column, '^' . $remainder, $params, 0, 0, array(),
-            ":column " . \get_filter(1) . " :sentence")['result'];
+            ":column " . \get_intelliboard_filter(1) . " :sentence")['result'];
         $endings = array_map(function ($item) use ($remainder) {
             return substr($item, mb_strlen($remainder));
         }, $variants);
@@ -137,7 +137,7 @@ class DB
                 $search = $column;
             }
 
-            $pattern = $pattern ? $pattern : ":sentence " . \get_filter(1) . " CONCAT('[[:<:]]', :column, '[[:>:]]')";
+            $pattern = $pattern ? $pattern : ":sentence " . \get_intelliboard_filter(1) . " CONCAT('[[:<:]]', :column, '[[:>:]]')";
 
             $getter->add('filters', str_replace(array(':column'), array($search), $pattern));
             $getter->add('filters', "$column <> ''");
@@ -356,7 +356,7 @@ class DB
             }
         } else if ($table === 'user' && !static::columnExists($table, $column) && $columnId = static::customColumnExists($column)) {
             $destination = "(
-                SELECT uid.data 
+                SELECT uid.data
                 FROM {user_info_data} uid
                 WHERE uid.fieldid = $columnId AND uid.userid = u.id
             )";
