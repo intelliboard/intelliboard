@@ -474,7 +474,7 @@ function exclude_not_owners($columns) {
 
 }
 
-function get_filter($id, $dbtype = null)
+function get_intelliboard_filter($id, $dbtype = null)
 {
     global $CFG;
 
