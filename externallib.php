@@ -681,8 +681,8 @@ class local_intelliboard_external extends external_api {
           "t.page",
           "t.param",
           "c.fullname",
-          "t.visits",
-          "t.timespend",
+          "visits",
+          "timespend",
           "t.firstaccess",
           "t.lastaccess",
           "t.useragent",
@@ -699,16 +699,19 @@ class local_intelliboard_external extends external_api {
         $sql_join = "";
 
         if($params->custom == 3) {
+            $sql_columns .= ", l.timespend as timespend, l.visits as visits";
             $sql_filter_join = $this->get_filterdate_sql($params, "timepoint");
-            $sql_join = "JOIN (SELECT trackid FROM {local_intelliboard_logs} WHERE id > 0 $sql_filter_join GROUP BY trackid) l ON l.trackid = t.id";
+            $sql_join = "JOIN (SELECT trackid, SUM(timespend) as timespend, SUM(visits) as visits FROM {local_intelliboard_logs} WHERE id > 0 $sql_filter_join GROUP BY trackid) l ON l.trackid = t.id";
         } elseif($params->custom == 2) {
+          $sql_columns .= ", t.timespend as timespend, t.visits as visits";
           $sql_filter .= $this->get_filterdate_sql($params, "t.lastaccess");
         } elseif($params->custom == 1) {
+          $sql_columns .= ", t.timespend as timespend, t.visits as visits";
           $sql_filter .= $this->get_filterdate_sql($params, "t.firstaccess");
         } else {
+            $sql_columns .= ", t.timespend as timespend, t.visits as visits";
             $sql_filter .= $this->get_filterdate_sql($params, "u.timecreated");
         }
-
 
         return $this->get_report_data("
           SELECT
@@ -717,8 +720,6 @@ class local_intelliboard_external extends external_api {
             t.courseid,
             t.page,
             t.param,
-            t.visits,
-            t.timespend,
             t.firstaccess,
             t.lastaccess,
             t.useragent,
