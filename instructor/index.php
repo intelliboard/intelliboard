@@ -495,13 +495,10 @@ echo $OUTPUT->header();
                 jQuery('#chart7 .intelliboard-dropdown.courses ul').hide();
                 jQuery('#chart7 .intelliboard-dropdown.users button span').html('<?php echo get_string('select_user', 'local_intelliboard'); ?>');
 
-                jQuery.ajax({
-                    url: "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?action=get_course_users&course="+course,
-                    dataType: "json"
-                }).done(function( response ) {
-                    jQuery('#chart7 .intelliboard-dropdown.users ul').html(response.items);
-                });
+                load_chart7_users_list(course);
             });
+            var course = jQuery('#chart7 .intelliboard-dropdown.courses button').val();
+            load_chart7_users_list(course);
 
             $("#chart7 .intelliboard-dropdown.users").on("click", "a", function(e){
                 e.preventDefault();
@@ -862,6 +859,15 @@ echo $OUTPUT->header();
 
             $('#summary-users-list .close').click(function () {
                 $('#summary-users-list').removeClass('visible');
+            });
+        }
+
+        function load_chart7_users_list(course) {
+            jQuery.ajax({
+                url: "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?action=get_course_users&course="+course,
+                dataType: "json"
+            }).done(function( response ) {
+                jQuery('#chart7 .intelliboard-dropdown.users ul').html(response.items);
             });
         }
 		</script>
