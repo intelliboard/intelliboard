@@ -26,7 +26,6 @@
 
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
-require_once($CFG->dirroot .'/local/intelliboard/externallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
 
 require_login();
