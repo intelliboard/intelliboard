@@ -27,7 +27,6 @@
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
-require_once('../externallib.php');
 
 
 $set = optional_param('id', 0, PARAM_RAW);
