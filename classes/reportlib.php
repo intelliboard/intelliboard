@@ -48,6 +48,7 @@ class local_intelliboard_report extends external_api {
                         'filtercol' => new external_value(PARAM_TEXT, 'Filter column', VALUE_OPTIONAL, ''),
                         'timestart' => new external_value(PARAM_INT, 'Report filter date[start]', VALUE_OPTIONAL, 0),
                         'timefinish' => new external_value(PARAM_INT, 'Report filter date[finish]', VALUE_OPTIONAL, 0),
+                        'courses' => new external_value(PARAM_SEQUENCE, 'Course IDs SEQUENCE', VALUE_OPTIONAL, 0),
                         'start' => new external_value(PARAM_INT, 'Report pagination start'),
                         'length' => new external_value(PARAM_INT, 'Report pagination length')
                     )
@@ -120,13 +121,28 @@ class local_intelliboard_report extends external_api {
                     $query = str_replace($val, "", $query);
                   }
                 }
+                if ($coursefilter = strpos($query, ':coursefilter[')) {
+                  $start =  $coursefilter+14;
+                  $end =  strpos($query, ']', $coursefilter) - $start;
+                  $col = substr($query, $start, $end);
+                  $val = ":coursefilter[$col]";
+
+                  if ($params->courses and $col) {
+                    list($sql, $params) = $DB->get_in_or_equal(explode(",", $params->courses), SQL_PARAMS_NAMED, 'courses', true);
+                    $filters = array_merge($filters, $params);
+                    $like = " AND $col $sql ";
+                    $query = str_replace($val, $like, $query);
+                  } else {
+                    $query = str_replace($val, "", $query);
+                  }
+                }
 
                 if ($params->debug === 1) {
                     $CFG->debug = (E_ALL | E_STRICT);
                     $CFG->debugdisplay = 1;
                 }
                 if ($params->debug === 2) {
-                    $data = $report->sqlcode;
+                    $data = [$report->sqlcode, $query];
                 } elseif(isset($params->start) and $params->length != 0 and $params->length != -1){
                     $data = $DB->get_records_sql($query, $filters, $params->start, $params->length);
                 } else {
