@@ -33,6 +33,7 @@ var intelliboardInterval = null;
 var intelliboardPage = '';
 var intelliboardParam = '';
 var intelliboardTime = 0;
+var intelliboardMediaTrack = 0;
 
 function intelliboardInit(Y, options){
 	options = options || {};
@@ -45,9 +46,19 @@ function intelliboardInit(Y, options){
 	intelliboardPage = options.intelliboardPage || intelliboardPage;
 	intelliboardParam = options.intelliboardParam || intelliboardParam;
 	intelliboardTime = options.intelliboardTime || intelliboardTime;
+	intelliboardMediaTrack = options.intelliboardMediaTrack || intelliboardTime;
 }
 
 function intelliboardProgress(){
+	if (intelliboardMediaTrack) {
+		var status = intelliboardMedia();
+		//console.log("intelliboardMedia:" + status);
+		if (status && !document.hidden) {
+			clearIntelliboardCounter();
+		}
+	}
+
+
 	if(intelliboardCounter <= intelliboardInactivity){
 		intelliboardTime++;
 		intelliboardCounter++;
@@ -57,6 +68,36 @@ function intelliboardProgress(){
 			intelliboardAjaxCounter = 0;
 		}
 	}
+}
+function intelliboardMedia(){
+	var media = [];
+	var status = false;
+	var internal = document.querySelectorAll('audio,video');
+	var frames = document.querySelectorAll('iframe');
+	if (frames.length) {
+		frames.forEach(function(frame) {
+			var elements = frame.contentWindow.document.querySelectorAll('audio,video');
+			if (elements.length) {
+				elements.forEach(function(element) {
+					media.push(element);
+				});
+			}
+		});
+	}
+	if (internal.length) {
+		internal.forEach(function(element) {
+			media.push(element);
+		});
+	}
+
+	if (media.length) {
+		media.forEach(function(element) {
+			if (!element.paused) {
+				status = true;
+			}
+		});
+	}
+	return status;
 }
 if (document.addEventListener) {
 	document.addEventListener("mousemove", clearIntelliboardCounter);

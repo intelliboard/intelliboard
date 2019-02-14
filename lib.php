@@ -186,6 +186,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 	$trackcourses = get_config('local_intelliboard', 'trackcourses');
 	$trackusers = get_config('local_intelliboard', 'trackusers');
 	$trackpoint = get_config('local_intelliboard', 'trackpoint');
+	$intelliboardMediaTrack = get_config('local_intelliboard', 'trackmedia');
 	$path = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
 
 	if(strpos($path,'cron.php') !== false){
@@ -392,6 +393,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 		$params->intelliboardPeriod = 1000;
 		$params->intelliboardPage = $intelliboardPage;
 		$params->intelliboardParam = $intelliboardParam;
+		$params->intelliboardMediaTrack = $intelliboardMediaTrack;
 		$params->intelliboardTime = 0;
 
 		$PAGE->requires->js('/local/intelliboard/module.js', false);
