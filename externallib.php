@@ -3351,40 +3351,49 @@ class local_intelliboard_external extends external_api {
         $sql2 = ($params->timestart) ? $this->get_filterdate_sql($params, 's.timemodified') : '';
         $sql3 = ($params->timestart) ? $this->get_filterdate_sql($params, 'g.timemodified') : '';
         $sql4 = ($params->timestart) ? $this->get_filterdate_sql($params, 'l.lastaccess') : ''; //XXX
+        $sql4 .= $this->get_filter_in_sql($params->courseid, "l.courseid");
+        $sql5 = $this->get_filter_in_sql($params->courseid, "a.course");
 
         if($params->sizemode){
             $sql_columns .= ", '0' as timespend, '0' as visits";
             $sql_join = "";
         }else{
-            $sql_columns .= ", MAX(l.timespend) AS timespend, MAX(l.visits) AS visits";
+            $sql_columns .= ", l.timespend, visits";
             $sql_join = " LEFT JOIN (SELECT l.userid, l.courseid, SUM(l.timespend) as timespend, SUM(l.visits) as visits FROM {local_intelliboard_tracking} l, {modules} m, {course_modules} cm WHERE l.page = 'module' and m.name = 'assign' AND cm.id = l.param AND cm.module = m.id $sql4 GROUP BY l.userid, l.courseid ) l ON l.userid = u.id AND l.courseid = c.id";
         }
 
         return $this->get_report_data("
-            SELECT MAX(ra.id) AS id,
+            SELECT ra.id AS id,
                    u.firstname,
                    u.lastname,
                    u.email,
                    c.fullname,
                    c.shortname,
-                   COUNT(distinct a.id) as assignments,
-                   COUNT(distinct cmc.coursemoduleid) as completed,
-                   COUNT(distinct s.assignment) as submissions,
-                   COUNT(distinct g.assignment) as grades
+                   stat.assignments,
+                   stat.completed,
+                   stat.submissions,
+                   stat.grades
                    $sql_columns
             FROM {role_assignments} AS ra
                 JOIN {user} u ON ra.userid = u.id
                 JOIN {context} AS ctx ON ctx.id = ra.contextid
                 JOIN {course} c ON c.id = ctx.instanceid
-                LEFT JOIN {assign} a ON a.course = c.id
-                LEFT JOIN {modules} m ON m.name = 'assign'
-                LEFT JOIN {course_modules} cm ON cm.instance = a.id AND cm.module = m.id
-                LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion $sql1
-                LEFT JOIN {assign_submission} s ON s.status = 'submitted' AND s.assignment = a.id $sql2
-                LEFT JOIN {assign_grades} g ON g.assignment = a.id $sql3
+                LEFT JOIN (SELECT
+                              a.course AS courseid,
+                              COUNT(distinct a.id) AS assignments,
+                              COUNT(distinct cmc.coursemoduleid) AS completed,
+                              COUNT(distinct s.assignment) AS submissions,
+                              COUNT(distinct g.assignment) AS grades
+                            FROM {assign} a
+                                 LEFT JOIN {modules} m ON m.name = 'assign'
+                                 LEFT JOIN {course_modules} cm ON cm.instance = a.id AND cm.module = m.id
+                                 LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion $sql1
+                                 LEFT JOIN {assign_submission} s ON s.status = 'submitted' AND s.assignment = a.id $sql2
+                                 LEFT JOIN {assign_grades} g ON g.assignment = a.id $sql3
+                            WHERE a.course >0 $sql5
+                            GROUP BY a.course) stat ON stat.courseid=c.id 
                 $sql_join
-            WHERE ctx.contextlevel = 50 $sql_filter
-            GROUP BY u.id, c.id  $sql_having $sql_order", $params);
+            WHERE ctx.contextlevel = 50 $sql_filter $sql_having $sql_order", $params);
     }
 
     public function report85($params)
@@ -12601,7 +12610,7 @@ class local_intelliboard_external extends external_api {
                 $this->params["field{$key}"] = $fieldid;
               }
               $sql_filter = " AND (".implode(") OR (", $sql_arr) .")";
-              if ($list = $DB->get_records_sql("SELECT DISTINCT userid FROM mdl_user_info_data WHERE data <> '' $sql_filter",	$this->params)) {
+              if ($list = $DB->get_records_sql("SELECT DISTINCT userid FROM {user_info_data} WHERE data <> '' $sql_filter",	$this->params)) {
                 foreach ($list as $item) {
                   $assign_users[] = (int) $item->userid;
                 }
