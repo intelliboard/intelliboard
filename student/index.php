@@ -128,14 +128,19 @@ if($t11){
 if($t5){
     $progress = intelliboard_learner_progress($time, $showing_user->id);
     $json_data = array();
+    list($timestart, $timefinish) = get_timerange($time);
 
-    if (count($progress[0]) < 2){
-        $obj = new stdClass();
-        $obj->timepoint = strtotime('+1 day');
-        $obj->grade = 0;
-        $obj->grade_percent = 0;
-        $progress[0][] = $obj;
-    }
+    $timestart_y = date('Y', $timestart);
+    $timestart_m = date('m', $timestart)-1;
+    $timestart_d = date('d', $timestart);
+    $hAxis_min = "new Date($timestart_y, $timestart_m, $timestart_d)";
+
+    $timefinish_y = date('Y', $timefinish);
+    $timefinish_m = date('m', $timefinish)-1;
+    $timefinish_d = date('d', $timefinish);
+    $hAxis_max = "new Date($timefinish_y, $timefinish_m, $timefinish_d)";
+
+
     foreach($progress[0] as $item){
         $l = '';
         $lp = 0;
@@ -151,10 +156,12 @@ if($t5){
         $tooltip .= "<div class=\"chart-tooltip-right\"><span>". ((!$scale_real)?round($l,2).'%':$l)."</span> ".get_string('average_grade','local_intelliboard')."</div>";
         $tooltip .= "</div>";
         $tooltip .= "</div>";
-        $item->timepoint = $item->timepoint*1000;
-        $json_data[] = "[new Date($item->timepoint), ".round((($scale_real)?$item->grade_percent:$item->grade), 2).", '$tooltip', $lp, '$tooltip']";
-    }
 
+        $y = date('Y', $item->timepoint);
+        $m = date('m', $item->timepoint)-1;
+        $d = date('d', $item->timepoint);
+        $json_data[] = "[new Date($y, $m, $d), ".round((($scale_real)?$item->grade_percent:$item->grade), 2).", '$tooltip', $lp, '$tooltip']";
+    }
 }
 $json_data2 = array();
 foreach($courses as $item){
@@ -754,6 +761,8 @@ echo $OUTPUT->header();
             data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
             data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
             var options = <?php echo format_string($factorInfo->ActivityProgressCalculation); ?>;
+            options.hAxis.minValue = <?php echo $hAxis_min; ?>;
+            options.hAxis.maxValue = <?php echo $hAxis_max; ?>;
             var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
             chart.draw(data, options);
             jQuery('.intelliboard-origin-head a:first-child')[0].click();
