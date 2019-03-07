@@ -388,6 +388,7 @@
 .chart-tooltip-body div{box-sizing: border-box; width:50%;display:inline-block; color: #bbbbbb;font-weight: 400;font-size: 11px;padding: 6px 12px;}
 .chart-tooltip-body div span{color: #dddddd;}
 .chart-tooltip-left{border-top: 3px solid #1db34f;}
+.chart-tooltip-left.full{width: 100%;}
 .chart-tooltip-right{border-top: 3px solid #1d7fb3;}
 
 
