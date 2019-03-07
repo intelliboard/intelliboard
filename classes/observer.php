@@ -72,21 +72,30 @@ class local_intelliboard_observer
     {
         global $DB;
 
-        $allowedTypes = array('assign', 'quiz');
+        $allowedTypes = ['assign', 'quiz'];
         $eventData = $event->get_data();
 
         $itemid = $eventData['other']['itemid'];
-        $item = $DB->get_record('grade_items', array('id' => $itemid), "itemmodule");
+        $item = $DB->get_record('grade_items', ['id' => $itemid], "itemmodule");
+        $excluded = ['users' => $eventData['relateduserid'], 'courses' => $eventData['courseid']];
 
         if (in_array($item->itemmodule, $allowedTypes)) {
-            $data = array(
-                'course' => $eventData['courseid']
-            );
-
-            self::process_event(13, $event, $data,
-                array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
+            $data = ['course' => $eventData['courseid']];
+            self::process_event(13, $event, $data, $excluded);
         }
 
+        $data = ['user' => $eventData['relateduserid'], 'course' => $eventData['courseid']];
+        $courseGrade = $DB->get_record_sql("
+            SELECT
+                ROUND((CASE WHEN SUM(g.rawgrademax) > 0 THEN (SUM(g.finalgrade) / SUM(g.rawgrademax)) * 100 ELSE SUM(g.finalgrade) END), 2) as grade
+                FROM {grade_grades} as g
+                INNER JOIN {grade_items} as gi ON gi.id = g.itemid
+                WHERE gi.courseid = ? AND gi.itemtype = \"mod\" AND g.userid = ? AND g.finalgrade IS NOT NULL
+                GROUP BY gi.courseid
+        ", [$eventData['courseid'], $eventData['relateduserid']])->grade;
+
+        $data['gradeThreshold'] = ['operator' => '>', 'value' => $courseGrade];
+        self::process_event(25, $event, $data, $excluded);
     }
 
     public static function quiz_attempt_submitted(\mod_quiz\event\attempt_submitted $event)

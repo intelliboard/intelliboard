@@ -48,8 +48,6 @@ class local_intelliboard_notification
     public function get_instant_notifications($type, $filters = array(), $excluded = array())
     {
         global $DB;
-        $valueSeparator = '=>';
-        $paramSeparator = ':|:';
 
         $params = compact('type');
         $sql = "SELECT * 
@@ -59,7 +57,15 @@ class local_intelliboard_notification
         if ($filters) {
             $filterCount = 0;
             foreach ($filters as $key => $value) {
-                $sql .= ' AND lin.id IN (SELECT linp.notificationid FROM {local_intelliboard_ntf_pms} linp WHERE linp.name = :name' . $filterCount . " AND linp.value = :value" . $filterCount . ')';
+                $operator = isset($value['operator'])? $value['operator'] : '=';
+                $value = isset($value['value'])? $value['value'] : $value;
+
+                $sql .= ' AND lin.id IN (
+                    SELECT linp.notificationid 
+                    FROM {local_intelliboard_ntf_pms} linp 
+                    WHERE linp.name = :name' . $filterCount . " AND linp.value $operator :value" . $filterCount
+                    . ')';
+
                 $params['name' . $filterCount] = $key;
                 $params['value' . $filterCount] = $value;
                 $filterCount++;
@@ -78,9 +84,10 @@ class local_intelliboard_notification
             $sql .= ")";
         }
 
+
         $result = json_decode(json_encode($DB->get_records_sql($sql, $params)), true);
 
-        return array_map(function ($item) use ($paramSeparator, $valueSeparator) {
+        return array_map(function ($item) {
             $item['email'] = isset($item['email'])? explode(',', $item['email']) : [];
             $item['cc']    = isset($item['cc'])? explode(',', $item['cc']) : [];
             $item['tags']  = json_decode($item['tags'], true);
@@ -110,6 +117,7 @@ class local_intelliboard_notification
         global $DB;
 
         $function = 'notification' . $notification['type'] . '_event';
+        $events = array();
 
         if (method_exists($this, $function)) {
             $data = $this->$function($notification);
@@ -136,8 +144,6 @@ class local_intelliboard_notification
                 }
                 return $event;
             }, $events);
-        } else {
-            $events = array();
         }
 
         return $events;
@@ -619,7 +625,30 @@ class local_intelliboard_notification
         $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
 
         return array($recipients, $notifications);
+    }
 
+    protected function notification25(&$notification, $events = [])
+    {
+        global $DB;
+
+        $event = $events[0];
+        $user = fullname($DB->get_record('user', ['id' => $event['relateduserid']]));
+        $courseName = $DB->get_record('course', ['id' => $event['courseid']])->fullname;
+        $grade = $DB->get_record_sql("
+            SELECT
+                ROUND((CASE WHEN SUM(g.rawgrademax) > 0 THEN (SUM(g.finalgrade) / SUM(g.rawgrademax)) * 100 ELSE SUM(g.finalgrade) END), 2) as grade
+                FROM {grade_grades} as g
+                INNER JOIN {grade_items} as gi ON gi.id = g.itemid
+                WHERE gi.courseid = ? AND gi.itemtype = \"mod\" AND g.userid = ? AND g.finalgrade IS NOT NULL
+                GROUP BY gi.courseid
+        ", [$event['courseid'], $event['relateduserid']])->grade;
+
+        $result = compact('user', 'courseName', 'grade');
+
+        $recipients = $this->get_recipients_for_notification($notification);
+        $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, [$result]));
+
+        return [$recipients, $notifications];
     }
 
     protected function notification12_event($notification)
