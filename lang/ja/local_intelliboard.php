@@ -696,3 +696,4 @@ $string['instructor_course_shortname'] = "Show course short name instead course 
 
 $string['trackmedia'] = "Track HTML5 media";
 $string['trackmedia_desc'] = "Track HTML5 video and audio";
+$string['t53'] = 'Enable on [Activity progress] chart average line';

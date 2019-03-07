@@ -307,6 +307,7 @@ function intelliboard_learner_progress($time, $userid){
     $data = array();
     $params = array();
     $params['userid'] = $userid;
+    $params['userid2'] = $userid;
     $params['timestart'] = $timestart;
     $params['timefinish'] = $timefinish;
 
@@ -318,10 +319,21 @@ function intelliboard_learner_progress($time, $userid){
                                     WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish
                                     GROUP BY timepoint ORDER BY timepoint", $params);
 
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade, $grade_avg_percent AS grade_percent
+    if(get_config('local_intelliboard', 't53')){
+        $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade, $grade_avg_percent AS grade_percent
                                     FROM {grade_items} gi, {grade_grades} g
-                                    WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish
+                                    WHERE 
+                                      gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) 
+                                      AND gi.courseid IN (SELECT DISTINCT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.enrolid=e.id AND ue.status=0 AND ue.userid=:userid2)
+                                      AND gi.id = g.itemid 
+                                      AND g.userid != :userid 
+                                      AND gi.itemtype = 'mod' 
+                                      AND g.finalgrade IS NOT NULL 
+                                      AND g.timemodified BETWEEN :timestart AND :timefinish
                                     GROUP BY timepoint ORDER BY timepoint", $params);
+    }else{
+        $data[] = array();
+    }
     return $data;
 }
 

@@ -106,6 +106,7 @@ $t35 = get_config('local_intelliboard', 't35');
 $t36 = get_config('local_intelliboard', 't36');
 $t37 = get_config('local_intelliboard', 't37');
 $t38 = get_config('local_intelliboard', 't38');
+$t53 = get_config('local_intelliboard', 't53');
 $scale_real = get_config('local_intelliboard', 'scale_real');
 $scale_percentage_round = get_config('local_intelliboard', 'scale_percentage_round');
 
@@ -152,15 +153,18 @@ if($t5){
         $tooltip = "<div class=\"chart-tooltip\">";
         $tooltip .= "<div class=\"chart-tooltip-header\">".date('D, M d Y', $item->timepoint)."</div>";
         $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-        $tooltip .= "<div class=\"chart-tooltip-left\"><span>". $item->grade.((!$scale_real)?'%':'')."</span> ".get_string('current_grade','local_intelliboard')."</div>";
-        $tooltip .= "<div class=\"chart-tooltip-right\"><span>". ((!$scale_real)?round($l,2).'%':$l)."</span> ".get_string('average_grade','local_intelliboard')."</div>";
+        $tooltip .= ($t53)?"<div class=\"chart-tooltip-left\">":"<div class=\"chart-tooltip-left full\">";
+        $tooltip .= "<span>". $item->grade.((!$scale_real)?'%':'')."</span> ".get_string('current_grade','local_intelliboard')."</div>";
+        if($t53){
+            $tooltip .= "<div class=\"chart-tooltip-right\"><span>" . ((!$scale_real)?round($l, 2) . '%':$l) . "</span> " . get_string('average_grade', 'local_intelliboard') . "</div>";
+        }
         $tooltip .= "</div>";
         $tooltip .= "</div>";
 
         $y = date('Y', $item->timepoint);
         $m = date('m', $item->timepoint)-1;
         $d = date('d', $item->timepoint);
-        $json_data[] = "[new Date($y, $m, $d), ".round((($scale_real)?$item->grade_percent:$item->grade), 2).", '$tooltip', $lp, '$tooltip']";
+        $json_data[] = ($t53)?"[new Date($y, $m, $d), ".round((($scale_real)?$item->grade_percent:$item->grade), 2).", '$tooltip', $lp, '$tooltip']":"[new Date($y, $m, $d), ".round((($scale_real)?$item->grade_percent:$item->grade), 2).", '$tooltip']";
     }
 }
 $json_data2 = array();
@@ -757,8 +761,10 @@ echo $OUTPUT->header();
             data.addColumn('date', '<?php echo get_string('time', 'local_intelliboard'); ?>');
             data.addColumn('number', '<?php echo get_string('myprogress', 'local_intelliboard'); ?>');
             data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-            data.addColumn('number', '<?php echo get_string('average_grade', 'local_intelliboard'); ?>');
-            data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+            <?php if($t53): ?>
+                data.addColumn('number', '<?php echo get_string('average_grade', 'local_intelliboard'); ?>');
+                data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+            <?php endif; ?>
             data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
             var options = <?php echo format_string($factorInfo->ActivityProgressCalculation); ?>;
             options.hAxis.minValue = <?php echo $hAxis_min; ?>;

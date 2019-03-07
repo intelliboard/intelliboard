@@ -122,6 +122,7 @@ $string['t3'] = 'Enable Courses';
 $string['t4'] = 'Enable Grades';
 $string['t48'] = 'Enable Reports';
 $string['t5'] = 'Enable [Activity progress] chart';
+$string['t53'] = 'Enable on [Activity progress] chart average line';
 $string['t6'] = 'Enable [Course progress] chart';
 $string['t7'] = 'Enable [My course average]';
 $string['t8'] = 'Enable [Overall course average]';
