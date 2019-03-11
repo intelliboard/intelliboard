@@ -5358,7 +5358,11 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array(
             "c.fullname",
+            "c.shortname",
+            "category",
+            "parent_category",
             "a.name",
+            "a.duedate",
             "u.firstname",
             "u.lastname",
             "u.idnumber",
@@ -5384,6 +5388,7 @@ class local_intelliboard_external extends external_api {
                 a.id as assignmentid,
                 a.duedate,
                 c.fullname as course,
+                c.shortname,
                 c.id as courseid,
                 s.status,
                 s.userid,
@@ -5397,12 +5402,17 @@ class local_intelliboard_external extends external_api {
                 s.attemptnumber,
                 cmc.completionstate,
                 g.timemodified AS graded,
+                cc.name AS category,
+                (SELECT name FROM {course_categories} WHERE id = cc.parent) AS parent_category,
                 g.grade
                 $sql_columns
             FROM {assign_user_mapping} l
-                LEFT JOIN {user} u ON u.id = l.userid
-                LEFT JOIN {assign} a ON a.id = l.assignment
-                LEFT JOIN {course} c ON c.id = a.course
+                JOIN {user} u ON u.id = l.userid
+                JOIN {assign} a ON a.id = l.assignment
+                JOIN {course} c ON c.id = a.course
+                JOIN {course_categories} cc ON cc.id = c.category
+                JOIN {enrol} e ON e.courseid = c.id
+                JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
                 LEFT JOIN {assign_submission} s ON s.userid = u.id AND s.assignment = a.id
                 LEFT JOIN {assign_grades} g ON g.assignment = a.id AND g.userid = u.id AND g.attemptnumber = s.attemptnumber
                 LEFT JOIN {assign_user_flags} f ON f.assignment = a.id AND f.userid = u.id
@@ -9329,15 +9339,6 @@ class local_intelliboard_external extends external_api {
 
         $mods = ($params->custom) ? explode(",", $params->custom) : [];
 
-        if ($params->custom2) {
-          if ($params->custom2 == 3) {
-            $sql_filter .= " AND (cmc.completionstate = 0 OR cmc.completionstate = 3 OR cmc.completionstate IS NULL)";
-          } else {
-            $this->params['completionstate'] = intval($params->custom2);
-            $sql_filter .= " AND cmc.completionstate = :completionstate";
-          }
-        }
-
         $questionnaire = isset($mods[0])?$mods[0]:0;
         $quizid = isset($mods[1])?$mods[1]:0;
 
@@ -9371,6 +9372,15 @@ class local_intelliboard_external extends external_api {
                     END
                 END
             END) SEPARATOR 'intelli_sep_m')";
+        }
+
+        if ($params->custom2) {
+          if ($params->custom2 == 3) {
+            $sql_filter .= " AND (cmc.completionstate = 0 OR cmc.completionstate = 3 OR cmc.completionstate IS NULL)";
+          } else {
+            $this->params['completionstate'] = intval($params->custom2);
+            $sql_filter .= " AND cmc.completionstate = :completionstate";
+          }
         }
 
         return $this->get_report_data("
@@ -10879,6 +10889,7 @@ class local_intelliboard_external extends external_api {
         return $DB->get_records_sql("
                                 SELECT
                                   DISTINCT qua.questionid,
+                                  que.questiontext,
                                   que.name
                                 FROM {quiz} q
                                   LEFT JOIN {quiz_attempts} qa ON qa.quiz=q.id
