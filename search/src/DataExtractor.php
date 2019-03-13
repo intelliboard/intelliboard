@@ -54,8 +54,8 @@ class DataExtractor
         $this->arguments = array();
 
         $sql = $this->construct($scenario);
-
         $values = $this->prepareArguments($sql, $this->arguments);
+
         $data = $DB->get_records_sql($sql, $values);
         $result['hasPrev'] = !empty($scenario['offset']);
         if (!empty($this->params['pagination_numbers'])) {
