@@ -26,6 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once("$CFG->libdir/externallib.php");
+require_once("$CFG->dirroot/local/intelliboard/locallib.php");
 
 class local_intelliboard_search extends external_api {
 
@@ -219,7 +220,6 @@ class local_intelliboard_search extends external_api {
     public static function process_auto_complete_db_returns() {
         return new external_single_structure(
             array(
-                'maxShift' => new external_value(PARAM_INT, 'Determine number of words, auto complete must shift pointer, to pass this argument'),
                 'endings'  => new external_multiple_structure(
                     new external_value(PARAM_TEXT, 'Possible ending to this argument, if argument is bigger than remainder of sentence')
                 ),
