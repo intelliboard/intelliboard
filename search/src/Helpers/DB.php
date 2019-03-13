@@ -29,26 +29,27 @@ class DB
 
     public static function processAutoCompleteDb($table, $column, $remainder, $params = array())
     {
-
         $variants = static::extractParamsFromSentence($table, $column, $remainder, $params, 0, 0, array(),
             ":sentence " . \get_intelliboard_filter(1) . " CONCAT('^', :column, '[[:>:]]')")['result'];
+
         $maxShift = 0;
         $found = '';
 
         foreach ($variants as $variant) {
-            $wordCount = count(explode(' ', $variant));
+            $wordCount = count(explode(' ', $variant['value']));
 
             if ($wordCount > $maxShift) {
                 $maxShift = $wordCount;
-                $found = $variant;
+                $found = $variant['value'];
             }
         }
 
-        $variants = static::extractParamsFromSentence($table, $column, '^' . $remainder, $params, 0, 0, array(),
+        $variants = static::extractParamsFromSentence($table, $column, "^$remainder.+", $params, 0, 0, array(),
             ":column " . \get_intelliboard_filter(1) . " :sentence")['result'];
+
         $endings = array_map(function ($item) use ($remainder) {
             return substr($item, mb_strlen($remainder));
-        }, $variants);
+        }, array_column($variants, 'value'));
 
         return compact('endings', 'found');
     }
@@ -64,7 +65,6 @@ class DB
         $pattern = null,
         $prefix = null
     ) {
-
         global $DB;
 
         list($table, $column, $getter, $types, $alias) = static::start($table, $column, $params);
@@ -178,7 +178,6 @@ class DB
             $variant = json_decode(json_encode($DB->get_record_sql($sql, $data['params'])), true);
             $sentence = !empty($variant['replacement']) ? $variant['replacement'] : $sentence;
             $variants = $variant ? array(array_diff_key($variant, array('replacement' => 1))) : [];
-
         }
 
         if ($variants && $table === 'role') {
@@ -329,7 +328,6 @@ class DB
 
     public static function getTable($table, $settings, $getter)
     {
-
         if (!empty(self::$virtualTables[$table])) {
             $function = self::$virtualTables[$table];
             $alias = $function($settings, $getter);
@@ -339,7 +337,6 @@ class DB
         }
 
         return $alias;
-
     }
 
     public static function getColumn($column, $table, $settings)
@@ -349,7 +346,7 @@ class DB
 
         if (!empty(self::$virtualColumns[$key])) {
             if(is_callable(self::$virtualColumns[$key])) {
-                $function    = self::$virtualTables[$table];
+                $function    = self::$virtualColumns[$key];
                 $destination = $function($settings);
             } else {
                 $destination = self::$virtualColumns[$key];
