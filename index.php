@@ -108,6 +108,12 @@ if($action == 'report43'){
 }
 
 $intelliboard = intelliboard(['task'=>'dashboard']);
+
+if ($action == 'sso' and $intelliboard->token and get_config('local_intelliboard', 'ssomenu')) {
+	redirect(intelliboard_url($intelliboard->db)."auth/sso/".format_string($intelliboard->db)."/".format_string($intelliboard->token));
+}
+
+
 $stat = $plugin->get_dashboard_stats($params);
 $LineChart = $plugin->get_site_activity($params);
 $countries = $plugin->get_countries($params);

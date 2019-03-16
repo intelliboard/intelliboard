@@ -54,6 +54,8 @@ $string['tls12'] = 'TLS v1.2';
 $string['tls12_desc'] = 'Advanced settings: TLS v1.2';
 $string['sso'] = 'SSO link';
 $string['sso_desc'] = 'SSO Link to IntelliBoard.net';
+$string['ssomenu'] = 'SSO menu item';
+$string['ssomenu_desc'] = 'SSO Link in navigation menu (for non-learners/non-instuctors)';
 $string['api'] = 'Alternative API';
 $string['api_desc'] = 'Use alternative API server (to avoid firewall blocking)';
 $string['server'] = 'IntelliBoard Server';
@@ -700,3 +702,4 @@ $string['instructor_course_shortname'] = "Show course short name instead course 
 
 $string['trackmedia'] = "Track HTML5 media";
 $string['trackmedia_desc'] = "Track HTML5 video and audio";
+$string['ianalytics'] = 'IntelliBoard Analytics';

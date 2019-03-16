@@ -167,13 +167,13 @@ echo $OUTPUT->header();
        	google.setOnLoadCallback(function() {
         	var data = google.visualization.arrayToDataTable([
         	[
-        		'<?php echo clean_raw(get_string('a13', 'local_intelliboard')); ?>',
-        		'<?php echo clean_raw(get_string('a33', 'local_intelliboard')); ?>',
+        		'<?php echo addslashes(get_string('a13', 'local_intelliboard')); ?>',
+        		'<?php echo addslashes(get_string('a33', 'local_intelliboard')); ?>',
         	],
         	<?php foreach($compcourses as $row):  ?>
 			[
-				'<?php echo clean_raw(format_string($row->shortname)); ?>',
-				{v:<?php echo (int)$row->courses; ?>, f:'<?php echo clean_raw(get_string('a40', 'local_intelliboard')) . ": " .clean_raw($row->courses); ?>'},
+				'<?php echo addslashes(format_string($row->shortname)); ?>',
+				{v:<?php echo (int)$row->courses; ?>, f:'<?php echo addslashes(get_string('a40', 'local_intelliboard')) . ": " .addslashes($row->courses); ?>'},
 			],
 			<?php endforeach; ?>
 			]);
@@ -188,12 +188,12 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(function() {
         	var data = google.visualization.arrayToDataTable([
         	[
-        		'<?php echo clean_raw(get_string('a31', 'local_intelliboard')); ?>',
-        		'<?php echo clean_raw(get_string('a1', 'local_intelliboard')); ?>',
+        		'<?php echo addslashes(get_string('a31', 'local_intelliboard')); ?>',
+        		'<?php echo addslashes(get_string('a1', 'local_intelliboard')); ?>',
         	],
         	<?php foreach($frameworks as $row):  ?>
 			[
-				'<?php echo clean_raw(format_string($row->shortname)); ?>',
+				'<?php echo addslashes(format_string($row->shortname)); ?>',
 				<?php echo (int)$row->competencies; ?>,
 			],
 			<?php endforeach; ?>
@@ -208,12 +208,12 @@ echo $OUTPUT->header();
 		google.setOnLoadCallback(function() {
 			var data = google.visualization.arrayToDataTable([
 				[
-					'<?php echo clean_raw(get_string('learners', 'local_intelliboard')); ?>',
-					'<?php echo clean_raw(get_string('a8', 'local_intelliboard')); ?>'
+					'<?php echo addslashes(get_string('learners', 'local_intelliboard')); ?>',
+					'<?php echo addslashes(get_string('a8', 'local_intelliboard')); ?>'
 				],
-				['<?php echo clean_raw(get_string('a33', 'local_intelliboard')); ?>', <?php echo (int)$totals->proficient; ?>],
-				['<?php echo clean_raw(get_string('a34', 'local_intelliboard')); ?>', <?php echo (int)$totals->unproficient; ?>],
-				['<?php echo clean_raw(get_string('a35', 'local_intelliboard')); ?>', <?php echo (int)$totals->unrated; ?>]
+				['<?php echo addslashes(get_string('a33', 'local_intelliboard')); ?>', <?php echo (int)$totals->proficient; ?>],
+				['<?php echo addslashes(get_string('a34', 'local_intelliboard')); ?>', <?php echo (int)$totals->unproficient; ?>],
+				['<?php echo addslashes(get_string('a35', 'local_intelliboard')); ?>', <?php echo (int)$totals->unrated; ?>]
 			]);
 			var options = {
 			chartArea: {width: '100%',height: '90%',},
@@ -241,14 +241,14 @@ echo $OUTPUT->header();
 			};
 			var data = google.visualization.arrayToDataTable([
         	[
-        		'<?php echo clean_raw(get_string('a13', 'local_intelliboard')); ?>',
-        		'<?php echo clean_raw(get_string('a33', 'local_intelliboard')); ?>',
-        		'<?php echo clean_raw(get_string('a34', 'local_intelliboard')); ?>',
-        		'<?php echo clean_raw(get_string('a35', 'local_intelliboard')); ?>'
+        		'<?php echo addslashes(get_string('a13', 'local_intelliboard')); ?>',
+        		'<?php echo addslashes(get_string('a33', 'local_intelliboard')); ?>',
+        		'<?php echo addslashes(get_string('a34', 'local_intelliboard')); ?>',
+        		'<?php echo addslashes(get_string('a35', 'local_intelliboard')); ?>'
         	],
         	<?php foreach($competencies as $row):  ?>
 			[
-				'<?php echo clean_raw(format_string($row->shortname)); ?>',
+				'<?php echo addslashes(format_string($row->shortname)); ?>',
 				<?php echo (int)$row->proficient; ?>,
 				<?php echo (int)$row->unproficient; ?>,
 				<?php echo (int)$row->unrated; ?>

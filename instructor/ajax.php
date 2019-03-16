@@ -118,10 +118,10 @@ if($action == 'get_total_students'){
     $data->avg_timespend = seconds_to_time($data->avg_timespend);
 
     $users_list = $DB->get_records_sql("
-                SELECT 
+                SELECT
                     u.*,
                     CASE WHEN MAX(lil.timepoint) BETWEEN :timestart3 AND :timefinish3 THEN 1 ELSE 0 END AS active
-                   FROM {context} ctx 
+                   FROM {context} ctx
                      LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id $sql5
                      LEFT JOIN {local_intelliboard_tracking} lit ON ctx.instanceid=lit.courseid AND ra.userid=lit.userid
                      LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
@@ -179,8 +179,8 @@ if($action == 'get_total_students'){
         $select_sql2 = "AND ((group_user.userid=ra.userid AND group_user.courseid=ctx.instanceid) OR (group_user.userid IS NULL AND group_user.courseid=ctx.instanceid))";
     }
 
-    $enrolled_users = $DB->get_record_sql("SELECT COUNT(DISTINCT ra.userid) AS users 
-                                            FROM {role_assignments} ra 
+    $enrolled_users = $DB->get_record_sql("SELECT COUNT(DISTINCT ra.userid) AS users
+                                            FROM {role_assignments} ra
                                               LEFT JOIN {context} ctx ON ctx.instanceid=:course AND ctx.contextlevel=50 AND ra.contextid=ctx.id
                                               $join_sql1
                                             WHERE ctx.contextlevel=50 $sql1", $params);
@@ -198,12 +198,12 @@ if($action == 'get_total_students'){
                   COUNT(DISTINCT CASE WHEN lil.id IS NOT NULL $select_sql2 THEN ra.userid ELSE NULL END) AS students_attempt
                   $sql_columns
                 FROM {course_modules} cm
-                  LEFT JOIN {modules} m ON m.id = cm.module    
-                  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=cm.course AND lit.param=cm.id AND lit.page='module'    
+                  LEFT JOIN {modules} m ON m.id = cm.module
+                  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=cm.course AND lit.param=cm.id AND lit.page='module'
                   LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id AND lil.timepoint BETWEEN :timestart AND :timefinish
                   LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=lit.courseid
                   LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=lit.userid $sql1
-                  $join_sql2   
+                  $join_sql2
                 WHERE cm.course=:course
                 GROUP BY cm.id,m.name",$params);
 
@@ -338,7 +338,7 @@ if($action == 'get_total_students'){
         if($item->timespend>0){
             $empty_data = false;
         }
-        $name = str_replace("'", '`', get_section_name($course,$item->section));
+        $name = addslashes(get_section_name($course,$item->section));
         $tooltip = '<strong>'.$name.'</strong><br>'.get_string('time_spent', 'local_intelliboard').': <strong>'.seconds_to_time($item->timespend).'</strong>';
         $inner = new stdClass();
         $inner->v = (int)$item->timespend;
@@ -374,11 +374,11 @@ if($action == 'get_total_students'){
                 FROM {course_modules} cm
                   LEFT JOIN {modules} m ON m.id = cm.module
                   LEFT JOIN {course_sections} cs ON cs.id = cm.section
-				  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=:courseid1 
-				                                                  AND lit.param=cm.id 
-				                                                  AND lit.page='module' 
-				                                                  AND lit.userid IN (SELECT DISTINCT ra.userid 
-                                                                                        FROM {role_assignments} ra 
+				  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=:courseid1
+				                                                  AND lit.param=cm.id
+				                                                  AND lit.page='module'
+				                                                  AND lit.userid IN (SELECT DISTINCT ra.userid
+                                                                                        FROM {role_assignments} ra
                                                                                             JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50
                                                                                             $join_sql1
                                                                                         WHERE ctx.contextlevel = 50 $sql1)
@@ -400,7 +400,7 @@ if($action == 'get_total_students'){
             $inner->v = (int)$value->timespend;
             $inner->f = seconds_to_time(intval($value->timespend));
 
-            $section = str_replace("'", '`', get_section_name($course,$value->section));
+            $section = addslashes(get_section_name($course,$value->section));
 
             $tooltip = "<strong>$section</strong><br>".get_string('s48', 'local_intelliboard')." <strong>$value->timespend_str</strong>";
 
@@ -427,10 +427,10 @@ if($action == 'get_total_students'){
         $courses = $DB->get_records_sql("
                 SELECT
                   cm.id,
-                  (SELECT SUM(timespend) 
-                    FROM {local_intelliboard_tracking} 
-                    WHERE courseid=:courseid1 AND param=cm.id AND page='module' AND userid IN (SELECT DISTINCT ra.userid 
-                                                                                                  FROM {role_assignments} ra 
+                  (SELECT SUM(timespend)
+                    FROM {local_intelliboard_tracking}
+                    WHERE courseid=:courseid1 AND param=cm.id AND page='module' AND userid IN (SELECT DISTINCT ra.userid
+                                                                                                  FROM {role_assignments} ra
                                                                                                     JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50
                                                                                                     $join_sql1
                                                                                                   WHERE  ctx.contextlevel = 50 $sql1)) AS timespend
@@ -449,7 +449,7 @@ if($action == 'get_total_students'){
 
         foreach($courses as $value){
             $value->timespend_str = seconds_to_time($value->timespend);
-            $value->activity = str_replace("'", '`', $value->activity);
+            $value->activity = addslashes($value->activity);
 
             $inner = new stdClass();
             $inner->v = (int)$value->timespend;
@@ -469,8 +469,8 @@ if($action == 'get_total_students'){
     $learner_roles = get_config('local_intelliboard', 'filter11');
     list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
-    $enrolled_users = $DB->get_records_sql("SELECT u.* 
-                                            FROM {role_assignments} ra 
+    $enrolled_users = $DB->get_records_sql("SELECT u.*
+                                            FROM {role_assignments} ra
                                               LEFT JOIN {context} ctx ON ctx.instanceid=:course AND ctx.contextlevel=50 AND ra.contextid=ctx.id
                                               LEFT JOIN {user} u ON u.id=ra.userid
                                               $join_sql1
