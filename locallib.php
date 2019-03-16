@@ -138,7 +138,7 @@ function intelliboard_url($server = '')
     return $config['app_url' . $post];
 }
 function intelliboard($params, $function = 'sso'){
-	global $CFG;
+	global $CFG, $USER;
 
 		require('config.php');
 		require_once($CFG->libdir . '/filelib.php');
@@ -150,6 +150,7 @@ function intelliboard($params, $function = 'sso'){
 
 		$params['email'] = get_config('local_intelliboard', 'te1');
 		$params['apikey'] = get_config('local_intelliboard', 'apikey');
+		$params['useremail'] = $USER->email;
 		$params['url'] = $CFG->wwwroot;
 		$params['lang'] = current_language();
 

@@ -108,6 +108,18 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/ssomenu';
+        $title = new lang_string('ssomenu', 'local_intelliboard');
+        $description = new lang_string('ssomenu_desc', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/ssodomain';
+        $title = new lang_string('ssodomain', 'local_intelliboard');
+        $description = new lang_string('ssodomain_desc', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
         $name = 'local_intelliboard/intellicart';
         $title = new lang_string('intellicart', 'local_intelliboard');
         $description = new lang_string('intellicart_desc', 'local_intelliboard');
@@ -117,13 +129,6 @@ if($ADMIN->fulltree){
         $name = 'local_intelliboard/api';
         $title = new lang_string('api', 'local_intelliboard');
         $description = new lang_string('api_desc', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-        $settings->add($setting);
-
-
-        $name = 'local_intelliboard/ssodomain';
-        $title = new lang_string('ssodomain', 'local_intelliboard');
-        $description = new lang_string('ssodomain_desc', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 

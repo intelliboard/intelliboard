@@ -54,6 +54,8 @@ $string['tls12'] = 'TLS v1.2';
 $string['tls12_desc'] = 'Ajustes avanzados:TLS v1.2';
 $string['sso'] = 'SSO link';
 $string['sso_desc'] = 'SSO Link to IntelliBoard.net';
+$string['ssomenu'] = 'SSO menu item';
+$string['ssomenu_desc'] = 'SSO Link in navigation menu (for admins only)';
 $string['server'] = 'Servidor IntelliBoard';
 $string['server_usa'] = 'IntelliBoard USA';
 $string['server_au'] = 'IntelliBoard Australia';
@@ -683,3 +685,4 @@ $string['trackmedia'] = "Track HTML5 media";
 $string['trackmedia_desc'] = "Track HTML5 video and audio";
 
 $string['t53'] = 'Enable on [Activity progress] chart average line';
+$string['ianalytics'] = 'IntelliBoard Analytics';
