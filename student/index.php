@@ -173,7 +173,7 @@ foreach($courses as $item){
     $d = seconds_to_time(intval($item->duration));
 
     $tooltip = "<div class=\"chart-tooltip\">";
-    $tooltip .= "<div class=\"chart-tooltip-header\">". str_replace("'",'"',format_string($item->fullname)) ."</div>";
+    $tooltip .= "<div class=\"chart-tooltip-header\">". addslashes(format_string($item->fullname)) ."</div>";
     $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
     $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". ((!$scale_real)?round($item->grade, 2):$item->grade_real)."</span></div>";
     $tooltip .= "<div class=\"chart-tooltip-right\">".get_string('time_spent','local_intelliboard').": <span>". $d."</span></div>";
@@ -712,7 +712,7 @@ echo $OUTPUT->header();
             var data = google.visualization.arrayToDataTable([
                 ['<?php echo get_string('modulename', 'local_intelliboard'); ?>', '<?php echo get_string('total', 'local_intelliboard'); ?>', '<?php echo get_string('viewed', 'local_intelliboard'); ?>', '<?php echo get_string('completed', 'local_intelliboard'); ?>'],
                 <?php foreach($modules_progress as $row):  ?>
-                ['<?php echo str_replace("'",'"', get_string('modulename', $row->name)); ?>', <?php echo (int)$row->modules; ?>, <?php echo (int)$row->start_modules; ?>, <?php echo (int)$row->completed_modules; ?>],
+                ['<?php echo addslashes( get_string('modulename', $row->name)); ?>', <?php echo (int)$row->modules; ?>, <?php echo (int)$row->start_modules; ?>, <?php echo (int)$row->completed_modules; ?>],
                 <?php endforeach; ?>
             ]);
             var options = <?php echo format_string($factorInfo->ActivityParticipationCalculation); ?>;
@@ -728,7 +728,7 @@ echo $OUTPUT->header();
             var data = google.visualization.arrayToDataTable([
                 ['<?php echo get_string('modulename', 'local_intelliboard'); ?>', '<?php echo get_string('time_spent', 'local_intelliboard'); ?>'],
                 <?php foreach($modules_progress as $row):  ?>
-                ['<?php echo str_replace("'",'"', get_string('modulename', $row->name)); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
+                ['<?php echo addslashes( get_string('modulename', $row->name)); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
                 <?php endforeach; ?>
             ]);
             var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
@@ -743,7 +743,7 @@ echo $OUTPUT->header();
             var data = google.visualization.arrayToDataTable([
                 ['<?php echo get_string('course', 'local_intelliboard'); ?>', '<?php echo get_string('courseaverage', 'local_intelliboard'); ?>', '<?php echo get_string('mygrade', 'local_intelliboard'); ?>'],
                 <?php foreach($courses as $row):  ?>
-                ['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', <?php echo ($scale_real)?"{v: ".(int)$row->average.", f: '".$row->average_real."'}":(int)$row->average; ?>, <?php echo ($scale_real)?"{v: ".(int)$row->grade.", f: '".$row->grade_real."'}":(int)$row->grade; ?>],
+                ['<?php echo addslashes(format_string($row->fullname)); ?>', <?php echo ($scale_real)?"{v: ".(int)$row->average.", f: '".$row->average_real."'}":(int)$row->average; ?>, <?php echo ($scale_real)?"{v: ".(int)$row->grade.", f: '".$row->grade_real."'}":(int)$row->grade; ?>],
                 <?php endforeach; ?>
             ]);
 

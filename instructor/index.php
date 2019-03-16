@@ -701,7 +701,7 @@ echo $OUTPUT->header();
 				var data = google.visualization.arrayToDataTable([
 				['Course', '<?php echo get_string('in19', 'local_intelliboard'); ?>', '<?php echo get_string('in25', 'local_intelliboard'); ?>'],
 				<?php foreach($courses as $row):  ?>
-				['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', {v: <?php echo (int)$row->data1_percent; ?>, f: '<?php echo $row->data1; ?>'}, <?php echo (int)$row->data2; ?>],
+				['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo (int)$row->data1_percent; ?>, f: '<?php echo $row->data1; ?>'}, <?php echo (int)$row->data2; ?>],
 				<?php endforeach; ?>
 				]);
 	        <?php elseif($view == 'activities'): ?>
@@ -713,7 +713,7 @@ echo $OUTPUT->header();
 	        	var data = google.visualization.arrayToDataTable([
 	        	['<?php echo get_string('course'); ?>', '<?php echo get_string('in15', 'local_intelliboard'); ?>'],
 	        	<?php foreach($courses as $row):  ?>
-				['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
+				['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
 				<?php endforeach; ?>
 				]);
 	        <?php elseif($view == 'course_overview'): ?>
@@ -746,7 +746,7 @@ echo $OUTPUT->header();
 	        	var data = google.visualization.arrayToDataTable([
 	        	['<?php echo get_string('course'); ?>', '<?php echo get_string('enrolled', 'local_intelliboard'); ?>', '<?php echo get_string('completed', 'local_intelliboard'); ?>'],
 	        	<?php foreach($courses as $row):  ?>
-				['<?php echo str_replace("'",'"',format_string($row->fullname)); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
+				['<?php echo addslashes(format_string($row->fullname)); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
 				<?php endforeach; ?>
 				]);
 	        <?php endif; ?>
