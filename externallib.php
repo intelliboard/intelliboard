@@ -364,7 +364,7 @@ class local_intelliboard_external extends external_api {
         }
         return ($sql_columns) ? ", CASE $sql_columns ELSE 'NONE' END AS activity" : "'' AS activity";
     }
-    private function get_suspended_sql($params, $courseid = 'c.id', $userid = 'u.id')
+    private function get_suspended_sql($params, $courseid = 'c.id', $userid = 'u.id', $coursefilter = true)
     {
       if (!$params->userfilter) {
         return '';
@@ -377,23 +377,23 @@ class local_intelliboard_external extends external_api {
       $sql_role = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
 
       if ($params->userfilter == 1) {
-        $sql_filter = $this->get_filter_in_sql($params->courseid, "e.courseid");
+        $sql_filter = ($coursefilter) ? $this->get_filter_in_sql($params->courseid, "e.courseid") : '';
 
         $sql = "SELECT ue.userid, e.courseid FROM {user_enrolments} ue, {enrol} e WHERE e.id = ue.enrolid $sql_enrol $sql_filter GROUP BY ue.userid, e.courseid";
       } elseif ($params->userfilter == 2) {
-        $sql_filter = $this->get_filter_in_sql($params->courseid, "e.courseid");
+        $sql_filter = ($coursefilter) ? $this->get_filter_in_sql($params->courseid, "e.courseid") : '';
 
         $sql = "SELECT ue.userid, e.courseid FROM {user_enrolments} ue, {enrol} e, {user} u, {course} c WHERE u.id = ue.userid AND c.id = e.courseid AND e.id = ue.enrolid $sql_course $sql_user $sql_enrol $sql_filter GROUP BY ue.userid, e.courseid";
       } elseif ($params->userfilter == 3) {
-        $sql_filter = $this->get_filter_in_sql($params->courseid, "e.courseid");
+        $sql_filter = ($coursefilter) ? $this->get_filter_in_sql($params->courseid, "e.courseid") : '';
 
         $sql = "SELECT ue.userid, e.courseid FROM {user_enrolments} ue, {enrol} e, {context} ctx, {role_assignments} ra, {user} u, {course} c WHERE ctx.contextlevel = 50 AND ctx.instanceid = c.id AND ra.userid = u.id AND ctx.id = ra.contextid AND u.id = ue.userid AND c.id = e.courseid AND e.id = ue.enrolid $sql_role $sql_course $sql_user $sql_enrol $sql_filter GROUP BY ue.userid, e.courseid";
       } elseif ($params->userfilter == 4) {
-        $sql_filter = $this->get_filter_in_sql($params->courseid, "ctx.instanceid");
+        $sql_filter = ($coursefilter) ? $this->get_filter_in_sql($params->courseid, "ctx.instanceid") : '';
 
         $sql = "SELECT ra.userid, ctx.instanceid AS courseid FROM {context} ctx, {role_assignments} ra, {user} u, {course} c WHERE ctx.contextlevel = 50 AND ctx.instanceid = c.id AND ra.userid = u.id AND ctx.id = ra.contextid AND c.id = ctx.instanceid $sql_role $sql_course $sql_user $sql_filter GROUP BY ra.userid, ctx.instanceid";
       } elseif ($params->userfilter == 5) {
-        $sql_filter = $this->get_filter_in_sql($params->courseid, "ctx.instanceid");
+        $sql_filter = ($coursefilter) ? $this->get_filter_in_sql($params->courseid, "ctx.instanceid") : '';
 
         $sql = "SELECT ra.userid, ctx.instanceid AS courseid FROM {context} ctx, {role_assignments} ra WHERE ctx.contextlevel = 50 AND ctx.id = ra.contextid $sql_role $sql_filter GROUP BY ra.userid, ctx.instanceid";
       }
@@ -2626,7 +2626,7 @@ class local_intelliboard_external extends external_api {
             $sql_having .= (empty($sql_having))?' HAVING COUNT(DISTINCT qa.id)>0 AND (cmc.timemodified=0 OR cmc.timemodified IS NULL)':str_replace(' HAVING ',' HAVING (',$sql_having).') AND COUNT(DISTINCT qa.id)>0 AND (cmc.timemodified=0 OR cmc.timemodified IS NULL)';
         }
         $this->params['courseid'] = intval($params->courseid);
-        $sql_join = $this->get_suspended_sql($params, 'q.course');
+        $sql_join = $this->get_suspended_sql($params, 'q.course', 'u.id', false);
 
         return $this->get_report_data("
             SELECT u.id,
@@ -4915,7 +4915,7 @@ class local_intelliboard_external extends external_api {
                               JOIN {user} ur ON ur.id=post.userid
                               JOIN {".$forum_table."_discussions} d ON d.id=post.discussion
                               JOIN {".$forum_table."} f ON d.forum=f.id
-                            WHERE ur.id > 0 $courseid1
+                            WHERE ur.id > 0 AND CONCAT(post.parent, '-', post.created) IN(SELECT CONCAT(parent, '-', MAX(created)) FROM {forum_posts} GROUP BY parent) $courseid1
                             ORDER BY post.created DESC
                           ) p
                          GROUP BY p.parent, p.time, p.firstname, p.lastname, p.id) last_reply ON last_reply.parent=fp.id
