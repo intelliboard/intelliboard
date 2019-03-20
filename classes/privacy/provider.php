@@ -27,7 +27,10 @@ namespace local_intelliboard\privacy;
 
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\helper;
 use core_privacy\local\request\contextlist;
+use core_privacy\local\request\userlist;
 use core_privacy\local\request\transform;
 
 defined('MOODLE_INTERNAL') || die();
@@ -40,6 +43,8 @@ defined('MOODLE_INTERNAL') || die();
  */
 class provider implements
         \core_privacy\local\metadata\provider,
+
+        \core_privacy\local\request\core_userlist_provider,
 
         \core_privacy\local\request\subsystem\provider,
 
@@ -254,6 +259,47 @@ class provider implements
     public static function delete_data_for_all_users_in_context(\context $context) {
         global $DB;
 
+        if ($context->contextlevel == CONTEXT_COURSE) {
+          $params = [
+            'courseid' => $context->instanceid
+          ];
+          $items = $DB->get_records("local_intelliboard_tracking", $params);
+
+          foreach ($items as $item) {
+              $logs = $DB->get_records("local_intelliboard_logs", ['trackid' => $item->id]);
+
+              foreach ($logs as $log) {
+                  $DB->delete_records('local_intelliboard_details', [
+                      'logid' => $log->id,
+                  ]);
+              }
+              $DB->delete_records('local_intelliboard_logs', [
+                  'trackid' => $item->id,
+              ]);
+          }
+          $DB->delete_records('local_intelliboard_tracking', $params);
+        } elseif ($context->contextlevel == CONTEXT_MODULE) {
+          $params = [
+            'page' => 'module',
+            'param' => $context->instanceid
+          ];
+
+          $items = $DB->get_records("local_intelliboard_tracking", $params);
+
+          foreach ($items as $item) {
+              $logs = $DB->get_records("local_intelliboard_logs", ['trackid' => $item->id]);
+
+              foreach ($logs as $log) {
+                  $DB->delete_records('local_intelliboard_details', [
+                      'logid' => $log->id,
+                  ]);
+              }
+              $DB->delete_records('local_intelliboard_logs', [
+                  'trackid' => $item->id,
+              ]);
+          }
+          $DB->delete_records('local_intelliboard_tracking', $params);
+        }
         return;
     }
 
@@ -292,5 +338,69 @@ class provider implements
         $DB->delete_records('local_intelliboard_tracking', [
             'userid' => $userid,
         ]);
+    }
+
+
+      /**
+      * Get the list of users who have data within a context.
+      *
+      * @param   userlist    $userlist   The userlist containing the list of users who have data in this context/plugin combination.
+      */
+      public static function get_users_in_context(userlist $userlist)
+      {
+        $context = $userlist->get_context();
+        if ($context->contextlevel == CONTEXT_COURSE) {
+          $params = [
+            'courseid' => $context->instanceid
+          ];
+          $sql = "SELECT userid FROM {local_intelliboard_tracking} WHERE courseid = :courseid";
+          $userlist->add_from_sql('userid', $sql, $params);
+
+        } elseif ($context->contextlevel == CONTEXT_MODULE) {
+          $params = [
+            'cmid' => $context->instanceid
+          ];
+          $sql = "SELECT userid FROM {local_intelliboard_tracking} WHERE page = 'module' AND param = :cmid";
+          $userlist->add_from_sql('userid', $sql, $params);
+        }
+        return;
+    }
+    /**
+     * Delete multiple users within a single context.
+     *
+     * @param approved_userlist $userlist The approved context and user information to delete information for.
+     */
+    public static function delete_data_for_users(approved_userlist $userlist) {
+        global $DB;
+
+        $users = $userlist->get_userids();
+
+        foreach ($users as  $userid) {
+
+          $DB->delete_records('local_intelliboard_assign', [
+              'userid' => $userid,
+          ]);
+          $DB->delete_records('local_intelliboard_assign', [
+              'type' => 'users',
+              'instance' => $userid,
+          ]);
+          $items = $DB->get_records("local_intelliboard_tracking", ['userid' => $userid]);
+
+          foreach ($items as $item) {
+              $logs = $DB->get_records("local_intelliboard_logs", ['trackid' => $item->id]);
+
+              foreach ($logs as $log) {
+                  $DB->delete_records('local_intelliboard_details', [
+                      'logid' => $log->id,
+                  ]);
+              }
+              $DB->delete_records('local_intelliboard_logs', [
+                  'trackid' => $item->id,
+              ]);
+          }
+          $DB->delete_records('local_intelliboard_tracking', [
+              'userid' => $userid,
+          ]);
+        }
     }
 }
