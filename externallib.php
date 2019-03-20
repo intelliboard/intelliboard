@@ -786,8 +786,7 @@ class local_intelliboard_external extends external_api {
             }
             $sql_columns .= ", coo.cohortname AS cohortname";
             $sql_cohort = $this->get_filter_in_sql($params->cohortid, "ch.cohortid");
-            $sql_join = " LEFT JOIN (SELECT ch.userid, $cohorts as cohortname FROM {cohort} coh, {cohort_members} ch WHERE coh.id = ch.cohortid $sql_cohort GROUP BY ch.userid) coo ON coo.userid = u.id";
-            $sql_filter .= " AND coo.cohortname IS NOT NULL";
+            $sql_join = " JOIN (SELECT ch.userid, $cohorts as cohortname FROM {cohort} coh, {cohort_members} ch WHERE coh.id = ch.cohortid $sql_cohort GROUP BY ch.userid) coo ON coo.userid = u.id";
         } else {
           $sql_columns .= ", '' as cohortname";
         }
@@ -2103,6 +2102,8 @@ class local_intelliboard_external extends external_api {
           $sql_columns .= ", '' as cohortname";
         }
 
+        $sql_join .= $this->get_suspended_sql($params, 'ctx.instanceid');
+
         return $this->get_report_data("
             SELECT u.id,
                 u.firstname,
@@ -2175,6 +2176,8 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter .= $this->get_filterdate_sql($params, "l.timepoint");
 
+        $sql_join = $this->get_suspended_sql($params, 't.courseid');
+
         return $this->get_report_data("
             SELECT MAX(t.id) AS id,
                u.firstname,
@@ -2187,8 +2190,11 @@ class local_intelliboard_external extends external_api {
                SUM(l.timespend) AS timespend,
                SUM(l.visits) AS visits
                $sql_columns
-            FROM  {user} u, {local_intelliboard_tracking} t, {local_intelliboard_logs} l
-            WHERE l.trackid = t.id AND u.id = t.userid AND t.page LIKE 'local_intelliboard' AND t.param IN(6,7,8,9) $sql_filter
+            FROM {local_intelliboard_tracking} t
+              JOIN {user} u ON u.id = t.userid
+              JOIN {local_intelliboard_logs} l ON l.trackid = t.id
+              $sql_join
+            WHERE t.page LIKE 'local_intelliboard' AND t.param IN(6,7,8,9) $sql_filter
             GROUP BY u.id, t.page $sql_having $sql_order", $params);
     }
     public function report36($params)
@@ -2323,11 +2329,9 @@ class local_intelliboard_external extends external_api {
           $sql_columns .= ", '' as cohortname";
         }
 
-        $sql_join = "";
-
         if($params->custom == 3) {
             $sql_filter_join = $this->get_filterdate_sql($params, "timepoint");
-            $sql_join .= "JOIN (SELECT t.userid FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l WHERE t.id = l.trackid $sql_filter_join GROUP BY t.userid) l ON l.userid = u.id";
+            $sql_join .= " JOIN (SELECT t.userid FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l WHERE t.id = l.trackid $sql_filter_join GROUP BY t.userid) l ON l.userid = u.id";
         } elseif($params->custom == 2) {
           $sql_filter .= $this->get_filterdate_sql($params, "u.lastaccess");
         } elseif($params->custom == 1) {
@@ -3004,6 +3008,8 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "mc.course");
         $sql_filter .= $this->get_filterdate_sql($params, "mci.timecreated");
 
+        $sql_join = $this->get_suspended_sql($params, 'mco.id', 'mu.id');
+
         return $this->get_report_data("
             SELECT DISTINCT mci.id,
                 mc.course AS mc_course,
@@ -3020,6 +3026,7 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {{$cert_issues_table}} AS mci ON mci.{$cert_id_field} = mc.id
                 LEFT OUTER JOIN {user} AS mu ON mci.userid = mu.id
                 LEFT OUTER JOIN {course} AS mco ON mc.course = mco.id
+                $sql_join
             WHERE mci.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
 
@@ -4060,6 +4067,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter .= $this->get_filterdate_sql($params, "l.timepoint");
+
         $sql_join = $this->get_suspended_sql($params);
 
         return $this->get_report_data("
@@ -4682,6 +4690,7 @@ class local_intelliboard_external extends external_api {
         }else{
             $sql_filter .= " AND (b.courseid IS NOT NULL $system_b)";
         }
+        $sql_join = $this->get_suspended_sql($params);
 
 
         return $this->get_report_data("
@@ -4701,6 +4710,7 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {badge_issued} bi ON bi.badgeid=b.id
               LEFT JOIN {user} u ON u.id=bi.userid
               LEFT JOIN {course} c ON c.id=b.courseid
+              $sql_join
             WHERE bi.id IS NOT NULL AND bi.visible = 1 $sql_filter $sql_having $sql_order", $params);
     }
     function report99_graph($params)
@@ -4802,6 +4812,7 @@ class local_intelliboard_external extends external_api {
 
         $competency = new \core_competency\competency($params->custom);
         $scale = $competency->get_scale();
+        $sql_join = $this->get_suspended_sql($params);
 
         $data =  $this->get_report_data("
             SELECT
@@ -4819,6 +4830,7 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {user} u ON u.id=ra.userid
               LEFT JOIN {competency_usercompcourse} comu ON comu.competencyid=com.id AND comu.userid=u.id
               LEFT JOIN {course} c ON c.id=comc.courseid
+              $sql_join
             WHERE com.id=:competency_id AND u.id IS NOT NULL $sql_filter
             GROUP BY u.id,c.id $sql_having $sql_order", $params,false);
 
@@ -6709,6 +6721,8 @@ class local_intelliboard_external extends external_api {
         $teacher_roles3 = $this->get_filter_in_sql($params->teacher_roles,'ras.roleid');
         $teacher_roles4 = $this->get_filter_in_sql($params->teacher_roles,'ras.roleid');
 
+        $sql_join = $this->get_suspended_sql($params);
+
         $data = $this->get_report_data("
             SELECT
                   ra.id,
@@ -6755,6 +6769,7 @@ class local_intelliboard_external extends external_api {
                   JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                   JOIN {course} c ON c.id= ctx.instanceid
                   JOIN {user} u ON u.id=ra.userid
+                  $sql_join
                 WHERE ra.id > 0 $sql_filter $sql_having $sql_order", $params,false);
 
         foreach($data as &$item){
@@ -6809,6 +6824,8 @@ class local_intelliboard_external extends external_api {
 
             $sql_join .= " JOIN (SELECT DISTINCT ras.userid, con.instanceid FROM {role_assignments} ras, {context} con WHERE con.id = ras.contextid AND con.contextlevel = 50 $sql GROUP BY ras.userid, con.instanceid) ra ON ra.userid = u.id AND ra.instanceid = c.id";
         }
+
+        $sql_join .= $this->get_suspended_sql($params);
 
         return $this->get_report_data("
             SELECT
@@ -9326,6 +9343,8 @@ class local_intelliboard_external extends external_api {
           $sql_select = "MIN(stat.students_accesed)";
           $sql_join = "";
         }
+
+        $sql_join .= $this->get_suspended_sql($params);
 
         return $this->get_report_data("
                     SELECT
