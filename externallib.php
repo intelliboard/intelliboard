@@ -2754,7 +2754,7 @@ class local_intelliboard_external extends external_api {
             $cast_start = '';
             $cast_end = '';
         }
-        $sql_join = $this->get_suspended_sql($params, 'c.id', 'ra.userid');
+        $sql_join = $this->get_suspended_sql($params, 'c.id', 'u_related.id');
 
         return $this->get_report_data("
             SELECT MIN(ra.id),
@@ -4683,6 +4683,7 @@ class local_intelliboard_external extends external_api {
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filterdate_sql($params, "bi.dateissued");
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, 'c.id');
 
         $system_b = ($params->custom == 1)?' OR b.courseid IS NULL ':'';
         if(!empty($params->courseid)){
