@@ -84,15 +84,26 @@ class local_intelliboard_notification
             $sql .= ")";
         }
 
+        $notifications = json_decode(json_encode($DB->get_records_sql($sql, $params)), true);
 
-        $result = json_decode(json_encode($DB->get_records_sql($sql, $params)), true);
+        if ($notifications) {
+            list($insql, $inparams) = $DB->get_in_or_equal(array_column($notifications, 'id'));
+            $params = $DB->get_records_sql("
+            SELECT *
+            FROM {local_intelliboard_ntf_pms} linp
+            WHERE linp.notificationid $insql", $inparams);
+
+            foreach ($params as $param) {
+                $notifications[$param->notificationid]['params'][$param->name][] = $param->value;
+            }
+        }
 
         return array_map(function ($item) {
             $item['email'] = isset($item['email'])? explode(',', $item['email']) : [];
             $item['cc']    = isset($item['cc'])? explode(',', $item['cc']) : [];
             $item['tags']  = json_decode($item['tags'], true);
             return $item;
-        }, $result);
+        }, $notifications);
     }
 
     public function send_notifications($notifications, $event = array(), $params = array())
@@ -287,7 +298,6 @@ class local_intelliboard_notification
 
     protected function prepare_notification($notification, $params = array(), $attachment = array())
     {
-
         $buffer = array();
 
         if ($params) {
@@ -491,6 +501,7 @@ class local_intelliboard_notification
 
         $result = array();
         foreach ($events as $data) {
+            $emailsToSent = $this->get_related_emails($notification, $data);
             $activityType = explode('_', $data['component'])[1];
 
             switch ($activityType) {
@@ -507,16 +518,23 @@ class local_intelliboard_notification
                     )->name;
             }
 
-            $result[] = array(
-                'user' => fullname($DB->get_record('user', array('id' => $data['userid']))),
-                'activity_type' => $activityType,
-                'activity' => $activity,
-                'time' => date('Y/m/d', time())
-            );
+            foreach ($emailsToSent as $email) {
+                $result[$email][] = array(
+                    'user' => fullname($DB->get_record('user', array('id' => $data['userid']))),
+                    'activity_type' => $activityType,
+                    'activity' => $activity,
+                    'time' => date('Y/m/d', time())
+                );
+            }
         }
 
-        $recipients = $this->get_recipients_for_notification($notification);
-        $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
+        $recipients = [];
+        $notifications = [];
+        foreach ($result as $email => $data) {
+            $notification['email'] = [$email];
+            $recipients = array_merge($recipients, $this->get_recipients_for_notification($notification));
+            $notifications = array_merge($notifications, array_fill(0, count($recipients), $this->prepare_notification($notification, [$data])));
+        }
 
         return array($recipients, $notifications);
     }
@@ -621,6 +639,7 @@ class local_intelliboard_notification
             'timeEnrolled' => date('Y/m/d', 'H:i:s')
         );
 
+        $notification['email'] = $this->get_related_emails($notification, $event);
         $recipients = $this->get_recipients_for_notification($notification);
         $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, array($result)));
 
@@ -645,15 +664,41 @@ class local_intelliboard_notification
 
         $result = compact('user', 'courseName', 'grade');
 
+        $notification['email'] = $this->get_related_emails($notification, $event);
         $recipients = $this->get_recipients_for_notification($notification);
         $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, [$result]));
 
         return [$recipients, $notifications];
     }
 
+    protected function get_related_emails($notification, $event)
+    {
+        global $DB;
+
+        $relatedEmails = $notification['email'];
+        if (isset($notification['params']['emailType']) and current($notification['params']['emailType']) == 1) {
+            $teacherRoles = explode(',', get_config('local_intelliboard', 'filter10'));
+            list($inRolesSql, $params) = $this->get_filter_in_sql($teacherRoles, 'ra.roleid');
+            $params[] = $event['courseid'];
+
+            $teachersOfCourse = json_decode(json_encode($DB->get_records_sql("
+            SELECT
+                u.email
+                FROM {user} u
+                INNER JOIN {role_assignments} ra ON ra.userid = u.id AND $inRolesSql
+                INNER JOIN {context} ctx ON ctx.id = ra.contextid
+                WHERE ctx.instanceid = ? AND ctx.contextlevel = 50
+            ", $params)), true);
+
+            $teachersEmails = array_column($teachersOfCourse, 'email');
+            $relatedEmails = array_intersect($relatedEmails, $teachersEmails);
+        }
+
+        return $relatedEmails;
+    }
+
     protected function notification12_event($notification)
     {
-
         $sql = '
             SELECT
                 fp.id as objectid,
