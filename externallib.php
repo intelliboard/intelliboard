@@ -1606,7 +1606,7 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
 
-        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "u.idnumber", "s.name", "c.fullname", "attempts", "t.duration","t.starttime","cmc.timemodified", "score", "cohortname"), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "u.idnumber", "s.name", "c.fullname", "attempts", "t.duration","t.starttime","cmc.timemodified", "score","l.timespend","l.visits","","cohortname"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -4157,9 +4157,7 @@ class local_intelliboard_external extends external_api {
                 u.lastlogin,
                 u.currentlogin,
                 u.lastip $sql_columns
-            FROM {user} u
-            WHERE u.id > 0 $sql_filter
-            GROUP BY u.id $sql_having $sql_order", $params);
+            FROM {user} u WHERE u.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
 
     public function report74($params){
@@ -5029,6 +5027,7 @@ class local_intelliboard_external extends external_api {
             $sql_having = str_replace("HAVING", "WHERE", $sql_having);
         }
         $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["t.userid" => "users", "t.courseid" => "courses"]);
         $sql_columns1 = $this->get_columns($params, "u.id");
         $sql_columns2 = $this->get_columns($params, "u.id");
         $sql_filter1 = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -5064,6 +5063,7 @@ class local_intelliboard_external extends external_api {
               cm.id AS cmid,
               a.id,
               a.name,
+              e.courseid,
               u.id as userid,
               u.firstname,
               u.lastname,
@@ -5097,6 +5097,7 @@ class local_intelliboard_external extends external_api {
               cm.id AS cmid,
               qz.id,
               qz.name,
+              e.courseid,
               u.id as userid,
               u.firstname,
               u.lastname,
@@ -5126,7 +5127,7 @@ class local_intelliboard_external extends external_api {
               JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=u.id AND gg.overridden=0
               $sql2
             WHERE quiza.preview = 0 AND quiza.state = 'finished' AND qas.state='needsgrading'
-            $sql_filter2)) t $sql_having $sql_order ", $params);
+            $sql_filter2)) t WHERE t.userid > 0 $sql_filter $sql_having $sql_order ", $params);
     }
     function report104($params)
     {
@@ -12891,7 +12892,7 @@ class local_intelliboard_external extends external_api {
         if ($count > 300) {
             return array('length' => $count);
         } else {
-            return $DB->get_records_sql("SELECT c.id, c.fullname, ca.name FROM {course} c, {course_categories} ca WHERE ca.id = c.category $sql_filter", $this->params);
+            return $DB->get_records_sql("SELECT c.id, c.fullname, c.shortname, ca.name FROM {course} c, {course_categories} ca WHERE ca.id = c.category $sql_filter", $this->params);
         }
     }
     public function get_assign_categories($params)
