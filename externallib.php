@@ -2798,7 +2798,7 @@ class local_intelliboard_external extends external_api {
     public function report66($params)
     {
         global $CFG;
-        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "u.idnumber", "course", "assignment", "a.duedate", "s.status", "u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country",""), $this->get_filter_columns($params));
+        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "u.idnumber", "course", "assignment", "a.duedate", "s.status", "grade", "u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country",""), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -2817,6 +2817,7 @@ class local_intelliboard_external extends external_api {
             $row_number_select = "(SELECT @x:= 0) AS x, ";
         }
         $sql_join = $this->get_suspended_sql($params);
+        $grade_single = intelliboard_grade_sql(false, $params, 'gg.', 0, 'gi.');
 
         return $this->get_report_data("
             SELECT $row_number as id,
@@ -2835,7 +2836,8 @@ class local_intelliboard_external extends external_api {
                 u.city,
                 u.country,
                 u.firstname,
-                u.lastname
+                u.lastname,
+                $grade_single AS grade
                 $sql_columns
             FROM $row_number_select {assign} a
                 LEFT JOIN (SELECT e.courseid, ue.userid FROM {user_enrolments} ue, {enrol} e WHERE e.id=ue.enrolid GROUP BY e.courseid, ue.userid) ue
@@ -2845,6 +2847,8 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {course} c ON c.id = a.course
                 LEFT JOIN {modules} m ON m.name = 'assign'
                 LEFT JOIN {course_modules} cm ON cm.instance = a.id AND cm.module = m.id
+                LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='mod' AND gi.itemmodule=m.name AND gi.iteminstance=cm.instance
+                LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=u.id
                 $sql_join
             WHERE (s.timemodified > a.duedate or s.timemodified IS NULL) $sql_filter $sql_having $sql_order", $params);
     }
@@ -5023,9 +5027,6 @@ class local_intelliboard_external extends external_api {
         $columns = array_merge(array("t.fullname","t.name","t.activity","t.firstname","t.lastname", "t.email", "t.time_on"), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns);
-        if(!empty($sql_having)){
-            $sql_having = str_replace("HAVING", "WHERE", $sql_having);
-        }
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["t.userid" => "users", "t.courseid" => "courses"]);
         $sql_columns1 = $this->get_columns($params, "u.id");
@@ -5044,18 +5045,6 @@ class local_intelliboard_external extends external_api {
         $sql_filter2 .= $this->get_filter_enrol_sql($params, "e.");
         $sql_filter2 .= $this->get_filterdate_sql($params, "quiza.timefinish");
         $sql1 = $sql2 = '';
-
-        if($params->userid > 0){
-            $sql1 = 'LEFT JOIN {context} con ON con.contextlevel=50 AND con.instanceid=c.id
-                LEFT JOIN {role_assignments} ra ON ra.contextid=con.id AND ra.userid=:userid1 '.$this->get_filter_in_sql($params->teacher_roles,'ra.roleid');
-
-            $sql2 = 'LEFT JOIN {context} con ON con.contextlevel=50 AND con.instanceid=c.id
-                LEFT JOIN {role_assignments} ra ON ra.contextid=con.id AND ra.userid=:userid2 '.$this->get_filter_in_sql($params->teacher_roles,'ra.roleid');
-            $this->params['userid1'] = $this->params['userid2'] = $params->userid;
-
-            $sql_filter1 .= ' AND ra.id IS NOT NULL';
-            $sql_filter2 .= ' AND ra.id IS NOT NULL';
-        }
 
         return $this->get_report_data("
             SELECT t.* FROM ((SELECT
@@ -7792,7 +7781,8 @@ class local_intelliboard_external extends external_api {
             "points",
             "atd_percent",
             "grade",
-            "grade"), $this->get_filter_columns($params));
+            "grade",
+            "teacher"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -9489,12 +9479,12 @@ class local_intelliboard_external extends external_api {
         if ($CFG->dbtype == 'pgsql') {
             $responce_user_field = 'id';
             $group_concat = "string_agg( DISTINCT CONCAT(g.name), ', ')";
-            $group_concat2 = "string_agg( CONCAT(qua.questionid, '_intelli_sep_', qua.responsesummary), ', ')";
+            $group_concat2 = "string_agg( CONCAT(qua.questionid, '_intelli_sep_', qua.responsesummary), ' intelli_sep_c ')";
             $answers = "0";
         } else {
             $DB->execute("SET SESSION group_concat_max_len = 1000000");
             $group_concat = "GROUP_CONCAT(DISTINCT g.name)";
-            $group_concat2 = "GROUP_CONCAT(CONCAT(qua.questionid, '_intelli_sep_', qua.responsesummary))";
+            $group_concat2 = "GROUP_CONCAT(CONCAT(qua.questionid, '_intelli_sep_', qua.responsesummary) SEPARATOR 'intelli_sep_c')";
             $answers = "GROUP_CONCAT(CONCAT ( q.question, 'intelli_sep_q', CASE WHEN q.response_table = 'response_text' THEN (SELECT a.response FROM {questionnaire_response_text} a WHERE a.response_id = r.id AND a.question_id = q.question) ELSE
                 CASE WHEN q.response_table = 'response_bool' THEN (SELECT a.choice_id FROM {questionnaire_response_bool} a WHERE a.response_id = r.id AND a.question_id = q.question) ELSE
                 CASE WHEN q.response_table = 'resp_single' THEN (SELECT h.content FROM {questionnaire_resp_single} a, {questionnaire_quest_choice} h WHERE a.response_id = r.id AND a.question_id = q.question AND h.id = a.choice_id AND h.question_id = q.question) ELSE
@@ -9554,7 +9544,7 @@ class local_intelliboard_external extends external_api {
 
               LEFT JOIN (SELECT q.id, qa.userid, $group_concat2 AS quizanswers
                 FROM {quiz} q
-                  LEFT JOIN {quiz_attempts} qa ON qa.quiz=q.id AND qa.attempt = (SELECT MAX(attempt) FROM {quiz_attempts} WHERE userid = qa.userid and quiz = qa.quiz)
+                  LEFT JOIN {quiz_attempts} qa ON qa.quiz=q.id AND qa.attempt = (SELECT MAX(attempt) FROM {quiz_attempts} WHERE state='finished' AND userid = qa.userid and quiz = qa.quiz)
                   LEFT JOIN {question_attempts} qua ON qua.questionusageid=qa.uniqueid
                 WHERE qua.questionid IS NOT NULL AND q.id=:quizid2 GROUP BY q.id, qa.userid) qz ON qz.id = cm.instance AND qz.userid = u.id
 
@@ -13179,43 +13169,46 @@ class local_intelliboard_external extends external_api {
             if ($query) {
                 $sql = " AND (".implode(" AND ", $query).")";
             }
-        } elseif(isset($params->userid) and $params->userid and $type) {
-            $this->params['txu1'] = $params->userid;
-            $this->params['txu2'] = $params->userid;
+        } elseif(isset($params->userid) and $params->userid and $columns) {
+            $query = [];
+            foreach ($columns as $column => $type) {
+              $sql0 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+              $sql1 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+              $sql2 = $this->get_filter_in_sql($params->learner_roles, "ra2.roleid");
+              $sql3 = $this->get_filter_in_sql($params->learner_roles, "ra2.roleid");
 
-            $sql0 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
-            $sql1 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
-            $sql2 = $this->get_filter_in_sql($params->learner_roles, "ra2.roleid");
-            $sql3 = $this->get_filter_in_sql($params->learner_roles, "ra2.roleid");
+              $this->params['txu1'.$type] = $params->userid;
+              $this->params['txu2'.$type] = $params->userid;
 
-            if ($type == "users") {
-                $sql2 = $this->get_filter_in_sql($params->learner_roles, "ra2.roleid");
-                $sql3 = $this->get_filter_in_sql($params->learner_roles, "ra2.roleid");
-
-                $sql = " AND (
-                $column IN(SELECT distinct(ra2.userid) as id FROM {role_assignments} ra
-                    JOIN {context} ctx ON ra.contextid = ctx.id
-                    JOIN {role_assignments} ra2 ON ra2.contextid = ctx.id $sql2
-                    WHERE ra.userid = :txu1 AND ctx.contextlevel = 50 $sql0)
-                OR
-                $column IN (SELECT distinct(ra2.userid) as id FROM {role_assignments} ra
-                    JOIN {context} ctx ON ra.contextid = ctx.id
-                    JOIN {course} c ON c.category = ctx.instanceid
-                    JOIN {context} ctx2 ON  ctx2.instanceid = c.id AND ctx2.contextlevel = 50
-                    JOIN {role_assignments} AS ra2 ON ra2.contextid = ctx2.id $sql3
-                    WHERE ra.userid = :txu2 AND ctx.contextlevel = 40 $sql1)
-                )";
-            } elseif($type == "courses") {
-                $sql = "AND (
-                $column IN(SELECT distinct(ctx.instanceid) as id FROM {role_assignments} ra
-                    JOIN {context} ctx ON ra.contextid = ctx.id
-                    WHERE ra.userid = :txu1 AND ctx.contextlevel = 50 $sql0)
-                OR
-                $column IN(SELECT distinct(c.id) as id FROM {role_assignments} ra
-                    JOIN {context} ctx ON ra.contextid = ctx.id
-                    JOIN {course} c ON c.category = ctx.instanceid
-                    WHERE ra.userid = :txu2 AND ctx.contextlevel = 40 $sql1)
-                )";
+              if ($type == "users") {
+                  $query[] = " (
+                  $column IN(SELECT distinct(ra2.userid) as id FROM {role_assignments} ra
+                      JOIN {context} ctx ON ra.contextid = ctx.id
+                      JOIN {role_assignments} ra2 ON ra2.contextid = ctx.id $sql2
+                      WHERE ra.userid = :txu1$type AND ctx.contextlevel = 50 $sql0)
+                  OR
+                  $column IN (SELECT distinct(ra2.userid) as id FROM {role_assignments} ra
+                      JOIN {context} ctx ON ra.contextid = ctx.id
+                      JOIN {course} c ON c.category = ctx.instanceid
+                      JOIN {context} ctx2 ON  ctx2.instanceid = c.id AND ctx2.contextlevel = 50
+                      JOIN {role_assignments} AS ra2 ON ra2.contextid = ctx2.id $sql3
+                      WHERE ra.userid = :txu2$type AND ctx.contextlevel = 40 $sql1)
+                  )";
+              } elseif($type == "courses") {
+                  $query[] = " (
+                  $column IN(SELECT distinct(ctx.instanceid) as id FROM {role_assignments} ra
+                      JOIN {context} ctx ON ra.contextid = ctx.id
+                      WHERE ra.userid = :txu1$type AND ctx.contextlevel = 50 $sql0)
+                  OR
+                  $column IN(SELECT distinct(c.id) as id FROM {role_assignments} ra
+                      JOIN {context} ctx ON ra.contextid = ctx.id
+                      JOIN {course} c ON c.category = ctx.instanceid
+                      WHERE ra.userid = :txu2$type AND ctx.contextlevel = 40 $sql1)
+                  )";
+              }
+            }
+            if ($query) {
+                $sql = " AND (".implode(" AND ", $query).")";
             }
         }
         return $sql;
