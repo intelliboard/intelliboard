@@ -76,13 +76,28 @@ class bbb_client {
         $requeststring = "";
         $checksum = sha1($requestaction . $requeststring . $this->bbbserversecret);
 
-        $curl = new \curl();
+        if(get_config('local_intelliboard', 'bbb_debug')) {
+            ob_start();
+            $curl = new \curl(['debug'=>true]);
+            $out = fopen('php://output', 'w');
+            $options['CURLOPT_VERBOSE'] = true;
+            $options['CURLOPT_STDERR'] = $out;
+        } else {
+            $curl = new \curl();
+        }
+
         $res = $curl->get(
             $this->apiendpoint . "/{$requestaction}",
             [
                 'checksum' => $checksum
             ]
         );
+
+        if(get_config('local_intelliboard', 'bbb_debug')) {
+            fclose($out);
+            echo '<pre>';
+            var_dump(ob_get_clean());
+        }
 
         $xml = simplexml_load_string($res);
 

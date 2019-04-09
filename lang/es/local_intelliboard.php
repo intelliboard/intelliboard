@@ -574,6 +574,7 @@ $string['bbbserversecret'] = 'BBB server secret';
 $string['check_active_meetings'] = 'Check active meetings';
 $string['bbbmeetings'] = 'BigBlueButton meetings';
 $string['enablebbbmeetings'] = 'Enable monitoring of BigBlueButton meetings';
+$string['enablebbbdebug'] = 'BigBlueButton debug mode';
 $string['privacy:metadata:local_intelliboard_bbb_meet'] = 'Log about BigBlueButton meetings';
 $string['privacy:metadata:local_intelliboard_bbb_meet:id'] = 'ID of meeting log';
 $string['privacy:metadata:local_intelliboard_bbb_meet:meetingname'] = 'Meeting name';

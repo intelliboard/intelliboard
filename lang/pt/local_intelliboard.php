@@ -588,6 +588,7 @@ $string['bbbserversecret'] = 'Segredo do servidor BBB';
 $string['check_active_meetings'] = 'Verifique as reuniıes ativas';
 $string['bbbmeetings'] = 'Reuniıes BigBlueButton';
 $string['enablebbbmeetings'] = 'Ativar o monitoramento de reuniıes do BigBlueButton';
+$string['enablebbbdebug'] = 'BigBlueButton debug mode';
 $string['privacy:metadata:local_intelliboard_bbb_meet'] = 'Registro sobre as reuniıes do BigBlueButton';
 $string['privacy:metadata:local_intelliboard_bbb_meet:id'] = 'ID do registro de reuni„o';
 $string['privacy:metadata:local_intelliboard_bbb_meet:meetingname'] = 'Nome da Reuni„o';
