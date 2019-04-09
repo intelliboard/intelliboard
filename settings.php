@@ -816,6 +816,13 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
+        // BBB debug
+        $name = 'local_intelliboard/bbb_debug';
+        $title = get_string('enablebbbdebug', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
         // BBB API endpoint
         $name = 'local_intelliboard/bbbapiendpoint';
         $title = get_string('bbbapiendpoint', 'local_intelliboard');
