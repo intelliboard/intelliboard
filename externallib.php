@@ -6817,7 +6817,7 @@ class local_intelliboard_external extends external_api {
         $sql_join = "";
         if(!empty($params->custom2)){
             $sql = $this->get_filter_in_sql($params->custom2, "ras.roleid");
-            $sql .= $this->get_filter_in_sql($params->courseid, "c.id");
+            $sql .= $this->get_filter_in_sql($params->courseid, "con.instanceid");
 
             $sql_join .= " JOIN (SELECT DISTINCT ras.userid, con.instanceid FROM {role_assignments} ras, {context} con WHERE con.id = ras.contextid AND con.contextlevel = 50 $sql GROUP BY ras.userid, con.instanceid) ra ON ra.userid = u.id AND ra.instanceid = c.id";
         }
@@ -8328,7 +8328,7 @@ class local_intelliboard_external extends external_api {
     function report154($params)
     {
         global $CFG;
-        $columns = ["la.id", "u.id", "la.timeseen", "c.fullname", "c.shortname", "u.firstname", "u.lastname", "u.email", "u.username", "t.firstname", "t.lastname", "t.email", "t.username", "l.name", "lp.contents", "useranswer", "teacher_feedback"];
+        $columns = array_merge(array("la.id", "u.id", "la.timeseen", "c.fullname", "c.shortname", "u.firstname", "u.lastname", "u.email", "u.username", "t.firstname", "t.lastname", "t.email", "t.username", "l.name", "lp.contents", "useranswer", "teacher_feedback"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -8353,7 +8353,8 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data("
             SELECT
-              CONCAT(la.id,'-',lp.id) AS id,
+              CONCAT(la.id,'-',lp.id) AS unique_id,
+			  la.id AS id,
               la.timeseen,
               c.id AS courseid,
               c.fullname,
@@ -9382,11 +9383,11 @@ class local_intelliboard_external extends external_api {
             "c.fullname",
             "u.firstname",
             "u.lastname",
-            "u.email",
-            "completed",
+            "u.email"),
+            $this->get_filter_columns($params),
+            array("completed",
             "not_completed",
-            "not_accessed"),
-            $this->get_filter_columns($params)
+            "not_accessed")
         );
 
         $sql_columns = $this->get_columns($params, "u.id");
