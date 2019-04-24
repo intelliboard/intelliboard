@@ -149,7 +149,7 @@ class local_intelliboard_external extends external_api {
         }
 
         //Available functions
-        $functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report18_graph','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','get_competency','get_competency_templates','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report92','report93','report94','report95','report96','report97','report98','report99','report99_graph','report100','report101','report102','report103','report104','report105','report106','report107','report108','report109','report110','report111','report112','report113','report114','report114_graph','report115','report116','report117','report118','report119','report120','report121','report122','report123','report124','report125','report126','report127','report128','get_course_modules','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_visits_perday','get_visits_perweek','get_live_info','get_course_instructors','get_course_discussions','get_course_questionnaire','get_course_survey','get_course_questionnaire_questions','get_course_survey_questions','get_cohort_users','get_users','get_grade_letters','get_questions','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_users_count','get_most_visited_courses','get_enrollments_per_course','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_userids','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_learner','get_learners','get_learner_courses','get_course','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_site_avg','get_site_activity','count_records','analytic9','get_course_sections','get_course_user_groups','get_course_assignments','get_data_question_answers','get_course_databases','get_databases_question','get_history_items','get_history_grades','monitor27','monitor28','monitor29','monitor30','monitor31', 'get_assign_users', 'get_assign_courses', 'get_assign_fields', 'get_assign_categories', 'get_assign_cohorts', 'get_course_grade_categories','get_visits_per_day_by_entity','report137','get_role_users','report139_header','report139','get_course_feedback','report140','report141','report142','report143','report149','get_incorrect_answers','report150','report151','report152','report154', 'monitor32', 'monitor33', 'monitor34', 'monitor35', 'monitor36', 'monitor37', 'monitor38', 'monitor39', 'report144', 'report145', 'report155', 'report156', 'report157', 'report158', 'report159', 'report160', 'report161', 'report162', 'report163', 'report164', 'report165', 'analytic10', 'analytic10table', 'report167', 'get_question_tags', 'get_course_checklists', 'report168', 'get_course_checklist_items', 'get_quiz_questions', 'report169', 'report170', 'report171', 'report172', 'report173', 'report174','get_moodle_size', 'monitor53', 'get_event_contexts');
+        $functions = array('report1','report2','report3','report4','report5','report6','report7','report8','report9','report10','report11','report12','report13','report14','report15','report16','report17','report18','report18_graph','report19','report20','report21','report22','report23','report24','report25','report26','report27','report28','report29','report30','report31','report32','get_scormattempts','get_competency','get_competency_templates','report33','report34','report35','report36','report37','report38','report39','report40','report41','report43','report44','report45','report42','report46','report47','report58','report66','report72','report73','report75','report76','report77','report79','report80','report81','report82','report83','report84','report85','report86','report87','report88','report89','report90','report91','report92','report93','report94','report95','report96','report97','report98','report99','report99_graph','report100','report101','report102','report103','report104','report105','report106','report107','report108','report109','report110','report111','report112','report113','report114','report114_graph','report115','report116','report117','report118','report119','report120','report121','report122','report123','report124','report125','report126','report127','report128','get_course_modules','report78','report74','report71','report70','report67','report68','report69','get_max_attempts','report56','analytic1','analytic2','get_quizes','analytic3','analytic4','analytic5','analytic5table','analytic6','analytic7','analytic7table','analytic8','analytic8details','get_visits_perday','get_visits_perweek','get_live_info','get_course_instructors','get_course_discussions','get_course_questionnaire','get_course_survey','get_course_questionnaire_questions','get_course_survey_questions','get_cohort_users','get_users','get_grade_letters','get_questions','get_total_info','get_system_users','get_system_courses','get_system_load','get_module_visits','get_useragents','get_useros','get_userlang','get_users_count','get_most_visited_courses','get_enrollments_per_course','get_active_courses_per_day','get_unique_sessions','get_new_courses_per_day','get_users_per_day','get_active_users_per_day','get_countries','get_cohorts','get_elisuset','get_totara_pos','get_scorm_user_attempts','get_course_users','get_info','get_courses','get_userids','get_modules','get_outcomes','get_roles','get_roles_fix_name','get_tutors','get_cminfo','get_enrols','get_learner','get_learners','get_learner_courses','get_course','get_userinfo','get_user_info_fields_data','get_user_info_fields','get_site_avg','get_site_activity','count_records','analytic9','get_course_sections','get_course_user_groups','get_course_assignments','get_data_question_answers','get_course_databases','get_databases_question','get_history_items','get_history_grades','monitor27','monitor28','monitor29','monitor30','monitor31', 'get_assign_users', 'get_assign_courses', 'get_assign_fields', 'get_assign_categories', 'get_assign_cohorts', 'get_course_grade_categories','get_visits_per_day_by_entity','report137','get_role_users','report139_header','report139','get_course_feedback','report140','report141','report142','report143','report149','get_incorrect_answers','report150','report151','report152','report154', 'monitor32', 'monitor33', 'monitor34', 'monitor35', 'monitor36', 'monitor37', 'monitor38', 'monitor39', 'report144', 'report145', 'report155', 'report156', 'report157', 'report158', 'report159', 'report160', 'report161', 'report162', 'report163', 'report164', 'report165', 'analytic10', 'analytic10table', 'report167', 'get_question_tags', 'get_course_checklists', 'report168', 'get_course_checklist_items', 'get_quiz_questions', 'report169', 'report170', 'report171', 'report172', 'report173', 'report174','get_moodle_size', 'monitor53', 'get_event_contexts', 'monitor54');
 
         $function = (isset($params->function)) ? $params->function : '';
         if(in_array($function, $functions)){
@@ -2262,6 +2262,8 @@ class local_intelliboard_external extends external_api {
     }
     public function report38($params)
     {
+        global $CFG;
+
         $columns = array_merge(array("c.startdate", "ccc.timeend", "course", "u.firstname","u.lastname", "u.email", "enrols", "enrolstart", "enrolend", "complete", "complete"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
@@ -2276,13 +2278,17 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
 
+        if ($CFG->version < 2016120509) {
+            $sql_columns .= ", '' AS startdate, '' AS enddate";
+        } else {
+            $sql_columns .= ", c.startdate AS startdate, c.enddate AS enddate";
+        }
+
         return $this->get_report_data("
             SELECT ue.id,
                 ue.timecreated as enrolstart,
                 ue.timeend as enrolend,
                 ccc.timeend,
-                c.startdate,
-                c.enddate,
                 c.enablecompletion,
                 cc.timecompleted as complete,
                 u.firstname,
@@ -7961,6 +7967,8 @@ class local_intelliboard_external extends external_api {
     }
     function report143($params)
     {
+        global $CFG;
+
         $columns = array_merge(array("u.firstname","u.lastname","u.email","u.idnumber"), $this->get_filter_columns($params));
         $modules = $this->get_course_modules($params);
         $sql_select = '';
@@ -7985,6 +7993,12 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $sql_join = $this->get_suspended_sql($params);
 
+        if ($CFG->version < 2016120509) {
+            $sql_columns .= ", '' AS startdate, '' AS enddate";
+        } else {
+            $sql_columns .= ", c.startdate AS startdate, c.enddate AS enddate";
+        }
+
         $data = $this->get_report_data("
             SELECT
               ra.id,
@@ -7997,7 +8011,6 @@ class local_intelliboard_external extends external_api {
               c.fullname,
               c.shortname,
               c.timecreated,
-              c.enddate,
               cc.timecompleted,
               ca.name AS category,
               ra.timemodified AS enrolled
@@ -12667,6 +12680,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter_user = $this->get_filter_in_sql($params->custom2, "gh.userid");
         $sql_filter = $this->get_filter_in_sql($params->courseid, "gi.courseid");
         $sql_filter .= $this->get_teacher_sql($params, ["gi.courseid" => "courses", "gh.userid" => "users"]);
+        $sql_filter .= $this->get_filterdate_sql($params, "gh.timemodified");
 
         $grade_sql = intelliboard_grade_sql(false,null,'gh.');
         $grade_percent = intelliboard_grade_sql(false,null, 'gh.',0, 'gi.',true);
@@ -12681,6 +12695,30 @@ class local_intelliboard_external extends external_api {
                 WHERE gi.itemtype='course' {$sql_filter}";
 
         return $DB->get_records_sql($sql, $this->params);
+    }
+    public function monitor54($params) {
+        global $DB;
+
+        $sql_filter = $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_teacher_sql($params, ["e.courseid" => "courses", "ue.userid" => "users"]);
+
+
+        $sql = "SELECT
+                    SUM(CASE WHEN e.enrolled>5 THEN 1 ELSE 0 END) AS more_than_five_courses,
+                    SUM(CASE WHEN e.enrolled>=5 THEN 1 ELSE 0 END) AS five_courses,
+                    SUM(CASE WHEN e.enrolled>=4 THEN 1 ELSE 0 END) AS four_courses,
+                    SUM(CASE WHEN e.enrolled>=3 THEN 1 ELSE 0 END) AS three_courses,
+                    SUM(CASE WHEN e.enrolled>=2 THEN 1 ELSE 0 END) AS two_courses,
+                    SUM(CASE WHEN e.enrolled>=1 THEN 1 ELSE 0 END) AS one_courses
+                FROM (SELECT
+                          COUNT(DISTINCT e.courseid) AS enrolled
+                      FROM {user_enrolments} ue
+                          JOIN {enrol} e ON ue.enrolid=e.id
+                      WHERE ue.id>0 {$sql_filter}
+                      GROUP BY ue.userid) e";
+
+        return $DB->get_record_sql($sql, $this->params);
     }
     public function get_userinfo($params)
     {
@@ -13171,46 +13209,64 @@ class local_intelliboard_external extends external_api {
                 $sql = " AND (".implode(" AND ", $query).")";
             }
         } elseif(isset($params->userid) and $params->userid and $columns) {
-            $query = [];
-            foreach ($columns as $column => $type) {
-              $sql0 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
-              $sql1 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
-              $sql2 = $this->get_filter_in_sql($params->learner_roles, "ra2.roleid");
-              $sql3 = $this->get_filter_in_sql($params->learner_roles, "ra2.roleid");
+          $query = [];
+          $mode = get_config('local_intelliboard', 'instructor_mode');
+          $visibility = get_config('local_intelliboard', 'instructor_course_visibility');
+          $roles = get_config('local_intelliboard', 'filter10');
+          $access = get_config('local_intelliboard', 'instructor_mode_access');
+          $user = $DB->get_record_sql("SELECT * FROM {user} WHERE id = :userid", ['userid' => $params->userid]);
 
-              $this->params['txu1'.$type] = $params->userid;
-              $this->params['txu2'.$type] = $params->userid;
 
-              if ($type == "users") {
-                  $query[] = " (
-                  $column IN(SELECT distinct(ra2.userid) as id FROM {role_assignments} ra
-                      JOIN {context} ctx ON ra.contextid = ctx.id
-                      JOIN {role_assignments} ra2 ON ra2.contextid = ctx.id $sql2
-                      WHERE ra.userid = :txu1$type AND ctx.contextlevel = 50 $sql0)
-                  OR
-                  $column IN (SELECT distinct(ra2.userid) as id FROM {role_assignments} ra
-                      JOIN {context} ctx ON ra.contextid = ctx.id
-                      JOIN {course} c ON c.category = ctx.instanceid
-                      JOIN {context} ctx2 ON  ctx2.instanceid = c.id AND ctx2.contextlevel = 50
-                      JOIN {role_assignments} AS ra2 ON ra2.contextid = ctx2.id $sql3
-                      WHERE ra.userid = :txu2$type AND ctx.contextlevel = 40 $sql1)
-                  )";
-              } elseif($type == "courses") {
-                  $query[] = " (
-                  $column IN(SELECT distinct(ctx.instanceid) as id FROM {role_assignments} ra
-                      JOIN {context} ctx ON ra.contextid = ctx.id
-                      WHERE ra.userid = :txu1$type AND ctx.contextlevel = 50 $sql0)
-                  OR
-                  $column IN(SELECT distinct(c.id) as id FROM {role_assignments} ra
-                      JOIN {context} ctx ON ra.contextid = ctx.id
-                      JOIN {course} c ON c.category = ctx.instanceid
-                      WHERE ra.userid = :txu2$type AND ctx.contextlevel = 40 $sql1)
-                  )";
+
+          if ($mode) {
+            $courses = $DB->get_records_sql("SELECT * FROM {course} WHERE category > 0");
+          } else {
+            $params = ['userid' => $params->userid];
+            list($sql, $params) = intelliboard_filter_in_sql($roles, "ra.roleid", $params);
+            $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid AND ra.userid = :userid $sql", $params);
+          }
+
+          foreach ($courses as $key=>$course) {
+              if ($access) {
+                if (!can_access_course($course, $user, 'moodle/course:update')) {
+                    unset($courses[$key]);
+                  }
+              } else {
+                if (!can_access_course($course, $user)) {
+                    unset($courses[$key]);
+                  }
               }
-            }
-            if ($query) {
-                $sql = " AND (".implode(" AND ", $query).")";
-            }
+              if (!$visibility and !$course->visible) {
+                unset($courses[$key]);
+              }
+          }
+          foreach ($columns as $column => $type) {
+              if ($type == "users") {
+                  $assign_courses_list = (!$courses) ? '0,0' : implode(",", array_keys($courses));
+                  $learner_roles = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
+                  $result = $DB->get_records_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN ($assign_courses_list)", $this->params);
+                  if ($result) {
+                      $list = [];
+                      foreach ($result as $value) {
+                          $list[] = $value->userid;
+                      }
+                      $this->users = array_unique(array_merge($this->users, $list));
+                  }
+                  if ($this->users) {
+                      $query[] = "$column IN (".implode(",", $this->users).")";
+                  }
+              } elseif($type == "courses") {
+                  $query = [];
+                  $this->courses = array_keys($courses);
+
+                  if ($this->courses) {
+                      $query[] = "$column IN (".implode(",", $this->courses).")";
+                  }
+              }
+          }
+          if ($query) {
+              $sql = " AND (".implode(" AND ", $query).")";
+          }
         }
         return $sql;
     }

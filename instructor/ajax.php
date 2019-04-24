@@ -55,13 +55,12 @@ if($action == 'get_total_students'){
         $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
     }
 
-    $teacher_roles = get_config('local_intelliboard', 'filter10');
     $learner_roles = get_config('local_intelliboard', 'filter11');
     $params = array('userid1'=>$USER->id,'userid2'=>$USER->id,'userid3'=>$USER->id,'timestart1'=>$timestart, 'timefinish1'=>$timefinish,'timestart2'=>$timestart, 'timefinish2'=>$timefinish,'timestart3'=>$timestart, 'timefinish3'=>$timefinish);
 
-    list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
-    list($sql2, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
-    list($sql3, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
+    $sql1 = $sql2 = intelliboard_instructor_getcourses("lit.courseid");
+    $sql3 = intelliboard_instructor_getcourses("e.courseid");
+    $sql7 = intelliboard_instructor_getcourses("ctx.instanceid");
 
     list($sql4, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     list($sql5, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
@@ -82,12 +81,9 @@ if($action == 'get_total_students'){
                         LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=lit.courseid
                         LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=lit.userid $sql4
                         $join_sql1
-                       WHERE lit.courseid IN (
-                               SELECT DISTINCT ctx.instanceid
-                               FROM {role_assignments} ra, {context} ctx
-                               WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid1 $sql1)
-                             AND lil.timepoint BETWEEN :timestart2 AND :timefinish2
+                       WHERE lil.timepoint BETWEEN :timestart2 AND :timefinish2
                              AND ra.userid IS NOT NULL
+                             $sql1
                        GROUP BY lit.userid
                         ) AS t) AS avg_timespend,
 
@@ -97,23 +93,16 @@ if($action == 'get_total_students'){
                      LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=lit.courseid
                      LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=lit.userid $sql5
                      $join_sql1
-                   WHERE lit.courseid IN (
-                           SELECT DISTINCT ctx.instanceid
-                           FROM {role_assignments} ra, {context} ctx
-                           WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid2 $sql2)
-                         AND lil.timepoint BETWEEN :timestart3 AND :timefinish3
-                         AND ra.userid IS NOT NULL) AS active_users
+                   WHERE lil.timepoint BETWEEN :timestart3 AND :timefinish3
+                         AND ra.userid IS NOT NULL
+                         $sql2) AS active_users
 
                 FROM {enrol} e
                   LEFT JOIN {user_enrolments} ue ON ue.status=0 AND ue.enrolid=e.id
                   LEFT JOIN {context} ctx ON ctx.contextlevel=50 AND ctx.instanceid=e.courseid
                   LEFT JOIN {role_assignments} ra ON ra.contextid=ctx.id AND ra.userid=ue.userid $sql6
                   $join_sql1
-                WHERE e.courseid IN (
-                        SELECT DISTINCT ctx.instanceid
-                        FROM {role_assignments} ra, {context} ctx
-                        WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid3 $sql3)
-                      AND ra.userid IS NOT NULL", $params);
+                WHERE ra.userid IS NOT NULL $sql3", $params);
 
     $data->avg_timespend = seconds_to_time($data->avg_timespend);
 
@@ -127,11 +116,7 @@ if($action == 'get_total_students'){
                      LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
                      JOIN {user} u ON u.id=ra.userid
                      $join_sql1
-                   WHERE ctx.contextlevel=50 AND ctx.instanceid IN (
-                           SELECT DISTINCT ctx.instanceid
-                           FROM {role_assignments} ra, {context} ctx
-                           WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid2 $sql2)
-                         AND ra.userid IS NOT NULL
+                   WHERE ctx.contextlevel=50 AND ra.userid IS NOT NULL $sql7
                    GROUP BY u.id", $params);
 
     $data->users = array();
