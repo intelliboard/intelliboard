@@ -67,7 +67,7 @@ function intelliboard_course_learners_total($courseid)
             (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
             COUNT(DISTINCT ra.userid) as learners,
             COUNT(DISTINCT cc.id) as learners_completed,
-            (SELECT $grade_avg 
+            (SELECT $grade_avg
               FROM {grade_items} gi
                 JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                 $join_group_sql2
@@ -127,14 +127,12 @@ function intelliboard_learner_data($userid, $courseid)
 function intelliboard_activities_data($courseid)
 {
     global $DB, $USER;
-
     $params = array(
         'courseid' => $courseid,
         'courseid2' => $courseid,
         'courseid3' => $courseid,
         'courseid4' => $courseid
     );
-
     list($sql1, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
     $params = array_merge($params,$sql_params);
     $grade_avg = intelliboard_grade_sql(true);
@@ -142,7 +140,6 @@ function intelliboard_activities_data($courseid)
     $join_group_sql = intelliboard_group_aggregation_sql('cmc.userid', $USER->id, 'cm.course');
     $join_group_sql2 = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'gi.courseid');
     $join_group_sql3 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
-
     return $DB->get_record_sql("
         SELECT
             c.id AS courseid,
@@ -153,12 +150,12 @@ function intelliboard_activities_data($courseid)
             (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
             (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
             (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
-            (SELECT COUNT(cmc.id) 
+            (SELECT COUNT(cmc.id)
               FROM {course_modules} cm
                JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id
                $join_group_sql
               WHERE cm.visible = 1 AND cm.course = c.id $completion ) AS completed,
-            (SELECT $grade_avg 
+            (SELECT $grade_avg
               FROM {grade_items} gi
                 JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                 $join_group_sql2
@@ -166,26 +163,22 @@ function intelliboard_activities_data($courseid)
         FROM {course} c
             LEFT JOIN (
                 SELECT l.courseid, SUM(l.visits) AS visits, SUM(l.timespend) AS timespend
-                FROM {local_intelliboard_tracking} l 
-                WHERE l.courseid = :courseid2 AND l.userid IN (SELECT DISTINCT ra.userid 
-                                                                FROM {context} ctx 
+                FROM {local_intelliboard_tracking} l
+                WHERE l.courseid = :courseid2 AND l.userid IN (SELECT DISTINCT ra.userid
+                                                                FROM {context} ctx
                                                                   JOIN {role_assignments} ra ON ctx.id = ra.contextid
                                                                   $join_group_sql3
                                                                 WHERE ctx.instanceid = :courseid4 AND ctx.contextlevel = 50 AND ra.roleid $sql1)
                 GROUP BY l.courseid) l ON l.courseid=c.id
         WHERE c.id = :courseid", $params);
 }
-
 function intelliboard_activity_data($cmid, $courseid)
 {
     global $DB, $USER;
-
     $params = array('cmid' => $cmid);
     $cm = $DB->get_record_sql("SELECT cm.id, cm.instance, m.name FROM {course_modules} cm, {modules} m WHERE cm.id = :cmid AND m.id = cm.module", $params);
-
     list($sql1, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
     $params = array_merge($params,$sql_params);
-
     $params['instance'] = $cm->instance;
     $params['instance2'] = $cm->instance;
     $params['module'] = $cm->name;
@@ -197,7 +190,6 @@ function intelliboard_activity_data($cmid, $courseid)
     $join_group_sql = intelliboard_group_aggregation_sql('cmc.userid', $USER->id, 'cm.course');
     $join_group_sql2 = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'gi.courseid');
     $join_group_sql3 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
-
     return $DB->get_record_sql("
         SELECT
             cm.id, c.id AS courseid,
@@ -206,13 +198,13 @@ function intelliboard_activity_data($cmid, $courseid)
             ca.name AS category,
             cs.section,
             m.name as module, l.visits, l.timespend,
-            (SELECT COUNT(DISTINCT cmc.id) 
+            (SELECT COUNT(DISTINCT cmc.id)
               FROM {course_modules_completion} cmc
                 JOIN {course_modules} cm ON cm.id=coursemoduleid
                 $join_group_sql
               WHERE $completion AND cmc.coursemoduleid=:cmid) AS completed,
-            (SELECT $grade_avg 
-              FROM {grade_items} gi 
+            (SELECT $grade_avg
+              FROM {grade_items} gi
                 JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                 $join_group_sql2
               WHERE gi.itemtype = 'mod' AND gi.itemmodule = :module AND gi.iteminstance = :instance2) AS grade
@@ -222,13 +214,13 @@ function intelliboard_activity_data($cmid, $courseid)
             LEFT JOIN {course_sections} cs ON cs.id = cm.section AND cs.course = c.id
             LEFT JOIN {course_categories} ca ON ca.id = c.category
             LEFT JOIN {".$cm->name."} i ON i.id = :instance
-            LEFT JOIN (SELECT l.param, SUM(l.visits) AS visits, SUM(l.timespend) AS timespend 
-                        FROM {local_intelliboard_tracking} l 
-                        WHERE l.page='module' AND l.param = :cmid2 AND l.userid IN (SELECT DISTINCT ra.userid 
-                                                                                      FROM {context} ctx 
+            LEFT JOIN (SELECT l.param, SUM(l.visits) AS visits, SUM(l.timespend) AS timespend
+                        FROM {local_intelliboard_tracking} l
+                        WHERE l.page='module' AND l.param = :cmid2 AND l.userid IN (SELECT DISTINCT ra.userid
+                                                                                      FROM {context} ctx
                                                                                         JOIN {role_assignments} ra ON ctx.id = ra.contextid
                                                                                         $join_group_sql3
-                                                                                      WHERE ctx.instanceid = :courseid AND ctx.contextlevel = 50 AND ra.roleid $sql1) 
+                                                                                      WHERE ctx.instanceid = :courseid AND ctx.contextlevel = 50 AND ra.roleid $sql1)
                         GROUP BY l.param) l ON l.param=cm.id
         WHERE cm.id = :cmid3", $params);
 }
@@ -240,16 +232,10 @@ function intelliboard_instructor_correlations($page, $length)
 
     $teacher_roles = get_config('local_intelliboard', 'filter10');
     $learner_roles = get_config('local_intelliboard', 'filter11');
-
-    $params = array(
-        'userid'=>$USER->id,
-        'userid2'=>$USER->id
-    );
-    list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
-    list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     $grade_avg = intelliboard_grade_sql(true);
     $grade_avg_percent = intelliboard_grade_sql(true,null, 'g.',0, 'gi.',true);
-    $join_sql1 = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'c.id');
+    $join_sql = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'c.id');
+    $sql = intelliboard_instructor_getcourses();
 
     $items = $DB->get_records_sql("
             SELECT
@@ -262,12 +248,8 @@ function intelliboard_instructor_correlations($page, $length)
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                 LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                 LEFT JOIN (SELECT courseid, userid, sum(timespend) AS duration FROM {local_intelliboard_tracking} WHERE courseid > 0 GROUP BY courseid, userid) l ON l.courseid = c.id AND l.userid = g.userid
-                $join_sql1
-            WHERE c.visible = 1 AND c.id IN (
-                SELECT DISTINCT ctx.instanceid
-                FROM {role_assignments} ra, {context} ctx
-                WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1)
-            GROUP BY c.id", $params, $page, $length);
+                $join_sql
+            WHERE c.id > 0 $sql GROUP BY c.id", [], $page, $length);
 
      $d = 0;
     foreach($items as $c){
@@ -299,16 +281,10 @@ function intelliboard_instructor_modules()
 {
     global $DB, $USER;
 
-    $teacher_roles = get_config('local_intelliboard', 'filter10');
     $learner_roles = get_config('local_intelliboard', 'filter11');
-
-    $params = array(
-        'userid'=>$USER->id,
-        'userid2'=>$USER->id
-    );
-    list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
-    list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c.id');
+    $sql = intelliboard_instructor_getcourses();
+    list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", []);
 
     $items = $DB->get_records_sql("
         SELECT
@@ -323,11 +299,7 @@ function intelliboard_instructor_modules()
             LEFT JOIN {modules} m ON m.id = cm.module
             LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = ra.userid AND l.param = cm.id
             $join_sql1
-        WHERE c.visible = 1 AND c.id IN (
-            SELECT DISTINCT ctx.instanceid
-            FROM {role_assignments} ra, {context} ctx
-            WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql2
-        GROUP BY m.id", $params);
+        WHERE c.id > 0 $sql $sql2 GROUP BY m.id", $params);
 
     $data = array(array(get_string('in6', 'local_intelliboard'), get_string('time_spent', 'local_intelliboard')));
     foreach($items as $item){
@@ -342,17 +314,11 @@ function intelliboard_instructor_stats()
 {
     global $DB, $USER;
 
-    $teacher_roles = get_config('local_intelliboard', 'filter10');
     $learner_roles = get_config('local_intelliboard', 'filter11');
-
-    $params = array(
-        'userid'=>$USER->id,
-        'userid2'=>$USER->id
-    );
-    list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
-    list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     $grade_avg = intelliboard_grade_sql(true);
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
+    $sql = intelliboard_instructor_getcourses();
+    list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", []);
 
     return $DB->get_record_sql("SELECT
             COUNT(DISTINCT c.id) as courses,
@@ -367,27 +333,18 @@ function intelliboard_instructor_stats()
             LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
             LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
             $join_sql1
-        WHERE c.visible = 1 AND c.id IN (
-            SELECT DISTINCT ctx.instanceid
-            FROM {role_assignments} ra, {context} ctx
-            WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql2", $params);
+        WHERE c.id > 0 $sql $sql2", $params);
 }
 function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $daterange = '')
 {
     global $DB, $USER;
 
-    $teacher_roles = get_config('local_intelliboard', 'filter10');
     $learner_roles = get_config('local_intelliboard', 'filter11');
-
-    $params = array(
-        'userid'=>$USER->id,
-        'userid2'=>$USER->id
-    );
-    list($sql1, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
-    list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     $grade_avg = intelliboard_grade_sql(true);
     $grade_avg_percent = intelliboard_grade_sql(true,null, 'g.',0,'gi.',true);
     $completion = intelliboard_compl_sql("cmc.");
+    $sql = intelliboard_instructor_getcourses();
+    list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", []);
 
     if($view == 'grades'){
         $timerange_sql = '';
@@ -412,11 +369,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                 LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL $timerange_sql
                 $join_sql
-            WHERE c.visible = 1 AND c.id IN (
-                SELECT DISTINCT ctx.instanceid
-                FROM {role_assignments} ra, {context} ctx
-                WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1)
-            GROUP BY c.id", $params, $page, $length);
+            WHERE c.id > 0 $sql GROUP BY c.id", $params, $page, $length);
     }elseif($view == 'activities'){
         if (!empty($daterange)) {
             $range = explode(" to ", $daterange);
@@ -447,11 +400,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
                 LEFT JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
                 LEFT JOIN {role_assignments} ra ON ctx.id = ra.contextid AND ra.userid=cmc.userid
                 $join_sql2
-            WHERE c.visible = 1 AND c.id IN (
-                SELECT DISTINCT ctx.instanceid
-                FROM {role_assignments} ra, {context} ctx
-                WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql3
-            GROUP BY c.id", $params, $page, $length);
+            WHERE c.id > 0 $sql $sql3 GROUP BY c.id", $params, $page, $length);
 
         foreach($courses as $course){
             $course->data1 = ($course->data2) ? ($course->data1 / ($course->learners * $course->data2)) * 100 : 0;
@@ -483,11 +432,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
                 LEFT JOIN {course} c ON c.id = ctx.instanceid
                 LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
                 $join_sql
-            WHERE c.visible = 1 AND c.id IN (
-                SELECT DISTINCT ctx.instanceid
-                FROM {role_assignments} ra, {context} ctx
-                WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid $sql1) $sql2
-            GROUP BY c.id", $params, $page, $length);
+            WHERE c.id > 0 $sql $sql2 GROUP BY c.id", $params, $page, $length);
 
         if(empty($courses)){
             $row = new stdClass();
@@ -502,21 +447,51 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
     return $courses;
 }
 
-function intelliboard_instructor_get_my_courses(){
-    global $DB,$USER;
+function intelliboard_instructor_course_access($course)
+{
+  $access = get_config('local_intelliboard', 'instructor_mode_access');
 
-    $teacher_roles = get_config('local_intelliboard', 'filter10');
-    $params = array('userid'=>$USER->id);
-    list($sql, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
-
-
-    return $DB->get_records_sql("
-                SELECT DISTINCT c.id,c.fullname,c.shortname
-                FROM {role_assignments} ra, {context} ctx, {course} c
-                WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.userid = :userid AND c.id=ctx.instanceid $sql
-                ORDER BY c.fullname", $params);
+  if (can_access_course($course)) {
+    if ($access) {
+      if (!has_capability('moodle/course:update', context_course::instance($course->id))) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
 }
+function intelliboard_instructor_getcourses($column = 'c.id', $list = false)
+{
+  global $DB, $USER;
 
+  $mode = get_config('local_intelliboard', 'instructor_mode');
+  $visibility = get_config('local_intelliboard', 'instructor_course_visibility');
+  $roles = get_config('local_intelliboard', 'filter10');
+
+  if ($mode) {
+    $courses = $DB->get_records_sql("SELECT * FROM {course} WHERE category > 0");
+  } else {
+    $params = ['userid' => $USER->id];
+    list($sql, $params) = intelliboard_filter_in_sql($roles, "ra.roleid", $params);
+    $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid AND ra.userid = :userid $sql", $params);
+  }
+
+  foreach ($courses as $key=>$course) {
+    if (!intelliboard_instructor_course_access($course)) {
+        unset($courses[$key]);
+      }
+      if (!$visibility and !$course->visible) {
+        unset($courses[$key]);
+      }
+  }
+  if ($list) {
+    return (!$courses) ? [] : $courses;
+  } else {
+    $courses = (!$courses) ? '0,0' : implode(",", array_keys($courses));
+    return " AND $column IN ($courses)";;
+  }
+}
 
 function intelliboard_get_widget($id, $data, $params) {
     global $DB;
@@ -967,21 +942,21 @@ function intelliboard_course_session_activities_data($sessionid, $courseid)
             (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
             (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
             (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc
-                WHERE cm.visible = 1 AND cm.course = c.id $completion AND cmc.coursemoduleid = cm.id AND cmc.userid IN (SELECT ei.userid 
-                      FROM {local_intellicart_logs} il  
-                 LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid 
+                WHERE cm.visible = 1 AND cm.course = c.id $completion AND cmc.coursemoduleid = cm.id AND cmc.userid IN (SELECT ei.userid
+                      FROM {local_intellicart_logs} il
+                 LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid
                      WHERE il.type = 'product' AND ei.unenroldate = 0 AND ei.courseid = :csid1 AND il.sessionid = :sid1)) AS completed,
             (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g
-                WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid IN (SELECT ei.userid 
-                      FROM {local_intellicart_logs} il  
-                 LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid 
+                WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid IN (SELECT ei.userid
+                      FROM {local_intellicart_logs} il
+                 LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid
                      WHERE il.type = 'product' AND ei.unenroldate = 0 AND ei.courseid = :csid2 AND il.sessionid = :sid2)) AS grade
         FROM {course} c
             LEFT JOIN (
                 SELECT l.courseid, SUM(l.visits) AS visits, SUM(l.timespend) AS timespend
-                FROM {local_intelliboard_tracking} l WHERE l.courseid = :courseid2 AND l.userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :courseid4 AND ctx.contextlevel = 50 AND ra.userid IN (SELECT ei.userid 
-                      FROM {local_intellicart_logs} il  
-                 LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid 
+                FROM {local_intelliboard_tracking} l WHERE l.courseid = :courseid2 AND l.userid IN (SELECT DISTINCT ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.instanceid = :courseid4 AND ctx.contextlevel = 50 AND ra.userid IN (SELECT ei.userid
+                      FROM {local_intellicart_logs} il
+                 LEFT JOIN {enrol_intellicart} ei ON il.checkoutid = ei.checkoutid AND il.userid = ei.userid
                      WHERE il.type = 'product' AND ei.unenroldate = 0 AND ei.courseid = :csid3 AND il.sessionid = :sid3) AND ra.roleid $sql1)
                 GROUP BY l.courseid) l ON l.courseid=c.id
         WHERE c.id = :courseid GROUP BY c.id", $params);
