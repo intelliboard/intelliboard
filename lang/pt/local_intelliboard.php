@@ -664,3 +664,7 @@ $string['instructor_course_shortname'] = "Mostrar nome abreviado do curso em vez
 $string['trackmedia'] = "Acompanhar mídia HTML5";
 $string['trackmedia_desc'] = "Acompanhe vídeo e áudio em HTML5";
 $string['ianalytics'] = 'Analítica IntelliBoard';
+
+$string['instructor_course_visibility'] = 'Show hidden/suspended courses for [instructor]';
+$string['instructor_mode'] = 'Show all courses available for [instructor]';
+$string['instructor_mode_access'] = 'Show all courses available for [instructor] with [update] permissions';

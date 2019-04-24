@@ -701,3 +701,7 @@ $string['trackmedia'] = "Track HTML5 media";
 $string['trackmedia_desc'] = "Track HTML5 video and audio";
 $string['t53'] = 'Enable on [Activity progress] chart average line';
 $string['ianalytics'] = 'IntelliBoard Analytics';
+
+$string['instructor_course_visibility'] = 'Show hidden/suspended courses for [instructor]';
+$string['instructor_mode'] = 'Show all courses available for [instructor]';
+$string['instructor_mode_access'] = 'Show all courses available for [instructor] with [update] permissions';
