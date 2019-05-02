@@ -3419,13 +3419,13 @@ class local_intelliboard_external extends external_api {
             $sql_join = "";
         } else {
             $sql_columns .= ", MAX(l.timespend) AS timespend, MAX(l.visits) AS visits";
-            $sql_join = " LEFT JOIN (SELECT userid, courseid, SUM(timespend) AS timespend, SUM(visits) AS visits FROM {local_intelliboard_tracking} WHERE page = 'module' or page = 'course' GROUP BY userid, courseid) l ON l.userid = u.id AND l.courseid = c.id";
+            $sql_join = " LEFT JOIN (SELECT userid, courseid, SUM(timespend) AS timespend, SUM(visits) AS visits FROM {local_intelliboard_tracking} GROUP BY userid, courseid) l ON l.userid = u.id AND l.courseid = c.id";
         }
 
         if ($params->custom == 2) {
             $sql3 = ($params->timestart) ? $this->get_filterdate_sql($params, 'l.timepoint') : '';
 
-            $sql_join = " LEFT JOIN (SELECT t.userid, t.courseid, SUM(l.timespend) AS timespend, SUM(l.visits) AS visits FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l WHERE l.trackid = t.id AND (t.page = 'module' or t.page = 'course') $sql3 GROUP BY t.userid, t.courseid) l ON l.userid = u.id AND l.courseid = c.id";
+            $sql_join = " LEFT JOIN (SELECT t.userid, t.courseid, SUM(l.timespend) AS timespend, SUM(l.visits) AS visits FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l WHERE l.trackid = t.id $sql3 GROUP BY t.userid, t.courseid) l ON l.userid = u.id AND l.courseid = c.id";
         } elseif ($params->custom == 1) {
             $sql2 = ($params->timestart) ? $this->get_filterdate_sql($params, 'timecompleted') : '';
         } else {
@@ -9176,9 +9176,12 @@ class local_intelliboard_external extends external_api {
         );
         $sql_columns = $this->get_columns($params, "u.id");
 
+        if(empty($params->custom) || $params->custom == 0){
+            return array();
+        }
         $items = $DB->get_records('checklist_item', array('checklist'=>(int)$params->custom, 'userid'=>0));
         foreach($items as $item){
-            $sql_columns .= ", (SELECT CASE WHEN teachermark=1 THEN teachertimestamp ELSE usertimestamp END FROM {checklist_check} WHERE item=$item->id AND userid=u.id) AS completed_item_$item->id";
+            $sql_columns .= ", (SELECT CASE WHEN teachermark=1 THEN teachertimestamp ELSE usertimestamp END FROM {checklist_check} WHERE item=$item->id AND userid=u.id LIMIT 1) AS completed_item_$item->id";
             $columns[] = "completed_item_$item->id";
         }
         $columns[] = "completed_items";
@@ -9226,7 +9229,7 @@ class local_intelliboard_external extends external_api {
                JOIN {user} u ON u.id=ra.userid
                $sql_join
                JOIN {checklist_item} chi ON chi.checklist=ch.id AND chi.userid=0
-               LEFT JOIN {checklist_check} chc ON chc.item=chi.id AND chc.userid=u.id AND (chc.teachermark=1 OR chc.usertimestamp>0)
+               LEFT JOIN {checklist_check} chc ON chc.item=chi.id AND chc.userid=u.id AND ((chc.teachermark=1 and chc.teachertimestamp > 0) OR chc.usertimestamp>0)
             WHERE ch.id > 0 $sql_filter
             GROUP BY ch.id,u.id,c.id $sql_having $sql_order", $params);
     }
@@ -12927,6 +12930,7 @@ class local_intelliboard_external extends external_api {
     public function get_assign_categories($params)
     {
         global $DB, $CFG;
+        require_once($CFG->libdir.'/coursecatlib.php');
 
         $type = "";
         if ($CFG->dbtype == 'pgsql') {
@@ -12950,7 +12954,14 @@ class local_intelliboard_external extends external_api {
         if ($count > 300) {
             return array('length' => $count);
         } else {
-            return $DB->get_records_sql("SELECT id, name, idnumber FROM {course_categories} WHERE visible > 0 $sql_filter", $this->params);
+            $records = $DB->get_records_sql("SELECT id, name, idnumber FROM {course_categories} WHERE visible > 0 $sql_filter", $this->params);
+
+            foreach($records as &$record){
+                $coursecat = coursecat::get($record->id);
+                $record->full_path = $coursecat->get_nested_name(false);
+            }
+
+            return $records;
         }
     }
     public function get_assign_fields($params)
