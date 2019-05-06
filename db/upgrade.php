@@ -461,5 +461,17 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 			upgrade_plugin_savepoint(true, 2018100103, 'local', 'intelliboard');
     }
 
+
+		if ($oldversion < 2019050603) {
+				$table = $table = new xmldb_table("local_intelliboard_bbb_atten");
+				$field = new xmldb_field('fullname');
+				$field->set_attributes(XMLDB_TYPE_TEXT, null, null, null, null, null);
+				try {
+						$dbman->change_field_type($table, $field);
+				} catch (moodle_exception $e) {}
+
+        upgrade_plugin_savepoint(true, 2019050603, 'local', 'intelliboard');
+    }
+
 	return true;
 }
