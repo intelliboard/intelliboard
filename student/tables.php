@@ -75,10 +75,11 @@ class intelliboard_courses_grades_table extends table_sql {
         $grade_single = intelliboard_grade_sql(false, null, 'g.',0, 'gi.',true);
         $grade_avg = intelliboard_grade_sql(true, null, 'g.',0, 'gi.',true);
         $completion = intelliboard_compl_sql("cmc.");
+        $sql2 = (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
 
         $fields = "c.id, c.fullname as course, c.timemodified, c.startdate, c.enablecompletion, cri.gradepass, $grade_single AS grade, gc.average, cc.timecompleted, m.modules, cm.completedmodules, '' as actions, '' as letter";
 
-        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, MIN(ue.timemodified) AS timemodified, ue.userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.userid = :userid  AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid AND c.visible = 1 GROUP BY c.id, ue.userid) c
+        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, MIN(ue.timemodified) AS timemodified, ue.userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.userid = :userid  AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid $sql2 GROUP BY c.id, ue.userid) c
 
             LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = c.userid
             LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) m ON m.course = c.id
