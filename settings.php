@@ -469,6 +469,12 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
+
+        $name = 'local_intelliboard/student_course_visibility';
+        $title = new lang_string('student_course_visibility', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/ts2', new lang_string('ts2', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/t2';
