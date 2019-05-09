@@ -668,3 +668,4 @@ $string['ianalytics'] = 'Analítica IntelliBoard';
 $string['instructor_course_visibility'] = 'Show hidden/suspended courses for [instructor]';
 $string['instructor_mode'] = 'Show all courses available for [instructor]';
 $string['instructor_mode_access'] = 'Show all courses available for [instructor] with [update] permissions';
+$string['student_course_visibility'] = 'Show hidden/suspended courses for [student]';

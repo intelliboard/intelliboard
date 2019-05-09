@@ -74,6 +74,8 @@ class local_intelliboard_external extends external_api {
                             'filter_user_suspended' => new external_value(PARAM_INT, 'filter_user_suspended', VALUE_OPTIONAL, 0),
                             'filter_user_guest' => new external_value(PARAM_INT, 'filter_user_guest', VALUE_OPTIONAL, 0),
                             'filter_user_active' => new external_value(PARAM_INT, 'filter_user_active', VALUE_OPTIONAL, 0),
+                            'filter_user_active_time' => new external_value(PARAM_INT, 'filter_user_active_time', VALUE_OPTIONAL, 0),
+                            'filter_user_active_starttime' => new external_value(PARAM_INT, 'filter_user_active_starttime', VALUE_OPTIONAL, 0),
                             'filter_course_visible' => new external_value(PARAM_INT, 'filter_course_visible', VALUE_OPTIONAL, 0),
                             'filter_enrolmethod_status' => new external_value(PARAM_INT, 'filter_enrolmethod_status', VALUE_OPTIONAL, 0),
                             'filter_enrol_status' => new external_value(PARAM_INT, 'filter_enrol_status', VALUE_OPTIONAL, 0),
@@ -129,6 +131,8 @@ class local_intelliboard_external extends external_api {
         $params->filter_user_suspended = (isset($params->filter_user_suspended)) ? $params->filter_user_suspended : 0;
         $params->filter_user_guest = (isset($params->filter_user_guest)) ? $params->filter_user_guest : 0;
         $params->filter_user_active = (isset($params->filter_user_active)) ? $params->filter_user_active : 0;
+        $params->filter_user_active_time = (isset($params->filter_user_active_time)) ? $params->filter_user_active_time : 0;
+        $params->filter_user_active_starttime = (isset($params->filter_user_active_starttime)) ? $params->filter_user_active_starttime : 0;
         $params->filter_course_visible = (isset($params->filter_course_visible)) ? $params->filter_course_visible : 0;
         $params->filter_enrolmethod_status = (isset($params->filter_enrolmethod_status)) ? $params->filter_enrolmethod_status : 0;
         $params->filter_enrol_status = (isset($params->filter_enrol_status)) ? $params->filter_enrol_status : 0;
@@ -208,8 +212,11 @@ class local_intelliboard_external extends external_api {
         $filter = ($params->filter_user_deleted) ? "" : " AND {$prefix}deleted = 0";
         $filter .= ($params->filter_user_suspended) ? "" : " AND {$prefix}suspended = 0";
         $filter .= ($params->filter_user_guest) ? "" : " AND {$prefix}username <> 'guest'";
-        $filter .= ($params->filter_user_active) ? " AND {$prefix}lastaccess > 0" : "";
-
+        if ($params->filter_user_active and $params->filter_user_active_time and $params->filter_user_active_starttime) {
+          $filter .= " AND {$prefix}lastaccess > " . intval($params->filter_user_active_starttime);
+        } else {
+          $filter .= ($params->filter_user_active) ? " AND {$prefix}lastaccess > 0" : "";
+        }
         return $filter;
     }
     private function get_filter_columns($params)
@@ -2815,6 +2822,10 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $sql_filter .= $this->get_filterdate_sql($params, "a.duedate");
+
+        if (!$params->custom) {
+          $sql_filter .= " AND (s.timemodified > a.duedate or s.timemodified IS NULL)";
+        }
         if ($CFG->dbtype == 'pgsql') {
             $row_number = "row_number() OVER ()";
             $row_number_select = "";
@@ -2831,7 +2842,7 @@ class local_intelliboard_external extends external_api {
                 a.duedate,
                 c.fullname as course,
                 s.status,
-                s.timemodified AS submitted ,
+                s.timemodified AS submitted,
                 u.email,
                 u.idnumber,
                 u.phone1,
@@ -2856,7 +2867,7 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='mod' AND gi.itemmodule=m.name AND gi.iteminstance=cm.instance
                 LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=u.id
                 $sql_join
-            WHERE (s.timemodified > a.duedate or s.timemodified IS NULL) $sql_filter $sql_having $sql_order", $params);
+            WHERE a.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
 
     public function report72($params)
@@ -8615,6 +8626,7 @@ class local_intelliboard_external extends external_api {
 
         $columns = array_merge(
             array(
+                "coursename",
                 "activityname",
             ),
             $this->get_filter_columns($params)
@@ -8914,14 +8926,14 @@ class local_intelliboard_external extends external_api {
 
     public function report163($params)
     {
-        $columns = array_merge(array("u.firstname", "u.lastname", "u.username", "c.shortname", "c.fullname", "gi.itemname", "grade", "graduated", "lit.firstaccess"), $this->get_filter_columns($params));
+        $columns = array_merge(array( "u.username", "u.firstname", "u.lastname", "c.shortname", "c.fullname", "gi.itemname", "grade", "lit.firstaccess", "graduated", "ul.timeaccess"), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, "u.id");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
-        $sql_filter .= $this->get_filter_in_sql($params->custom2, "m.id");
+        $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses", "u.id" => "users"]);
@@ -8946,7 +8958,8 @@ class local_intelliboard_external extends external_api {
                        $grade_single AS grade,
                        gi.itemtype,
                        CASE WHEN m.name='assign' THEN sg.timemodified ELSE 0 END AS need_grade_assignment,
-                       lit.firstaccess
+                       lit.firstaccess,
+                       ul.timeaccess AS course_lastaccess
                        $sql_columns
 
                 FROM {course} c
@@ -8964,6 +8977,7 @@ class local_intelliboard_external extends external_api {
                   LEFT JOIN {assign_grades} sg ON ass.assignment = sg.assignment AND ass.userid = sg.userid AND sg.attemptnumber = ass.attemptnumber AND (ass.timemodified >= sg.timemodified OR sg.timemodified IS NULL OR sg.grade IS NULL)
 
                   LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND ((lit.param=c.id AND lit.page='course' AND gi.itemtype = 'course') OR (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod'))
+                  LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
                 WHERE c.id>0 $sql_filter $sql_having $sql_order", $params);
     }
 

@@ -377,7 +377,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         $table = new xmldb_table('local_intelliboard_bbb_atten');
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('userid', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
-        $table->add_field('fullname', XMLDB_TYPE_CHAR, '1024', null, null, null, null);
+        $table->add_field('fullname', XMLDB_TYPE_TEXT, null, null, null, null, null);
         $table->add_field('role', XMLDB_TYPE_CHAR, '100', null, null, null, null);
         $table->add_field('ispresenter', XMLDB_TYPE_CHAR, '20', null, null, null, null);
         $table->add_field('islisteningonly', XMLDB_TYPE_CHAR, '20', null, null, null, null);
