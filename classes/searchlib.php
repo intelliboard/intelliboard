@@ -95,9 +95,13 @@ class local_intelliboard_search extends external_api {
     }
 
     public static function get_data_by_query($scenarios, $arguments, $settings) {
-
         global $CFG;
         require_once($CFG->dirroot . '/local/intelliboard/search/src/autoload.php');
+
+        if (!empty($settings['debug'])) {
+            $CFG->debug = (E_ALL | E_STRICT);
+            $CFG->debugdisplay = 1;
+        }
 
         $scenarios = json_decode($scenarios, true);
         $arguments = json_decode($arguments, true);
