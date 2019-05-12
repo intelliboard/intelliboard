@@ -473,7 +473,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2019050603, 'local', 'intelliboard');
     }
 
-    if ($oldversion < 2019051003) {
+    if ($oldversion < 2019051002) {
         $table = new xmldb_table('local_intelliboard_dbconn');
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('connection_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
@@ -484,7 +484,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
             $dbman->create_table($table);
         }
 
-        upgrade_plugin_savepoint(true, 2019051003, 'local', 'intelliboard');
+        upgrade_plugin_savepoint(true, 2019051002, 'local', 'intelliboard');
     }
 
 	return true;
