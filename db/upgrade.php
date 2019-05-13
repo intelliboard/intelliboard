@@ -487,5 +487,42 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2019051002, 'local', 'intelliboard');
     }
 
+
+		if ($oldversion < 2019051203) {
+			$table = new xmldb_table('local_intelliboard_reports');
+			$field = new xmldb_field('status');
+			$field->set_attributes(XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+			try {
+				$dbman->change_field_type($table, $field);
+			} catch (moodle_exception $e) {}
+
+			$table = new xmldb_table('local_intelliboard_bbb_meet');
+			$field = new xmldb_field('meetingname');
+			$field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+			try {
+				$dbman->change_field_type($table, $field);
+			} catch (moodle_exception $e) {}
+
+			$field = new xmldb_field('createdate');
+				$field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+			try {
+				$dbman->change_field_type($table, $field);
+			} catch (moodle_exception $e) {}
+
+			$field = new xmldb_field('dialnumber');
+			$field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+			try {
+				$dbman->change_field_type($table, $field);
+			} catch (moodle_exception $e) {}
+
+			$field = new xmldb_field('duration');
+			$field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+			try {
+				$dbman->change_field_type($table, $field);
+			} catch (moodle_exception $e) {}
+
+			upgrade_plugin_savepoint(true, 2019051203, 'local', 'intelliboard');
+		}
+
 	return true;
 }
