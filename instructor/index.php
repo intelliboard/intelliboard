@@ -86,13 +86,16 @@ if($action == 'modules'){
 }
 
 $instructor_course_shortname = get_config('local_intelliboard', 'instructor_course_shortname');
-$mycourses = intelliboard_instructor_get_my_courses();
+$mycourses = intelliboard_instructor_getcourses('', true);
 $list_of_my_courses = array();
 foreach($mycourses as $item){
     $list_of_my_courses[$item->id] = ($instructor_course_shortname)?$item->shortname:$item->fullname;
 }
 if($course == 0){
     $course = key($list_of_my_courses);
+}
+if (!$course) {
+	throw new moodle_exception('invalidaccess', 'error');
 }
 
 $enrolled_users = get_enrolled_users(context_course::instance($course));
@@ -712,7 +715,7 @@ echo $OUTPUT->header();
 
 	        	var data = google.visualization.arrayToDataTable([
 	        	['<?php echo get_string('course'); ?>', '<?php echo get_string('in15', 'local_intelliboard'); ?>'],
-	        	<?php foreach($courses as $row):  ?>
+	        	<?php foreach($courses as $row): ?>
 				['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
 				<?php endforeach; ?>
 				]);
@@ -745,7 +748,7 @@ echo $OUTPUT->header();
 	        <?php else: ?>
 	        	var data = google.visualization.arrayToDataTable([
 	        	['<?php echo get_string('course'); ?>', '<?php echo get_string('enrolled', 'local_intelliboard'); ?>', '<?php echo get_string('completed', 'local_intelliboard'); ?>'],
-	        	<?php foreach($courses as $row):  ?>
+	        	<?php foreach($courses as $row): ?>
 				['<?php echo addslashes(format_string($row->fullname)); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
 				<?php endforeach; ?>
 				]);

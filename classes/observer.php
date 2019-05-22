@@ -40,11 +40,9 @@ class local_intelliboard_observer
 
     protected static function process_event($type, $event, $filter = array(), $ex_params = array())
     {
-
         $notification = new local_intelliboard_notification();
         $excluded = exclude_not_owners($ex_params);
         $notifications = $notification->get_instant_notifications($type, $filter, $excluded);
-
         $notification->send_notifications($notifications, $event);
     }
 
@@ -92,10 +90,12 @@ class local_intelliboard_observer
                 INNER JOIN {grade_items} as gi ON gi.id = g.itemid
                 WHERE gi.courseid = ? AND gi.itemtype = \"mod\" AND g.userid = ? AND g.finalgrade IS NOT NULL
                 GROUP BY gi.courseid
-        ", [$eventData['courseid'], $eventData['relateduserid']])->grade;
+        ", [$eventData['courseid'], $eventData['relateduserid']]);
 
-        $data['gradeThreshold'] = ['operator' => '>', 'value' => $courseGrade];
-        self::process_event(25, $event, $data, $excluded);
+        if ($courseGrade and isset($courseGrade->grade)) {
+            $data['gradeThreshold'] = ['operator' => '>', 'value' => $courseGrade->grade];
+            self::process_event(25, $event, $data, $excluded);
+        }
     }
 
     public static function quiz_attempt_submitted(\mod_quiz\event\attempt_submitted $event)
@@ -110,14 +110,12 @@ class local_intelliboard_observer
             INNER JOIN {question_attempts} qa ON qa.id = qas.questionattemptid
             INNER JOIN {quiz_attempts} q ON q.uniqueid = qa.questionusageid
             WHERE q.id = ? AND qas.state = 'needsgrading'
-        ", array($eventData['objectid']))->checking;
+        ", array($eventData['objectid']));
 
-        if (!$isNeededGrading) {
-            return;
+        if ($isNeededGrading and !empty($isNeededGrading->checking)) {
+            self::process_event(15, $event, array(),
+                array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
         }
-
-        self::process_event(15, $event, array(),
-            array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
     }
 
     public static function assign_attempt_submitted(\mod_assign\event\assessable_submitted $event)

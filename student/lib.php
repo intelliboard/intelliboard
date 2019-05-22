@@ -60,6 +60,9 @@ function intelliboard_data($type, $userid, $showing_user) {
             $params['timestart'] = $timestart;
             $params['timefinish'] = $timefinish;
         }
+
+        $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
+
         $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
         $query = "SELECT a.id, a.name, a.duedate, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
                     FROM {course} c, {assign} a
@@ -68,7 +71,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                         LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid2
                         LEFT JOIN {grade_items} gi ON gi.itemmodule = m.name AND gi.iteminstance = a.id AND gi.hidden = 0
                         LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid3
-                    WHERE c.id = a.course AND cm.visible = 1 AND c.visible = 1 $sql ORDER BY cm.added ASC";
+                    WHERE c.id = a.course AND cm.visible = 1 $sql ORDER BY cm.added ASC";
         $params['userid2'] = $userid;
         $params['userid3'] = $userid;
 
@@ -96,6 +99,7 @@ function intelliboard_data($type, $userid, $showing_user) {
             $params['timestart'] = $timestart;
             $params['timefinish'] = $timefinish;
         }
+        $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
         $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
 
         $query = "SELECT gi.id, a.name, a.timeclose, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
@@ -105,7 +109,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                     LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid2
                     LEFT JOIN {grade_items} gi ON gi.itemmodule = m.name AND gi.iteminstance = a.id AND gi.hidden = 0
                     LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid3
-                  WHERE c.id = a.course AND cm.visible = 1 AND c.visible = 1 $sql ORDER BY cm.added ASC";
+                  WHERE c.id = a.course AND cm.visible = 1 $sql ORDER BY cm.added ASC";
         $params['userid2'] = $userid;
         $params['userid3'] = $userid;
 
@@ -130,6 +134,8 @@ function intelliboard_data($type, $userid, $showing_user) {
         if(get_config('local_intelliboard', 't52')){
             $order_by = 'ORDER BY c.sortorder,c.category';
         }
+        $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
+
         $query = "SELECT MAX(c.id) AS id, c.fullname, MIN(ue.timemodified) AS timemodified, c.category, 'course' as type,
                     (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid1) AS grade,
                     (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
@@ -139,7 +145,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                   FROM {user_enrolments} ue
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid
                     LEFT JOIN {course} c ON c.id = e.courseid
-                  WHERE ue.userid = :userid2 AND c.visible = 1 $sql GROUP BY c.id $order_by";
+                  WHERE ue.userid = :userid2 $sql GROUP BY c.id $order_by";
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
 
@@ -204,6 +210,7 @@ function intelliboard_data($type, $userid, $showing_user) {
 
         $teacher_roles = get_config('local_intelliboard', 'filter10');
         list($sql_teacher_roles, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
+        $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
 
         $query = "SELECT c.id, c.fullname, MIN(ue.timemodified) AS timemodified,
                 (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid6) AS grade,
@@ -224,7 +231,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                 LEFT JOIN {enrol} e ON e.id = ue.enrolid
                 LEFT JOIN {course} c ON c.id = e.courseid
                     $sql_join
-                  WHERE ue.userid = :userid3 AND c.visible = 1 $sql GROUP BY c.id ORDER BY c.sortorder";
+                  WHERE ue.userid = :userid3 $sql GROUP BY c.id ORDER BY c.sortorder";
 
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
@@ -275,7 +282,7 @@ function get_pagination($count = 0, $page = 0, $perpage = 15, $type = 'intellibo
 function intelliboard_learner_course_progress($courseid, $userid){
     global $DB;
 
-    $timestart = strtotime('-30 days');
+    $timestart = 0;
     $timefinish = time();
 
     $data = array();
@@ -322,13 +329,13 @@ function intelliboard_learner_progress($time, $userid){
     if(get_config('local_intelliboard', 't53')){
         $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade, $grade_avg_percent AS grade_percent
                                     FROM {grade_items} gi, {grade_grades} g
-                                    WHERE 
-                                      gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) 
+                                    WHERE
+                                      gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1)
                                       AND gi.courseid IN (SELECT DISTINCT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.enrolid=e.id AND ue.status=0 AND ue.userid=:userid2)
-                                      AND gi.id = g.itemid 
-                                      AND g.userid != :userid 
-                                      AND gi.itemtype = 'mod' 
-                                      AND g.finalgrade IS NOT NULL 
+                                      AND gi.id = g.itemid
+                                      AND g.userid != :userid
+                                      AND gi.itemtype = 'mod'
+                                      AND g.finalgrade IS NOT NULL
                                       AND g.timemodified BETWEEN :timestart AND :timefinish
                                     GROUP BY timepoint ORDER BY timepoint", $params);
     }else{
@@ -352,6 +359,8 @@ function intelliboard_learner_courses($userid){
     $grade_avg_percent = intelliboard_grade_sql(true,null, 'g.', 0, 'gi.',true);
 
     $scale_real = get_config('local_intelliboard', 'scale_real');
+    $sql = (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
+
     if($scale_real){
         $params['userid4'] = $userid;
         $data = $DB->get_records_sql("
@@ -362,7 +371,7 @@ function intelliboard_learner_courses($userid){
             (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average_real,
             (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
         FROM {user_enrolments} ue, {enrol} e, {course} c
-        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND c.visible = 1 GROUP BY c.id ORDER BY c.sortorder ASC", $params);
+        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 $sql GROUP BY c.id ORDER BY c.sortorder ASC", $params);
     }else{
         $data = $DB->get_records_sql("
         SELECT c.id, c.fullname, '0' AS duration_calc,
@@ -370,7 +379,7 @@ function intelliboard_learner_courses($userid){
             (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
             (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
         FROM {user_enrolments} ue, {enrol} e, {course} c
-        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND c.visible = 1 GROUP BY c.id ORDER BY c.sortorder ASC", $params);
+        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 $sql GROUP BY c.id ORDER BY c.sortorder ASC", $params);
     }
 
     $d = 0;
@@ -433,6 +442,7 @@ function intelliboard_learner_totals($userid){
         if(!empty($sum_courses)){
             $where = " AND c.id IN($sum_courses)";
         }
+        $where .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
 
         $sum_grade = $DB->get_record_sql("SELECT
                           (CASE WHEN (AVG({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end})=MIN({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end}))
@@ -571,7 +581,7 @@ function intelliboard_learner_totals($userid){
                           JOIN {course} c ON c.id = e.courseid
                           JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='course' AND gi.hidden = 0
                           JOIN {grade_grades} g ON g.itemid=gi.id AND g.userid=ue.userid
-                        WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND ue.userid = :userid1 AND c.visible = 1 $where", $params);
+                        WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND ue.userid = :userid1 $where", $params);
 
         $data->sum_grade = (!empty($sum_grade->grade))?$sum_grade->grade:'-';
     }
