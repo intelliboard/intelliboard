@@ -619,6 +619,7 @@ $string['bbbserversecret'] = 'BBB server secret';
 $string['check_active_meetings'] = 'Controlla i Meeting attivi';
 $string['bbbmeetings'] = 'BigBlueButton meetings';
 $string['enablebbbmeetings'] = 'Abilita il monitoraggio dei Meeting di BigBlueButton';
+$string['enablebbbdebug'] = 'Modalità debug BigBlueButton';
 
 $string['privacy:metadata:local_intelliboard_bbb_meet'] = 'Log dei Meeting di BigBlueButton';
 $string['privacy:metadata:local_intelliboard_bbb_meet:id'] = 'ID del log del Meeting';
@@ -703,3 +704,8 @@ $string['instructor_course_shortname'] = 'Mostra il nome breve del corso invece 
 $string['trackmedia'] = 'Traccia media HTML5';
 $string['trackmedia_desc'] = 'Traccia audio e video HTML5';
 $string['ianalytics'] = 'IntelliBoard Analytics';
+
+$string['instructor_course_visibility'] = 'Mostra Corsi nascosti/sospesi a [Docente]';
+$string['instructor_mode'] = 'Mostra tutti i corsi disponibili a [Docente]';
+$string['instructor_mode_access'] = 'Mostra tutti i corsi disponibili a [Docente] con permessi di [Aggiornamento]';
+$string['student_course_visibility'] = 'Mostra Corsi nascosti/sospesi a [Studenti]';
