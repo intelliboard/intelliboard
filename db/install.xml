@@ -210,7 +210,7 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
     </TABLE>
-    <TABLE NAME="local_intelliboard_dbconn" COMMENT="Attendees of BigBlueButton meetings">
+    <TABLE NAME="local_intelliboard_dbconn" COMMENT="Database transactions">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="connection_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
