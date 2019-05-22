@@ -19,7 +19,7 @@ addons:
 
 env:
  global:
-  - MOODLE_BRANCH=MOODLE_32_STABLE
+  - MOODLE_BRANCH=MOODLE_36_STABLE
  matrix:
   - DB=mysqli
 
