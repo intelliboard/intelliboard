@@ -10,6 +10,10 @@ php:
  - 7.0
  - 7.1
 
+services:
+  - mysql
+  - postgresql
+
 env:
  global:
   - MOODLE_BRANCH=MOODLE_36_STABLE
