@@ -1,10 +1,10 @@
 @local @local_intelliboard
-Feature: Student Dashboard link on Site Homepage
-  In order to access the Student Dashboard
+Feature: Learner Dashboard link on Site Homepage
+  In order to access the Learner Dashboard
   As a student
-  I need to be able to see and click the IntelliBoard Student Dashboard link
+  I need to be able to see and click the Learner Dashboard link
 
-  Scenario: Accessing Student Dashboard
+  Scenario: Accessing Learner Dashboard
     Given the following "users" exist:
       | username | firstname | lastname | email |
       | teacher1 | Teacher | 1 | teacher1@example.com |
