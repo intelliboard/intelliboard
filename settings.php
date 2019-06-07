@@ -114,12 +114,6 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
-        $name = 'local_intelliboard/ssodomain';
-        $title = new lang_string('ssodomain', 'local_intelliboard');
-        $description = new lang_string('ssodomain_desc', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-        $settings->add($setting);
-
         $name = 'local_intelliboard/intellicart';
         $title = new lang_string('intellicart', 'local_intelliboard');
         $description = new lang_string('intellicart_desc', 'local_intelliboard');
@@ -162,6 +156,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configtext($name, $title, $description, '');
         $settings->add($setting);
 
+        $options = array("AUTO","AU","CA","EU","US");
+        $name = 'local_intelliboard/server';
+        $title = new lang_string('server', 'local_intelliboard');
+        $setting = new admin_setting_configselect($name, $title,'',0,$options);
+        $settings->add($setting);
 
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));
 
