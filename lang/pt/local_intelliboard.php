@@ -669,3 +669,14 @@ $string['instructor_course_visibility'] = 'Show hidden/suspended courses for [in
 $string['instructor_mode'] = 'Show all courses available for [instructor]';
 $string['instructor_mode_access'] = 'Show all courses available for [instructor] with [update] permissions';
 $string['student_course_visibility'] = 'Show hidden/suspended courses for [student]';
+
+
+$string['support_text1'] = "All your Moodle data: easy, shareable, understandable, and attractive. IntelliBoard is a Moodle plugin that puts <strong>120+</strong> reports and monitors into your hands.";
+$string['support_text2'] = "All your Moodle data: easy, shareable, understandable, and attractive. IntelliBoard is your Moodle reporting and analytics solution, giving you 120+ reports and analytics to help inform your educational business decisions.";
+$string['support_info1'] = "You can join our <a target='_blank' href='https://intelliboard.net/events'>Webinars</a> as we take you on a tour through IntelliBoard 5.0 reporting and analytics!";
+$string['support_info2'] = "Join our <a target='_blank' href='https://intelliboard.net/events'>Webinars</a>, or schedule a personal tour of your own data. With our world class support and service, you'll see your LMS in an entirely new light.";
+$string['support_terms'] = "All rights reserved.";
+$string['support_page'] = "Support Page";
+$string['support_demo'] = "Schedule a Demo";
+$string['support_trial'] = "Start Trial";
+$string['support_close'] = "Close";

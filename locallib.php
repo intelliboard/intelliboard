@@ -124,29 +124,38 @@ function intelliboard_filter_in_sql($sequence, $column, $params = array(), $prfx
 	return array($sql, $params);
 }
 
-function intelliboard_url($server = '')
+function intelliboard_url($api = false)
 {
-    require('config.php');
+		global $CFG;
 
-    $ssodomain = get_config('local_intelliboard', 'ssodomain');
+		require($CFG->dirroot .'/local/intelliboard/config.php');
 
-    $post = '';
-    if ($server and $ssodomain) {
-        $post = "_" . $server;
-    }
 
-    return $config['app_url' . $post];
+		$server = get_config('local_intelliboard', 'server');
+
+		if ($api) {
+			return $config['app_url_api'];
+		} elseif ($server == 1) {
+			return $config['app_url_au'];
+		} elseif ($server == 2) {
+			return $config['app_url_ca'];
+		} elseif ($server == 3) {
+			return $config['app_url_eu'];
+		} elseif ($server == 4) {
+			return $config['app_url_us'];
+		} else {
+			return $config['app_url'];
+		}
 }
 function intelliboard($params, $function = 'sso'){
 	global $CFG, $USER;
 
-		require('config.php');
 		require_once($CFG->libdir . '/filelib.php');
 
 		$api = get_config('local_intelliboard', 'api');
 		$debug = get_config('local_intelliboard', 'debug');
 		$debugmode = optional_param('debug', '', PARAM_RAW);
-		$url = ($api) ? $config['api_url'] : $config['app_url'];
+		$url = intelliboard_url($api);
 
 		$params['email'] = get_config('local_intelliboard', 'te1');
 		$params['apikey'] = get_config('local_intelliboard', 'apikey');
