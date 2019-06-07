@@ -109,8 +109,12 @@ if($action == 'report43'){
 
 $intelliboard = intelliboard(['task'=>'dashboard']);
 
+if ($action != 'dashboard' and !$intelliboard->token) {
+	redirect(new moodle_url("/local/intelliboard/help.php", array()));
+}
+
 if ($action == 'sso' and $intelliboard->token and get_config('local_intelliboard', 'ssomenu')) {
-	redirect(intelliboard_url($intelliboard->db)."auth/sso/".format_string($intelliboard->db)."/".format_string($intelliboard->token));
+	redirect(intelliboard_url()."auth/sso/".format_string($intelliboard->db)."/".format_string($intelliboard->token));
 }
 
 
