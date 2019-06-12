@@ -8511,6 +8511,12 @@ class local_intelliboard_external extends external_api {
           $sql_filter .= " AND u.id IN (SELECT DISTINCT dd.userid FROM {user_info_field} ff, {user_info_data} dd WHERE ff.datatype = 'vendor' AND dd.fieldid = ff.id AND (".implode(" OR ", $sql_arr) ."))";
         }
 
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat2 = "string_agg( DISTINCT g.name, ', ')";
+        } else {
+            $group_concat2 = "GROUP_CONCAT(DISTINCT g.name)";
+        }
+
         $data = $this->get_report_data("
             SELECT
               ra.id,
@@ -8518,6 +8524,7 @@ class local_intelliboard_external extends external_api {
               CONCAT(u.firstname,' ',u.lastname) AS user_name,
               c.fullname,
               c.shortname,
+              gr.groups,
               l.timeaccess as accessed
               $sql_select
               $sql_columns
@@ -8526,6 +8533,7 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {user} u ON u.id=ra.userid
               LEFT JOIN {course} c ON c.id=ctx.instanceid
               LEFT JOIN {user_lastaccess} l ON l.courseid = c.id AND l.userid = ra.userid
+              LEFT JOIN (SELECT m.userid, g.courseid, $group_concat2 AS groups FROM {groups} g, {groups_members} m WHERE m.groupid = g.id GROUP BY m.userid, g.courseid) gr ON gr.userid = u.id AND gr.courseid = c.id
               $sql_join
             WHERE ctx.contextlevel = 50 AND u.id IS NOT NULL $sql_filter $sql_having $sql_order", $params,false);
 

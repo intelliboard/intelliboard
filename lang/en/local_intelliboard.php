@@ -717,7 +717,7 @@ $string['support_text2'] = "All your Moodle data: easy, shareable, understandabl
 $string['support_info1'] = "You can join our <a target='_blank' href='https://intelliboard.net/events'>Webinars</a> as we take you on a tour through IntelliBoard 5.0 reporting and analytics!";
 $string['support_info2'] = "Join our <a target='_blank' href='https://intelliboard.net/events'>Webinars</a>, or schedule a personal tour of your own data. With our world class support and service, you'll see your LMS in an entirely new light.";
 $string['support_terms'] = "All rights reserved.";
-$string['support_page'] = "Support Page";
+$string['support_page'] = "Support Portal";
 $string['support_demo'] = "Schedule a Demo";
 $string['support_trial'] = "Start Trial";
 $string['support_close'] = "Close";
