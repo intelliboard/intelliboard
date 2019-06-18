@@ -35,35 +35,58 @@ class intelliboard_courses_grades_table extends table_sql {
 
         parent::__construct($uniqueid);
 
-        $headers = array(get_string('course_name','local_intelliboard'));
-        $columns = array('course');
+        $headers = array();
+        $columns = array();
 
-        $columns[] =  'course_shortname';
-        $headers[] =  get_string('shortname');
+        if(get_config('local_intelliboard', 'table_set_icg_c1')) {
+            $columns[] =  'course';
+            $headers[] =  get_string('course_name', 'local_intelliboard');
+        }
 
-        $columns[] =  'category';
-        $headers[] =  get_string('category','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_icg_c2')) {
+            $columns[] =  'course_shortname';
+            $headers[] =  get_string('shortname');
+        }
 
-        $columns[] =  'learners';
-        $headers[] =  get_string('enrolled_completed_learners','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_icg_c3')) {
+            $columns[] =  'category';
+            $headers[] =  get_string('category', 'local_intelliboard');
+        }
 
-        $columns[] =  'grade';
-        $headers[] =  get_string('in21','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_icg_c4')) {
+            $columns[] =  'learners';
+            $headers[] =  get_string('enrolled_completed_learners', 'local_intelliboard');
+        }
 
-        $columns[] =  'sections';
-        $headers[] =  get_string('sections','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_icg_c5')) {
+            $columns[] =  'grade';
+            $headers[] =  get_string('in21', 'local_intelliboard');
+        }
 
-        $columns[] =  'modules';
-        $headers[] =  get_string('activities_resources','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_icg_c6')) {
+            $columns[] =  'sections';
+            $headers[] =  get_string('sections', 'local_intelliboard');
+        }
 
-        $columns[] =  'visits';
-        $headers[] =  get_string('visits','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_icg_c7')) {
+            $columns[] =  'modules';
+            $headers[] =  get_string('activities_resources', 'local_intelliboard');
+        }
 
-        $columns[] =  'timespend';
-        $headers[] =  get_string('time_spent','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_icg_c8')) {
+            $columns[] =  'visits';
+            $headers[] =  get_string('visits', 'local_intelliboard');
+        }
 
-        $columns[] =  'actions';
-        $headers[] =  get_string('actions','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_icg_c9')) {
+            $columns[] =  'timespend';
+            $headers[] =  get_string('time_spent', 'local_intelliboard');
+        }
+
+        if(get_config('local_intelliboard', 'table_set_icg_c10')) {
+            $columns[] =  'actions';
+            $headers[] =  get_string('actions', 'local_intelliboard');
+        }
 
         $this->define_headers($headers);
         $this->define_columns($columns);
@@ -91,12 +114,18 @@ class intelliboard_courses_grades_table extends table_sql {
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
         $join_group_sql2 = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'gi.courseid');
 
+
+        $sql33 = intelliboard_instructor_getcourses('l.courseid', false, 'l.userid');
+        $sql44 = intelliboard_instructor_getcourses('ctx.instanceid', false, 'ra.userid');
+        $sql55 = intelliboard_instructor_getcourses('gi.courseid', false, 'g.userid');
+        $sql66 = intelliboard_instructor_getcourses('course', false, 'userid');
+
         $fields = "c.id, c.fullname as course, c.shortname as course_shortname,
                 c.enablecompletion,
                 ca.name AS category,
                 (SELECT SUM(l.timespend)
                  FROM {local_intelliboard_tracking} l
-                 WHERE l.courseid = c.id AND l.userid IN (SELECT DISTINCT ra.userid
+                 WHERE l.courseid = c.id $sql33 AND l.userid IN (SELECT DISTINCT ra.userid
                                                           FROM {context} ctx
                                                             JOIN {role_assignments} ra ON ctx.id = ra.contextid
                                                             $join_group_sql
@@ -104,7 +133,7 @@ class intelliboard_courses_grades_table extends table_sql {
                  ) AS timespend,
                  (SELECT SUM(l.visits)
                     FROM {local_intelliboard_tracking} l
-                    WHERE l.courseid = c.id AND l.userid IN (SELECT DISTINCT ra.userid
+                    WHERE l.courseid = c.id $sql33 AND l.userid IN (SELECT DISTINCT ra.userid
                                                                 FROM {context} ctx
                                                                     JOIN {role_assignments} ra ON ctx.id = ra.contextid
                                                                     $join_group_sql
@@ -112,15 +141,15 @@ class intelliboard_courses_grades_table extends table_sql {
                 (SELECT COUNT(DISTINCT ra.userid) FROM {role_assignments} ra
                     LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                     $join_group_sql
-                    WHERE ra.roleid $sql1 AND ctx.instanceid = c.id) AS learners,
+                    WHERE ra.roleid $sql1 $sql44 AND ctx.instanceid = c.id) AS learners,
                 (SELECT $grade_avg
                     FROM {grade_items} gi
                         JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                         $join_group_sql2
-                    WHERE gi.itemtype = 'course' AND gi.courseid = c.id) AS grade,
+                    WHERE gi.itemtype = 'course' AND gi.courseid = c.id   $sql55) AS grade,
                 (SELECT COUNT(DISTINCT userid)
                     FROM {course_completions}
-                    WHERE timecompleted > 0 AND course = c.id AND userid IN (SELECT DISTINCT ra.userid
+                    WHERE timecompleted > 0 $sql66 AND course = c.id AND userid IN (SELECT DISTINCT ra.userid
                                                                               FROM {context} ctx
                                                                                 JOIN {role_assignments} ra ON ctx.id = ra.contextid
                                                                                 $join_group_sql
@@ -197,26 +226,43 @@ class intelliboard_activities_grades_table extends table_sql {
 
         parent::__construct($uniqueid);
 
-        $columns = array('activity');
-        $headers = array(get_string('activity_name','local_intelliboard'));
+        $columns = array();
+        $headers = array();
 
-        $columns[] =  'module';
-        $headers[] =  get_string('type','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag_c1')) {
+            $columns[] =  'activity';
+            $headers[] =  get_string('activity_name','local_intelliboard');
+        }
 
-        $columns[] =  'completed';
-        $headers[] =  get_string('in6','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag_c2')) {
+            $columns[] =  'module';
+            $headers[] =  get_string('type','local_intelliboard');
+        }
 
-        $columns[] =  'grade';
-        $headers[] =  ucfirst(get_string('average_grade','local_intelliboard'));
+        if(get_config('local_intelliboard', 'table_set_iag_c3')) {
+            $columns[] =  'completed';
+            $headers[] =  get_string('in6','local_intelliboard');
+        }
 
-        $columns[] =  'visits';
-        $headers[] =  get_string('visits','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag_c4')) {
+            $columns[] =  'grade';
+            $headers[] =  ucfirst(get_string('average_grade','local_intelliboard'));
+        }
 
-        $columns[] =  'timespend';
-        $headers[] =  get_string('time_spent','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag_c5')) {
+            $columns[] =  'visits';
+            $headers[] =  get_string('visits','local_intelliboard');
+        }
 
-        $columns[] =  'actions';
-        $headers[] =  get_string('actions','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag_c6')) {
+            $columns[] =  'timespend';
+            $headers[] =  get_string('time_spent','local_intelliboard');
+        }
+
+        if(get_config('local_intelliboard', 'table_set_iag_c7')) {
+            $columns[] =  'actions';
+            $headers[] =  get_string('actions','local_intelliboard');
+        }
 
         $this->define_headers($headers);
         $this->define_columns($columns);
@@ -245,6 +291,11 @@ class intelliboard_activities_grades_table extends table_sql {
         $join_group_sql2 = intelliboard_group_aggregation_sql('cm.userid', $USER->id, 'm.course');
         $join_group_sql3 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
+
+        $sql33 = intelliboard_instructor_getcourses('gi.courseid', false, 'g.userid');
+        $sql44 = intelliboard_instructor_getcourses('m.course', false, 'cm.userid');
+        $sql55 = intelliboard_instructor_getcourses('courseid', false, 'userid');
+
         $fields = "
                 cm.id,
                 cm.course,
@@ -262,18 +313,18 @@ class intelliboard_activities_grades_table extends table_sql {
                             FROM {grade_items} gi
                              JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                              $join_group_sql
-                            WHERE gi.itemtype = 'mod' AND gi.courseid = :c1
+                            WHERE gi.itemtype = 'mod' AND gi.courseid = :c1 $sql33
                             GROUP BY gi.iteminstance, gi.itemmodule
                            ) as g ON g.iteminstance = cm.instance AND g.itemmodule = m.name
                 LEFT JOIN (SELECT cm.coursemoduleid, COUNT(cm.id) AS completed
                             FROM {course_modules_completion} cm
                                 JOIN {course_modules} m ON m.id=cm.coursemoduleid
                                 $join_group_sql2
-                            WHERE $completion
+                            WHERE $completion $sql44
                             GROUP BY cm.coursemoduleid) cmc ON cmc.coursemoduleid = cm.id
                 LEFT JOIN (SELECT param, SUM(visits) AS visits, SUM(timespend) AS timespend
                             FROM {local_intelliboard_tracking}
-                            WHERE page='module' AND courseid = :c2 AND userid IN (SELECT DISTINCT ra.userid
+                            WHERE page='module' $sql55 AND courseid = :c2 AND userid IN (SELECT DISTINCT ra.userid
                                                                                     FROM {context} ctx
                                                                                         JOIN {role_assignments} ra ON ctx.id = ra.contextid
                                                                                         $join_group_sql3
@@ -328,26 +379,42 @@ class intelliboard_activity_grades_table extends table_sql {
 
         parent::__construct($uniqueid);
 
-        $columns[] = 'learner';
-        $headers[] = get_string('learner_name','local_intelliboard');
+        $columns = []; $headers = [];
 
-        $columns[] = 'email';
-        $headers[] = get_string('email');
+        if(get_config('local_intelliboard', 'table_set_iag1_c1')) {
+            $columns[] = 'learner';
+            $headers[] = get_string('learner_name','local_intelliboard');
+        }
 
-        $columns[] = 'timecompleted';
-        $headers[] = get_string('status','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag1_c2')) {
+            $columns[] = 'email';
+            $headers[] = get_string('email');
+        }
 
-        $columns[] = 'grade';
-        $headers[] = get_string('grade','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag1_c3')) {
+            $columns[] = 'timecompleted';
+            $headers[] = get_string('status','local_intelliboard');
+        }
 
-        $columns[] = 'graded';
-        $headers[] = get_string('graded','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag1_c4')) {
+            $columns[] = 'grade';
+            $headers[] = get_string('grade','local_intelliboard');
+        }
 
-        $columns[] =  'visits';
-        $headers[] =  get_string('visits','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag1_c5')) {
+            $columns[] = 'graded';
+            $headers[] = get_string('graded','local_intelliboard');
+        }
 
-        $columns[] =  'timespend';
-        $headers[] =  get_string('time_spent','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_iag1_c6')) {
+            $columns[] =  'visits';
+            $headers[] =  get_string('visits','local_intelliboard');
+        }
+
+        if(get_config('local_intelliboard', 'table_set_iag1_c7')) {
+            $columns[] =  'timespend';
+            $headers[] =  get_string('time_spent','local_intelliboard');
+        }
 
         $this->define_headers($headers);
         $this->define_columns($columns);
@@ -362,6 +429,9 @@ class intelliboard_activity_grades_table extends table_sql {
         $params = array_merge($params,$sql_params);
         $grade_single = intelliboard_grade_sql();
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'e.instanceid');
+
+
+        $sql55 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
 
         $fields = "ra.id, ra.userid, c.id AS courseid,
             $grade_single AS grade,
@@ -382,7 +452,7 @@ class intelliboard_activity_grades_table extends table_sql {
                 LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = m.name AND gi.iteminstance = cm.instance
                 LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
                 LEFT JOIN {local_intelliboard_tracking} l ON l.userid = u.id AND l.param = cm.id AND l.page = 'module'";
-        $where = "ra.roleid $sql_roles AND e.instanceid = :courseid $sql";
+        $where = "ra.roleid $sql_roles $sql55 AND e.instanceid = :courseid $sql";
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -440,35 +510,60 @@ class intelliboard_learners_grades_table extends table_sql {
 
         parent::__construct($uniqueid);
 
-        $columns[] = 'learner';
-        $headers[] = get_string('learner_name','local_intelliboard');
+        $columns = [];
+        $headers = [];
 
-        $columns[] = 'email';
-        $headers[] = get_string('email');
+        if(get_config('local_intelliboard', 'table_set_ilg_c1')) {
+            $columns[] = 'learner';
+            $headers[] = get_string('learner_name','local_intelliboard');
+        }
 
-        $columns[] = 'enrolled';
-        $headers[] = get_string('enrolled','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg_c2')) {
+            $columns[] = 'email';
+            $headers[] = get_string('email');
+        }
 
-        $columns[] = 'timeaccess';
-        $headers[] = get_string('in16','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg_c3')) {
+            $columns[] = 'enrolled';
+            $headers[] = get_string('enrolled','local_intelliboard');
+        }
 
-        $columns[] = 'timecompleted';
-        $headers[] = get_string('status','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg_c4')) {
+            $columns[] = 'timeaccess';
+            $headers[] = get_string('in16','local_intelliboard');
+        }
 
-        $columns[] = 'grade';
-        $headers[] = get_string('grade','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg_c5')) {
+            $columns[] = 'timecompleted';
+            $headers[] = get_string('status','local_intelliboard');
+        }
 
-        $columns[] = 'progress';
-        $headers[] = get_string('completed_activities_resources','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg_c6')) {
+            $columns[] = 'grade';
+            $headers[] = get_string('grade','local_intelliboard');
+        }
 
-        $columns[] =  'visits';
-        $headers[] =  get_string('visits','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg_c7')) {
+            $columns[] = 'progress';
+            $headers[] = get_string(
+                'completed_activities_resources','local_intelliboard'
+            );
+        }
 
-        $columns[] =  'timespend';
-        $headers[] =  get_string('time_spent','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg_c8')) {
+            $columns[] =  'visits';
+            $headers[] =  get_string('visits','local_intelliboard');
+        }
 
-        $columns[] =  'actions';
-        $headers[] =  get_string('actions','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg_c9')) {
+            $columns[] =  'timespend';
+            $headers[] =  get_string('time_spent','local_intelliboard');
+        }
+
+        if(get_config('local_intelliboard', 'table_set_ilg_c10')) {
+            $columns[] =  'actions';
+            $headers[] =  get_string('actions','local_intelliboard');
+        }
 
         $this->define_headers($headers);
         $this->define_columns($columns);
@@ -484,6 +579,8 @@ class intelliboard_learners_grades_table extends table_sql {
         $grade_single = intelliboard_grade_sql();
         $completion = intelliboard_compl_sql("cmc.");
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'e.instanceid');
+
+        $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
 
         $fields = "ra.id,
             ra.userid,
@@ -511,7 +608,7 @@ class intelliboard_learners_grades_table extends table_sql {
                 LEFT JOIN (SELECT t.userid,t.courseid, sum(t.timespend) as timespend, sum(t.visits) as visits FROM
                     {local_intelliboard_tracking} t GROUP BY t.courseid, t.userid) l ON l.courseid = c.id AND l.userid = u.id
                 $join_group_sql ";
-        $where = "ra.roleid $sql_roles AND e.instanceid = :c2 $sql";
+        $where = "ra.roleid $sql_roles AND e.instanceid = :c2 $sql $sql33";
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -566,26 +663,42 @@ class intelliboard_learner_grades_table extends table_sql {
 
         parent::__construct($uniqueid);
 
-        $columns[] = 'activity';
-        $headers[] = get_string('activity_name','local_intelliboard');
+        $columns = []; $headers = [];
 
-        $columns[] = 'module';
-        $headers[] = get_string('type','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg1_c1')) {
+            $columns[] = 'activity';
+            $headers[] = get_string('activity_name','local_intelliboard');
+        }
 
-        $columns[] = 'grade';
-        $headers[] = get_string('grade','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg1_c2')) {
+            $columns[] = 'module';
+            $headers[] = get_string('type','local_intelliboard');
+        }
 
-        $columns[] =  'graded';
-        $headers[] =  get_string('graded','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg1_c3')) {
+            $columns[] = 'grade';
+            $headers[] = get_string('grade','local_intelliboard');
+        }
 
-        $columns[] = 'timecompleted';
-        $headers[] = get_string('status','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg1_c4')) {
+            $columns[] =  'graded';
+            $headers[] =  get_string('graded','local_intelliboard');
+        }
 
-        $columns[] =  'visits';
-        $headers[] =  get_string('visits','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg1_c5')) {
+            $columns[] = 'timecompleted';
+            $headers[] = get_string('status','local_intelliboard');
+        }
 
-        $columns[] =  'timespend';
-        $headers[] =  get_string('time_spent','local_intelliboard');
+        if(get_config('local_intelliboard', 'table_set_ilg1_c6')) {
+            $columns[] =  'visits';
+            $headers[] =  get_string('visits','local_intelliboard');
+        }
+
+        if(get_config('local_intelliboard', 'table_set_ilg1_c7')) {
+            $columns[] =  'timespend';
+            $headers[] =  get_string('time_spent','local_intelliboard');
+        }
 
         $this->define_headers($headers);
         $this->define_columns($columns);

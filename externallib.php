@@ -13483,11 +13483,30 @@ class local_intelliboard_external extends external_api {
           $visibility = get_config('local_intelliboard', 'instructor_course_visibility');
           $roles = get_config('local_intelliboard', 'filter10');
           $access = get_config('local_intelliboard', 'instructor_mode_access');
+          $instructor_custom_groups = get_config('local_intelliboard', 'instructor_custom_groups');
           $user = $DB->get_record_sql("SELECT * FROM {user} WHERE id = :userid", ['userid' => $params->userid]);
+          $users = '';
 
 
+          if ($instructor_custom_groups) {
+            if ($CFG->dbtype == 'pgsql') {
+                $userid_sql = "string_agg( DISTINCT d.userid, ', ')";
+            } else {
+                $userid_sql = "GROUP_CONCAT( DISTINCT d.userid)";
+            }
 
-          if ($mode) {
+            $data = $DB->get_record_sql("SELECT d.data AS codea FROM {user_info_field} f, {user_info_data} d WHERE d.fieldid = f.id AND d.userid = ? and f.shortname= 'codea'", [$params->userid]);
+            $result = $DB->get_record_sql("SELECT $userid_sql AS users FROM {user_info_field} f, {user_info_data} d
+                WHERE d.fieldid = f.id AND d.data = ? and f.shortname IN ('codsm', 'coddm', 'codam')", [$data->codea]);
+            if ($result->users) {
+              list($sql, $params) = intelliboard_filter_in_sql($result->users, "ra.userid", []);
+              $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid $sql GROUP BY c.id", $params);
+              $users = $result->users;
+            } else {
+              $courses = [];
+              $users = '0,0';
+            }
+          } elseif ($mode) {
             $courses = $DB->get_records_sql("SELECT * FROM {course} WHERE category > 0");
           } else {
             $params = ['userid' => $params->userid];
@@ -13511,23 +13530,26 @@ class local_intelliboard_external extends external_api {
           }
           foreach ($columns as $column => $type) {
               if ($type == "users") {
-                  $assign_courses_list = (!$courses) ? '0,0' : implode(",", array_keys($courses));
-                  $learner_roles = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
-                  $result = $DB->get_records_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN ($assign_courses_list)", $this->params);
-                  if ($result) {
-                      $list = [];
-                      foreach ($result as $value) {
-                          $list[] = $value->userid;
-                      }
-                      $this->users = array_unique(array_merge($this->users, $list));
-                  }
-                  if ($this->users) {
-                      $query[] = "$column IN (".implode(",", $this->users).")";
+                  if ($users and $instructor_custom_groups) {
+                    $query[] = "$column IN ($users)";
+                  } else {
+                    $assign_courses_list = (!$courses) ? '0,0' : implode(",", array_keys($courses));
+                    $learner_roles = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
+                    $result = $DB->get_records_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN ($assign_courses_list)", $this->params);
+                    if ($result) {
+                        $list = [];
+                        foreach ($result as $value) {
+                            $list[] = $value->userid;
+                        }
+                        $this->users = array_unique(array_merge($this->users, $list));
+                    }
+                    if ($this->users) {
+                        $query[] = "$column IN (".implode(",", $this->users).")";
+                    }
                   }
               } elseif($type == "courses") {
-                  $query = [];
+                  //$query = [];
                   $this->courses = array_keys($courses);
-
                   if ($this->courses) {
                       $query[] = "$column IN (".implode(",", $this->courses).")";
                   }
