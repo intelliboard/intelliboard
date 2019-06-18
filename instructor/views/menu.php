@@ -34,7 +34,9 @@ if(get_config('local_intelliboard', 'intellicart') && file_exists($CFG->dirroot 
 
 ?>
 <ul class="intelliboard-menu">
-	<li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
+    <?php if(get_config('local_intelliboard', 'show_dashboard_tab')): ?>
+	    <li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
+    <?php endif; ?>
 
 	<?php if(get_config('local_intelliboard', 'n8')): ?>
 		<li><a href="courses.php" <?php echo ($PAGE->pagetype == 'courses')?'class="active"':''; ?>><?php echo get_string('courses', 'local_intelliboard');?></a></li>

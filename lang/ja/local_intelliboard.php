@@ -718,3 +718,59 @@ $string['support_page'] = "Support Page";
 $string['support_demo'] = "Schedule a Demo";
 $string['support_trial'] = "Start Trial";
 $string['support_close'] = "Close";
+
+$string['instructor_custom_groups'] = "Instructor custom groups";
+
+
+// settings of tables
+$string['show_dashboard_tab'] = 'Show dashboard tab';
+$string['table_set_icg'] = 'Instructor`s table "Course grades"';
+$string['table_set_icg_c1'] = 'Course Name';
+$string['table_set_icg_c2'] = 'Short Name';
+$string['table_set_icg_c3'] = 'Category';
+$string['table_set_icg_c4'] = 'Enrolled/Completed Learners';
+$string['table_set_icg_c5'] = 'Course Avg. grade';
+$string['table_set_icg_c6'] = 'Sections';
+$string['table_set_icg_c7'] = 'Activities/Resources';
+$string['table_set_icg_c8'] = 'Visits';
+$string['table_set_icg_c9'] = 'Time Spent';
+$string['table_set_icg_c10'] = 'Actions';
+
+$string['table_set_ilg'] = 'Instructor`s table "Learners grades"';
+$string['table_set_ilg_c1'] = 'Learner Name';
+$string['table_set_ilg_c2'] = 'Email address';
+$string['table_set_ilg_c3'] = 'Enrolled';
+$string['table_set_ilg_c4'] = 'Last Access';
+$string['table_set_ilg_c5'] = 'Status';
+$string['table_set_ilg_c6'] = 'Grade';
+$string['table_set_ilg_c7'] = 'Completed Activities/Resources';
+$string['table_set_ilg_c8'] = 'Visits';
+$string['table_set_ilg_c9'] = 'Time Spent';
+$string['table_set_ilg_c10'] = 'Actions';
+
+$string['table_set_ilg1'] = 'Instructor`s table "Learner grades"';
+$string['table_set_ilg1_c1'] = 'Activity name';
+$string['table_set_ilg1_c2'] = 'Type';
+$string['table_set_ilg1_c3'] = 'Grade';
+$string['table_set_ilg1_c4'] = 'Graded';
+$string['table_set_ilg1_c5'] = 'Status';
+$string['table_set_ilg1_c6'] = 'Visits';
+$string['table_set_ilg1_c7'] = 'Time Spent';
+
+$string['table_set_iag'] = 'Instructor`s table "Activities grades"';
+$string['table_set_iag_c1'] = 'Activity name';
+$string['table_set_iag_c2'] = 'Type';
+$string['table_set_iag_c3'] = 'Learners Completed';
+$string['table_set_iag_c4'] = 'Average grade';
+$string['table_set_iag_c5'] = 'Visits';
+$string['table_set_iag_c6'] = 'Time Spent';
+$string['table_set_iag_c7'] = 'Actions';
+
+$string['table_set_iag1'] = 'Instructor`s table "Activity grades"';
+$string['table_set_iag1_c1'] = 'Learner Name';
+$string['table_set_iag1_c2'] = 'Email address';
+$string['table_set_iag1_c3'] = 'Status';
+$string['table_set_iag1_c4'] = 'Grade';
+$string['table_set_iag1_c5'] = 'Graded';
+$string['table_set_iag1_c6'] = 'Visits';
+$string['table_set_iag1_c7'] = 'Time Spent';
