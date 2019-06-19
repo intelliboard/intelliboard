@@ -62,6 +62,7 @@ $string['server'] = 'Server di IntelliBoard';
 $string['server_usa'] = 'IntelliBoard USA';
 $string['server_au'] = 'IntelliBoard Australia';
 $string['server_eu'] = 'IntelliBoard Europa';
+$string['show_dashboard_tab'] = 'Mostra linguetta Dashboard';
 $string['filters'] = 'Dashboard filtri';
 $string['filter1'] = 'Utenti eliminati';
 $string['filter2'] = 'Utenti sospesi';
@@ -709,3 +710,68 @@ $string['instructor_course_visibility'] = 'Mostra Corsi nascosti/sospesi a [Doce
 $string['instructor_mode'] = 'Mostra tutti i corsi disponibili a [Docente]';
 $string['instructor_mode_access'] = 'Mostra tutti i corsi disponibili a [Docente] con permessi di [Aggiornamento]';
 $string['student_course_visibility'] = 'Mostra Corsi nascosti/sospesi a [Studenti]';
+
+
+
+$string['support_text1'] = "Tutti i tuoi dati Moodle: semplici, condivisibili, comprensibili e accattivanti. IntelliBoard is a Moodle plugin that puts <strong>120+</strong> reports and monitors into your hands.";
+$string['support_text2'] = "Tutti i tuoi dati Moodle: semplici, condivisibili, comprensibili e accattivanti. IntelliBoard is your Moodle reporting and analytics solution, giving you 120+ reports and analytics to help inform your educational business decisions.";
+$string['support_info1'] = "Puoi unirti ai nostri <a target='_blank' href='https://intelliboard.net/events'>Webinar</a e farti accompagnare in un tour attraverso le funzionalità di reporting e analisi di IntelliBoard 5.0!";
+$string['support_info2'] = "Partecipate ai nostri <a target='_blank' href='https://intelliboard.net/events'>Webinar</a>, o programmate un tour personale dei vostri dati. Con il nostro supporto e servizio di prima classe, vedrete il vostro LMS sotto una luce completamente nuova.";
+$string['support_terms'] = "Tutti i diritti riservati.";
+$string['support_page'] = "Support Portal";
+$string['support_demo'] = "Prenota una demo";
+$string['support_trial'] = "Inizia periodo di prova";
+$string['support_close'] = "Chiudi";
+$string['instructor_custom_groups'] = "Gruppi personalizzati docente";
+
+// settings of tables
+$string['table_set_icg'] = 'Tabella del docente "Valutazioni corso"';
+$string['table_set_icg_c1'] = 'Nome Corso';
+$string['table_set_icg_c2'] = 'Nome breve';
+$string['table_set_icg_c3'] = 'Categoria';
+$string['table_set_icg_c4'] = 'Studenti Iscritti/Completati';
+$string['table_set_icg_c5'] = 'Valutazione media del Corso';
+$string['table_set_icg_c6'] = 'Sezioni';
+$string['table_set_icg_c7'] = 'Attività/Risorse';
+$string['table_set_icg_c8'] = 'Visite';
+$string['table_set_icg_c9'] = 'Tempo impiegato';
+$string['table_set_icg_c10'] = 'Azioni';
+
+$string['table_set_ilg'] = 'Tabella del docente "Valutazioni studente"';
+$string['table_set_ilg_c1'] = 'Nome Studente';
+$string['table_set_ilg_c2'] = 'Indirizzo email';
+$string['table_set_ilg_c3'] = 'Iscritto';
+$string['table_set_ilg_c4'] = 'Ultimo accesso';
+$string['table_set_ilg_c5'] = 'Stato';
+$string['table_set_ilg_c6'] = 'Valutazione';
+$string['table_set_ilg_c7'] = 'Attività/Risorse completate';
+$string['table_set_ilg_c8'] = 'Visite';
+$string['table_set_ilg_c9'] = 'Tempo impiegato';
+$string['table_set_ilg_c10'] = 'Azioni';
+
+$string['table_set_ilg1'] = 'Tabella del docente "Valutazioni studente"';
+$string['table_set_ilg1_c1'] = 'Nome Attività';
+$string['table_set_ilg1_c2'] = 'Tipo';
+$string['table_set_ilg1_c3'] = 'Valutazione';
+$string['table_set_ilg1_c4'] = 'Valutato';
+$string['table_set_ilg1_c5'] = 'Stato';
+$string['table_set_ilg1_c6'] = 'Visite';
+$string['table_set_ilg1_c7'] = 'Tempo impiegato';
+
+$string['table_set_iag'] = 'Tabella del docente "Valutazioni attività"';
+$string['table_set_iag_c1'] = 'Nome Attività';
+$string['table_set_iag_c2'] = 'Tipo';
+$string['table_set_iag_c3'] = 'Studenti completati';
+$string['table_set_iag_c4'] = 'Valutazione media';
+$string['table_set_iag_c5'] = 'Visite';
+$string['table_set_iag_c6'] = 'Tempo impiegato';
+$string['table_set_iag_c7'] = 'Azioni';
+
+$string['table_set_iag1'] = 'Tabella del docente "Valutazioni attività';
+$string['table_set_iag1_c1'] = 'Nome Studente';
+$string['table_set_iag1_c2'] = 'Indirizzo email';
+$string['table_set_iag1_c3'] = 'Stato';
+$string['table_set_iag1_c4'] = 'Valutazione';
+$string['table_set_iag1_c5'] = 'Valutato';
+$string['table_set_iag1_c6'] = 'Visite';
+$string['table_set_iag1_c7'] = 'Tempo impiegato';
