@@ -46,5 +46,5 @@
 	<?php endif; ?>
 
 
-	<li><a href="help.php" <?php echo ($PAGE->pagetype == 'help')?'class="active"':''; ?>><?php echo get_string('help', 'local_intelliboard');?></a></li>
+	<li><a href="<?php echo $CFG->wwwroot ?>/local/intelliboard/help.php?event=competencies"><?php echo get_string('help', 'local_intelliboard');?></a></li>
 </ul>

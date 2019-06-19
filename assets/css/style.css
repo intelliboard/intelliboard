@@ -676,16 +676,225 @@ position: relative;
 .intelliboard-content h4 {font-size: 19px;font-weight: 400;}
 .intelliboard-analytics div.google-visualization-tooltip { padding: 5px;height: auto!important;}
 
+
+.intelliboard-support-bg{
+	width: 300px;
+	height: 410px;
+	background: url('../img/bg-element@3x.png') no-repeat top right;
+	background-size: 360px auto;
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	z-index: 0;
+}
+.intelliboard-support-player button{
+	margin-top: 10px;
+	position: absolute;
+}
+.intelliboard-support-player{
+	position: absolute;
+	top: 5%;
+	left: calc(50% - 500px);
+	width: 1000px;
+	z-index: 9999;
+	display: none;
+	text-align: center;
+	box-shadow: 0 50px 50px 50px rgba(0,0,0, 0.6);
+	position: absolute;
+}
+.intelliboard-support-play:hover{
+	opacity: 0.8;
+}
+.intelliboard-support-play{
+	width: 200px;
+	height: 200px;
+	background: url('../img/play-button.png') no-repeat top left;
+	background-size: 200px 200px;
+	position: absolute;
+	left: calc(50% - 100px);
+	top: calc(50% - 100px);
+	z-index: 0;
+	cursor: pointer;
+}
+.intelliboard-support {
+	height: 660px;
+	background:#F7FAFE url('../img/video-background.png') no-repeat top right;
+	background-size: auto 660px;
+	border: 1px solid #ddd;
+	position: relative;
+	padding: 50px 30px;
+	box-sizing: border-box;
+}
+.intelliboard-support-logo img{
+	display: block;
+	width: 220px;
+}
+.intelliboard-support-logo {
+	margin-bottom: 50px;
+}
+.intelliboard-support-text{
+	font-size: 13px;
+	max-width: 355px;
+  line-height: 1.53;
+  color: #536383;
+	margin-bottom: 30px;
+	letter-spacing: .3px;
+	z-index: 1;
+	position: relative;
+}
+.intelliboard-support-terms{
+	font-size: 13px;
+	max-width: 355px;
+  line-height: 1.53;
+  color: #a2aac1;
+	margin-bottom: 30px;
+	letter-spacing: .3px;
+	z-index: 1;
+	position: relative;
+}
+.intelliboard-support-info a{
+	text-decoration: underline;
+}
+.intelliboard-support-info{
+	font-size: 13px;
+	max-width: 270px;
+  line-height: 1.53;
+  color: #536383;
+	margin-bottom: 25px;
+	letter-spacing: .3px;
+	z-index: 1;
+	position: relative;
+}
+.intelliboard-support-links{
+	margin-bottom: 25px;
+	margin-left: -5px;
+	z-index: 1;
+	position: relative;
+}
+.intelliboard-support-contacts{
+	margin-bottom: 25px;
+	z-index: 1;
+	position: relative;
+}
+.intelliboard-support-contacts a{
+	margin-left: 0px;
+}
+.intelliboard-support-contacts strong{
+	display: block;
+	font-size: 12px;
+	color: #545e7b;
+	letter-spacing: .3px;
+	font-weight: 500;
+}
+.intelliboard-support-btn:hover{
+	color: #528dce;
+}
+.intelliboard-support-btn:hover,
+.intelliboard-support-large-btn:hover{
+	text-decoration: none;
+	opacity: 0.8;
+}
+.intelliboard-support-large-btn span{
+	background: url('../img/button-field.png') no-repeat top left;
+	background-size: auto 60px;
+	height: 60px;
+	width: 175px;
+	display: block;
+	text-align: center;
+	line-height: 45px;
+	text-transform: uppercase;
+	color: #fff;
+	font-size: 12px;
+	margin: -15px -5px;
+	text-decoration: none;
+	font-size: 12px;
+}
+.intelliboard-support-large-btn{
+	background: url('../img/button-frame.png') no-repeat top left;
+	background-size: auto 31px;
+	height: 40px;
+	width: 155px;
+	display: inline-block;
+}
+.intelliboard-support-btn{
+	background: url('../img/rectangle-2.png') no-repeat top left;
+	background-size: auto 36px;
+	height: 40px;
+	width: 155px;
+	display: inline-block;
+	text-align: center;
+	line-height: 38px;
+	text-transform: uppercase;
+	color: #fff;
+	margin-left: 20px;
+	color: #528dce;
+	font-size: 12px;
+}
+.intelliboard-support-btn{
+	display: inline-block;
+}
+.intelliboard-support-menu a:hover{
+	text-decoration: none;
+	opacity: 0.8;
+}
+.intelliboard-support-menu a{
+	color: #fff;
+	background-color: transparent;
+	border: 2px solid #fff;
+	border-radius: 15px 0 15px 0;
+	line-height: 60px;
+	text-transform: uppercase;
+	font-size: 12px;
+	padding: 10px 30px;
+}
+.intelliboard-support-menu{
+	float: right;
+}
+
 @media screen and (max-width: 600px) {
 	body .intelliboard-origin p{
 		border: 0 !important;
 		width: 100%;
 	}
 }
+
+@media screen and (max-width: 1200px) {
+	body .intelliboard-support-menu a{
+		color: #528dce;
+		border: 2px solid #528dce;
+	}
+	body .intelliboard-support-terms {
+		margin-top: 30px;
+		margin-bottom: 0;
+	}
+	body .intelliboard-support div {
+		width: 100%;
+		max-width: 100%;
+	}
+	body .intelliboard-support-player button{
+		display: none;
+	}
+	body .intelliboard-support-player {
+		display: block;
+		position: relative;
+		top: 0;
+		left: 0;
+		width: 100%;
+		box-shadow: none;
+}
+	body .intelliboard-support-play {
+		display: none;
+	}
+	body .intelliboard-support {
+		height: auto;
+		background:#F7FAFE;
+	}
+}
 @media screen and (max-width: 800px) {
 
 }
 @media screen and (max-width: 1000px) {
+
 	body .intelliboard-courses-grid{width: 100%; margin-right: 0;}
 	body .intelliboard-courses-grid li{width: 100%; margin-right: 0;}
 	body .intelliboard-box .box40,

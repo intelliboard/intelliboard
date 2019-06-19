@@ -58,9 +58,9 @@ if($action == 'get_total_students'){
     $learner_roles = get_config('local_intelliboard', 'filter11');
     $params = array('userid1'=>$USER->id,'userid2'=>$USER->id,'userid3'=>$USER->id,'timestart1'=>$timestart, 'timefinish1'=>$timefinish,'timestart2'=>$timestart, 'timefinish2'=>$timefinish,'timestart3'=>$timestart, 'timefinish3'=>$timefinish);
 
-    $sql1 = $sql2 = intelliboard_instructor_getcourses("lit.courseid");
-    $sql3 = intelliboard_instructor_getcourses("e.courseid");
-    $sql7 = intelliboard_instructor_getcourses("ctx.instanceid");
+    $sql1 = $sql2 = intelliboard_instructor_getcourses("lit.courseid", false, 'ra.userid');
+    $sql3 = intelliboard_instructor_getcourses("e.courseid", false, 'ue.userid');
+    $sql7 = intelliboard_instructor_getcourses("ctx.instanceid", false, 'ra.userid');
 
     list($sql4, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     list($sql5, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);

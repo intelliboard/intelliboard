@@ -28,6 +28,12 @@ require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 
+if(!get_config('local_intelliboard', 'show_dashboard_tab')) {
+    redirect(
+        new \moodle_url('/local/intelliboard/instructor/courses.php')
+    );
+}
+
 $action = optional_param('action', '', PARAM_ALPHANUMEXT);
 $view = optional_param('view', '', PARAM_ALPHANUMEXT);
 $search = clean_raw(optional_param('search', '', PARAM_RAW));
