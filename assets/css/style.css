@@ -906,3 +906,36 @@ position: relative;
     .intelli-instructor-header .instructor-head{float: none;width: 100%;border-right: none;border-bottom: 1px solid #ddd;}
     .intelli-instructor-header .summary{float: none;width: 100%;box-shadow: none;padding-left: 0;}
 }
+
+.nav-tabs span.active form > span.searchviewclose i,
+.nav.nav-tabs > span > span.actbtn i {
+    color: #ddd;
+    font-size: 21px;
+    line-height: 24px;
+}
+.nav-tabs span.active form > span.searchviewclose:hover,
+.nav.nav-tabs > span > span.actbtn:hover {
+    cursor: pointer;
+}
+.nav-tabs span.active form > span.searchviewclose,
+.nav.nav-tabs > span > span.actbtn {
+    background: transparent none repeat scroll 0 0;
+    border: 0;
+    box-shadow: none;
+    margin: 4px 10px;
+    padding: 0;
+    float: left;
+}
+.nav.nav-tabs > span > span.actbtn.active i {
+    color: #666;
+}
+
+div[aria-label="A tabular representation of the data in the chart."] {
+    visibility: hidden !important;
+    display: none !important;
+}
+.screen-reader-content {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+}

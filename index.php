@@ -239,10 +239,10 @@ echo $OUTPUT->header();
 	google.setOnLoadCallback(drawChart);
 	function drawChart() {
 		var data = new google.visualization.DataTable();
-		data.addColumn('date', '<?php echo get_string('time', 'local_intelliboard');?>');
-		data.addColumn('number', '<?php echo get_string('number_of_sessions', 'local_intelliboard');?>');
-		data.addColumn('number', '<?php echo get_string('course_completions', 'local_intelliboard');?>');
-		data.addColumn('number', '<?php echo get_string('user_enrolments', 'local_intelliboard');?>');
+		data.addColumn('date', '<?php echo intellitext(get_string('time', 'local_intelliboard'));?>');
+		data.addColumn('number', '<?php echo intellitext(get_string('number_of_sessions', 'local_intelliboard'));?>');
+		data.addColumn('number', '<?php echo intellitext(get_string('course_completions', 'local_intelliboard'));?>');
+		data.addColumn('number', '<?php echo intellitext(get_string('user_enrolments', 'local_intelliboard'));?>');
 		data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
 
 		var options = {
@@ -269,14 +269,14 @@ echo $OUTPUT->header();
 
 	google.setOnLoadCallback(drawRegionsMap);
 	function drawRegionsMap() {
-		var data = google.visualization.arrayToDataTable([['<?php echo get_string('country');?>', '<?php echo get_string('users', 'local_intelliboard');?>'], <?php echo ($json_countries) ? implode(",", $json_countries):"";?>]);
+		var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('country'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_countries) ? implode(",", $json_countries):"";?>]);
 		var chart = new google.visualization.GeoChart(document.getElementById('countries'));
 		chart.draw(data, {backgroundColor:{fill:'transparent'}});
 	}
 
 	google.setOnLoadCallback(drawEnrolments);
 	function drawEnrolments() {
-		var data = google.visualization.arrayToDataTable([['<?php echo get_string('enrolment_method', 'local_intelliboard');?>', '<?php echo get_string('users', 'local_intelliboard');?>'], <?php echo ($json_enrols) ? implode(",", $json_enrols):"";?> ]);
+		var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('enrolment_method', 'local_intelliboard'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_enrols) ? implode(",", $json_enrols):"";?> ]);
 		var options = {
 			backgroundColor:{fill:"transparent"},
 			title: '',

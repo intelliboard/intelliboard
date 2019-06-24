@@ -71,7 +71,7 @@ $PAGE->requires->css('/local/intelliboard/assets/css/flatpickr.min.css');
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-    <div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+    <div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
     <?php echo '<script src="//code.highcharts.com/highcharts.js"></script>';?>
     <div class="intelliboard-page intelliboard-instructor intelliboard-analytics">

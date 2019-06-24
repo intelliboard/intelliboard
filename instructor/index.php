@@ -153,7 +153,7 @@ $courses = intelliboard_instructor_courses($view, $page, $length, $course, $date
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-	<div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+	<div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
 <div class="intelliboard-page intelliboard-instructor">
 	<?php include("views/menu.php"); ?>
@@ -502,7 +502,7 @@ echo $OUTPUT->header();
                 jQuery('#chart7 .intelliboard-dropdown.courses button span').html(jQuery(this).html());
                 jQuery('#chart7 .intelliboard-dropdown.courses button').val(course);
                 jQuery('#chart7 .intelliboard-dropdown.courses ul').hide();
-                jQuery('#chart7 .intelliboard-dropdown.users button span').html('<?php echo get_string('select_user', 'local_intelliboard'); ?>');
+                jQuery('#chart7 .intelliboard-dropdown.users button span').html('<?php echo intellitext(get_string('select_user', 'local_intelliboard')); ?>');
 
                 load_chart7_users_list(course);
             });
@@ -523,7 +523,7 @@ echo $OUTPUT->header();
                     dataType: "json"
                 }).done(function( response ) {
                     if(response.length<2){
-                        $('#chart7_area').html("<p class='alert alert-warning'><?php echo get_string('no_data','local_intelliboard');?></p>");
+                        $('#chart7_area').html("<p class='alert alert-warning'><?php echo intellitext(get_string('no_data','local_intelliboard'));?></p>");
                     }else {
                         for (var i = 1; i < response.length; i++) {
                             response[i][0] = new Date(response[i][0] * 1000);
@@ -532,7 +532,7 @@ echo $OUTPUT->header();
                         var data = google.visualization.arrayToDataTable(response);
                         var options = <?php echo format_string($factorInfo->GradeProgression); ?>;
                         options.vAxis.format = '#';
-                        options.vAxis.title = '<?php echo get_string('grade', 'local_intelliboard');?> <?php echo((!$raw)?'(' . get_string("scale_percentage", "local_intelliboard") . ')':'');?>';
+                        options.vAxis.title = '<?php echo intellitext(get_string('grade', 'local_intelliboard'));?> <?php echo((!$raw)?'(' . intellitext(get_string("scale_percentage", "local_intelliboard")) . ')':'');?>';
                         var chart = new google.visualization.LineChart(document.getElementById('chart7_area'));
                         chart.draw(data, options);
                     }
@@ -659,8 +659,8 @@ echo $OUTPUT->header();
 			}).done(function( response ) {
 				//response = JSON.parse(response)
 				var data = new google.visualization.DataTable();
-	            data.addColumn('number', '<?php echo get_string('grade', 'local_intelliboard'); ?>');
-	            data.addColumn('number', '<?php echo get_string('in13', 'local_intelliboard'); ?>');
+	            data.addColumn('number', '<?php echo intellitext(get_string('grade', 'local_intelliboard')); ?>');
+	            data.addColumn('number', '<?php echo intellitext(get_string('in13', 'local_intelliboard')); ?>');
 	            data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
 	            data.addRows(response);
 	            var options = <?php echo format_string($factorInfo->CorrelationsCalculation); ?>;
@@ -674,9 +674,9 @@ echo $OUTPUT->header();
 		google.setOnLoadCallback(progressChart);
 		function progressChart() {
 			var data = google.visualization.arrayToDataTable([
-				['<?php echo get_string('completed', 'local_intelliboard'); ?>', '<?php echo get_string('incomplete', 'local_intelliboard'); ?>'],
-				['<?php echo get_string('completed', 'local_intelliboard'); ?>', <?php echo $stats->completed; ?>],
-				['<?php echo get_string('incomplete', 'local_intelliboard'); ?>', <?php echo $stats->enrolled - $stats->completed; ?>]
+				['<?php echo intellitext(get_string('completed', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('incomplete', 'local_intelliboard')); ?>'],
+				['<?php echo intellitext(get_string('completed', 'local_intelliboard')); ?>', <?php echo $stats->completed; ?>],
+				['<?php echo intellitext(get_string('incomplete', 'local_intelliboard')); ?>', <?php echo $stats->enrolled - $stats->completed; ?>]
 			]);
 			var options = {
 			chartArea: {width: '100%',height: '90%',},
@@ -697,8 +697,8 @@ echo $OUTPUT->header();
 			var options = {
 				title:'',
 				legend:{position: 'top', alignment: 'end'},
-				vAxis: {title:'<?php echo get_string('learners', 'local_intelliboard'); ?>'},
-				hAxis:{textPosition: 'none', title:'<?php echo get_string('courses'); ?>'},
+				vAxis: {title:'<?php echo intellitext(get_string('learners', 'local_intelliboard')); ?>'},
+				hAxis:{textPosition: 'none', title:'<?php echo intellitext(get_string('courses')); ?>'},
 				seriesType:'bars',
 				series:{1:{type:'line'}},
 				chartArea:{width:'90%',height: '76%',right:10 },
@@ -706,27 +706,27 @@ echo $OUTPUT->header();
 				backgroundColor:{fill:'transparent'}
 			};
 			<?php if($view == 'grades'): ?>
-				options.vAxis.title = "<?php echo get_string('in19', 'local_intelliboard'); ?>";
+				options.vAxis.title = "<?php echo intellitext(get_string('in19', 'local_intelliboard')); ?>";
 				var data = google.visualization.arrayToDataTable([
-				['Course', '<?php echo get_string('in19', 'local_intelliboard'); ?>', '<?php echo get_string('in25', 'local_intelliboard'); ?>'],
+				['Course', '<?php echo intellitext(get_string('in19', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('in25', 'local_intelliboard')); ?>'],
 				<?php foreach($courses as $row):  ?>
 				['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo (int)$row->data1_percent; ?>, f: '<?php echo $row->data1; ?>'}, <?php echo (int)$row->data2; ?>],
 				<?php endforeach; ?>
 				]);
 	        <?php elseif($view == 'activities'): ?>
-	        	options.vAxis.title = "<?php echo get_string('in14', 'local_intelliboard'); ?>";
+	        	options.vAxis.title = "<?php echo intellitext(get_string('in14', 'local_intelliboard')); ?>";
 	        	options.vAxis.minValue = 0;
 	        	options.vAxis.maxValue = 1;
 	        	options.vAxis.format = 'percent';
 
 	        	var data = google.visualization.arrayToDataTable([
-	        	['<?php echo get_string('course'); ?>', '<?php echo get_string('in15', 'local_intelliboard'); ?>'],
+	        	['<?php echo intellitext(get_string('course')); ?>', '<?php echo intellitext(get_string('in15', 'local_intelliboard')); ?>'],
 	        	<?php foreach($courses as $row): ?>
 				['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
 				<?php endforeach; ?>
 				]);
 	        <?php elseif($view == 'course_overview'): ?>
-                jQuery('#instructor-chart<?php echo ($view)?"-".$view:""; ?>').html('<?php echo get_string('loading', 'local_intelliboard'); ?>');
+                jQuery('#instructor-chart<?php echo ($view)?"-".$view:""; ?>').html('<?php echo intellitext(get_string('loading', 'local_intelliboard')); ?>');
 	        	options.vAxis.textPosition = 'none';
 	        	options.tooltip = {isHtml: true};
 	        	options.chartArea.width = '95%';
@@ -740,11 +740,11 @@ echo $OUTPUT->header();
                     dataType: "json"
                 }).done(function( response ) {
                     if(view == 'activity'){
-                        options.vAxis.title = "<?php echo get_string('s25', 'local_intelliboard'); ?>";
-                        options.hAxis.title = "<?php echo get_string('s45', 'local_intelliboard'); ?>";
+                        options.vAxis.title = "<?php echo intellitext(get_string('s25', 'local_intelliboard')); ?>";
+                        options.hAxis.title = "<?php echo intellitext(get_string('s45', 'local_intelliboard')); ?>";
                     }else{
-                        options.vAxis.title = "<?php echo get_string('s48', 'local_intelliboard'); ?>";
-                        options.hAxis.title = "<?php echo get_string('s47', 'local_intelliboard'); ?>";
+                        options.vAxis.title = "<?php echo intellitext(get_string('s48', 'local_intelliboard')); ?>";
+                        options.hAxis.title = "<?php echo intellitext(get_string('s47', 'local_intelliboard')); ?>";
                     }
                     var data = google.visualization.arrayToDataTable(response);
 
@@ -753,7 +753,7 @@ echo $OUTPUT->header();
                 return;
 	        <?php else: ?>
 	        	var data = google.visualization.arrayToDataTable([
-	        	['<?php echo get_string('course'); ?>', '<?php echo get_string('enrolled', 'local_intelliboard'); ?>', '<?php echo get_string('completed', 'local_intelliboard'); ?>'],
+	        	['<?php echo intellitext(get_string('course')); ?>', '<?php echo intellitext(get_string('enrolled', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('completed', 'local_intelliboard')); ?>'],
 	        	<?php foreach($courses as $row): ?>
 				['<?php echo addslashes(format_string($row->fullname)); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
 				<?php endforeach; ?>
@@ -775,7 +775,7 @@ echo $OUTPUT->header();
                 var data = google.visualization.arrayToDataTable(response);
                 var options = <?php echo format_string($factorInfo->CorrelationsCalculation); ?>;
                 options.vAxis.format = '#%';
-                options.vAxis.title = '<?php echo get_string('s46', 'local_intelliboard');?>';
+                options.vAxis.title = '<?php echo intellitext(get_string('s46', 'local_intelliboard'));?>';
                 var chart = new google.visualization.AreaChart(document.getElementById('chart5_area'));
                 chart.draw(data, options);
             });
@@ -836,9 +836,9 @@ echo $OUTPUT->header();
                 if(response.total_users>0) {
                     jQuery('#summary-users-chart').show();
                     var data = [
-                        ['<?php echo get_string('total', 'local_intelliboard'); ?>', '<?php echo get_string('in27', 'local_intelliboard'); ?>'],
-                        ['<?php echo get_string('in29', 'local_intelliboard'); ?>', Number(response.active_users)],
-                        ['<?php echo get_string('in30', 'local_intelliboard'); ?>', response.total_users - response.active_users],
+                        ['<?php echo intellitext(get_string('total', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('in27', 'local_intelliboard')); ?>'],
+                        ['<?php echo intellitext(get_string('in29', 'local_intelliboard')); ?>', Number(response.active_users)],
+                        ['<?php echo intellitext(get_string('in30', 'local_intelliboard')); ?>', response.total_users - response.active_users],
                     ];
                     data = google.visualization.arrayToDataTable(data);
                     var options = {
@@ -855,10 +855,10 @@ echo $OUTPUT->header();
                         var selectedItem = chart.getSelection()[0];
                         if(selectedItem.row == 1){
                             $('#summary-users-list ul').html(response.users.not_active);
-                            $('#summary-users-list .title').html('<?php echo get_string('in30', 'local_intelliboard'); ?>');
+                            $('#summary-users-list .title').html('<?php echo intellitext(get_string('in30', 'local_intelliboard')); ?>');
                         }else{
                             $('#summary-users-list ul').html(response.users.active);
-                            $('#summary-users-list .title').html('<?php echo get_string('in29', 'local_intelliboard'); ?>');
+                            $('#summary-users-list .title').html('<?php echo intellitext(get_string('in29', 'local_intelliboard')); ?>');
                         }
                         $('#summary-users-list').addClass('visible');
                     });
@@ -882,7 +882,7 @@ echo $OUTPUT->header();
 		</script>
 		<?php else: ?>
 			<br>
-			<div class="alert alert-info alert-block fade in"><?php echo get_string('in23', 'local_intelliboard'); ?></div>
+			<div class="alert alert-info alert-block"><?php echo get_string('in23', 'local_intelliboard'); ?></div>
 		<?php endif; ?>
 	<?php include("../views/footer.php"); ?>
 </div>
