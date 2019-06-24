@@ -62,7 +62,7 @@ $string['server'] = 'IntelliBoard Server';
 $string['server_usa'] = 'IntelliBoard USA';
 $string['server_au'] = 'IntelliBoard Australia';
 $string['server_eu'] = 'IntelliBoard Europe';
-$string['show_dashboard_tab'] = 'Show dashboard tab';
+$string['show_dashboard_tab'] = 'Dashboard Page';
 $string['filters'] = 'Dashboard filters';
 $string['filter1'] = 'Deleted users';
 $string['filter2'] = 'Suspended users';
@@ -725,7 +725,7 @@ $string['support_close'] = "Close";
 $string['instructor_custom_groups'] = "Instructor custom groups";
 
 // settings of tables
-$string['table_set_icg'] = 'Instructor`s table "Course grades"';
+$string['table_set_icg'] = 'Instructor Courses';
 $string['table_set_icg_c1'] = 'Course Name';
 $string['table_set_icg_c2'] = 'Short Name';
 $string['table_set_icg_c3'] = 'Category';
@@ -735,9 +735,10 @@ $string['table_set_icg_c6'] = 'Sections';
 $string['table_set_icg_c7'] = 'Activities/Resources';
 $string['table_set_icg_c8'] = 'Visits';
 $string['table_set_icg_c9'] = 'Time Spent';
-$string['table_set_icg_c10'] = 'Actions';
+$string['table_set_icg_c11'] = 'Actions – Activities';
+$string['table_set_icg_c12'] = 'Actions – Learners';
 
-$string['table_set_ilg'] = 'Instructor`s table "Learners grades"';
+$string['table_set_ilg'] = 'Instructor Courses > Learners';
 $string['table_set_ilg_c1'] = 'Learner Name';
 $string['table_set_ilg_c2'] = 'Email address';
 $string['table_set_ilg_c3'] = 'Enrolled';
@@ -749,7 +750,7 @@ $string['table_set_ilg_c8'] = 'Visits';
 $string['table_set_ilg_c9'] = 'Time Spent';
 $string['table_set_ilg_c10'] = 'Actions';
 
-$string['table_set_ilg1'] = 'Instructor`s table "Learner grades"';
+$string['table_set_ilg1'] = 'Instructor Courses > Learners > Grades';
 $string['table_set_ilg1_c1'] = 'Activity name';
 $string['table_set_ilg1_c2'] = 'Type';
 $string['table_set_ilg1_c3'] = 'Grade';
@@ -758,7 +759,7 @@ $string['table_set_ilg1_c5'] = 'Status';
 $string['table_set_ilg1_c6'] = 'Visits';
 $string['table_set_ilg1_c7'] = 'Time Spent';
 
-$string['table_set_iag'] = 'Instructor`s table "Activities grades"';
+$string['table_set_iag'] = 'Instructor Course > Activities';
 $string['table_set_iag_c1'] = 'Activity name';
 $string['table_set_iag_c2'] = 'Type';
 $string['table_set_iag_c3'] = 'Learners Completed';
@@ -767,7 +768,7 @@ $string['table_set_iag_c5'] = 'Visits';
 $string['table_set_iag_c6'] = 'Time Spent';
 $string['table_set_iag_c7'] = 'Actions';
 
-$string['table_set_iag1'] = 'Instructor`s table "Activity grades"';
+$string['table_set_iag1'] = 'Instructor Courses > Activities > Grades';
 $string['table_set_iag1_c1'] = 'Learner Name';
 $string['table_set_iag1_c2'] = 'Email address';
 $string['table_set_iag1_c3'] = 'Status';
@@ -775,3 +776,7 @@ $string['table_set_iag1_c4'] = 'Grade';
 $string['table_set_iag1_c5'] = 'Graded';
 $string['table_set_iag1_c6'] = 'Visits';
 $string['table_set_iag1_c7'] = 'Time Spent';
+
+$string['student_grades'] = 'Student grades';
+$string['grid_view'] = 'Grid view';
+$string['list_view'] = 'List view';

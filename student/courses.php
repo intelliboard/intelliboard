@@ -112,20 +112,35 @@ $scale_percentage_round = get_config('local_intelliboard', 'scale_percentage_rou
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-	<div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+	<div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
 <div class="intelliboard-page intelliboard-student">
 	<?php include("views/menu.php"); ?>
 
 		<div class="intelliboard-search clearfix">
 			<form action="<?php echo $PAGE->url; ?>" method="GET">
-				<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
+				<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>">
 
-				<span class="pull-left"><input class="form-control" name="search" type="text" value="<?php echo format_string($search); ?>" placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>" /></span>
+				<span class="pull-left">
+                    <input class="form-control" name="search" aria-label="<?php echo get_string('search');?>"
+                           type="text" value="<?php echo format_string($search); ?>"
+                           placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>"
+                    >
+                </span>
 				<button class="btn btn-default"><?php echo get_string('search');?></button>
-				<span>
-					<a class="active" value="grid" href=""><i class="ion-android-apps"></i></a>
-					<a href="" value="list"><i class="ion-android-menu"></i></a>
+				<span aria-hidden="true">
+					<a class="active" value="grid" href="" aria-label="Grid view">
+                        <span class="screen-reader-content">
+                            <?php echo get_string('grid_view', 'local_intelliboard'); ?>
+                        </span>
+                        <i class="ion-android-apps"></i>
+                    </a>
+					<a href="" value="list" aria-label="List view">
+                        <span class="screen-reader-content">
+                            <?php echo get_string('list_view', 'local_intelliboard'); ?>
+                        </span>
+                        <i class="ion-android-menu"></i>
+                    </a>
 				</span>
 
 			</form>
@@ -191,6 +206,7 @@ echo $OUTPUT->header();
 							</a>
                             <?php if($course_activities):?>
                                 <a class="course-activities" href="grades.php">
+                                    <span class="screen-reader-content"><?php echo get_string('student_grades', 'local_intelliboard'); ?></span>
                                     <i class="ion-university"></i>
                                 </a>
                             <?php endif;?>

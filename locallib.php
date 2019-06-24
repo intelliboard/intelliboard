@@ -644,3 +644,7 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
 
     return $value;
 }
+
+function intellitext($val = '') {
+    return addslashes($val);
+}

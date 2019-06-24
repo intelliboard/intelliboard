@@ -13534,6 +13534,7 @@ class local_intelliboard_external extends external_api {
                     $query[] = "$column IN ($users)";
                   } else {
                     $assign_courses_list = (!$courses) ? '0,0' : implode(",", array_keys($courses));
+                    $params->learner_roles = isset($params->learner_roles)?$params->learner_roles:5;
                     $learner_roles = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
                     $result = $DB->get_records_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN ($assign_courses_list)", $this->params);
                     if ($result) {

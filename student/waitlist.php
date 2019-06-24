@@ -76,7 +76,7 @@ $intellicartenabled = (
 echo $OUTPUT->header();?>
 
 <?php if(!isset($intelliboard) || !$intelliboard->token || !$intellicartenabled): ?>
-    <div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+    <div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
 <div class="intelliboard-page intelliboard-student">
     <?php include("views/menu.php"); ?>
