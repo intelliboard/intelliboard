@@ -203,7 +203,7 @@ if(get_config('local_intelliboard', 'last_year')){
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-    <div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+    <div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
     <div class="intelliboard-page intelliboard-student">
         <?php include("views/menu.php"); ?>
@@ -268,12 +268,16 @@ echo $OUTPUT->header();
                             <input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
 
 							<input class="intype" name="type" type="hidden" value="assignment" />
-							<input class="intsearch" name="search" placeholder="<?php echo get_string('search');?>" type="text" value="<?php echo ($type == 'assignment' or $type == 'quiz')?$search:''; ?>" />
-							<button type="submit"><i class="ion-ios-search-strong"></i></button>
-							<a href="" class="searchviewclose"><i class="ion-android-close"></i></a>
+                            <input class="intsearch" name="search" aria-label="<?php echo get_string('search');?>"
+                                   placeholder="<?php echo get_string('search');?>" type="text"
+                                   value="<?php echo ($type == 'assignment' or $type == 'quiz')?$search:''; ?>">
+							<button type="submit">
+                                <?php echo get_string('search');?> <i class="ion-ios-search-strong"></i>
+                            </button>
+							<span class="searchviewclose"><i class="ion-android-close"></i></span>
 						</form>
-						<a href="" class="searchview actbtn"><i class="ion-ios-search-strong"></i></a>
-						<a href="" class="intsettings actbtn"><i class="ion-ios-settings-strong"></i></a>
+						<span class="searchview actbtn"><i class="ion-ios-search-strong"></i></span>
+						<span class="intsettings actbtn"><i class="ion-ios-settings-strong"></i></span>
 					</span>
                         </ul>
                         <div>
@@ -309,13 +313,13 @@ echo $OUTPUT->header();
                                         }
                                         ?>
                                         <tr>
-                                            <td width="1%"><i class="intelliboard-icon <?php echo $class; ?>"></i></td>
-                                            <td>
+                                            <td  width="1%"><i class="intelliboard-icon <?php echo $class; ?>"></i></td>
+                                            <td >
                                                 <a href="<?php echo $CFG->wwwroot; ?>/mod/assign/view.php?id=<?php echo s($item->cmid); ?>"><?php echo format_string($item->name); ?></a>
                                                 <p class="intelliboard-fade60"><?php echo format_string($item->fullname); ?></p>
                                             </td>
                                             <?php if($t31): ?>
-                                                <td class="align-center">
+                                                <td  class="align-center">
                                                     <?php if($scale_real):?>
                                                         <?php echo $item->grade; ?>
                                                     <?php else:?>
@@ -324,14 +328,14 @@ echo $OUTPUT->header();
                                                 </td>
                                             <?php endif; ?>
                                             <?php if($t32): ?>
-                                                <td class="align-center"><?php echo ($item->duedate)?date("m/d/Y", $item->duedate):'-'; ?></span></td>
+                                                <td  class="align-center"><?php echo ($item->duedate)?date("m/d/Y", $item->duedate):'-'; ?></span></td>
                                             <?php endif; ?>
                                         </tr>
                                     <?php endforeach; ?>
                                     </tbody>
                                     <tfoot>
                                     <tr>
-                                        <td align="right" colspan="4"><?php echo $assignments['pagination']; ?></td>
+                                        <td  align="right" colspan="4"><?php echo $assignments['pagination']; ?></td>
                                     </tr>
                                     </tfoot>
                                 </table>
@@ -346,8 +350,8 @@ echo $OUTPUT->header();
                                     </thead>
                                     <tbody>
                                     <?php if(!count($quizes['data'])): ?>
-                                        <tr colspan="3">
-                                            <td><?php echo get_string('no_data', 'local_intelliboard'); ?></td>
+                                        <tr>
+                                            <td colspan="3"><?php echo get_string('no_data', 'local_intelliboard'); ?></td>
                                         </tr>
                                     <?php endif; ?>
 
@@ -375,7 +379,7 @@ echo $OUTPUT->header();
                                                 <p class="intelliboard-fade60"><?php echo format_string($item->fullname); ?></p>
                                             </td>
                                             <?php if($t33): ?>
-                                                <td class="align-center">
+                                                <td  class="align-center">
                                                     <?php if($scale_real):?>
                                                         <?php echo $item->grade; ?>
                                                     <?php else:?>
@@ -404,8 +408,8 @@ echo $OUTPUT->header();
                                     <input name="activity_setting" type="hidden" value="1" />
 
                                     <div class="form-group">
-                                        <label for=""><?php echo get_string('courses', 'local_intelliboard'); ?></label>
-                                        <select name="activity_courses" class="form-control">
+                                        <label for="activityCoursesList"><?php echo get_string('courses', 'local_intelliboard'); ?></label>
+                                        <select name="activity_courses" class="form-control" id="activityCoursesList">
                                             <option><?php echo get_string('all_courses', 'local_intelliboard'); ?></option>
                                             <?php foreach($courses as $row):  ?>
                                                 <option <?php echo ($showing_user->activity_courses == $row->id)?'selected="selected"':''; ?> value="<?php echo $row->id; ?>"><?php echo format_string($row->fullname); ?></option>
@@ -414,7 +418,7 @@ echo $OUTPUT->header();
                                     </div>
 
                                     <div class="form-group">
-                                        <label for=""><?php echo get_string('time_period_due', 'local_intelliboard'); ?>:</label>
+                                        <label for="activity_time"><?php echo get_string('time_period_due', 'local_intelliboard'); ?>:</label>
                                         <select id="activity_time" name="activity_time" class="form-control">
                                             <option value="-1"><?php echo get_string('all_data', 'local_intelliboard'); ?></option>
                                             <?php foreach($menu as $key=>$value): ?>
@@ -437,18 +441,22 @@ echo $OUTPUT->header();
                             <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('course_progress', 'local_intelliboard'); ?></a></li>
 
                             <span>
-						<form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
-                            <input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
+                                <form action="<?php echo $PAGE->url; ?>" method="GET" class="clearfix">
+                                    <input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
 
-							<input name="type" type="hidden" value="course" />
-							<input class="intsearch" name="search" placeholder="<?php echo get_string('search');?>" type="text" value="<?php echo ($type == 'course')?format_string($search):''; ?>" />
-							<button type="submit"><i class="ion-ios-search-strong"></i></button>
-							<a href="" class="searchviewclose"><i class="ion-android-close"></i></a>
-						</form>
-						<a href="" class="searchview actbtn"><i class="ion-ios-search-strong"></i></a>
-						<a class="active actbtn cview" href="tm"><i class="ion-android-apps"></i></a>
-						<a class="cview actbtn" href="list"><i class="ion-android-menu"></i></a>
-					</span>
+                                    <input name="type" type="hidden" value="course" />
+                                    <input class="intsearch" name="search" placeholder="<?php echo get_string('search');?>"
+                                           type="text" value="<?php echo ($type == 'course')?format_string($search):''; ?>"
+                                           aria-label="<?php echo get_string('search');?>">
+                                    <button type="submit">
+                                        <?php echo get_string('search');?> <i class="ion-ios-search-strong"></i>
+                                    </button>
+                                    <span class="searchviewclose"><i class="ion-android-close"></i></span>
+                                </form>
+                                <span class="searchview actbtn"><i class="ion-ios-search-strong"></i></span>
+                                <span class="active actbtn cview" data-tableclass="tm"><i class="ion-android-apps"></i></span>
+                                <span class="cview actbtn" data-tableclass="list"><i class="ion-android-menu"></i></span>
+                            </span>
                         </ul>
 
                         <table class="intelliboard-data-table cview-table table tab active">
@@ -462,8 +470,8 @@ echo $OUTPUT->header();
                             </thead>
                             <tbody>
                             <?php if(!count($courses_report['data'])): ?>
-                                <tr colspan="6">
-                                    <td><?php echo get_string('no_data', 'local_intelliboard'); ?></td>
+                                <tr>
+                                    <td colspan="6"><?php echo get_string('no_data', 'local_intelliboard'); ?></td>
                                 </tr>
                             <?php endif; ?>
                             <?php foreach($courses_report['data'] as $item): ?>
@@ -643,9 +651,9 @@ echo $OUTPUT->header();
             jQuery('.cview').click(function(e){
                 e.preventDefault();
 
-                jQuery(this).parent().find('a').removeClass("active");
+                jQuery(this).parent().find('span').removeClass("active");
                 jQuery(this).addClass("active");
-                var m = jQuery(this).attr('href');
+                var m = jQuery(this).attr('data-tableclass');
                 jQuery('.cview-table').removeClass("list");
                 jQuery('.cview-table').addClass(m);
             });
@@ -681,10 +689,10 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(CourseSuccess);
         function CourseSuccess() {
             var data = google.visualization.arrayToDataTable([
-                ['<?php echo get_string('status', 'local_intelliboard'); ?>', '<?php echo get_string('courses', 'local_intelliboard'); ?>'],
-                ['<?php echo get_string('completed', 'local_intelliboard'); ?>',<?php echo (int)$totals->completed; ?>],
-                ['<?php echo get_string('inprogress', 'local_intelliboard'); ?>',<?php echo (int)$totals->inprogress; ?>],
-                ['<?php echo get_string('notstarted', 'local_intelliboard'); ?>',<?php $t = intval($totals->enrolled)-(intval($totals->inprogress) + intval($totals->completed)); echo ($t>0)?$t:0 ?>],
+                ['<?php echo intellitext(get_string('status', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('courses', 'local_intelliboard')); ?>'],
+                ['<?php echo intellitext(get_string('completed', 'local_intelliboard')); ?>',<?php echo (int)$totals->completed; ?>],
+                ['<?php echo intellitext(get_string('inprogress', 'local_intelliboard')); ?>',<?php echo (int)$totals->inprogress; ?>],
+                ['<?php echo intellitext(get_string('notstarted', 'local_intelliboard')); ?>',<?php $t = intval($totals->enrolled)-(intval($totals->inprogress) + intval($totals->completed)); echo ($t>0)?$t:0 ?>],
             ]);
             var options = <?php echo format_string($factorInfo->CourseSuccessCalculation); ?>;
             var chart = new google.visualization.PieChart(document.getElementById('chart3'));
@@ -696,8 +704,8 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(Correlations);
         function Correlations() {
             var data = new google.visualization.DataTable();
-            data.addColumn('number', '<?php echo get_string('grade', 'local_intelliboard'); ?>');
-            data.addColumn('number', '<?php echo get_string('in13', 'local_intelliboard'); ?>');
+            data.addColumn('number', '<?php echo intellitext(get_string('grade', 'local_intelliboard')); ?>');
+            data.addColumn('number', '<?php echo intellitext(get_string('in13', 'local_intelliboard')); ?>');
             data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
             data.addRows([<?php echo ($json_data2) ? implode(",", $json_data2):"";?>]);
             var options = <?php echo format_string($factorInfo->CorrelationsCalculation); ?>;
@@ -710,9 +718,9 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(ActivityParticipation);
         function ActivityParticipation() {
             var data = google.visualization.arrayToDataTable([
-                ['<?php echo get_string('modulename', 'local_intelliboard'); ?>', '<?php echo get_string('total', 'local_intelliboard'); ?>', '<?php echo get_string('viewed', 'local_intelliboard'); ?>', '<?php echo get_string('completed', 'local_intelliboard'); ?>'],
+                ['<?php echo intellitext(get_string('modulename', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('total', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('viewed', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('completed', 'local_intelliboard')); ?>'],
                 <?php foreach($modules_progress as $row):  ?>
-                ['<?php echo addslashes( get_string('modulename', $row->name)); ?>', <?php echo (int)$row->modules; ?>, <?php echo (int)$row->start_modules; ?>, <?php echo (int)$row->completed_modules; ?>],
+                ['<?php echo addslashes(get_string('modulename', $row->name)); ?>', <?php echo (int)$row->modules; ?>, <?php echo (int)$row->start_modules; ?>, <?php echo (int)$row->completed_modules; ?>],
                 <?php endforeach; ?>
             ]);
             var options = <?php echo format_string($factorInfo->ActivityParticipationCalculation); ?>;
@@ -726,9 +734,9 @@ echo $OUTPUT->header();
         function LearningProgress() {
 
             var data = google.visualization.arrayToDataTable([
-                ['<?php echo get_string('modulename', 'local_intelliboard'); ?>', '<?php echo get_string('time_spent', 'local_intelliboard'); ?>'],
+                ['<?php echo intellitext(get_string('modulename', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('time_spent', 'local_intelliboard')); ?>'],
                 <?php foreach($modules_progress as $row):  ?>
-                ['<?php echo addslashes( get_string('modulename', $row->name)); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
+                ['<?php echo intellitext(get_string('modulename', $row->name)); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
                 <?php endforeach; ?>
             ]);
             var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
@@ -741,9 +749,9 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(drawCourseProgress);
         function drawCourseProgress() {
             var data = google.visualization.arrayToDataTable([
-                ['<?php echo get_string('course', 'local_intelliboard'); ?>', '<?php echo get_string('courseaverage', 'local_intelliboard'); ?>', '<?php echo get_string('mygrade', 'local_intelliboard'); ?>'],
+                ['<?php echo intellitext(get_string('course', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('courseaverage', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('mygrade', 'local_intelliboard')); ?>'],
                 <?php foreach($courses as $row):  ?>
-                ['<?php echo addslashes(format_string($row->fullname)); ?>', <?php echo ($scale_real)?"{v: ".(int)$row->average.", f: '".$row->average_real."'}":(int)$row->average; ?>, <?php echo ($scale_real)?"{v: ".(int)$row->grade.", f: '".$row->grade_real."'}":(int)$row->grade; ?>],
+                ['<?php echo intellitext(format_string($row->fullname)); ?>', <?php echo ($scale_real)?"{v: ".(int)$row->average.", f: '".$row->average_real."'}":(int)$row->average; ?>, <?php echo ($scale_real)?"{v: ".(int)$row->grade.", f: '".$row->grade_real."'}":(int)$row->grade; ?>],
                 <?php endforeach; ?>
             ]);
 
@@ -758,11 +766,11 @@ echo $OUTPUT->header();
         google.setOnLoadCallback(drawActivityProgress);
         function drawActivityProgress() {
             var data = new google.visualization.DataTable();
-            data.addColumn('date', '<?php echo get_string('time', 'local_intelliboard'); ?>');
-            data.addColumn('number', '<?php echo get_string('myprogress', 'local_intelliboard'); ?>');
+            data.addColumn('date', '<?php echo intellitext(get_string('time', 'local_intelliboard')); ?>');
+            data.addColumn('number', '<?php echo intellitext(get_string('myprogress', 'local_intelliboard')); ?>');
             data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
             <?php if($t53): ?>
-                data.addColumn('number', '<?php echo get_string('average_grade', 'local_intelliboard'); ?>');
+                data.addColumn('number', '<?php echo intellitext(get_string('average_grade', 'local_intelliboard')); ?>');
                 data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
             <?php endif; ?>
             data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);

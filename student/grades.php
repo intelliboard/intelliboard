@@ -96,7 +96,7 @@ $scale_real = get_config('local_intelliboard', 'scale_real');
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-	<div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+	<div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
 <div class="intelliboard-page intelliboard-student">
 	<?php include("views/menu.php"); ?>
@@ -133,7 +133,13 @@ echo $OUTPUT->header();
 					<?php endif; ?>
 					<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>" />
 					<input name="id" type="hidden" value="<?php echo $id; ?>" />
-					<span class="pull-left"><input class="form-control" name="search" type="text" value="<?php echo format_string($search); ?>" placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>" /></span>
+					<span class="pull-left">
+                        <input class="form-control" name="search" type="text"
+                               value="<?php echo format_string($search); ?>"
+                               placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>"
+                               aria-label="<?php echo get_string('search');?>"
+                        >
+                    </span>
 					<button class="btn btn-default"><?php echo get_string('search');?></button>
 				</form>
 			</div>

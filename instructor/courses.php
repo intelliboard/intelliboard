@@ -84,7 +84,7 @@ $table->is_downloading('', '', '');
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-	<div class="alert alert-error alert-block fade in " role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+	<div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
 <div class="intelliboard-page intelliboard-instructor">
 	<?php include("views/menu.php"); ?>
@@ -205,7 +205,7 @@ echo $OUTPUT->header();
 			</div>
 			<div class="clear"></div>
 			<div class="progress-table">
-				<?php $table->out(10, true); ?>
+				<?php $table->columns ? $table->out(10, true) : ''; ?>
 			</div>
 		</div>
 	<?php include("../views/footer.php"); ?>
