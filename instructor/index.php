@@ -148,6 +148,8 @@ if($n13){
 }
 
 $stats = intelliboard_instructor_stats();
+$users = intelliboard_instructor_getcourses('', false, '', true);
+
 $courses = intelliboard_instructor_courses($view, $page, $length, $course, $daterange);
 
 echo $OUTPUT->header();
@@ -211,7 +213,7 @@ echo $OUTPUT->header();
 					<?php echo get_string('in3', 'local_intelliboard'); ?>
 				</li>
 				<li>
-					<strong><?php echo (int)$stats->enrolled; ?></strong>
+					<strong><?php echo ($users) ? $users : (int)$stats->enrolled; ?></strong>
 					<?php echo get_string('in4', 'local_intelliboard'); ?>
 				</li>
 				<li>

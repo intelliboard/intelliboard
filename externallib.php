@@ -3007,38 +3007,61 @@ class local_intelliboard_external extends external_api {
     //Custom Report
     public function report75($params)
     {
+        global $DB;
+
         $columns = array_merge(array("mco_name", "mc_name", "mci_userid", "mci_certid", "mu_firstname", "mu_lastname",  "mu_email", "issue_date"), $this->get_filter_columns($params));
 
-        if($params->custom3 == 2){
-          $sql_columns = $this->get_columns($params, "u.id");
-          $sql_having = $this->get_filter_sql($params, $columns);
-          $sql_order = $this->get_order_sql($params, $columns);
-          $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
-          $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
-          $sql_filter .= $this->get_filterdate_sql($params, "ci.timecreated");
+        // filter by custom profile field
+        $customfieldfilter = '';
+        if($params->custom3) {
+            $data = $DB->get_records_list('user_info_data', 'id', explode(',', $params->custom3));
+            $usertablealias = $params->custom2 == 2 ? 'u' : 'mu';
 
-          return $this->get_report_data("
-                  SELECT DISTINCT ci.id,
-                      c.id AS mc_course,
-                      c.fullname AS mco_name,
-                      ce.name AS mc_name,
-                      ci.userid AS mci_userid,
-                      ce.id AS mci_certid,
-                      u.firstname AS mu_firstname,
-                      u.lastname AS mu_lastname,
-                      u.email AS mu_email,
-                      ci.timecreated AS issue_date
-                      $sql_columns
-                    FROM {local_certificate} ce, {local_certificate_issues} ci, {course} c, {user} u
-                    WHERE
-                      ci.certificateid = ce.id AND
-                      u.id = ci.userid AND
-                      c.id IN (ce.courses) $sql_filter $sql_having $sql_order", $params);
-        }elseif($params->custom3 == 1){
+            if($data) {
+                $fieldid = 0;
+                $values = array_map(function($item) use (&$fieldid) {
+                    $fieldid = $item->fieldid;
+                    return $item->data;
+                }, $data);
+                $customfieldfilter = "JOIN {user_info_data} uid ON uid.fieldid = :customfieldidfilter1 AND
+                                                                   uid.userid = {$usertablealias}.id ".
+                                     $this->get_filter_in_sql($values, 'uid.data');
+                $this->params['customfieldidfilter1'] = $fieldid;
+            }
+        }
+
+        if($params->custom2 == 2){
+            $sql_columns = $this->get_columns($params, "u.id");
+            $sql_having = $this->get_filter_sql($params, $columns);
+            $sql_order = $this->get_order_sql($params, $columns);
+            $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+            $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
+            $sql_filter .= $this->get_filterdate_sql($params, "ci.timecreated");
+
+            return $this->get_report_data(
+                "SELECT DISTINCT ci.id,
+                        c.id AS mc_course,
+                        c.fullname AS mco_name,
+                        ce.name AS mc_name,
+                        ci.userid AS mci_userid,
+                        ce.id AS mci_certid,
+                        u.firstname AS mu_firstname,
+                        u.lastname AS mu_lastname,
+                        u.email AS mu_email,
+                        ci.timecreated AS issue_date
+                        $sql_columns
+                   FROM {local_certificate} ce, {local_certificate_issues} ci, {course} c, {user} u
+                        {$customfieldfilter}
+                  WHERE ci.certificateid = ce.id AND
+                        u.id = ci.userid AND
+                        c.id IN (ce.courses) $sql_filter $sql_having $sql_order",
+                $params
+            );
+        } elseif($params->custom2 == 1){
             $certificate_table = 'customcert';
             $cert_issues_table = 'customcert_issues';
             $cert_id_field = 'customcertid';
-        }else{
+        } else {
             $certificate_table = 'certificate';
             $cert_issues_table = 'certificate_issues';
             $cert_id_field = 'certificateid';
@@ -3070,6 +3093,7 @@ class local_intelliboard_external extends external_api {
                 LEFT OUTER JOIN {user} AS mu ON mci.userid = mu.id
                 LEFT OUTER JOIN {course} AS mco ON mc.course = mco.id
                 $sql_join
+                {$customfieldfilter}
             WHERE mci.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
 
@@ -13499,8 +13523,8 @@ class local_intelliboard_external extends external_api {
             $result = $DB->get_record_sql("SELECT $userid_sql AS users FROM {user_info_field} f, {user_info_data} d
                 WHERE d.fieldid = f.id AND d.data = ? and f.shortname IN ('codsm', 'coddm', 'codam')", [$data->codea]);
             if ($result->users) {
-              list($sql, $params) = intelliboard_filter_in_sql($result->users, "ra.userid", []);
-              $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid $sql GROUP BY c.id", $params);
+              list($sql, $params_users) = intelliboard_filter_in_sql($result->users, "ra.userid", []);
+              $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid $sql GROUP BY c.id", $params_users);
               $users = $result->users;
             } else {
               $courses = [];
@@ -13509,9 +13533,9 @@ class local_intelliboard_external extends external_api {
           } elseif ($mode) {
             $courses = $DB->get_records_sql("SELECT * FROM {course} WHERE category > 0");
           } else {
-            $params = ['userid' => $params->userid];
-            list($sql, $params) = intelliboard_filter_in_sql($roles, "ra.roleid", $params);
-            $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid AND ra.userid = :userid $sql", $params);
+            $params_users = ['userid' => $params->userid];
+            list($sql, $params_users) = intelliboard_filter_in_sql($roles, "ra.roleid", $params_users);
+            $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid AND ra.userid = :userid $sql", $params_users);
           }
 
           foreach ($courses as $key=>$course) {
@@ -13534,7 +13558,6 @@ class local_intelliboard_external extends external_api {
                     $query[] = "$column IN ($users)";
                   } else {
                     $assign_courses_list = (!$courses) ? '0,0' : implode(",", array_keys($courses));
-                    $params->learner_roles = isset($params->learner_roles)?$params->learner_roles:5;
                     $learner_roles = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
                     $result = $DB->get_records_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $learner_roles AND ctx.instanceid IN ($assign_courses_list)", $this->params);
                     if ($result) {

@@ -620,21 +620,22 @@ class intelliboard_learners_grades_table extends table_sql {
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'e.instanceid');
 
         $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
+        $sql .= get_filter_usersql("u.");
 
-        $fields = "ra.id,
-            ra.userid,
-            c.id as courseid,
-            ra.timemodified as enrolled,
-            ul.timeaccess,
+        $fields = "t.*";
+        $from = "(SELECT MAX(ra.id) AS id,
+            MAX(ra.userid) AS userid,
+            MAX(c.id) as courseid,
+            MAX(ra.timemodified) as enrolled,
+            MAX(ul.timeaccess) AS timeaccess,
             $grade_single AS grade,
-            cc.timecompleted,
+            MAX(cc.timecompleted) AS timecompleted,
             u.email,
             CONCAT(u.firstname, ' ', u.lastname) as learner,
-            l.timespend,
-            l.visits,
-            cmc.progress,
-            '' as actions";
-        $from = "{role_assignments} ra
+            MAX(l.timespend) AS timespend,
+            MAX(l.visits) AS visits,
+            MAX(cmc.progress) AS progress,
+            '' as actions FROM {role_assignments} ra
                 LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
                 LEFT JOIN {user} u ON u.id = ra.userid
                 LEFT JOIN {course} c ON c.id = e.instanceid
@@ -646,8 +647,8 @@ class intelliboard_learners_grades_table extends table_sql {
 
                 LEFT JOIN (SELECT t.userid,t.courseid, sum(t.timespend) as timespend, sum(t.visits) as visits FROM
                     {local_intelliboard_tracking} t GROUP BY t.courseid, t.userid) l ON l.courseid = c.id AND l.userid = u.id
-                $join_group_sql ";
-        $where = "ra.roleid $sql_roles AND e.instanceid = :c2 $sql $sql33";
+                $join_group_sql  WHERE ra.roleid $sql_roles AND e.instanceid = :c2 $sql $sql33 GROUP BY ra.userid, c.id) t";
+        $where = "t.id > 0";
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
