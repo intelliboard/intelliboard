@@ -313,6 +313,14 @@ function intelliboard_instructor_modules()
     }
     return $data;
 }
+function get_filter_usersql($prefix = '')
+{
+    $filter = (get_config('local_intelliboard', 'filter1')) ? "" : " AND {$prefix}deleted = 0";
+    $filter .= (get_config('local_intelliboard', 'filter2')) ? "" : " AND {$prefix}suspended = 0";
+    $filter .= (get_config('local_intelliboard', 'guest')) ? "" : " AND {$prefix}username <> 'guest'";
+    return $filter;
+}
+
 function intelliboard_instructor_stats()
 {
     global $DB, $USER;
@@ -323,6 +331,8 @@ function intelliboard_instructor_stats()
     $sql = intelliboard_instructor_getcourses('c.id', false, 'ra.userid');
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", []);
 
+    $sql .= get_filter_usersql("u.");
+
     return $DB->get_record_sql("SELECT
             COUNT(DISTINCT c.id) as courses,
             COUNT(DISTINCT ra.userid) as enrolled,
@@ -332,6 +342,7 @@ function intelliboard_instructor_stats()
         FROM {role_assignments} ra
             LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
             LEFT JOIN {course} c ON c.id = ctx.instanceid
+            LEFT JOIN {user} u ON u.id = ra.userid
             LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
             LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
             LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
@@ -475,7 +486,7 @@ function intelliboard_instructor_course_access($course)
   }
   return false;
 }
-function intelliboard_instructor_getcourses($column = 'c.id', $list = false, $col_user = '')
+function intelliboard_instructor_getcourses($column = 'c.id', $list = false, $col_user = '', $onlyusers = false)
 {
   global $DB, $USER, $CFG;
 
@@ -484,6 +495,9 @@ function intelliboard_instructor_getcourses($column = 'c.id', $list = false, $co
   $roles = get_config('local_intelliboard', 'filter10');
   $instructor_custom_groups = get_config('local_intelliboard', 'instructor_custom_groups');
 
+  if ($onlyusers and !$instructor_custom_groups) {
+    return 0;
+  }
   if ($instructor_custom_groups) {
     if ($CFG->dbtype == 'pgsql') {
         $userid = "string_agg( DISTINCT d.userid, ', ')";
@@ -495,6 +509,10 @@ function intelliboard_instructor_getcourses($column = 'c.id', $list = false, $co
     $result = $DB->get_record_sql("SELECT $userid AS users FROM {user_info_field} f, {user_info_data} d
         WHERE d.fieldid = f.id AND d.data = ? and f.shortname IN ('codsm', 'coddm', 'codam')", [$data->codea]);
 
+
+    if ($onlyusers) {
+      return ($result->users) ? count(explode(",", $result->users)) : 0;
+    }
     if ($result->users) {
       list($sql, $params) = intelliboard_filter_in_sql($result->users, "ra.userid", []);
       $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid $sql GROUP BY c.id", $params);

@@ -74,6 +74,15 @@ function local_intelliboard_extend_navigation(global_navigation $nav){
 
 		local_intelliboard_insert_tracking(false);
 		$context = context_system::instance();
+
+        if(has_capability('local/intelliboard:view', $context) and get_config('local_intelliboard', 'ssomenu')){
+            $name = get_string('ianalytics', 'local_intelliboard');
+            $url = new moodle_url($CFG->wwwroot.'/local/intelliboard/index.php?action=sso');
+            $nav->add($name, $url);
+            $node = $mynode->add($name, $url, 0, null, 'intelliboard_admin');
+            $node->showinflatnavigation = true;
+        }
+
 		if (isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)) {
 			$alt_name = get_config('local_intelliboard', 't0');
 			$def_name = get_string('ts1', 'local_intelliboard');
@@ -81,14 +90,6 @@ function local_intelliboard_extend_navigation(global_navigation $nav){
 			$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
 			$nav->add($name, $url);
 			$node = $mynode->add($name, $url, 0, null, 'intelliboard_student');
-			$node->showinflatnavigation = true;
-		}
-
-		if(has_capability('local/intelliboard:view', $context) and get_config('local_intelliboard', 'ssomenu')){
-			$name = get_string('ianalytics', 'local_intelliboard');
-			$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/index.php?action=sso');
-			$nav->add($name, $url);
-			$node = $mynode->add($name, $url, 0, null, 'intelliboard_admin');
 			$node->showinflatnavigation = true;
 		}
 

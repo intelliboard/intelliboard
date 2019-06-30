@@ -83,9 +83,16 @@ class intelliboard_courses_grades_table extends table_sql {
             $headers[] =  get_string('time_spent', 'local_intelliboard');
         }
 
-        if(get_config('local_intelliboard', 'table_set_icg_c10')) {
+        if(
+            get_config('local_intelliboard', 'table_set_icg_c11') or
+            get_config('local_intelliboard', 'table_set_icg_c12')
+        ) {
             $columns[] =  'actions';
             $headers[] =  get_string('actions', 'local_intelliboard');
+        }
+
+        if(!$columns) {
+            return false;
         }
 
         $this->define_headers($headers);
@@ -209,12 +216,32 @@ class intelliboard_courses_grades_table extends table_sql {
     function col_actions($values) {
         global  $PAGE;
 
-        $html = html_writer::start_tag("div",array("style"=>"width:200px; margin: 5px 0;"));
-        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'learners', 'id'=>$values->id)), get_string('learners','local_intelliboard'), array('class' =>'btn btn-default', 'title' => get_string('learners','local_intelliboard')));
-        $html .= "&nbsp";
-        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->id)), get_string('activities','local_intelliboard'), array('class' =>'btn btn-default', 'title' => get_string('activities','local_intelliboard')));
-        $html .= html_writer::end_tag("div");
-        return $html;
+        $elements = [];
+        $start = html_writer::start_tag("div",array("style"=>"width:200px; margin: 5px 0;"));
+
+        if(get_config('local_intelliboard', 'table_set_icg_c11')) {
+            $elements[] = html_writer::link(
+                new moodle_url($PAGE->url, array('action'=>'learners', 'id'=>$values->id)),
+                get_string('learners','local_intelliboard'),
+                array(
+                    'class' =>'btn btn-default',
+                    'title' => get_string('learners','local_intelliboard')
+                )
+            );
+        }
+
+        if(get_config('local_intelliboard', 'table_set_icg_c12')) {
+            $elements[] = html_writer::link(
+                new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->id)),
+                get_string('activities','local_intelliboard'),
+                array(
+                    'class' =>'btn btn-default',
+                    'title' => get_string('activities','local_intelliboard')
+                )
+            );
+        }
+
+        return $start . implode("&nbsp", $elements) . html_writer::end_tag("div");
     }
 }
 
@@ -262,6 +289,10 @@ class intelliboard_activities_grades_table extends table_sql {
         if(get_config('local_intelliboard', 'table_set_iag_c7')) {
             $columns[] =  'actions';
             $headers[] =  get_string('actions','local_intelliboard');
+        }
+
+        if(!$columns) {
+            return false;
         }
 
         $this->define_headers($headers);
@@ -416,6 +447,10 @@ class intelliboard_activity_grades_table extends table_sql {
             $headers[] =  get_string('time_spent','local_intelliboard');
         }
 
+        if(!$columns) {
+            return false;
+        }
+
         $this->define_headers($headers);
         $this->define_columns($columns);
 
@@ -565,6 +600,10 @@ class intelliboard_learners_grades_table extends table_sql {
             $headers[] =  get_string('actions','local_intelliboard');
         }
 
+        if(!$columns) {
+            return false;
+        }
+
         $this->define_headers($headers);
         $this->define_columns($columns);
 
@@ -581,21 +620,22 @@ class intelliboard_learners_grades_table extends table_sql {
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'e.instanceid');
 
         $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
+        $sql .= get_filter_usersql("u.");
 
-        $fields = "ra.id,
-            ra.userid,
-            c.id as courseid,
-            ra.timemodified as enrolled,
-            ul.timeaccess,
+        $fields = "t.*";
+        $from = "(SELECT MAX(ra.id) AS id,
+            MAX(ra.userid) AS userid,
+            MAX(c.id) as courseid,
+            MAX(ra.timemodified) as enrolled,
+            MAX(ul.timeaccess) AS timeaccess,
             $grade_single AS grade,
-            cc.timecompleted,
+            MAX(cc.timecompleted) AS timecompleted,
             u.email,
             CONCAT(u.firstname, ' ', u.lastname) as learner,
-            l.timespend,
-            l.visits,
-            cmc.progress,
-            '' as actions";
-        $from = "{role_assignments} ra
+            MAX(l.timespend) AS timespend,
+            MAX(l.visits) AS visits,
+            MAX(cmc.progress) AS progress,
+            '' as actions FROM {role_assignments} ra
                 LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
                 LEFT JOIN {user} u ON u.id = ra.userid
                 LEFT JOIN {course} c ON c.id = e.instanceid
@@ -607,8 +647,8 @@ class intelliboard_learners_grades_table extends table_sql {
 
                 LEFT JOIN (SELECT t.userid,t.courseid, sum(t.timespend) as timespend, sum(t.visits) as visits FROM
                     {local_intelliboard_tracking} t GROUP BY t.courseid, t.userid) l ON l.courseid = c.id AND l.userid = u.id
-                $join_group_sql ";
-        $where = "ra.roleid $sql_roles AND e.instanceid = :c2 $sql $sql33";
+                $join_group_sql  WHERE ra.roleid $sql_roles AND e.instanceid = :c2 $sql $sql33 GROUP BY ra.userid, c.id) t";
+        $where = "t.id > 0";
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -698,6 +738,10 @@ class intelliboard_learner_grades_table extends table_sql {
         if(get_config('local_intelliboard', 'table_set_ilg1_c7')) {
             $columns[] =  'timespend';
             $headers[] =  get_string('time_spent','local_intelliboard');
+        }
+
+        if(!$columns) {
+            return false;
         }
 
         $this->define_headers($headers);
