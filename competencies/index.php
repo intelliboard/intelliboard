@@ -172,7 +172,7 @@ echo $OUTPUT->header();
         	],
         	<?php foreach($compcourses as $row):  ?>
 			[
-				'<?php echo addslashes(format_string($row->shortname)); ?>',
+				'<?php echo intellitext(format_string($row->shortname, true, ['escape' => true])); ?>',
 				{v:<?php echo (int)$row->courses; ?>, f:'<?php echo addslashes(get_string('a40', 'local_intelliboard')) . ": " .addslashes($row->courses); ?>'},
 			],
 			<?php endforeach; ?>
@@ -193,7 +193,7 @@ echo $OUTPUT->header();
         	],
         	<?php foreach($frameworks as $row):  ?>
 			[
-				'<?php echo addslashes(format_string($row->shortname)); ?>',
+				'<?php echo intellitext(format_string($row->shortname)); ?>',
 				<?php echo (int)$row->competencies; ?>,
 			],
 			<?php endforeach; ?>
@@ -248,7 +248,7 @@ echo $OUTPUT->header();
         	],
         	<?php foreach($competencies as $row):  ?>
 			[
-				'<?php echo addslashes(format_string($row->shortname)); ?>',
+				'<?php echo intellitext(format_string($row->shortname)); ?>',
 				<?php echo (int)$row->proficient; ?>,
 				<?php echo (int)$row->unproficient; ?>,
 				<?php echo (int)$row->unrated; ?>

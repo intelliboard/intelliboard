@@ -107,6 +107,7 @@ $string['ts2'] = 'Página do Painel do Estudante';
 $string['ts3'] = 'Cursos do Painel do Estudante';
 $string['ts4'] = 'Notas do Painel do Estudante';
 $string['ts5'] = 'Relatórios do Painel do Estudante';
+$string['learner_tf_last_week'] = 'Time filter: Last Week';
 $string['t01'] = 'Filtro de tempo: último mês';
 $string['t02'] = 'Filtro de tempo: último trimestre';
 $string['t03'] = 'Filtro de tempo: último semestre';

@@ -462,6 +462,7 @@ echo $OUTPUT->header();
             jQuery("#summary-student-daterange").flatpickr({
                 mode: "range",
                 dateFormat: "Y-m-d",
+                static: true,
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
                 onClose: function(selectedDates, dateStr, instance) {
                     summary_student_daterange_change();
@@ -721,12 +722,19 @@ echo $OUTPUT->header();
 	        	options.vAxis.maxValue = 1;
 	        	options.vAxis.format = 'percent';
 
-	        	var data = google.visualization.arrayToDataTable([
-	        	['<?php echo intellitext(get_string('course')); ?>', '<?php echo intellitext(get_string('in15', 'local_intelliboard')); ?>'],
-	        	<?php foreach($courses as $row): ?>
-				['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
-				<?php endforeach; ?>
-				]);
+	        	<?php if(count($courses)): ?>
+                    var data = google.visualization.arrayToDataTable([
+                    ['<?php echo intellitext(get_string('course')); ?>', '<?php echo intellitext(get_string('in15', 'local_intelliboard')); ?>'],
+                    <?php foreach($courses as $row): ?>
+                    ['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
+                    <?php endforeach; ?>
+                    ]);
+                <?php else: ?>
+                    var data = google.visualization.arrayToDataTable([
+                        ['<?php echo intellitext(get_string('course')); ?>', '<?php echo intellitext(get_string('in15', 'local_intelliboard')); ?>'],
+                        ['', {v: 0, f: 0}]
+                    ]);
+                <?php endif; ?>
 	        <?php elseif($view == 'course_overview'): ?>
                 jQuery('#instructor-chart<?php echo ($view)?"-".$view:""; ?>').html('<?php echo intellitext(get_string('loading', 'local_intelliboard')); ?>');
 	        	options.vAxis.textPosition = 'none';
