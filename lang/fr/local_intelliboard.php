@@ -13,7 +13,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
 /**
  * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
@@ -23,7 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    http://intelliboard.net/
  */
-
  $string['a0'] = 'Tableau de bord des compétences';
  $string['a1'] = 'Compétences';
  $string['a10'] = 'Apprenants inscrits';
@@ -173,7 +171,7 @@
  $string['in17'] = 'Temps total passé';
  $string['in18'] = 'Total des visites';
  $string['in19'] = 'Note moyenne';
- $string['in2'] = 'Progrèssion actuelle';
+ $string['in2'] = 'Progression actuelle';
  $string['in20'] = 'Retourner aux apprenants';
  $string['in201'] = 'Retour aux activités';
  $string['in21'] = 'Note moyenne du cours';
@@ -239,7 +237,7 @@
  $string['moodle_logs'] = 'Journaux Moodle';
  $string['more_courses'] = 'Plus de cours';
  $string['more_users'] = 'Plus d\'utilisateurs';
- $string['my_course_average_all'] = 'ma moyenne de cours (tous les cours)';
+ $string['my_course_average_all'] = 'note moyenne de cours (tous les cours)';
  $string['n1'] = 'Aperçu/vue [Progression apprenant]';
  $string['n10'] = 'Tableau de bord de l\'instructeur';
  $string['n11'] = 'Texte alternatif pour le menu de navigation';
@@ -459,70 +457,72 @@
  $string['privacy:metadata:local_intelliboard_ntf:userid'] = 'Notification ID d\'application externe';
  $string['privacy:metadata:local_intelliboard_ntf:email'] = 'Email de notification';
  $string['privacy:metadata:local_intelliboard_ntf:cc'] = 'Notification cc';
-
-
- $string['support_text1'] = "All your Moodle data: easy, shareable, understandable, and attractive. IntelliBoard is a Moodle plugin that puts <strong>120+</strong> reports and monitors into your hands.";
- $string['support_text2'] = "All your Moodle data: easy, shareable, understandable, and attractive. IntelliBoard is your Moodle reporting and analytics solution, giving you 120+ reports and analytics to help inform your educational business decisions.";
- $string['support_info1'] = "You can join our <a target='_blank' href='https://intelliboard.net/events'>Webinars</a> as we take you on a tour through IntelliBoard 5.0 reporting and analytics!";
- $string['support_info2'] = "Join our <a target='_blank' href='https://intelliboard.net/events'>Webinars</a>, or schedule a personal tour of your own data. With our world class support and service, you'll see your LMS in an entirely new light.";
- $string['support_terms'] = "All rights reserved.";
- $string['support_page'] = "Support Page";
- $string['support_demo'] = "Schedule a Demo";
- $string['support_trial'] = "Start Trial";
- $string['support_close'] = "Close";
-
- $string['instructor_custom_groups'] = "Instructor custom groups";
-
-
+ $string['support_text1'] = "Toutes vos données Moodle: faciles, partageables, compréhensibles et attrayantes. IntelliBoard est un plugin Moodle qui met <strong>120+</strong> rapports et des moniteurs entre vos mains.";
+ $string['support_text2'] = "Toutes vos données Moodle: faciles, partageables, compréhensibles et attrayantes. IntelliBoard est votre solution de création de rapports et d\'analyses Moodle. IntelliBoard vous offre plus de 120 rapports et analyses pour vous aider à prendre des décisions éclairées.";
+ $string['support_info1'] = "Vous pouvez rejoindre nos <a target='_blank' href='https://intelliboard.net/events'>Webinars</a> pendant que nous visitons les rapports et les analyses IntelliBoard 5.0!";
+ $string['support_info2'] = "Rejoignez nos <a target='_blank' href='https://intelliboard.net/events'>Webinars</a>, ou planifier une visite personnelle de vos propres données. Grâce à notre support et à nos services de classe mondiale, vous verrez votre système de gestion de l\'apprentissage sous un jour entièrement nouveau.";
+ $string['support_terms'] = "Tous droits réservés.";
+ $string['support_page'] = "Page de support";
+ $string['support_demo'] = "planifiez une démonstration";
+ $string['support_trial'] = "Commencer l\'essai";
+ $string['support_close'] = "Fermer";
+ $string['instructor_custom_groups'] = "Groupes personnalisés d\'instructeur";
  // settings of tables
- $string['show_dashboard_tab'] = 'Show dashboard tab';
- $string['table_set_icg'] = 'Instructor`s table "Course grades"';
- $string['table_set_icg_c1'] = 'Course Name';
- $string['table_set_icg_c2'] = 'Short Name';
- $string['table_set_icg_c3'] = 'Category';
- $string['table_set_icg_c4'] = 'Enrolled/Completed Learners';
- $string['table_set_icg_c5'] = 'Course Avg. grade';
+ $string['show_dashboard_tab'] = 'Afficher l\'onglet du tableau de bord';
+ $string['table_set_icg'] = 'Tableau de l\'instructeur "Notes de cours"';
+ $string['table_set_icg_c1'] = 'Nom du cours';
+ $string['table_set_icg_c2'] = 'Nom court';
+ $string['table_set_icg_c3'] = 'Catégorie';
+ $string['table_set_icg_c4'] = 'Apprenants inscrits / complétés';
+ $string['table_set_icg_c5'] = 'Note moyenne de cours';
  $string['table_set_icg_c6'] = 'Sections';
- $string['table_set_icg_c7'] = 'Activities/Resources';
- $string['table_set_icg_c8'] = 'Visits';
- $string['table_set_icg_c9'] = 'Time Spent';
- $string['table_set_icg_c10'] = 'Actions';
-
- $string['table_set_ilg'] = 'Instructor`s table "Learners grades"';
- $string['table_set_ilg_c1'] = 'Learner Name';
- $string['table_set_ilg_c2'] = 'Email address';
- $string['table_set_ilg_c3'] = 'Enrolled';
- $string['table_set_ilg_c4'] = 'Last Access';
- $string['table_set_ilg_c5'] = 'Status';
- $string['table_set_ilg_c6'] = 'Grade';
- $string['table_set_ilg_c7'] = 'Completed Activities/Resources';
- $string['table_set_ilg_c8'] = 'Visits';
- $string['table_set_ilg_c9'] = 'Time Spent';
- $string['table_set_ilg_c10'] = 'Actions';
-
- $string['table_set_ilg1'] = 'Instructor`s table "Learner grades"';
- $string['table_set_ilg1_c1'] = 'Activity name';
+ $string['table_set_icg_c7'] = 'Activités / Ressources';
+ $string['table_set_icg_c8'] = 'Visites';
+ $string['table_set_icg_c9'] = 'Temps passé';
+ $string['table_set_icg_c10'] = 'Actes';
+ $string['table_set_ilg'] = 'Tableau de l\'instructeur "Notes des apprenants"';
+ $string['table_set_ilg_c1'] = 'Nom de l\'apprenant';
+ $string['table_set_ilg_c2'] = 'adresse email';
+ $string['table_set_ilg_c3'] = 'Inscrit';
+ $string['table_set_ilg_c4'] = 'Dernier accès';
+ $string['table_set_ilg_c5'] = 'Statut';
+ $string['table_set_ilg_c6'] = 'Note';
+ $string['table_set_ilg_c7'] = 'Activités / ressources complétées';
+ $string['table_set_ilg_c8'] = 'Visites';
+ $string['table_set_ilg_c9'] = 'Temps passé';
+ $string['table_set_ilg_c10'] = 'Actes';
+ $string['table_set_ilg1'] = 'Tableau de l\'instructeur "Notes des apprenants"';
+ $string['table_set_ilg1_c1'] = 'Nom de l\'activité';
  $string['table_set_ilg1_c2'] = 'Type';
- $string['table_set_ilg1_c3'] = 'Grade';
- $string['table_set_ilg1_c4'] = 'Graded';
- $string['table_set_ilg1_c5'] = 'Status';
- $string['table_set_ilg1_c6'] = 'Visits';
- $string['table_set_ilg1_c7'] = 'Time Spent';
-
- $string['table_set_iag'] = 'Instructor`s table "Activities grades"';
- $string['table_set_iag_c1'] = 'Activity name';
+ $string['table_set_ilg1_c3'] = 'note';
+ $string['table_set_ilg1_c4'] = 'noté';
+ $string['table_set_ilg1_c5'] = 'Statut';
+ $string['table_set_ilg1_c6'] = 'Visites';
+ $string['table_set_ilg1_c7'] = 'Temps passé';
+ $string['table_set_iag'] = 'Tableau de l\'instructeur "Notes d\'activités"';
+ $string['table_set_iag_c1'] = 'Nom de l\'activité';
  $string['table_set_iag_c2'] = 'Type';
- $string['table_set_iag_c3'] = 'Learners Completed';
- $string['table_set_iag_c4'] = 'Average grade';
- $string['table_set_iag_c5'] = 'Visits';
- $string['table_set_iag_c6'] = 'Time Spent';
- $string['table_set_iag_c7'] = 'Actions';
-
- $string['table_set_iag1'] = 'Instructor`s table "Activity grades"';
- $string['table_set_iag1_c1'] = 'Learner Name';
- $string['table_set_iag1_c2'] = 'Email address';
- $string['table_set_iag1_c3'] = 'Status';
- $string['table_set_iag1_c4'] = 'Grade';
- $string['table_set_iag1_c5'] = 'Graded';
- $string['table_set_iag1_c6'] = 'Visits';
- $string['table_set_iag1_c7'] = 'Time Spent';
+ $string['table_set_iag_c3'] = 'Apprenants terminés';
+ $string['table_set_iag_c4'] = 'La note moyenne';
+ $string['table_set_iag_c5'] = 'Visites';
+ $string['table_set_iag_c6'] = 'Temps passé';
+ $string['table_set_iag_c7'] = 'Actes';
+ $string['table_set_iag1'] = 'Tableau de l\'instructeur "Notes d\'activité"';
+ $string['table_set_iag1_c1'] = 'Nom de l\'apprenant';
+ $string['table_set_iag1_c2'] = 'adresse email';
+ $string['table_set_iag1_c3'] = 'Statut';
+ $string['table_set_iag1_c4'] = 'Note';
+ $string['table_set_iag1_c5'] = 'Noté';
+ $string['table_set_iag1_c6'] = 'Visites';
+ $string['table_set_iag1_c7'] = 'Temps passé';
+ $string['learner_tf_last_week'] = 'Time filter: Last Week';
+ $string['ianalytics'] = 'IntelliBoard Analytics';
+ $string['in34'] = 'Student Grade Progression';
+ $string['select_user'] = 'Select user';
+ $string['allmod'] = 'All activities';
+ $string['this_year'] = 'This Year';
+ $string['last_year'] = 'Last Year';
+ $string['inprogress'] = 'In progress';
+ $string['notstarted'] = 'Not started';
+ $string['timespent'] = "Time Spent";
+ $string['viewed'] = "Viewed";

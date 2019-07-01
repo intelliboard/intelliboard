@@ -100,6 +100,7 @@ $string['ts2'] = 'Dashboard Página del Aprendiz';
 $string['ts3'] = 'Dashboard Cursos del Aprendiz';
 $string['ts4'] = 'Dashboard Notas del Aprendiz';
 $string['ts5'] = 'Dashboard Reportes del Aprendiz';
+$string['learner_tf_last_week'] = 'Time filter: Last Week';
 $string['t01'] = 'Filtro tiempo:Último mes';
 $string['t02'] = 'Filtro tiempo:Último trimestre';
 $string['t03'] = 'Filtro tiempo:Último semestre';

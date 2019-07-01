@@ -110,6 +110,7 @@ $string['ts2'] = 'Learner Dashboard Page';
 $string['ts3'] = 'Learner Dashboard Courses';
 $string['ts4'] = 'Learner Dashboard Grades';
 $string['ts5'] = 'Learner Dashboard Reports';
+$string['learner_tf_last_week'] = 'Time filter: Last Week';
 $string['t01'] = 'Time filter: Last Month';
 $string['t02'] = 'Time filter: Last Quarter';
 $string['t03'] = 'Time filter: Last Semester';

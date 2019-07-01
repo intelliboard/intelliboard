@@ -795,6 +795,10 @@ class intelliboard_learner_grades_table extends table_sql {
         $this->scale_real = get_config('local_intelliboard', 'scale_real');
     }
 
+    function col_module($values) {
+        return get_string('modulename', $values->module);
+    }
+
     function col_grade($values) {
         if($this->scale_real>0){
             return $values->grade;

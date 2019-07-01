@@ -109,6 +109,7 @@ $string['ts2'] = '学習者ダッシュボードページ';
 $string['ts3'] = '学習者ダッシュボードコース';
 $string['ts4'] = '学習者のダッシュボード評定';
 $string['ts5'] = '学習者ダッシュボードレポート';
+$string['learner_tf_last_week'] = 'Time filter: Last Week';
 $string['t01'] = '時間フィルタ:先月';
 $string['t02'] = '時間フィルタ:最後の四半期';
 $string['t03'] = '時間フィルタ:Last Semester';
