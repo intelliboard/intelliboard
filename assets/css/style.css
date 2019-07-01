@@ -939,3 +939,12 @@ div[aria-label="A tabular representation of the data in the chart."] {
     width: 0;
     height: 0;
 }
+.total_student .flatpickr-calendar.static.open {
+    z-index: 99999;
+}
+.summary .total_student .flatpickr-wrapper {
+    width: 100%;
+}
+.intelliboard-student .intelliboard-dropdown {
+    width: 150px;
+}

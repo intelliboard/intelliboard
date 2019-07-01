@@ -535,7 +535,7 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
             POSTGRES_TYPE => ''
         ),
         'GROUP_CONCAT' => array(
-            MYSQL_TYPE => function($value, $params = array('separator' => ', '), DataExtractor $extractor) {
+            MYSQL_TYPE => function($value, $params = array('separator' => ', ')) {
 
                 if (empty($params['order'])) {
                     $params['order'] = '';
@@ -543,7 +543,7 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
 
                 return "GROUP_CONCAT($value, '" . $params['separator'] . "')";
             },
-            POSTGRES_TYPE => function($value, $params = array('separator' => ', '), DataExtractor $extractor) {
+            POSTGRES_TYPE => function($value, $params = array('separator' => ', ')) {
 
                 if (empty($params['order'])) {
                     $params['order'] = '';
@@ -646,5 +646,7 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
 }
 
 function intellitext($val = '') {
-    return addslashes($val);
+    return addslashes(
+        preg_replace('~[\r\n]+~', '', $val)
+    );
 }

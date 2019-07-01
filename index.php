@@ -253,6 +253,7 @@ echo $OUTPUT->header();
 			},
 			height: 280,
 			hAxis: {
+			    type: 'category',
 				format: 'dd MMM',
 				gridlines: {color: 'none'}
 			},

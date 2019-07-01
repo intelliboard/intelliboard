@@ -182,7 +182,10 @@ foreach($courses as $item){
     $json_data2[] = "[$l, ".round($item->grade, 2).",'$tooltip']";
 }
 
-$menu = array(get_string('last_week','local_intelliboard'));
+$menu = array();
+if(get_config('local_intelliboard', 'learner_tf_last_week')){
+    array_push($menu, get_string('last_week','local_intelliboard'));
+}
 if(get_config('local_intelliboard', 't01')){
     array_push($menu, get_string('last_month','local_intelliboard'));
 }
@@ -601,7 +604,8 @@ echo $OUTPUT->header();
             'modules':[{
               'name':'visualization',
               'version':'1',
-              'packages':['corechart']
+              'packages':['corechart'],
+              'language': '<?php echo current_language(); ?>'
             }]
           }"></script>
     <script type="text/javascript">

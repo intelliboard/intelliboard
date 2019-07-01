@@ -51,7 +51,7 @@ function intelliboard_data($type, $userid, $showing_user) {
             $sql .= " AND c.id = :activity_courses";
             $params['activity_courses'] = intval($showing_user->activity_courses);
         }else{
-            $sql .= " AND c.id IN (SELECT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.userid = :userid1 AND e.id = ue.enrolid )";
+            $sql .= " AND c.id IN (SELECT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.userid = :userid1 AND e.id = ue.enrolid AND ue.status = 0)";
             $params['userid1'] = $showing_user->id;
         }
         if($showing_user->activity_time !== -1){
@@ -90,7 +90,7 @@ function intelliboard_data($type, $userid, $showing_user) {
             $sql .= " AND c.id = :activity_courses";
             $params['activity_courses'] = intval($showing_user->activity_courses);
         }else{
-            $sql .= " AND c.id IN (SELECT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.userid = :userid AND e.id = ue.enrolid )";
+            $sql .= " AND c.id IN (SELECT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.userid = :userid AND e.id = ue.enrolid AND ue.status = 0)";
             $params['userid'] = $showing_user->id;
         }
         if($showing_user->activity_time !== -1){
@@ -145,7 +145,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                   FROM {user_enrolments} ue
                     LEFT JOIN {enrol} e ON e.id = ue.enrolid
                     LEFT JOIN {course} c ON c.id = e.courseid
-                  WHERE ue.userid = :userid2 $sql GROUP BY c.id $order_by";
+                  WHERE ue.userid = :userid2 AND ue.status = 0 $sql GROUP BY c.id $order_by";
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
 
@@ -231,7 +231,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                 LEFT JOIN {enrol} e ON e.id = ue.enrolid
                 LEFT JOIN {course} c ON c.id = e.courseid
                     $sql_join
-                  WHERE ue.userid = :userid3 $sql GROUP BY c.id ORDER BY c.sortorder";
+                  WHERE ue.userid = :userid3 AND ue.status = 0 $sql GROUP BY c.id ORDER BY c.sortorder";
 
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
@@ -331,7 +331,7 @@ function intelliboard_learner_progress($time, $userid){
                                     FROM {grade_items} gi, {grade_grades} g
                                     WHERE
                                       gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1)
-                                      AND gi.courseid IN (SELECT DISTINCT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.enrolid=e.id AND ue.status=0 AND ue.userid=:userid2)
+                                      AND gi.courseid IN (SELECT DISTINCT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.enrolid=e.id AND ue.status=0 AND ue.userid=:userid2 AND ue.status = 0)
                                       AND gi.id = g.itemid
                                       AND g.userid != :userid
                                       AND gi.itemtype = 'mod'
@@ -371,7 +371,7 @@ function intelliboard_learner_courses($userid){
             (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average_real,
             (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
         FROM {user_enrolments} ue, {enrol} e, {course} c
-        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 $sql GROUP BY c.id ORDER BY c.sortorder ASC", $params);
+        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND ue.status = 0 $sql GROUP BY c.id ORDER BY c.sortorder ASC", $params);
     }else{
         $data = $DB->get_records_sql("
         SELECT c.id, c.fullname, '0' AS duration_calc,
@@ -379,7 +379,7 @@ function intelliboard_learner_courses($userid){
             (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
             (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
         FROM {user_enrolments} ue, {enrol} e, {course} c
-        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 $sql GROUP BY c.id ORDER BY c.sortorder ASC", $params);
+        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND ue.status = 0 $sql GROUP BY c.id ORDER BY c.sortorder ASC", $params);
     }
 
     $d = 0;
@@ -581,7 +581,7 @@ function intelliboard_learner_totals($userid){
                           JOIN {course} c ON c.id = e.courseid
                           JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='course' AND gi.hidden = 0
                           JOIN {grade_grades} g ON g.itemid=gi.id AND g.userid=ue.userid
-                        WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND ue.userid = :userid1 $where", $params);
+                        WHERE ue.status = 0 AND gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND ue.userid = :userid1 $where", $params);
 
         $data->sum_grade = (!empty($sum_grade->grade))?$sum_grade->grade:'-';
     }
@@ -621,5 +621,5 @@ function intelliboard_learner_modules($userid){
                                     LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid1 $completion
                                     LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = :userid2 AND l.param = cm.id
                                   WHERE cm.visible = 1 AND cm.module = m.id and cm.course IN (
-                                    SELECT distinct e.courseid FROM {enrol} e, {user_enrolments} ue WHERE ue.userid = :userid3 AND e.id = ue.enrolid) GROUP BY m.id", $params);
+                                    SELECT distinct e.courseid FROM {enrol} e, {user_enrolments} ue WHERE ue.userid = :userid3 AND e.id = ue.enrolid AND ue.status = 0) GROUP BY m.id", $params);
 }
