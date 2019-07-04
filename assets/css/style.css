@@ -941,6 +941,8 @@ div[aria-label="A tabular representation of the data in the chart."] {
 }
 .total_student .flatpickr-calendar.static.open {
     z-index: 99999;
+    right: 0;
+    left: auto;
 }
 .summary .total_student .flatpickr-wrapper {
     width: 100%;
