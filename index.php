@@ -231,6 +231,7 @@ echo $OUTPUT->header();
           src="https://www.google.com/jsapi?autoload={
             'modules':[{
               'name':'visualization',
+							'language': '<?php echo current_language(); ?>',
               'version':'1',
               'packages':['corechart','geochart']
             }]
