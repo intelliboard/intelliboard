@@ -225,6 +225,7 @@ echo $OUTPUT->header();
             'modules':[{
               'name':'visualization',
               'version':'1',
+							'language': '<?php echo current_language(); ?>',
               'packages':['corechart']
             }]
           }"></script>
