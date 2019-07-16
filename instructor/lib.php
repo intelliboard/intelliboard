@@ -366,7 +366,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
 
         $timerange_sql = '';
         if (!empty($daterange)) {
-            $range = explode(" to ", $daterange);
+            $range = preg_split("/ (.)+ /", $daterange);
 
             if($range[0] && $range[1]){
                 $timerange_sql .= ' AND g.timemodified BETWEEN :timestart AND :timefinish';
@@ -393,7 +393,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
 
 
         if (!empty($daterange)) {
-            $range = explode(" to ", $daterange);
+            $range = preg_split("/ (.)+ /", $daterange);
 
             if($range[0] && $range[1]){
                 $completion .= ' AND cmc.timemodified BETWEEN :timestart AND :timefinish';
@@ -434,7 +434,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
 
 
         if (!empty($daterange)) {
-            $range = explode(" to ", $daterange);
+            $range = preg_split("/ (.)+ /", $daterange);
 
             if($range[0] && $range[1]){
                 $sql2 .= ' AND (cc.timecompleted BETWEEN :timestart1 AND :timefinish1 OR ra.timemodified BETWEEN :timestart2 AND :timefinish2)';
@@ -802,7 +802,7 @@ function getWidgetFilters($id, $filters = array(), $params)
 
             $html .= '<input class="widget-daterange" name="daterange" id="widget-daterange'.$id.'" type="text" value="'.$daterange_text.'" placeholder="'.get_string('select_date', 'local_intelliboard').'" />';
             $html .= '<script type="text/javascript">';
-            $html .= '$("#widget-daterange'.$id.'").flatpickr({ mode: "range", dateFormat: "Y-m-d", onClose: function(selectedDates, dateStr, instance){ updatewidget('.$id.'); }'.$daterange.'});';
+            $html .= '$("#widget-daterange'.$id.'").flatpickr({ mode: "range", locale: "'.current_language().'" ,dateFormat: "Y-m-d", onClose: function(selectedDates, dateStr, instance){ updatewidget('.$id.'); }'.$daterange.'});';
             $html .= '</script>';
         }
         if($filter == 'system'){

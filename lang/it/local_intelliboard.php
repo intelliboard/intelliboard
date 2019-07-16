@@ -738,6 +738,9 @@ $string['table_set_icg_c8'] = 'Visite';
 $string['table_set_icg_c9'] = 'Tempo impiegato';
 $string['table_set_icg_c11'] = 'Azioni – Attività';
 $string['table_set_icg_c12'] = 'Azioni – Studenti';
+$string['percentage_completed_learners'] = 'Percentage of Completed Learners';
+$string['avg_visits_per_stud'] = 'Average Visits Per Student';
+$string['avg_time_spent_per_stud'] = 'Average Time Spent Per Student';
 
 $string['table_set_ilg'] = 'Corsi del Docente > Studenti';
 $string['table_set_ilg_c1'] = 'Nome Studente';
@@ -781,3 +784,5 @@ $string['table_set_iag1_c7'] = 'Tempo impiegato';
 $string['student_grades'] = 'Valutazioni Studente';
 $string['grid_view'] = 'Vista a griglia';
 $string['list_view'] = 'Vista a lista';
+$string['grade_activities_overview'] = 'Graded Activities Overview';
+$string['activity'] = 'Activity';

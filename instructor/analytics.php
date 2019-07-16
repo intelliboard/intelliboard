@@ -64,6 +64,11 @@ $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->requires->jquery();
 $PAGE->requires->js('/local/intelliboard/assets/js/jquery.multiple.select.js');
 $PAGE->requires->js('/local/intelliboard/assets/js/flatpickr.min.js');
+try {
+    $PAGE->requires->js('/local/intelliboard/assets/js/flatpickr_l10n/'.current_language().'.js');
+} catch(\Exception $e) {
+    //
+}
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 $PAGE->requires->css('/local/intelliboard/assets/css/multiple-select.css');
 $PAGE->requires->css('/local/intelliboard/assets/css/flatpickr.min.css');

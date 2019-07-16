@@ -241,6 +241,8 @@ function chart_options()
 
     $res['GradeProgression'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chartArea:{width:'90%',height:'70%',top:10},hAxis:{format:'dd MMM',gridlines: {},baselineColor:'#ccc',gridlineColor:'#ccc',},vAxis:{baselineColor:'#CCCCCC',gridlines:{count:5,color:'transparent',},minValue:0},pointSize:6,lineWidth:2,colors:['#1db34f','#1d7fb3'],backgroundColor:{fill:'transparent'},tooltip:{isHtml:true},legend:{position:'bottom'}}";
 
+    $res['GradeActivitiesOverview'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chart:{},chartArea:{width:'90%',height:'70%',top:10},legend: {position: 'none'}}";
+
     return (object) $res;
 }
 function seconds_to_time($t,$f=':'){

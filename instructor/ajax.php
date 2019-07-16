@@ -49,7 +49,7 @@ if($action == 'get_total_students'){
         $timestart = strtotime('-7 days');
         $timefinish = time();
     } else {
-        $range = explode(" to ", $daterange);
+        $range = preg_split("/ (.)+ /", $daterange);
 
         $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
         $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
@@ -134,7 +134,7 @@ if($action == 'get_total_students'){
         $timestart = strtotime('-7 days');
         $timefinish = time();
     } else {
-        $range = explode(" to ", $daterange);
+        $range = preg_split("/ (.)+ /", $daterange);
 
         $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
         $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
@@ -214,7 +214,7 @@ if($action == 'get_total_students'){
         $timestart = strtotime('-7 days');
         $timefinish = time();
     } else {
-        $range = explode(" to ", $daterange);
+        $range = preg_split("/ (.)+ /", $daterange);
 
         $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
         $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
@@ -283,7 +283,7 @@ if($action == 'get_total_students'){
         $timestart = strtotime('-7 days');
         $timefinish = time();
     } else {
-        $range = explode(" to ", $daterange);
+        $range = preg_split("/ (.)+ /", $daterange);
 
         $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
         $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
@@ -506,4 +506,56 @@ if($action == 'get_total_students'){
     }
 
     die(json_encode($grades));
+} elseif($action === 'graded_activities_overview') {
+    $courseid = required_param('course', PARAM_INT);
+    $export = optional_param('export', false, PARAM_BOOL);
+
+    if($export) {
+        $format = required_param('format', PARAM_TEXT);
+    }
+
+    $data = [[
+        get_string('activity', 'local_intelliboard'),
+        get_string('grade', 'local_intelliboard'),
+    ]];
+
+    $activities = $DB->get_records_sql(
+        "SELECT ga.id, ga.itemname, AVG(gg.finalgrade) as grade
+           FROM {grade_items} ga
+      LEFT JOIN {grade_grades} gg ON gg.itemid = ga.id
+          WHERE ga.courseid = :course AND ga.itemtype = 'mod'
+       GROUP BY ga.id, ga.itemname",
+        ['course' => $courseid]
+    );
+
+    if(!$activities) {
+        return [];
+    }
+
+    foreach($activities as $activity) {
+        $data[] = [
+            intellitext($activity->itemname),
+            round($activity->grade, 2)
+        ];
+    }
+
+    if($export) {
+        $header = [];
+        $head1 = new \stdClass();
+        $head1->name = get_string('activity', 'local_intelliboard');
+        $header[] = $head1;
+
+        $head2 = new \stdClass();
+        $head2->name = get_string('grade', 'local_intelliboard');
+        $header[] = $head2;
+
+        $json = new \stdClass();
+        $json->header = $header;
+        $json->body = array_slice($data, 1);
+        return intelliboard_export_report(
+            $json, get_string('grade_activities_overview', 'local_intelliboard'), $format
+        );
+    }
+
+    die(json_encode($data));
 }

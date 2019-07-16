@@ -656,22 +656,27 @@ class local_intelliboard_external extends external_api {
             $sql_filter .= $this->get_filterdate_sql($params, "u.timecreated");
         }
 
+        $sql_filter_course = ($params->filter_course_visible) ? "" : " JOIN {course} c ON t.courseid=c.id AND c.visible = 1";
         if($params->sizemode and $sql_raw){
             $sql_columns .= ", '0' as timespend, '0' as visits";
             $sql_join = "";
         }else{
             if($sql_raw){
                 $sql_columns .= ", MAX(lit.timespend) AS timespend, MAX(lit.visits) AS visits";
-                $sql_join .= " LEFT JOIN (SELECT userid, SUM(timespend) as timespend, SUM(visits) as visits FROM
-                            {local_intelliboard_tracking}
-                        WHERE courseid > 0 GROUP BY userid) as lit ON lit.userid = u.id";
+                $sql_join .= " LEFT JOIN (SELECT t.userid, SUM(t.timespend) as timespend, SUM(t.visits) as visits FROM
+                            {local_intelliboard_tracking} t
+                            $sql_filter_course
+                        WHERE t.courseid > 0 GROUP BY t.userid) as lit ON lit.userid = u.id";
             }else{
                 $sql_columns .= ", MAX(lit.timespend) AS timespend, MAX(lit.visits) AS visits";
-                $sql_join .= " LEFT JOIN (SELECT t.userid, SUM(l.timespend) as timespend, SUM(l.visits) as visits FROM
-                            {local_intelliboard_tracking} t,
-                            {local_intelliboard_logs} l
-                        WHERE l.trackid = t.id AND t.courseid > 0 $sql_join_filter GROUP BY t.userid) as lit ON lit.userid = u.id";
-
+                $sql_join .= " LEFT JOIN (SELECT t.userid, SUM(l.timespend) as timespend, SUM(l.visits) as visits
+                                            FROM {local_intelliboard_logs} l
+                                            JOIN {local_intelliboard_tracking} t ON t.id = l.trackid
+                                                 $sql_filter_course
+                                           WHERE l.trackid = t.id AND t.courseid > 0
+                                                 $sql_join_filter
+                                        GROUP BY t.userid
+                                          ) as lit ON lit.userid = u.id";
             }
         }
 
@@ -1199,12 +1204,14 @@ class local_intelliboard_external extends external_api {
             $sql_columns .= ", '0' as timespend, '0' as visits";
             $sql_join = "";
         }else{
+            $sql_filter_course = ($params->filter_course_visible) ? "" : " JOIN {course} c ON lit.courseid=c.id AND c.visible = 1";
             $date_filter = $this->get_filterdate_sql($params, "lil.timepoint");
             $sql_columns = ", MAX(lit.timespend) AS timespend, MAX(lit.visits) AS visits";
             $sql_join = "
                     LEFT JOIN (SELECT lit.userid, SUM(lil.timespend) as timespend, SUM(lil.visits) as visits
                         FROM {local_intelliboard_tracking} lit
                             JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
+                            $sql_filter_course
                         WHERE lil.id>0 $date_filter
                         GROUP BY lit.userid) lit ON lit.userid = ra.userid";
         }
@@ -2846,6 +2853,29 @@ class local_intelliboard_external extends external_api {
         if (!$params->custom) {
           $sql_filter .= " AND (s.timemodified > a.duedate or s.timemodified IS NULL)";
         }
+        if ($params->custom2 == 1) {
+          $sql_filter .= " AND s.status='submitted' AND s.timemodified>0";
+        }elseif ($params->custom2 == 2) {
+            if ($CFG->dbtype == 'pgsql') {
+                $sql_filter .= " AND s.status!='' AND a.duedate>0 AND a.duedate<EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)";
+            }else{
+                $sql_filter .= " AND s.status!='' AND a.duedate>0 AND a.duedate<NOW()";
+            }
+        }elseif ($params->custom2 == 3) {
+            if ($CFG->dbtype == 'pgsql') {
+                $sql_filter .= " AND s.status!='' AND s.status!='submitted' AND (a.duedate=0 OR a.duedate>EXTRACT(EPOCH FROM CURRENT_TIMESTAMP))";
+            }else{
+                $sql_filter .= " AND s.status!='' AND s.status!='submitted' AND (a.duedate=0 OR a.duedate>NOW())";
+            }
+        }elseif ($params->custom2 == 4) {
+            if ($CFG->dbtype == 'pgsql') {
+                $sql_filter .= " AND a.duedate>0 AND a.duedate<EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)";
+            }else{
+                $sql_filter .= " AND a.duedate>0 AND a.duedate<NOW()";
+            }
+          $sql_filter .= " AND a.duedate>0 AND a.duedate<NOW()";
+        }
+
         if ($CFG->dbtype == 'pgsql') {
             $row_number = "row_number() OVER ()";
             $row_number_select = "";
@@ -3051,18 +3081,17 @@ class local_intelliboard_external extends external_api {
                         u.firstname AS mu_firstname,
                         u.lastname AS mu_lastname,
                         u.email AS mu_email,
-                        ue.timestart AS enrol_date,
+                        e.enrolldate AS enrol_date,
                         ci.timecreated AS issue_date
                         $sql_columns
-                   FROM {local_certificate} ce, {local_certificate_issues} ci, {course} c, {user} u
-                   JOIN {user_enrolments} ue ON ue.userid = u.id
-                   JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = c.id
+                   FROM {local_certificate} ce
+                   JOIN {local_certificate_issues} ci ON ci.certificateid = ce.id
+                   JOIN {course} c ON c.id IN (ce.courses)
+                   JOIN {user} u ON u.id = ci.userid
+                   LEFT JOIN (SELECT e.courseid, e.userid, MAX(enrolldate) AS enrolldate FROM {local_transcripts} e WHERE e.type = 'course' GROUP BY e.courseid, e.userid) e ON e.courseid = c.id AND e.userid = u.id
                         {$customfieldfilter}
-                  WHERE ci.certificateid = ce.id AND
-                        u.id = ci.userid AND
-                        c.id IN (ce.courses) $sql_filter $sql_having $sql_order",
-                $params
-            );
+                  WHERE ce.id > 0 $sql_filter $sql_having $sql_order", $params);
+
         } elseif($params->custom2 == 1){
             $certificate_table = 'customcert';
             $cert_issues_table = 'customcert_issues';
@@ -7755,31 +7784,55 @@ class local_intelliboard_external extends external_api {
 
         $exporttitle = array();
         foreach ($profilefields as $field) {
-            $exporttitle[] = $field->fullname;
+            $exporttitle[] = ['translate' => true, 'key' => $field->shortname];
         }
 
-        $exporttitle[] = get_string("suspended");
+        $exporttitle[] = ['translate' => true, 'key' => 'suspended'];
 
         $grade_items = grade_item::fetch_all(array('courseid'=>$params->courseid));
         foreach ($grade_items as $grade_item) {
+            $column = ['parts' => []];
 
-            $column = new stdClass();
             if ($grade_item->itemtype == 'mod') {
-                $column->name = get_string('modulename', $grade_item->itemmodule).get_string('labelsep', 'langconfig').$grade_item->get_name();
+                $column['parts'][] = [
+                    'translate' => true,
+                    'key' => strtolower(
+                        get_string('modulename', $grade_item->itemmodule)
+                    )
+                ];
+                $column['parts'][] = [
+                    'translate' => false, 'value' =>$grade_item->get_name()
+                ];
+                $column['format'] = '%s'.get_string('labelsep', 'langconfig').'%s (%s)';
             } else {
-                $column->name = $grade_item->get_name();
+                if($grade_item->is_course_item()) {
+                    $column['parts'][] = ['translate' => true, 'key' => 'course'];
+                    $column['parts'][] = ['translate' => true, 'key' => 'total'];
+                    $column['format'] = '%s %S (%s)';
+                } else {
+                    $column['parts'][] = [
+                        'translate' => false, 'value' => $grade_item->get_name()
+                    ];
+                    $column['format'] = '%s (%s)';
+                }
             }
-            $column->extra = get_string('real', 'grades');
-            $exporttitle[] = html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
 
-            $column->extra = get_string('percentage', 'grades');
-            $exporttitle[] = html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
+            $column['parts'][] = ['translate' => true, 'key' => 'real'];
+            $exporttitle[] = $column;
+            array_pop($column['parts']);
 
-            $column->extra = get_string('feedback', 'grades');
-            $exporttitle[] = html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
+            $column['parts'][] = ['key' => 'percentage', 'translate' => true];
+            $exporttitle[] = $column;
+            array_pop($column['parts']);
+
+            $column['parts'][] = ['key' => 'feedback', 'translate' => true];
+            $exporttitle[] = $column;
 
         }
-        $exporttitle[] = get_string('timeexported', 'gradeexport_txt');
+        $exporttitle[] = [
+            'translate' => true,
+            'key' => 'last_downloaded_from_this_course',
+        ];
 
         return array('data'=>$exporttitle,'grade_items'=>$grade_items);
     }
@@ -9825,6 +9878,7 @@ class local_intelliboard_external extends external_api {
             "u.lastname",
             "u.city",
             "u.country",
+            "u.lastaccess",
             ),
             $this->get_filter_columns($params), array(
             "c.fullname",
@@ -9840,7 +9894,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
-        $sql_filter .= $this->get_filterdate_sql($params, "cmc2.timemodified");
+        $sql_filter .= $this->get_filterdate_sql($params, "u.lastaccess");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, 'c.id');
 
         $mods = ($params->custom) ? explode(",", $params->custom) : [];
@@ -9905,6 +9959,7 @@ class local_intelliboard_external extends external_api {
               u.country,
               u.department,
               u.institution,
+              u.lastaccess,
               cm.id AS coursemoduleid,
               cmc.completionstate,
               cmc.timemodified AS timecompleted,
@@ -10053,7 +10108,7 @@ class local_intelliboard_external extends external_api {
                     {$sql_columns},
                     CASE WHEN qqt.response_table = 'response_bool' THEN 1 ELSE 0 END as is_bool_val
                FROM {questionnaire} AS qa
-          LEFT JOIN {questionnaire_question} AS qaq ON qaq.surveyid = qa.id AND 
+          LEFT JOIN {questionnaire_question} AS qaq ON qaq.surveyid = qa.id AND
                                                        qaq.deleted = 'n'
           LEFT JOIN {questionnaire_question_type} qqt ON qqt.typeid = qaq.type_id
           LEFT JOIN {questionnaire_response} qar ON qar.questionnaireid = qa.id
@@ -10161,15 +10216,16 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
         require($CFG->libdir.'/gradelib.php');
-        $display_types = array(GRADE_DISPLAY_TYPE_REAL => new lang_string('real', 'grades'),
-            GRADE_DISPLAY_TYPE_PERCENTAGE => new lang_string('percentage', 'grades'),
-            GRADE_DISPLAY_TYPE_LETTER => new lang_string('letter', 'grades'),
-            GRADE_DISPLAY_TYPE_REAL_PERCENTAGE => new lang_string('realpercentage', 'grades'),
-            GRADE_DISPLAY_TYPE_REAL_LETTER => new lang_string('realletter', 'grades'),
-            GRADE_DISPLAY_TYPE_LETTER_REAL => new lang_string('letterreal', 'grades'),
-            GRADE_DISPLAY_TYPE_LETTER_PERCENTAGE => new lang_string('letterpercentage', 'grades'),
-            GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER => new lang_string('percentageletter', 'grades'),
-            GRADE_DISPLAY_TYPE_PERCENTAGE_REAL => new lang_string('percentagereal', 'grades')
+        $display_types = array(
+            GRADE_DISPLAY_TYPE_REAL => 'real',
+            GRADE_DISPLAY_TYPE_PERCENTAGE => 'percentage',
+            GRADE_DISPLAY_TYPE_LETTER => 'letter',
+            GRADE_DISPLAY_TYPE_REAL_PERCENTAGE => 'realpercentage',
+            GRADE_DISPLAY_TYPE_REAL_LETTER => 'realletter',
+            GRADE_DISPLAY_TYPE_LETTER_REAL => 'letterreal',
+            GRADE_DISPLAY_TYPE_LETTER_PERCENTAGE => 'letterpercentage',
+            GRADE_DISPLAY_TYPE_PERCENTAGE_LETTER => 'percentageletter',
+            GRADE_DISPLAY_TYPE_PERCENTAGE_REAL => 'percentagereal'
         );
 
         $courses = explode(',', $params->courseid);
@@ -10181,7 +10237,6 @@ class local_intelliboard_external extends external_api {
             $items += (array)grade_item::fetch_all(array('itemtype' => 'course', 'courseid' => $course));
         }
 
-
         $names = array();
         $ranges = array();
         foreach($items as $item){
@@ -10189,12 +10244,28 @@ class local_intelliboard_external extends external_api {
                 continue;
             }
 
-            $column = new stdClass();
-            $column->name = $item->get_name(true);
-            $column->extra = $display_types[$CFG->grade_displaytype];
+            $parts = [];
+            if ($item->is_course_item()) {
+                $parts[] = ['translate' => true, 'key' => 'course'];
+                $parts[] = ['translate' => true, 'key' => 'total'];
+                $format = '%s %s (%s)';
 
-            $names[$column->name] = html_to_text(get_string('gradeexportcolumntype', 'grades', $column), 0, false);
-            $ranges[$column->name] = $item->get_formatted_range($CFG->grade_displaytype, $CFG->grade_decimalpoints);
+            } else if ($this->is_category_item()) {
+                $category = $this->load_parent_category();
+                $value = $category->get_name();
+                $parts[] = ['translate' => false, 'value' => $value];
+                $parts[] = ['translate' => true, 'key' => 'total'];
+                $format = '%s %s (%s)';
+            } else {
+                $parts[] = ['translate' => true, 'key' => 'grade'];
+                $format = '%s (%s)';
+            }
+
+            $parts[] = ['translate' => true, 'key' => $display_types[$CFG->grade_displaytype]];
+            $names[$item->get_name(true)] = ['parts' => $parts, 'format' => $format];
+            $ranges[$item->get_name(true)] = $item->get_formatted_range(
+                $CFG->grade_displaytype, $CFG->grade_decimalpoints
+            );
         }
 
         return array('data'=>$names,'ranges'=>$ranges);

@@ -738,6 +738,9 @@ $string['table_set_icg_c8'] = 'Visits';
 $string['table_set_icg_c9'] = 'Time Spent';
 $string['table_set_icg_c11'] = 'Actions – Activities';
 $string['table_set_icg_c12'] = 'Actions – Learners';
+$string['percentage_completed_learners'] = 'Percentage of Completed Learners';
+$string['avg_visits_per_stud'] = 'Average Visits Per Student';
+$string['avg_time_spent_per_stud'] = 'Average Time Spent Per Student';
 
 $string['table_set_ilg'] = 'Instructor Courses > Learners';
 $string['table_set_ilg_c1'] = 'Learner Name';
@@ -781,3 +784,5 @@ $string['table_set_iag1_c7'] = 'Time Spent';
 $string['student_grades'] = 'Student grades';
 $string['grid_view'] = 'Grid view';
 $string['list_view'] = 'List view';
+$string['grade_activities_overview'] = 'Graded Activities Overview';
+$string['activity'] = 'Activity';
