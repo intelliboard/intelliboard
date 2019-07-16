@@ -449,6 +449,18 @@ if($ADMIN->fulltree){
         $title = get_string('table_set_icg_c12', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
+        $name = 'local_intelliboard/table_set_icg_c13';
+        $title = get_string('percentage_completed_learners', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+        $name = 'local_intelliboard/table_set_icg_c14';
+        $title = get_string('avg_visits_per_stud', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+        $name = 'local_intelliboard/table_set_icg_c15';
+        $title = get_string('avg_time_spent_per_stud', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
 
         $settings->add(
             new admin_setting_heading(
@@ -495,6 +507,14 @@ if($ADMIN->fulltree){
         $settings->add($setting);
         $name = 'local_intelliboard/table_set_ilg_c10';
         $title = get_string('table_set_ilg_c10', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+        $name = 'local_intelliboard/table_set_ilg_c11';
+        $title = get_string('avg_visits_per_stud', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+        $name = 'local_intelliboard/table_set_ilg_c12';
+        $title = get_string('avg_time_spent_per_stud', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
