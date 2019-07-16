@@ -19,13 +19,17 @@
  *
  *
  * @package    local_intelliboard
- * @copyright  2017 IntelliBoard, Inc
+ * @copyright  2019 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    https://intelliboard.net/
+ * @website    http://intelliboard.net/
  */
 
-$plugin->version = 2019071603;
-$plugin->requires = 2011120500;
-$plugin->release = '5.5.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+$formats = ['xls', 'csv', 'pdf'];?>
+<div class="report-export-panel">
+    <?php foreach($formats as $format): ?>
+        <a href="#" title="<?php echo strtoupper($format); ?>"
+           data-format="<?php echo $format;?>">
+            <i class="eicon-<?php echo $format;?>"></i>
+        </a>
+    <?php endforeach;?>
+</div>

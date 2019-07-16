@@ -63,7 +63,7 @@ if (!$daterange) {
 
     $daterange = $timestart_date . ' to ' . $timefinish_date;
 } else {
-    $range = explode(" to ", $daterange);
+    $range = preg_split("/ (.)+ /", $daterange);
 
     $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
     $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
@@ -80,6 +80,11 @@ $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->requires->jquery();
 $PAGE->requires->js('/local/intelliboard/assets/js/flatpickr.min.js');
+try {
+    $PAGE->requires->js('/local/intelliboard/assets/js/flatpickr_l10n/'.current_language().'.js');
+} catch(\Exception $e) {
+    //
+}
 $PAGE->requires->css('/local/intelliboard/assets/css/flatpickr.min.css');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 
@@ -424,6 +429,42 @@ echo $OUTPUT->header();
                 <?php endif; ?>
 	        </div>
 		</div>
+
+        <div class="box100 pull-left">
+            <div class="card-block">
+                <div id="chart8" class="chart-tab">
+                    <div class="filter-box clearfix">
+                        <div class="intelliboard-dropdown">
+                            <?php foreach($list_of_my_courses as $key=>$value): ?>
+                                <?php if($key == $course): ?>
+                                    <button value="<?php echo $key; ?>">
+                                        <span><?php echo format_string($value); ?></span>
+                                        <i class="ion-android-arrow-dropdown"></i>
+                                    </button>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                            <ul>
+                                <?php foreach($list_of_my_courses as $key=>$value): ?>
+                                    <li>
+                                        <a href="#" dava-value="<?php echo $key; ?>">
+                                            <?php echo format_string($value); ?>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                        <div class="export-box">
+                            <?php include("../views/export_filter.php"); ?>
+                        </div>
+                    </div>
+                    <h4><?php echo get_string('grade_activities_overview', 'local_intelliboard'); ?></h4>
+                    <div id="chart8_area" class="area">
+                        <?php echo get_string('loading', 'local_intelliboard'); ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 		<?php endif; ?>
 	</div>
 	<script type="text/javascript"
@@ -463,6 +504,7 @@ echo $OUTPUT->header();
             jQuery("#summary-student-daterange").flatpickr({
                 mode: "range",
                 dateFormat: "Y-m-d",
+                locale: '<?php echo current_language(); ?>',
                 static: true,
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
                 onClose: function(selectedDates, dateStr, instance) {
@@ -483,6 +525,7 @@ echo $OUTPUT->header();
             jQuery("#chart5 .daterange").flatpickr({
                 mode: "range",
                 dateFormat: "Y-m-d",
+                locale: '<?php echo current_language(); ?>',
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
                 onClose: function(selectedDates, dateStr, instance) {
                     load_engagement_chart();
@@ -499,6 +542,13 @@ echo $OUTPUT->header();
                 load_engagement_chart();
             });
 
+            jQuery('#chart8 .intelliboard-dropdown a').click(function (e) {
+                e.preventDefault();
+                jQuery('#chart8 .intelliboard-dropdown button span').html(jQuery(this).html());
+                jQuery('#chart8 .intelliboard-dropdown button').val(jQuery(this).attr('dava-value'));
+                jQuery('#chart8 .intelliboard-dropdown ul').hide();
+                load_graded_activities_overview_chart();
+            });
 
             jQuery('#chart7 .intelliboard-dropdown.courses a').click(function (e) {
                 e.preventDefault();
@@ -546,6 +596,7 @@ echo $OUTPUT->header();
             jQuery("#chart3 .daterange").flatpickr({
                 mode: "range",
                 dateFormat: "Y-m-d",
+                locale: '<?php echo current_language(); ?>',
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
                 onClose: function(selectedDates, dateStr, instance) {
                     load_module_utilization_chart();
@@ -565,6 +616,7 @@ echo $OUTPUT->header();
             jQuery("#chart6 .daterange").flatpickr({
                 mode: "range",
                 dateFormat: "Y-m-d",
+                locale: '<?php echo current_language(); ?>',
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
                 onClose: function(selectedDates, dateStr, instance) {
                     load_topic_utilization_chart();
@@ -596,6 +648,7 @@ echo $OUTPUT->header();
             jQuery("#chart-daterange").flatpickr({
                 mode: "range",
                 dateFormat: "Y-m-d",
+                locale: '<?php echo current_language(); ?>',
                 <?php if(!empty($daterange)):?>
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
                 <?php endif;?>
@@ -776,6 +829,25 @@ echo $OUTPUT->header();
 			jQuery('.intelliboard-origin-head a:first').trigger('click');
 		}
 
+        google.setOnLoadCallback(load_graded_activities_overview_chart);
+        function load_graded_activities_overview_chart() {
+            var course = jQuery('#chart8 .intelliboard-dropdown button').val();
+            jQuery.ajax({
+                url: "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?action=graded_activities_overview&course="+course,
+                dataType: "json"
+            }).done(function(response) {
+                let data = google.visualization.arrayToDataTable(response);
+                let options = <?php echo format_string($factorInfo->GradeActivitiesOverview); ?>;
+                options.title = '<?php echo intellitext(
+                    get_string('grade_activities_overview', 'local_intelliboard')
+                );?>';
+                let chart = new google.visualization.ColumnChart(
+                    document.getElementById('chart8_area')
+                );
+                chart.draw(data, options);
+            });
+        }
+
 		function load_engagement_chart() {
             var daterange = jQuery('#chart5 .daterange').val();
             var course = jQuery('#chart5 .intelliboard-dropdown button').val();
@@ -890,6 +962,19 @@ echo $OUTPUT->header();
                 jQuery('#chart7 .intelliboard-dropdown.users ul').html(response.items);
             });
         }
+
+        $('#chart8 .report-export-panel a').on('click', function(e) {
+            e.preventDefault();
+            let format = $(this).attr('data-format');
+            let course = $('#chart8 .intelliboard-dropdown button').val();
+            let params = [
+                'export=1', 'action=graded_activities_overview', 'course=' + course,
+                'format=' + format
+            ];
+            window.location.replace(
+                "<?php echo $CFG->wwwroot; ?>/local/intelliboard/instructor/ajax.php?" + params.join('&')
+            );
+        });
 		</script>
 		<?php else: ?>
 			<br>
