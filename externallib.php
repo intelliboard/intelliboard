@@ -10026,6 +10026,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $sql_filter .= $this->get_filterdate_sql($params, "g.timemodified");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, 'c.id');
+        $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_columns .= $this->get_modules_sql('');
         $grade_single = intelliboard_grade_sql(false, $params);
 
