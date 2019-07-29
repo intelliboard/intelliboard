@@ -10024,11 +10024,16 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
-        $sql_filter .= $this->get_filterdate_sql($params, "g.timemodified");
+        //$sql_filter .= $this->get_filterdate_sql($params, "g.timemodified");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, 'c.id');
         $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_columns .= $this->get_modules_sql('');
         $grade_single = intelliboard_grade_sql(false, $params);
+
+        if ($params->timestart) {
+          $sql_having .= ($sql_having) ? "" : " HAVING id > 0";
+          $sql_having .= $this->get_filterdate_sql($params, "submission_date");
+        }
 
         return $this->get_report_data("
               SELECT
@@ -10055,7 +10060,6 @@ class local_intelliboard_external extends external_api {
                   LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                   LEFT JOIN {grade_grades} g ON gi.id = g.itemid AND g.userid = u.id
                 WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
-
     }
 
     public function report182($params)
