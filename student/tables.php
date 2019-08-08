@@ -114,13 +114,13 @@ class intelliboard_courses_grades_table extends table_sql {
     }
 
     function col_startdate($values) {
-        return  ($values->startdate) ? date('m/d/Y', $values->startdate) : "";
+        return  ($values->startdate) ? intelli_date($values->startdate) : "";
     }
     function col_timecompleted($values) {
         if(!$values->enablecompletion){
             return get_string('completion_is_not_enabled', 'local_intelliboard');
         }
-        return  ($values->timecompleted) ? get_string('completed_on', 'local_intelliboard', date('m/d/Y', $values->timemodified)) : get_string('incomplete', 'local_intelliboard');
+        return  ($values->timecompleted) ? get_string('completed_on', 'local_intelliboard', intelli_date($values->timemodified)) : get_string('incomplete', 'local_intelliboard');
     }
     function col_grade($values) {
         if (!optional_param('download', '', PARAM_ALPHA)) {
@@ -148,7 +148,7 @@ class intelliboard_courses_grades_table extends table_sql {
         return $letter;
     }
     function col_timemodified($values) {
-      return ($values->timemodified) ? date('m/d/Y', $values->timemodified) : '';
+      return ($values->timemodified) ? intelli_date($values->timemodified) : '';
     }
     function col_course($values) {
         global $CFG;
@@ -240,10 +240,10 @@ class intelliboard_activities_grades_table extends table_sql {
 
 
     function col_timecompleted($values) {
-      return ($values->timecompleted) ? get_string('completed_on', 'local_intelliboard', date('m/d/Y', $values->timecompleted)) : get_string('incomplete', 'local_intelliboard');
+      return ($values->timecompleted) ? get_string('completed_on', 'local_intelliboard', intelli_date($values->timecompleted)) : get_string('incomplete', 'local_intelliboard');
     }
     function col_timepoint($values) {
-      return ($values->timepoint) ? date('m/d/Y', $values->timepoint) : '';
+      return ($values->timepoint) ? intelli_date($values->timepoint) : '';
     }
     function col_itemname($values) {
         global $CFG;

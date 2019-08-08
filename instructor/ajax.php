@@ -51,8 +51,21 @@ if($action == 'get_total_students'){
     } else {
         $range = preg_split("/ (.)+ /", $daterange);
 
-        $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
-        $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
+        if(isset($range[0]) && $range[0]) {
+            $timestart = date_create_from_format(
+                intelli_date_format(), trim($range[0])
+            )->getTimestamp();
+        } else {
+            $timestart = strtotime('-7 days');
+        }
+
+        if(isset($range[1]) && $range[1]) {
+            $timefinish = date_create_from_format(
+                intelli_date_format(), trim($range[1])
+            )->getTimestamp();
+        } else {
+            $timefinish = time();
+        }
     }
 
     $learner_roles = get_config('local_intelliboard', 'filter11');
@@ -136,8 +149,21 @@ if($action == 'get_total_students'){
     } else {
         $range = preg_split("/ (.)+ /", $daterange);
 
-        $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
-        $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
+        if(isset($range[0]) && $range[0]) {
+            $timestart = date_create_from_format(
+                intelli_date_format(), trim($range[0])
+            )->getTimestamp();
+        } else {
+            $timestart = strtotime('-7 days');
+        }
+
+        if(isset($range[1]) && $range[1]) {
+            $timefinish = date_create_from_format(
+                intelli_date_format(), trim($range[1])
+            )->getTimestamp();
+        } else {
+            $timefinish = time();
+        }
     }
 
     $learner_roles = get_config('local_intelliboard', 'filter11');
@@ -216,8 +242,21 @@ if($action == 'get_total_students'){
     } else {
         $range = preg_split("/ (.)+ /", $daterange);
 
-        $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
-        $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
+        if(isset($range[0]) && $range[0]) {
+            $timestart = date_create_from_format(
+                intelli_date_format(), trim($range[0])
+            )->getTimestamp();
+        } else {
+            $timestart = strtotime('-7 days');
+        }
+
+        if(isset($range[1]) && $range[1]) {
+            $timefinish = date_create_from_format(
+                intelli_date_format(), trim($range[1])
+            )->getTimestamp();
+        } else {
+            $timefinish = time();
+        }
     }
 
     $learner_roles = get_config('local_intelliboard', 'filter11');
@@ -285,8 +324,21 @@ if($action == 'get_total_students'){
     } else {
         $range = preg_split("/ (.)+ /", $daterange);
 
-        $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
-        $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
+        if(isset($range[0]) && $range[0]) {
+            $timestart = date_create_from_format(
+                intelli_date_format(), trim($range[0])
+            )->getTimestamp();
+        } else {
+            $timestart = strtotime('-7 days');
+        }
+
+        if(isset($range[1]) && $range[1]) {
+            $timefinish = date_create_from_format(
+                intelli_date_format(), trim($range[1])
+            )->getTimestamp();
+        } else {
+            $timefinish = time();
+        }
     }
 
     $learner_roles = get_config('local_intelliboard', 'filter11');

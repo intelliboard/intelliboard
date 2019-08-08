@@ -69,7 +69,7 @@
 					 <?php echo $row->timespend; ?>
 				</span>
 			</td>
-			<td><?php echo ($row->timecreated) ? date("m/d/Y", $row->timecreated) : '-'; ?></td>
+			<td><?php echo ($row->timecreated) ? intelli_date($row->timecreated) : '-'; ?></td>
 		</tr>
 		<?php endforeach; ?>
 	</tbody>

@@ -331,7 +331,7 @@ echo $OUTPUT->header();
                                                 </td>
                                             <?php endif; ?>
                                             <?php if($t32): ?>
-                                                <td  class="align-center"><?php echo ($item->duedate)?date("m/d/Y", $item->duedate):'-'; ?></span></td>
+                                                <td  class="align-center"><?php echo ($item->duedate)?intelli_date($item->duedate):'-'; ?></span></td>
                                             <?php endif; ?>
                                         </tr>
                                     <?php endforeach; ?>
@@ -391,7 +391,7 @@ echo $OUTPUT->header();
                                                 </td>
                                             <?php endif; ?>
                                             <?php if($t34): ?>
-                                                <td class="align-center"><?php echo ($item->timeclose)?date("m/d/Y", $item->timeclose):'-'; ?></td>
+                                                <td class="align-center"><?php echo ($item->timeclose)?intelli_date($item->timeclose):'-'; ?></td>
                                             <?php endif; ?>
                                         </tr>
                                     <?php endforeach; ?>
@@ -510,13 +510,13 @@ echo $OUTPUT->header();
 
                                         <?php if($t37): ?>
                                             <td align="right">
-                                                <?php echo date("m/d/Y", $item->timemodified); ?>
+                                                <?php echo intelli_date($item->timemodified); ?>
                                             </td>
                                         <?php endif; ?>
 
                                         <?php if($t38): ?>
                                             <td align="right">
-                                                <?php echo ($item->timecompleted) ? date("m/d/Y", $item->timecompleted):'-'; ?>
+                                                <?php echo ($item->timecompleted) ? intelli_date($item->timecompleted):'-'; ?>
                                             </td>
                                         <?php endif; ?>
                                     </tr>
