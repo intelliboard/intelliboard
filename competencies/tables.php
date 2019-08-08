@@ -173,10 +173,10 @@ class intelliboard_competencies_table extends table_sql {
         $this->define_baseurl($PAGE->url);
     }
     function col_created($values) {
-      return ($values->created) ? date("m/d/Y", $values->created) : '-';
+      return ($values->created) ? intelli_date($values->created) : '-';
     }
     function col_asigned($values) {
-      return ($values->asigned) ? date("m/d/Y", $values->asigned) : '-';
+      return ($values->asigned) ? intelli_date($values->asigned) : '-';
     }
     function col_proficient($values) {
         return intval($values->proficient);
@@ -262,7 +262,7 @@ class intelliboard_learner_table extends table_sql {
 
     }
     function col_rated($values) {
-        return date('m/d/Y', $values->rated);
+        return intelli_date($values->rated);
     }
     function col_usermodified($values) {
         global $CFG;
@@ -401,7 +401,7 @@ class intelliboard_learners_table extends table_sql {
         $this->define_baseurl($PAGE->url);
     }
     function col_rated($values) {
-        return date('m/d/Y', $values->rated);
+        return intelli_date($values->rated);
     }
     function col_usermodified($values) {
         global $CFG;

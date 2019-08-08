@@ -105,13 +105,26 @@ echo $OUTPUT->header();
 							</ul>
 
 							<ul class="summary">
-								<li><span><?php echo get_string('status', 'local_intelliboard');?></span><?php echo ($data->timecompleted) ? get_string('completed_on', 'local_intelliboard', date('m/d/Y', $data->timecompleted)) : get_string('incomplete', 'local_intelliboard'); ?></li>
-
-
-									<li><span><?php echo get_string('enrolled', 'local_intelliboard'); ?> </span><?php echo date('m/d/Y', $data->enrolled); ?></li>
-									<li><span><?php echo get_string('in16', 'local_intelliboard'); ?> </span><?php echo ($data->timeaccess)?date('m/d/Y', $data->timeaccess):'-'; ?></li>
-									<li><span><?php echo get_string('in17', 'local_intelliboard'); ?> </span><?php echo seconds_to_time($data->timespend); ?></li>
-									<li><span><?php echo get_string('in18', 'local_intelliboard'); ?> </span><?php echo (int)$data->visits; ?></li>
+								<li>
+                                    <span><?php echo get_string('status', 'local_intelliboard');?> </span>
+                                    <?php echo ($data->timecompleted) ? get_string('completed_on', 'local_intelliboard', intelli_date($data->timecompleted)) : get_string('incomplete', 'local_intelliboard'); ?>
+                                </li>
+                                <li>
+                                    <span><?php echo get_string('enrolled', 'local_intelliboard'); ?> </span>
+                                    <?php echo intelli_date($data->enrolled); ?>
+                                </li>
+								<li>
+                                    <span><?php echo get_string('in16', 'local_intelliboard'); ?> </span>
+                                    <?php echo ($data->timeaccess)?intelli_date($data->timeaccess):'-'; ?>
+                                </li>
+								<li>
+                                    <span><?php echo get_string('in17', 'local_intelliboard'); ?> </span>
+                                    <?php echo seconds_to_time($data->timespend); ?>
+                                </li>
+								<li>
+                                    <span><?php echo get_string('in18', 'local_intelliboard'); ?> </span>
+                                    <?php echo (int)$data->visits; ?>
+                                </li>
 
 
 								<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php?search&action=learners&id='.$id; ?>" class="btn btn-default btn-back"><i class="ion-android-arrow-back"></i> <?php echo get_string('in20', 'local_intelliboard'); ?></a>

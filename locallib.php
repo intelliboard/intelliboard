@@ -652,3 +652,26 @@ function intellitext($val = '') {
         preg_replace('~[\r\n]+~', '', $val)
     );
 }
+
+/**
+ * Get date format for plugin
+ *
+ * @return mixed|string
+ * @throws dml_exception
+ */
+function intelli_date_format() {
+    $format = get_config('local_intelliboard', 'date_format');
+
+    return $format ? $format : 'm/d/Y';
+}
+
+/**
+ * Format timestamp
+ *
+ * @param int $date timestamp
+ * @return false|string
+ * @throws dml_exception
+ */
+function intelli_date($date) {
+    return date(intelli_date_format(), $date);
+}

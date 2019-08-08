@@ -161,7 +161,7 @@ echo $OUTPUT->header();
 <?php include("views/menu.php"); ?>
 <div class="intelliboard-chart clearfix">
 	<div class="intelliboard-chart-header">
-		<h3><?php echo get_string('users_activity', 'local_intelliboard');?></h3>
+		<h3><?php echo get_string('user_enrollments_sessions_completion', 'local_intelliboard');?></h3>
 		<div class="range">
 			<a class="<?php echo ($time == 'daily')?'active':'';?>" href="index.php?time=daily"><?php echo get_string('daily', 'local_intelliboard');?></a>
 			<a class="<?php echo ($time == 'weekly')?'active':'';?>" href="index.php?time=weekly"><?php echo get_string('weekly', 'local_intelliboard');?></a>
@@ -205,22 +205,22 @@ echo $OUTPUT->header();
 
 <div class="intelliboard-box">
 	<div class="box60 pull-left">
-		<h3><?php echo get_string('users_overview', 'local_intelliboard');?></h3>
+		<h3><?php echo get_string('user_site_summary_detail', 'local_intelliboard');?></h3>
 
 		<div class="ajax-widget" id="report43"><?php echo get_string('loading', 'local_intelliboard');?></div>
 	</div>
 	<div class="box40 pl15 pull-right">
-		<h3><?php echo get_string('enrollments', 'local_intelliboard');?></h3>
+		<h3><?php echo get_string('course_enrollment_types', 'local_intelliboard');?></h3>
 		<div id="enrolments" style="width: 100%; height:300px;"></div>
 	</div>
 </div>
 <div class="intelliboard-box">
 	<div class="box45 pull-left">
-		<h3><?php echo get_string('registrations', 'local_intelliboard');?></h3>
+		<h3><?php echo get_string('user_map', 'local_intelliboard');?></h3>
 		<div id="countries" style="width:100% height:400px;"></div>
 	</div>
 	<div class="box50 pull-right">
-		<h3><?php echo get_string('participation', 'local_intelliboard');?></h3>
+		<h3><?php echo get_string('course_enrollments_with_completion_overview', 'local_intelliboard');?></h3>
 		<div class="ajax-widget" id="report44"><?php echo get_string('loading', 'local_intelliboard');?></div>
 	</div>
 </div>
