@@ -162,6 +162,12 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configselect($name, $title,'',0,$options);
         $settings->add($setting);
 
+        $options = array("Y-m-d" => "Y-m-d", "d/m/Y" => "d/m/Y", "m/d/Y" => "m/d/Y");
+        $name = 'local_intelliboard/date_format';
+        $title = new lang_string('date_format', 'local_intelliboard');
+        $setting = new admin_setting_configselect($name, $title,'',"Y-m-d",$options);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/filter1';

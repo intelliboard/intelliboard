@@ -58,18 +58,31 @@ if (!$daterange) {
     $timestart = strtotime('-7 days');
     $timefinish = time();
 
-    $timestart_date = date("Y-m-d", $timestart);
-    $timefinish_date = date("Y-m-d", $timefinish);
+    $timestart_date = intelli_date($timestart);
+    $timefinish_date = intelli_date($timefinish);
 
     $daterange = $timestart_date . ' to ' . $timefinish_date;
 } else {
     $range = preg_split("/ (.)+ /", $daterange);
 
-    $timestart = ($range[0]) ? strtotime(trim($range[0])) : strtotime('-7 days');
-    $timefinish = ($range[1]) ? strtotime(trim($range[1])) : time();
+    if(isset($range[0]) && $range[0]) {
+        $timestart = date_create_from_format(
+            intelli_date_format(), trim($range[0])
+        )->getTimestamp();
+    } else {
+        $timestart = strtotime('-7 days');
+    }
 
-    $timestart_date = date("Y-m-d", $timestart);
-    $timefinish_date = date("Y-m-d", $timefinish);
+    if(isset($range[1]) && $range[1]) {
+        $timefinish = date_create_from_format(
+            intelli_date_format(), trim($range[1])
+        )->getTimestamp();
+    } else {
+        $timefinish = time();
+    }
+
+    $timestart_date = intelli_date($timestart);
+    $timefinish_date = intelli_date($timefinish);
 }
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/instructor/index.php", array("type"=>$type, "search"=>$search)));
@@ -501,7 +514,7 @@ echo $OUTPUT->header();
 
             jQuery("#summary-student-daterange").flatpickr({
                 mode: "range",
-                dateFormat: "Y-m-d",
+                dateFormat: "<?php echo intelli_date_format(); ?>",
                 locale: '<?php echo current_language(); ?>',
                 static: true,
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
@@ -522,7 +535,7 @@ echo $OUTPUT->header();
 
             jQuery("#chart5 .daterange").flatpickr({
                 mode: "range",
-                dateFormat: "Y-m-d",
+                dateFormat: "<?php echo intelli_date_format(); ?>",
                 locale: '<?php echo current_language(); ?>',
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
                 onClose: function(selectedDates, dateStr, instance) {
@@ -593,7 +606,7 @@ echo $OUTPUT->header();
 
             jQuery("#chart3 .daterange").flatpickr({
                 mode: "range",
-                dateFormat: "Y-m-d",
+                dateFormat: "<?php echo intelli_date_format(); ?>",
                 locale: '<?php echo current_language(); ?>',
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
                 onClose: function(selectedDates, dateStr, instance) {
@@ -613,7 +626,7 @@ echo $OUTPUT->header();
 
             jQuery("#chart6 .daterange").flatpickr({
                 mode: "range",
-                dateFormat: "Y-m-d",
+                dateFormat: "<?php echo intelli_date_format(); ?>",
                 locale: '<?php echo current_language(); ?>',
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],
                 onClose: function(selectedDates, dateStr, instance) {
@@ -645,7 +658,7 @@ echo $OUTPUT->header();
 
             jQuery("#chart-daterange").flatpickr({
                 mode: "range",
-                dateFormat: "Y-m-d",
+                dateFormat: "<?php echo intelli_date_format(); ?>",
                 locale: '<?php echo current_language(); ?>',
                 <?php if(!empty($daterange)):?>
                 defaultDate: ["<?php echo $timestart_date; ?>", "<?php echo $timefinish_date; ?>"],

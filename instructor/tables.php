@@ -597,7 +597,7 @@ class intelliboard_activity_grades_table extends table_sql {
         } elseif ($values->completionstate == 2) {
            return get_string('passed','local_intelliboard');
         } elseif ($values->timecompleted and $values->completionstate == 1) {
-            return get_string('completed_on','local_intelliboard', date('m/d/Y', $values->timecompleted));
+            return get_string('completed_on','local_intelliboard', intelli_date($values->timecompleted));
         } else {
             return get_string('incomplete','local_intelliboard');
         }
@@ -609,7 +609,7 @@ class intelliboard_activity_grades_table extends table_sql {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
     }
     function col_graded($values) {
-      return ($values->graded) ? date('m/d/Y', $values->graded) : '';
+      return ($values->graded) ? intelli_date($values->graded) : '';
     }
     function col_learner($values) {
         global $CFG, $PAGE;
@@ -828,13 +828,13 @@ class intelliboard_learners_grades_table extends table_sql {
         return html_writer::tag("span", intval($values->avg_visits), array("class"=>"info-average"));
     }
     function col_timecompleted($values) {
-      return ($values->timecompleted) ? get_string('completed_on','local_intelliboard', date('m/d/Y', $values->timecompleted)) : get_string('incomplete','local_intelliboard');
+      return ($values->timecompleted) ? get_string('completed_on','local_intelliboard', intelli_date($values->timecompleted)) : get_string('incomplete','local_intelliboard');
     }
     function col_enrolled($values) {
-      return ($values->enrolled) ? date('m/d/Y', $values->enrolled) : '';
+      return ($values->enrolled) ? intelli_date($values->enrolled) : '';
     }
     function col_timeaccess($values) {
-      return ($values->timeaccess) ? date('m/d/Y', $values->timeaccess) : '';
+      return ($values->timeaccess) ? intelli_date($values->timeaccess) : '';
     }
     function col_learner($values) {
         global $CFG, $PAGE;
@@ -970,10 +970,10 @@ class intelliboard_learner_grades_table extends table_sql {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
     }
     function col_timecompleted($values) {
-      return ($values->timecompleted) ? get_string('completed_on','local_intelliboard', date('m/d/Y', $values->timecompleted)) : get_string('incomplete','local_intelliboard');
+      return ($values->timecompleted) ? get_string('completed_on','local_intelliboard', intelli_date($values->timecompleted)) : get_string('incomplete','local_intelliboard');
     }
     function col_graded($values) {
-      return ($values->graded) ? date('m/d/Y', $values->graded) : '';
+      return ($values->graded) ? intelli_date($values->graded) : '';
     }
 }
 
@@ -1373,13 +1373,13 @@ class intelliboard_sessions_learners_grades_table extends table_sql {
         return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
     }
     function col_timecompleted($values) {
-        return ($values->timecompleted) ? get_string('completed_on','local_intelliboard', date('m/d/Y', $values->timecompleted)) : get_string('incomplete','local_intelliboard');
+        return ($values->timecompleted) ? get_string('completed_on','local_intelliboard', intelli_date($values->timecompleted)) : get_string('incomplete','local_intelliboard');
     }
     function col_enrolled($values) {
-        return ($values->enrolled) ? date('m/d/Y', $values->enrolled) : '';
+        return ($values->enrolled) ? intelli_date($values->enrolled) : '';
     }
     function col_timeaccess($values) {
-        return ($values->timeaccess) ? date('m/d/Y', $values->timeaccess) : '';
+        return ($values->timeaccess) ? intelli_date($values->timeaccess) : '';
     }
     function col_learner($values) {
         global $CFG, $PAGE;
@@ -1479,7 +1479,7 @@ class intelliboard_sessions_activity_grades_table extends table_sql {
         } elseif ($values->completionstate == 2) {
             return get_string('passed','local_intelliboard');
         } elseif ($values->timecompleted and $values->completionstate == 1) {
-            return get_string('completed_on','local_intelliboard', date('m/d/Y', $values->timecompleted));
+            return get_string('completed_on','local_intelliboard', intelli_date($values->timecompleted));
         } else {
             return get_string('incomplete','local_intelliboard');
         }
@@ -1491,7 +1491,7 @@ class intelliboard_sessions_activity_grades_table extends table_sql {
         return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
     }
     function col_graded($values) {
-        return ($values->graded) ? date('m/d/Y', $values->graded) : '';
+        return ($values->graded) ? intelli_date($values->graded) : '';
     }
     function col_learner($values) {
         global $CFG, $PAGE;

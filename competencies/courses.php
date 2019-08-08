@@ -149,7 +149,7 @@ echo $OUTPUT->header();
 				<span class="intelliboard-tooltip" title='<?php echo get_string('course_category','local_intelliboard'); ?>'><i class='ion-folder'></i> <?php echo $course->category; ?> </span>
 
 				<?php if($course->startdate): ?>
-				<span class="intelliboard-tooltip" title='<?php echo get_string('course_started','local_intelliboard'); ?>'><i class='ion-ios-calendar-outline'></i> <?php echo date("m/d/Y", $course->startdate); ?> </span>
+				<span class="intelliboard-tooltip" title='<?php echo get_string('course_started','local_intelliboard'); ?>'><i class='ion-ios-calendar-outline'></i> <?php echo intelli_date($course->startdate); ?> </span>
 				<?php endif; ?>
 				</div>
 				<ul class="totals">
