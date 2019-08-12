@@ -432,6 +432,8 @@ class ColumnsContainer extends BaseContainer {
             225 => array("name" => "version", "sql" => "version"),
             226 => array("name" => "tagid", "sql" => "tagid"),
             227 => array("name" => "enddate", "sql" => "enddate"),
+            228 => array("name" => "rawgrademax", "sql" => "rawgrademax"),
+            229 => array("name" => "rawgrademin", "sql" => "rawgrademin"),
         );
 
         static::$modifiers = array_map(function($modifier) use ($mode) {

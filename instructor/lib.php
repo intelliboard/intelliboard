@@ -499,16 +499,23 @@ function intelliboard_instructor_getcourses($column = 'c.id', $list = false, $co
     return 0;
   }
   if ($instructor_custom_groups) {
-    if ($CFG->dbtype == 'pgsql') {
-        $userid = "string_agg( DISTINCT d.userid, ', ')";
-    } else {
-        $userid = "GROUP_CONCAT( DISTINCT d.userid)";
-    }
-
+    $sql_data = get_filter_usersql("u.");
     $data = $DB->get_record_sql("SELECT d.data AS codea FROM {user_info_field} f, {user_info_data} d WHERE d.fieldid = f.id AND d.userid = ? and f.shortname= 'codea'", [$USER->id]);
-    $result = $DB->get_record_sql("SELECT $userid AS users FROM {user_info_field} f, {user_info_data} d
-        WHERE d.fieldid = f.id AND d.data = ? and f.shortname IN ('codsm', 'coddm', 'codam')", [$data->codea]);
+    $result = $DB->get_records_sql("SELECT DISTINCT d.userid FROM {user_info_field} f, {user_info_data} d, {user} u
+        WHERE d.fieldid = f.id AND d.data = ? AND u.id = d.userid $sql_data and f.shortname IN ('codsm', 'coddm', 'codam')", [$data->codea]);
 
+    if ($result) {
+      $users = [];
+      foreach ($result as $row) {
+        $users[] = $row->userid;
+      }
+
+      $result = new stdClass();
+      $result->users = implode(',', $users);
+    } else {
+      $result = new stdClass();
+      $result->users = 0;
+    }
 
     if ($onlyusers) {
       return ($result->users) ? count(explode(",", $result->users)) : 0;
