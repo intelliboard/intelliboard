@@ -9516,6 +9516,16 @@ class local_intelliboard_external extends external_api {
         } else {
             $cohorts = "GROUP_CONCAT( DISTINCT coh.name)";
         }
+
+        if ($CFG->dbtype == 'pgsql') {
+            $sql_columns .= ", '' AS userinfo";
+        } else {
+            $sql_columns .= ", (SELECT GROUP_CONCAT(CASE WHEN d.data <> '' THEN CONCAT(f.name, ':', d.data) ELSE NULL END SEPARATOR '|||') FROM {user_info_data} d, {user_info_field} f WHERE f.id = d.fieldid AND d.userid = u.id) AS userinfo";
+        }
+
+
+
+
         $sql_columns .= ", MAX(coo.cohortname) AS cohorts";
         $sql_cohort = $this->get_filter_in_sql($params->cohortid, "ch.cohortid");
         $sql_join = " LEFT JOIN (SELECT ch.userid, $cohorts as cohortname FROM {cohort} coh, {cohort_members} ch WHERE coh.id = ch.cohortid $sql_cohort GROUP BY ch.userid) coo ON coo.userid = u.id";
