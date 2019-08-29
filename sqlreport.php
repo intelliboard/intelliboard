@@ -56,11 +56,14 @@ if ($delete and $data->id) {
         $DB->delete_records('local_intelliboard_reports', array('id'=>$data->id));
         redirect($returnurl, get_string('remove_message', 'local_intelliboard'));
     }
-    $strheading = get_string('delete', 'local_intelliboard');
+    $strheading = get_string('delete');
     $PAGE->navbar->add($strheading);
     echo $OUTPUT->header();
     echo $OUTPUT->heading($strheading);
-    $yesurl = new moodle_url($PAGE->url, array('id'=>$data->id, 'delete'=>1, 'confirm'=>1,'sesskey'=>sesskey()));
+    $yesurl = new \moodle_url(
+        '/local/intelliboard/sqlreport.php',
+        array('id'=>$data->id, 'delete'=>1, 'confirm'=>1,'sesskey'=>sesskey())
+    );
     $message = get_string('delete_message', 'local_intelliboard');
     echo $OUTPUT->confirm($message, $yesurl, $returnurl);
     echo $OUTPUT->footer();

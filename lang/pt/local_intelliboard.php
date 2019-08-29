@@ -630,6 +630,36 @@ $string['privacy:metadata:local_intelliboard_bbb_atten:meetingid'] = 'ID da reun
 $string['privacy:metadata:local_intelliboard_bbb_atten:localmeetingid'] = 'ID da reunião (ID na tabela local_intelliboard_bbb_meet)';
 $string['privacy:metadata:local_intelliboard_bbb_atten:arrivaltime'] = 'Hora quando o usuário se conectou a reunião';
 $string['privacy:metadata:local_intelliboard_bbb_atten:departuretime'] = 'Hora quando o usuário se desconectou da reunião';
+
+$string['privacy:metadata:local_intelliboard_bb_partic'] = 'List of participants of collaborate session';
+$string['privacy:metadata:local_intelliboard_bb_partic:id'] = 'ID of session participation';
+$string['privacy:metadata:local_intelliboard_bb_partic:sessionuid'] = 'Session UUID';
+$string['privacy:metadata:local_intelliboard_bb_partic:useruid'] = 'User UUID (BlackBoard Collaborate service)';
+$string['privacy:metadata:local_intelliboard_bb_partic:external_user_id'] = 'User ID (Moodle)';
+$string['privacy:metadata:local_intelliboard_bb_partic:role'] = 'Session role';
+$string['privacy:metadata:local_intelliboard_bb_partic:display_name'] = 'User name';
+$string['privacy:metadata:local_intelliboard_bb_partic:first_join_time'] = 'First join to session';
+$string['privacy:metadata:local_intelliboard_bb_partic:last_left_time'] = 'Last leave from session';
+$string['privacy:metadata:local_intelliboard_bb_partic:duration'] = 'Spent time on session';
+$string['privacy:metadata:local_intelliboard_bb_partic:rejoins'] = 'Number of rejoins to session';
+
+$string['privacy:metadata:local_intelliboard_bb_rec'] = 'List of bb collaborate sessions records';
+$string['privacy:metadata:local_intelliboard_bb_rec:id'] = 'Record ID';
+$string['privacy:metadata:local_intelliboard_bb_rec:sessionuid'] = 'Session UUID';
+$string['privacy:metadata:local_intelliboard_bb_rec:record_name'] = 'Record name';
+$string['privacy:metadata:local_intelliboard_bb_rec:record_url'] = 'Record URL';
+
+$string['privacy:metadata:local_intelliboard_bb_trck_m'] = 'List of tracked sessions';
+$string['privacy:metadata:local_intelliboard_bb_trck_m:id'] = 'ID of track log';
+$string['privacy:metadata:local_intelliboard_bb_trck_m:sessionuid'] = 'Session UUID';
+$string['privacy:metadata:local_intelliboard_bb_trck_m:track_time'] = 'Track time';
+
+$string['privacy:metadata:local_intelliboard_att_sync'] = 'List of synchronized sessions';
+$string['privacy:metadata:local_intelliboard_att_sync:id'] = 'ID of sync log';
+$string['privacy:metadata:local_intelliboard_att_sync:type'] = 'Session type';
+$string['privacy:metadata:local_intelliboard_att_sync:instance'] = 'Moodle session ID';
+$string['privacy:metadata:local_intelliboard_att_sync:data'] = 'Additional sync data';
+
 $string['messageprovider:intelliboard_notification'] = "Notificação Intelliboard";
 $string['verifypeer'] = "CURLOPT SSL VERIFYPEER";
 $string['verifypeer_desc'] = "Esta opção determina se o curl verifica a autenticidade do certificado do mesmo.";
@@ -749,3 +779,22 @@ $string['user_site_summary_detail'] = 'User Site Summary Detail';
 $string['course_enrollment_types'] = 'Course Enrollment Types';
 $string['user_map'] = 'User Map';
 $string['course_enrollments_with_completion_overview'] = 'Course Enrollments with Completion Overview';
+/* Attendance */
+$string['attendance'] = 'Attendance';
+$string['enableattendance'] = 'Enable attendance';
+$string['attendancetoolurl'] = 'Tool URL';
+$string['attendanceconsumerkey'] = 'Consumer key';
+$string['attendancesharedsecret'] = 'Shared secret';
+$string['sync_data_with_attendance'] = 'Sync data with attendance';
+$string['attendanceapibase'] = 'Attendance API base path';
+$string['attendanceapikey'] = 'Attendance API key';
+$string['attendanceapisecret'] = 'Attendance API secret';
+$string['enablesyncattendance'] = 'Enable BB Collaborate sessions synchronization with InAttendance';
+
+/* BlackBoard Collaborate and InAttendance */
+$string['bb_col_meetings'] = 'BlackBoard Collaborate meetings';
+$string['enable_bb_col_debug'] = 'Enable BlackBoard Collaborate debug';
+$string['bb_col_api_endpoint'] = 'BlackBoard Collaborate API endpoint';
+$string['bb_col_consumer_key'] = 'BlackBoard Collaborate consumer key';
+$string['bb_col_secret'] = 'BlackBoard Collaborate secret';
+$string['enable_bb_col_meetings'] = 'Enable BlackBoard Collaborate meetings';

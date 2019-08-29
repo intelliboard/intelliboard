@@ -1,4 +1,6 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -12,12 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
+ *
+ * @package    local_intelliboard
+ * @copyright  2019 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @website    http://intelliboard.net/
+ */
+
 namespace local_intelliboard;
 
-/**
- * @copyright  2018 Intelliboard
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 class bbb_meetings {
     /** @var array list of local meetings (meetings, which created from activity BugBlueButtonBN) */
     private $localmoodlemeetings = [];

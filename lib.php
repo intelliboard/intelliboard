@@ -129,6 +129,37 @@ function local_intelliboard_extend_navigation(global_navigation $nav){
 			$node = $mynode->add($name, $url, 0, null, 'intelliboard_competency');
 			$node->showinflatnavigation = true;
 		}
+
+        // attendance
+        if(isloggedin() and get_config('local_intelliboard', 'enableattendance')) {
+            $coursenode = $nav->find($PAGE->course->id, navigation_node::TYPE_COURSE);
+
+            if($coursenode === false OR !($PAGE->course->id > 1))  {
+                // show attendance in site navigation
+                $name = get_string('attendance', 'local_intelliboard');
+                $url = new moodle_url('/local/intelliboard/attendance/index.php');
+                $nav->add($name, $url);
+
+                $node = $mynode->add($name, $url, 0, null, 'intelliboard_attendance');
+                $node->showinflatnavigation = true;
+            } else {
+                // show attendance in course navigation
+                $name = get_string('attendance', 'local_intelliboard');
+                $url = new moodle_url(
+                    '/local/intelliboard/attendance/index.php',
+                    ['course_id' => $PAGE->course->id]
+                );
+                $node = navigation_node::create(
+                    $name,
+                    $url,
+                    navigation_node::TYPE_CUSTOM,
+                    null,
+                    'intelliboard_attendance',
+                    new pix_icon('i/calendar', '', 'core')
+                );
+                $coursenode->add_node($node);
+            }
+        }
 	} catch (Exception $e) {}
 }
 
