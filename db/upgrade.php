@@ -524,5 +524,126 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 			upgrade_plugin_savepoint(true, 2019051203, 'local', 'intelliboard');
 		}
 
+    if ($oldversion < 2019082804) {
+
+        // Define table local_intelliboard_bb_partic to be created.
+        $table = new xmldb_table('local_intelliboard_bb_partic');
+
+        // Adding fields to table local_intelliboard_bb_partic.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('sessionuid', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('useruid', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('external_user_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('role', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('display_name', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+
+        // Adding keys to table local_intelliboard_bb_partic.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table local_intelliboard_bb_partic.
+        $table->add_index('sessionuid', XMLDB_INDEX_NOTUNIQUE, ['sessionuid']);
+        $table->add_index('useruid', XMLDB_INDEX_NOTUNIQUE, ['useruid']);
+        $table->add_index('external_user_id', XMLDB_INDEX_NOTUNIQUE, ['external_user_id']);
+
+        // Conditionally launch create table for local_intelliboard_bb_partic.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table local_intelliboard_bb_trck_m to be created.
+        $table = new xmldb_table('local_intelliboard_bb_trck_m');
+
+        // Adding fields to table local_intelliboard_bb_trck_m.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('sessionuid', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('track_time', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+
+        // Adding keys to table local_intelliboard_bb_trck_m.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table local_intelliboard_bb_trck_m.
+        $table->add_index('sessionuid', XMLDB_INDEX_UNIQUE, ['sessionuid']);
+
+        // Conditionally launch create table for local_intelliboard_bb_trck_m.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define field first_join_time to be added to local_intelliboard_bb_partic.
+        $table = new xmldb_table('local_intelliboard_bb_partic');
+
+        $field = new xmldb_field(
+            'first_join_time', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'display_name'
+        );
+        // Conditionally launch add field first_join_time.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'last_left_time', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'first_join_time'
+        );
+        // Conditionally launch add field last_left_time.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'duration', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'last_left_time'
+        );
+        // Conditionally launch add field duration.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'rejoins', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'duration'
+        );
+        // Conditionally launch add field rejoins.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define table local_intelliboard_bb_rec to be created.
+        $table = new xmldb_table('local_intelliboard_bb_rec');
+
+        // Adding fields to table local_intelliboard_bb_rec.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('sessionuid', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('record_name', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('record_url', XMLDB_TYPE_TEXT, null, null, null, null, null);
+
+        // Adding keys to table local_intelliboard_bb_rec.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Adding indexes to table local_intelliboard_bb_rec.
+        $table->add_index('bb_rec_sessionuid', XMLDB_INDEX_NOTUNIQUE, ['sessionuid']);
+
+        // Conditionally launch create table for local_intelliboard_bb_rec.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table local_intelliboard_att_sync to be created.
+        $table = new xmldb_table('local_intelliboard_att_sync');
+
+        // Adding fields to table local_intelliboard_att_sync.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('type', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('instance', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('data', XMLDB_TYPE_TEXT, null, null, null, null, null);
+
+        // Adding keys to table local_intelliboard_att_sync.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+        // Conditionally launch create table for local_intelliboard_att_sync.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Intelliboard savepoint reached.
+        upgrade_plugin_savepoint(true, 2019082804, 'local', 'intelliboard');
+    }
+
 	return true;
 }

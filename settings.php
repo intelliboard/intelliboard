@@ -1110,4 +1110,116 @@ if($ADMIN->fulltree){
         $description = '';
         $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
         $settings->add($setting);
+
+    // Attendance LTI
+    $settings->add(
+        new admin_setting_heading('local_intelliboard/attendancelti',
+        get_string('attendance', 'local_intelliboard'), '')
+    );
+
+    $name = 'local_intelliboard/enableattendance';
+    $title = get_string('enableattendance', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/enablesyncattendance';
+    $title = get_string('enablesyncattendance', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+    $settings->add($setting);
+
+    // Attendance API base path
+    $name = 'local_intelliboard/attendanceapibase';
+    $title = get_string('attendanceapibase', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
+    $settings->add($setting);
+
+    // Attendance API key
+    $name = 'local_intelliboard/attendanceapikey';
+    $title = get_string('attendanceapikey', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
+    $settings->add($setting);
+
+    // Attendance API secret
+    $name = 'local_intelliboard/attendanceapisecret';
+    $title = get_string('attendanceapisecret', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configpasswordunmask($name, $title, $description, '', PARAM_TEXT);
+    $settings->add($setting);
+
+    // Attendance Tool URL
+    $name = 'local_intelliboard/attendancetoolurl';
+    $title = get_string('attendancetoolurl', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
+    $settings->add($setting);
+
+    // Attendance Consumer key
+    $name = 'local_intelliboard/attendanceconsumerkey';
+    $title = get_string('attendanceconsumerkey', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
+    $settings->add($setting);
+
+    // Attendance Shared secret
+    $name = 'local_intelliboard/attendancesharedsecret';
+    $title = get_string('attendancesharedsecret', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configpasswordunmask($name, $title, $description, '');
+    $settings->add($setting);
+
+    // BB collaborate meetings
+    $settings->add(new admin_setting_heading(
+        'local_intelliboard/bb_col_meetings',
+        get_string('bb_col_meetings', 'local_intelliboard'),
+        ''
+    ));
+
+    $name = 'local_intelliboard/enable_bb_col_meetings';
+    $title = get_string('enable_bb_col_meetings', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configcheckbox(
+        $name, $title, $description, false, true, false
+    );
+    $settings->add($setting);
+
+    // BB collaborate debug
+    $name = 'local_intelliboard/bb_col_debug';
+    $title = get_string('enable_bb_col_debug', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configcheckbox(
+        $name, $title, $description, false, true, false
+    );
+    $settings->add($setting);
+
+    // BB collaborate API endpoint
+    $name = 'local_intelliboard/bb_col_api_endpoint';
+    $title = get_string('bb_col_api_endpoint', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configtext(
+        $name, $title, $description, '', PARAM_TEXT
+    );
+    $settings->add($setting);
+
+    // BB collaborate consumer key
+    $name = 'local_intelliboard/bb_col_consumer_key';
+    $title = get_string('bb_col_consumer_key', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configtext(
+        $name, $title, $description, '', PARAM_TEXT
+    );
+    $settings->add($setting);
+
+    // BB collaborate secret
+    $name = 'local_intelliboard/bb_col_secret';
+    $title = get_string('bb_col_secret', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configpasswordunmask(
+        $name, $title, $description, ''
+    );
+    $settings->add($setting);
+
 }

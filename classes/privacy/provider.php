@@ -188,6 +188,39 @@ class provider implements
             'departuretime' => 'privacy:metadata:local_intelliboard_bbb_atten:departuretime',
         ], 'privacy:metadata:local_intelliboard_bbb_atten');
 
+        $items->add_database_table('local_intelliboard_bb_partic', [
+            'id' => 'privacy:metadata:local_intelliboard_bb_partic:id',
+            'sessionuid' => 'privacy:metadata:local_intelliboard_bb_partic:sessionuid',
+            'useruid' => 'privacy:metadata:local_intelliboard_bb_partic:useruid',
+            'external_user_id' => 'privacy:metadata:local_intelliboard_bb_partic:external_user_id',
+            'role' => 'privacy:metadata:local_intelliboard_bb_partic:role',
+            'display_name' => 'privacy:metadata:local_intelliboard_bb_partic:display_name',
+            'first_join_time' => 'privacy:metadata:local_intelliboard_bb_partic:first_join_time',
+            'last_left_time' => 'privacy:metadata:local_intelliboard_bb_partic:last_left_time',
+            'duration' => 'privacy:metadata:local_intelliboard_bb_partic:duration',
+            'rejoins' => 'privacy:metadata:local_intelliboard_bb_partic:rejoins',
+        ], 'privacy:metadata:local_intelliboard_bb_partic');
+
+        $items->add_database_table('local_intelliboard_bb_rec', [
+            'id' => 'privacy:metadata:local_intelliboard_bb_rec:id',
+            'sessionuid' => 'privacy:metadata:local_intelliboard_bb_rec:sessionuid',
+            'record_name' => 'privacy:metadata:local_intelliboard_bb_rec:record_name',
+            'record_url' => 'privacy:metadata:local_intelliboard_bb_rec:record_url',
+        ], 'privacy:metadata:local_intelliboard_bb_rec');
+
+        $items->add_database_table('local_intelliboard_bb_trck_m', [
+            'id' => 'privacy:metadata:local_intelliboard_bb_trck_m:id',
+            'sessionuid' => 'privacy:metadata:local_intelliboard_bb_trck_m:sessionuid',
+            'track_time' => 'privacy:metadata:local_intelliboard_bb_trck_m:track_time',
+        ], 'privacy:metadata:local_intelliboard_bb_trck_m');
+
+        $items->add_database_table('local_intelliboard_att_sync', [
+            'id' => 'privacy:metadata:local_intelliboard_att_sync:id',
+            'type' => 'privacy:metadata:local_intelliboard_att_sync:type',
+            'instance' => 'privacy:metadata:local_intelliboard_att_sync:instance',
+            'data' => 'privacy:metadata:local_intelliboard_att_sync:data',
+        ], 'privacy:metadata:local_intelliboard_att_sync');
+
         return $items;
     }
 
@@ -321,6 +354,10 @@ class provider implements
             'type' => 'users',
             'instance' => $userid,
         ]);
+        $DB->delete_records('local_intelliboard_bb_partic', [
+            'external_user_id' => $userid,
+        ]);
+
         $items = $DB->get_records("local_intelliboard_tracking", ['userid' => $userid]);
 
         foreach ($items as $item) {
@@ -383,6 +420,9 @@ class provider implements
           $DB->delete_records('local_intelliboard_assign', [
               'type' => 'users',
               'instance' => $userid,
+          ]);
+          $DB->delete_records('local_intelliboard_bb_partic', [
+              'external_user_id' => $userid,
           ]);
           $items = $DB->get_records("local_intelliboard_tracking", ['userid' => $userid]);
 

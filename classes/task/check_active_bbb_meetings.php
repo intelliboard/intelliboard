@@ -15,12 +15,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
- * @package   local_intelliboard
- * @category  task
- * @copyright 2018 Intelliboard
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    local_intelliboard
+ * @copyright  2019 IntelliBoard, Inc
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @website    http://intelliboard.net/
  */
+
 namespace local_intelliboard\task;
 
 /**
