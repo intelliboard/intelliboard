@@ -145,6 +145,13 @@ $functions = array(
             'description' => 'Clear all saved notifications and history;',
             'type'        => 'write',
         ),
+        'local_intelliboard_attendance_api' => array(
+            'classname'   => 'local_intelliboard_attendancelib',
+            'methodname'  => 'attendance_api',
+            'classpath'   => 'local/intelliboard/classes/attendancelib.php',
+            'description' => 'Attendance API',
+            'type'        => 'read',
+        ),
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
@@ -167,7 +174,8 @@ $services = array(
                         'local_intelliboard_save_notification',
                         'local_intelliboard_delete_notification',
                         'local_intelliboard_get_history',
-                        'local_intelliboard_clear_notifications'
+                        'local_intelliboard_clear_notifications',
+                        'local_intelliboard_attendance_api',
                 ),
                 'restrictedusers' => 1,
                 'enabled'=>1,
