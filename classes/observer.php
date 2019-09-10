@@ -69,7 +69,6 @@ class local_intelliboard_observer
     public static function user_graded(\core\event\user_graded $event)
     {
         global $DB;
-
         $allowedTypes = ['assign', 'quiz'];
         $eventData = $event->get_data();
 
@@ -82,8 +81,9 @@ class local_intelliboard_observer
             self::process_event(13, $event, $data, $excluded);
         }
 
-        $data = ['user' => $eventData['relateduserid'], 'course' => $eventData['courseid']];
-        $courseGrade = $DB->get_record_sql("
+        if (!$item->itemmodule) { //it's course grade updated
+            $data = ['user' => $eventData['relateduserid'], 'course' => $eventData['courseid']];
+            $courseGrade = $DB->get_record_sql("
             SELECT
                 ROUND((CASE WHEN SUM(g.rawgrademax) > 0 THEN (SUM(g.finalgrade) / SUM(g.rawgrademax)) * 100 ELSE SUM(g.finalgrade) END), 2) as grade
                 FROM {grade_grades} as g
@@ -92,9 +92,10 @@ class local_intelliboard_observer
                 GROUP BY gi.courseid
         ", [$eventData['courseid'], $eventData['relateduserid']]);
 
-        if ($courseGrade and isset($courseGrade->grade)) {
-            $data['gradeThreshold'] = ['operator' => '>', 'value' => $courseGrade->grade];
-            self::process_event(25, $event, $data, $excluded);
+            if ($courseGrade and isset($courseGrade->grade)) {
+                $data['gradeThreshold'] = ['operator' => '>', 'value' => $courseGrade->grade];
+                self::process_event(25, $event, $data, $excluded);
+            }
         }
     }
 

@@ -821,6 +821,8 @@ $string['user_site_summary_detail'] = 'User Site Summary Detail';
 $string['course_enrollment_types'] = 'Course Enrollment Types';
 $string['user_map'] = 'User Map';
 $string['course_enrollments_with_completion_overview'] = 'Course Enrollments with Completion Overview';
+$string['intelliboard:attendanceadmin'] = "Attendance Admin";
+
 /* Attendance */
 $string['attendance'] = 'Attendance';
 $string['enableattendance'] = 'Enable attendance';
@@ -840,3 +842,12 @@ $string['bb_col_api_endpoint'] = 'BlackBoard Collaborate API endpoint';
 $string['bb_col_consumer_key'] = 'BlackBoard Collaborate consumer key';
 $string['bb_col_secret'] = 'BlackBoard Collaborate secret';
 $string['enable_bb_col_meetings'] = 'Enable BlackBoard Collaborate meetings';
+
+/* Admin dashboard */
+$string['admin_dashboard'] = 'Admin dashboard';
+$string['adm_dshb_user_enr_sess_compl_act_lvls'] = 'User Enrollment, Session, Completion Activity Levels';
+$string['adm_dshb_adm_dashb_totals'] = 'Totals';
+$string['adm_dshb_user_site_summary_details'] = 'User Site Summary Detail';
+$string['adm_dshb_course_enrollments_types'] = 'Course Enrollment Types';
+$string['adm_dshb_user_map'] = 'User Map';
+$string['adm_dshb_user_enrol_with_compl_overview'] = 'Course Enrollments with Completion Overview';

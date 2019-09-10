@@ -283,9 +283,14 @@ class local_intelliboard_notification
         return array($recipients, $notifications);
     }
 
-    private function get_recipients_for_notification($notification)
+    protected function get_recipients_for_notification($notification)
     {
         $emails = array_merge($notification['email'], $notification['cc']);
+        return $this->transform_emails_to_users($emails);
+    }
+
+    protected function transform_emails_to_users($emails)
+    {
         $template = get_admin();
 
         return array_map(function ($email) use ($template) {
@@ -365,20 +370,54 @@ class local_intelliboard_notification
     {
         global $DB, $CFG;
 
-        $result = array();
-        foreach ($events as $data) {
-            $result[] = array(
-                'user' => fullname($DB->get_record('user', array('id' => $data['userid']))),
-                'courseName' => $DB->get_record('course', array('id' => $data['courseid']), 'fullname')->fullname,
-                'forumName' => $DB->get_record('forum', array("id" => $data['other']['forumid']), 'name')->name,
-                'responseLink' => '<a href="' . ($CFG->wwwroot . '/mod/forum/discuss.php?d=' . $data['other']['discussionid'] . '#p' . $data['objectid']) . '"> Response </a>'
-            );
+        $result = [];
+
+        if (empty($notification['params']['course_user'])) { //for backward compability with old notifications
+            foreach ($events as $data) {
+                $result[] = [
+                    'user' => fullname($DB->get_record('user', array('id' => $data['userid']))),
+                    'courseName' => $DB->get_record('course', array('id' => $data['courseid']), 'fullname')->fullname,
+                    'forumName' => $DB->get_record('forum', array("id" => $data['other']['forumid']), 'name')->name,
+                    'responseLink' => '<a href="' . ($CFG->wwwroot . '/mod/forum/discuss.php?d=' . $data['other']['discussionid'] . '#p' . $data['objectid']) . '"> Response </a>'
+                ];
+            }
+
+            $recipients = $this->get_recipients_for_notification($notification);
+            $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, $result));
+        } else {
+            foreach ($events as $data) {
+                $eventItem = [
+                    'user' => fullname($DB->get_record('user', array('id' => $data['userid']))),
+                    'courseName' => $DB->get_record('course', array('id' => $data['courseid']), 'fullname')->fullname,
+                    'forumName' => $DB->get_record('forum', array("id" => $data['other']['forumid']), 'name')->name,
+                    'responseLink' => '<a href="' . ($CFG->wwwroot . '/mod/forum/discuss.php?d=' . $data['other']['discussionid'] . '#p' . $data['objectid']) . '"> Response </a>'
+                ];
+
+                foreach ($notification['params']['course_user'] as $course_user) {
+                    list($courseId, $userEmail) = explode(' ', $course_user);
+                    if ($courseId == $data['courseid']) {
+                        $result[$userEmail][] = $eventItem;
+                    }
+                }
+            }
+
+            if (count($events) > 1) {
+                foreach($notification['params']['course_user']as $course_user) {
+                    list($courseId, $userEmail) = explode(' ', $course_user);
+
+                    if (!isset($result[$userEmail])) {
+                        $result[$userEmail] = [];
+                    }
+                }
+            }
+
+            $recipients = $this->transform_emails_to_users(array_keys($result));
+            $notifications = array_values(array_map(function($data) use ($notification) {
+                return $this->prepare_notification($notification, $data);
+            }, $result));
         }
 
-        $recipients = $this->get_recipients_for_notification($notification);
-        $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, $result));
-
-        return array($recipients, $notifications);
+        return [$recipients, $notifications];
     }
 
     protected function notification13(&$notification, $events = array())
@@ -598,7 +637,6 @@ class local_intelliboard_notification
         }
 
         return array($recipients, $notifications);
-
     }
 
     protected function get_border_date($frequency)
@@ -665,6 +703,7 @@ class local_intelliboard_notification
         $result = compact('user', 'courseName', 'grade');
 
         $notification['email'] = $this->get_related_emails($notification, $event);
+
         $recipients = $this->get_recipients_for_notification($notification);
         $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, [$result]));
 
@@ -677,21 +716,33 @@ class local_intelliboard_notification
 
         $relatedEmails = $notification['email'];
         if (isset($notification['params']['emailType']) and current($notification['params']['emailType']) == 1) {
-            $teacherRoles = explode(',', get_config('local_intelliboard', 'filter10'));
-            list($inRolesSql, $params) = $this->get_filter_in_sql($teacherRoles, 'ra.roleid');
-            $params[] = $event['courseid'];
+            if (empty($notification['params']['course_user'])) { //for compability with old notifications
+                $teacherRoles = explode(',', get_config('local_intelliboard', 'filter10'));
+                list($inRolesSql, $params) = $this->get_filter_in_sql($teacherRoles, 'ra.roleid');
+                $params[] = $event['courseid'];
 
-            $teachersOfCourse = json_decode(json_encode($DB->get_records_sql("
-            SELECT
-                u.email
-                FROM {user} u
-                INNER JOIN {role_assignments} ra ON ra.userid = u.id AND $inRolesSql
-                INNER JOIN {context} ctx ON ctx.id = ra.contextid
-                WHERE ctx.instanceid = ? AND ctx.contextlevel = 50
-            ", $params)), true);
+                $teachersOfCourse = json_decode(json_encode($DB->get_records_sql("
+                    SELECT
+                        u.email
+                        FROM {user} u
+                        INNER JOIN {role_assignments} ra ON ra.userid = u.id AND $inRolesSql
+                        INNER JOIN {context} ctx ON ctx.id = ra.contextid
+                        WHERE ctx.instanceid = ? AND ctx.contextlevel = 50
+                    ", $params)), true);
 
-            $teachersEmails = array_column($teachersOfCourse, 'email');
-            $relatedEmails = array_intersect($relatedEmails, $teachersEmails);
+                $teachersEmails = array_column($teachersOfCourse, 'email');
+                $relatedEmails = array_intersect($relatedEmails, $teachersEmails);
+            } else {
+                $relatedEmails = [];
+
+                foreach ($notification['params']['course_user'] as $course_user) {
+                    list($courseId, $userEmail) = explode(' ', $course_user);
+
+                    if ($courseId == $event['courseid']) {
+                        $relatedEmails[] = $userEmail;
+                    }
+                }
+            }
         }
 
         return $relatedEmails;
@@ -724,7 +775,6 @@ class local_intelliboard_notification
 
     protected function notification13_event($notification)
     {
-
         $sql = '
             SELECT
                 g.id as id,
