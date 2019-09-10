@@ -358,7 +358,7 @@
 
 .intelliboard-fade60{opacity: 0.4}
 
-.intelliboard-total{border:1px solid #E3E3E3;border-radius:8px; box-sizing: border-box;line-height: 68px;}
+.intelliboard-total{border:1px solid #E3E3E3;border-radius:8px; box-sizing: border-box;line-height: 68px;margin-top: 10px;}
 .intelliboard-total h3{width:16%;margin:0;text-align:center;float:left;line-height: inherit;}
 .intelliboard-total p{width:21%; font-size:26px;font-weight:600;margin:0;text-align:center;float:left;border-left:1px solid #E3E3E3; box-sizing: border-box;}
 .intelliboard-total p span{font-size:16px;font-weight:400;}

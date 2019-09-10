@@ -29,9 +29,35 @@ defined('MOODLE_INTERNAL') || die();
 class local_external_functions
 {
     protected $functions;
+    protected $columns;
 
     public function __construct()
     {
+        $coursetagsconcat = get_operator('GROUP_CONCAT', 'c1tg.name', ['separator' => ',']);
+        $activitytagsconcat = get_operator('GROUP_CONCAT', 'c2tg.name', ['separator' => ',']);
+        $this->columns = [
+          0 => "course_alias_.fullname", //course
+          1 => "course_alias_.shortname", //course
+          2 => "course_alias_.category", //course
+          3 => "course_alias_.idnumber", //course
+          4 => "course_alias_.startdate", //course
+          5 => "course_alias_.enddate", //course
+          6 => "course_alias_.visible", //course
+          7 => "(SELECT name FROM {course_categories} WHERE id = course_alias_.category)", //course
+          8 => "(SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = course_alias_.id)", //course
+          9 => "(SELECT {$coursetagsconcat}
+                   FROM {tag_instance} c1ti
+                   JOIN {tag} c1tg ON c1tg.id = c1ti.tagid
+                  WHERE c1ti.component = 'core' AND c1ti.itemtype = 'course' AND
+                        c1ti.itemid = course_alias_.id
+                  GROUP BY c1ti.itemid)", //course tags
+          10 => "(SELECT {$activitytagsconcat}
+                    FROM {tag_instance} c2ti
+                    JOIN {tag} c2tg ON c2tg.id = c2ti.tagid
+                   WHERE c2ti.component = 'core' AND c2ti.itemtype = 'course_modules' AND
+                         c2ti.itemid = cm_alias_.id
+                   GROUP BY c2ti.itemid)", // activity tags
+        ];
         $this->functions = [
             'report1',
             'report2',
@@ -320,7 +346,11 @@ class local_external_functions
             'users_overview',
             'monitor62',
             'report183',
-            'available_modules'
+            'available_modules',
+            'report185',
+            'report186',
+            'report187',
+            'get_assignment_grading_definitions'
         ];
     }
     public function get_function($params = null)
@@ -336,5 +366,10 @@ class local_external_functions
     public function get_functions()
     {
         return $this->functions;
+    }
+
+    public function get_columns()
+    {
+        return $this->columns;
     }
 }
