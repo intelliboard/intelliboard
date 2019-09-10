@@ -543,7 +543,7 @@ function get_operator($id, $value, $params = array(), $dbtype = null)
                     $params['order'] = '';
                 }
 
-                return "GROUP_CONCAT($value, '" . $params['separator'] . "')";
+                return "GROUP_CONCAT($value SEPARATOR '" . $params['separator'] . "')";
             },
             POSTGRES_TYPE => function($value, $params = array('separator' => ', ')) {
 

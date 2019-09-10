@@ -261,6 +261,45 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configmultiselect($name, $title, '', array(5), $options);
         $settings->add($setting);
 
+        /* Admin dashboard (start) */
+        $settings->add(
+            new admin_setting_heading(
+                'local_intelliboard/admin_dashboard_header',
+                new lang_string('admin_dashboard', 'local_intelliboard'
+            ), '')
+        );
+
+        $name = 'local_intelliboard/adm_dshb_user_enr_sess_compl_act_lvls';
+        $title = new lang_string('adm_dshb_user_enr_sess_compl_act_lvls', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/adm_dshb_adm_dashb_totals';
+        $title = new lang_string('adm_dshb_adm_dashb_totals', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/adm_dshb_user_site_summary_details';
+        $title = new lang_string('adm_dshb_user_site_summary_details', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/adm_dshb_course_enrollments_types';
+        $title = new lang_string('adm_dshb_course_enrollments_types', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/adm_dshb_user_map';
+        $title = new lang_string('adm_dshb_user_map', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/adm_dshb_user_enrol_with_compl_overview';
+        $title = new lang_string('adm_dshb_user_enrol_with_compl_overview', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+        /* Admin dashboard (end) */
+
         $settings->add(new admin_setting_heading('local_intelliboard/n0', new lang_string('n10', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/n11';

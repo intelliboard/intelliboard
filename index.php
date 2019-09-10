@@ -84,6 +84,17 @@ $params = (object) array(
 );
 $plugin = new local_intelliboard_external();
 
+if($time == 'monthly') {
+    $mainChartFormat = 'MMM, yyyy';
+    $params->timestart = strtotime('-364 days');
+} else if($time == 'weekly') {
+    $mainChartFormat = 'dd, MMM';
+    $params->timestart = strtotime('-89 days');
+} else {
+    $mainChartFormat = 'dd, MMM';
+    $params->timestart = strtotime('-44 days');
+}
+
 if($action == 'report43'){
 	$params->length = $length;
 	if ($type == 'users' and $page > 1) {
@@ -117,36 +128,65 @@ if ($action == 'sso' and $intelliboard->token and get_config('local_intelliboard
 	redirect(intelliboard_url()."auth/sso/".format_string($intelliboard->db)."/".format_string($intelliboard->token));
 }
 
+$settingUserEnrollmentsSession = get_config(
+    'local_intelliboard', 'adm_dshb_user_enr_sess_compl_act_lvls'
+);
+$settingTotals = get_config(
+    'local_intelliboard', 'adm_dshb_adm_dashb_totals'
+);
+$settingUserSiteSummary = get_config(
+    'local_intelliboard', 'adm_dshb_user_site_summary_details'
+);
+$settingCourseEnrollmentsTypes = get_config(
+    'local_intelliboard', 'adm_dshb_course_enrollments_types'
+);
+$settingUserMap = get_config(
+    'local_intelliboard', 'adm_dshb_user_map'
+);
+$settingEnrolComplOverview = get_config(
+    'local_intelliboard', 'adm_dshb_user_enrol_with_compl_overview'
+);
 
-$stat = $plugin->get_dashboard_stats($params);
-$LineChart = $plugin->get_site_activity($params);
-$countries = $plugin->get_countries($params);
-$enrols = $plugin->get_enrols($params);
 $params->sizemode = 0;
-$totals = $plugin->get_total_info($params);
-
-$json_countries = array();
-foreach($countries as $country){
-	$json_countries[] = "['".format_string(ucfirst($country->country))."', ".s($country->users)."]";
-}
-$json_enrols = array();
-foreach($enrols as $enrol){
-	$json_enrols[] = "['". get_string('pluginname', 'enrol_'.$enrol->enrol)."', ".s($enrol->enrols)."]";
-}
-
 $json_data = array();
-ksort($LineChart->sessions);
 
-foreach($LineChart->sessions as $item){
-	$d = date("j", $item->timepointval);
-	$m = date("n", $item->timepointval) - 1;
-	$y = date("Y", $item->timepointval);
+if($settingUserEnrollmentsSession) {
+    $stat = $plugin->get_dashboard_stats($params);
+    $LineChart = $plugin->get_site_activity($params);
+    ksort($LineChart->sessions);
 
-	$l = $item->pointval;
-	$v = (isset($LineChart->enrolments[$item->timepointval])) ? $LineChart->enrolments[$item->timepointval]->pointval : 0;
-	$t = (isset($LineChart->completions[$item->timepointval])) ? $LineChart->completions[$item->timepointval]->pointval : 0;
-	$json_data[] = "[new Date($y, $m, $d), $l, $t, $v]";
+    foreach($LineChart->sessions as $item){
+    	$d = date("j", $item->timepointval);
+    	$m = date("n", $item->timepointval) - 1;
+    	$y = date("Y", $item->timepointval);
+
+    	$l = $item->pointval;
+    	$v = (isset($LineChart->enrolments[$item->timepointval])) ? $LineChart->enrolments[$item->timepointval]->pointval : 0;
+    	$t = (isset($LineChart->completions[$item->timepointval])) ? $LineChart->completions[$item->timepointval]->pointval : 0;
+    	$json_data[] = "[new Date($y, $m, $d), $l, $t, $v]";
+    }
 }
+
+if($settingTotals) {
+    $totals = $plugin->get_total_info($params);
+}
+
+if($settingCourseEnrollmentsTypes) {
+    $enrols = $plugin->get_enrols($params);
+    $json_enrols = array();
+    foreach($enrols as $enrol){
+    	$json_enrols[] = "['". get_string('pluginname', 'enrol_'.$enrol->enrol)."', ".s($enrol->enrols)."]";
+    }
+}
+
+if($settingUserMap) {
+    $json_countries = array();
+    $countries = $plugin->get_countries($params);
+    foreach($countries as $country){
+    	$json_countries[] = "['".format_string(ucfirst($country->country))."', ".s($country->users)."]";
+    }
+}
+
 $PAGE->requires->jquery();
 $PAGE->set_url(new moodle_url("/local/intelliboard/index.php", array()));
 $PAGE->set_pagetype('home');
@@ -159,70 +199,82 @@ echo $OUTPUT->header();
 ?>
 <div class="intelliboard-page">
 <?php include("views/menu.php"); ?>
-<div class="intelliboard-chart clearfix">
-	<div class="intelliboard-chart-header">
-		<h3><?php echo get_string('user_enrollments_sessions_completion', 'local_intelliboard');?></h3>
-		<div class="range">
-			<a class="<?php echo ($time == 'daily')?'active':'';?>" href="index.php?time=daily"><?php echo get_string('daily', 'local_intelliboard');?></a>
-			<a class="<?php echo ($time == 'weekly')?'active':'';?>" href="index.php?time=weekly"><?php echo get_string('weekly', 'local_intelliboard');?></a>
-			<a class="<?php echo ($time == 'monthly')?'active':'';?>" href="index.php?time=monthly"><?php echo get_string('monthly', 'local_intelliboard');?></a>
-		</div>
-	</div>
-	<div class="intelliboard-stats">
-		<h4 class="ion-person-stalker"><?php echo get_string('number_of_sessions', 'local_intelliboard');?></h4>
-		<p>
-			<i class="<?php if(isset($stat[0]->sessions_today)){ echo ($stat[1]->sessions_today<$stat[0]->sessions_today or $stat[1]->sessions_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_today', 'local_intelliboard', (int) (isset($stat[1]->sessions_today)? $stat[1]->sessions_today : 0));?>  &nbsp;
-			<i class="<?php if(isset($stat[0]->sessions_week)){ echo ($stat[1]->sessions_week<$stat[0]->sessions_week or $stat[1]->sessions_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_this_week', 'local_intelliboard', (int) (isset($stat[1]->sessions_week)? $stat[1]->sessions_week : 0));?>
-		</p>
+<?php if($settingUserEnrollmentsSession): ?>
+    <div class="intelliboard-chart clearfix">
+    	<div class="intelliboard-chart-header">
+    		<h3><?php echo get_string('user_enrollments_sessions_completion', 'local_intelliboard');?></h3>
+    		<div class="range">
+    			<a class="<?php echo ($time == 'daily')?'active':'';?>" href="index.php?time=daily"><?php echo get_string('daily', 'local_intelliboard');?></a>
+    			<a class="<?php echo ($time == 'weekly')?'active':'';?>" href="index.php?time=weekly"><?php echo get_string('weekly', 'local_intelliboard');?></a>
+    			<a class="<?php echo ($time == 'monthly')?'active':'';?>" href="index.php?time=monthly"><?php echo get_string('monthly', 'local_intelliboard');?></a>
+    		</div>
+    	</div>
+    	<div class="intelliboard-stats">
+    		<h4 class="ion-person-stalker"><?php echo get_string('number_of_sessions', 'local_intelliboard');?></h4>
+    		<p>
+    			<i class="<?php if(isset($stat[0]->sessions_today)){ echo ($stat[1]->sessions_today<$stat[0]->sessions_today or $stat[1]->sessions_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+                <?php echo get_string('number_today', 'local_intelliboard', (int) (isset($stat[1]->sessions_today)? $stat[1]->sessions_today : 0));?>  &nbsp;
+    			<i class="<?php if(isset($stat[0]->sessions_week)){ echo ($stat[1]->sessions_week<$stat[0]->sessions_week or $stat[1]->sessions_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+                <?php echo get_string('number_this_week', 'local_intelliboard', (int) (isset($stat[1]->sessions_week)? $stat[1]->sessions_week : 0));?>
+    		</p>
 
-		<h4 class="ion-ribbon-b"><?php echo get_string('course_completions', 'local_intelliboard');?></h4>
-		<p>
-			<i class="<?php if(isset($stat[0]->compl_today)){ echo ($stat[1]->compl_today<$stat[0]->compl_today or $stat[1]->compl_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_today', 'local_intelliboard', (int) (isset($stat[1]->compl_today )? $stat[1]->compl_today : 0));?>
-			<i class="<?php if(isset($stat[0]->compl_week )){ echo ($stat[1]->compl_week<$stat[0]->compl_week or $stat[1]->compl_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_this_week', 'local_intelliboard', (int) (isset($stat[1]->compl_week)? $stat[1]->compl_week : 0));?>
-		</p>
+    		<h4 class="ion-ribbon-b"><?php echo get_string('course_completions', 'local_intelliboard');?></h4>
+    		<p>
+    			<i class="<?php if(isset($stat[0]->compl_today)){ echo ($stat[1]->compl_today<$stat[0]->compl_today or $stat[1]->compl_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+                <?php echo get_string('number_today', 'local_intelliboard', (int) (isset($stat[1]->compl_today )? $stat[1]->compl_today : 0));?>
+    			<i class="<?php if(isset($stat[0]->compl_week )){ echo ($stat[1]->compl_week<$stat[0]->compl_week or $stat[1]->compl_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+                <?php echo get_string('number_this_week', 'local_intelliboard', (int) (isset($stat[1]->compl_week)? $stat[1]->compl_week : 0));?>
+    		</p>
 
-		<h4 class="ion-university"><?php echo get_string('user_enrolments', 'local_intelliboard');?></h4>
-		<p>
-			<i class="<?php if(isset($stat[0]->enrolments_today)){echo ($stat[1]->enrolments_today<$stat[0]->enrolments_today or $stat[1]->enrolments_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_today', 'local_intelliboard', (int) (isset($stat[1]->enrolments_today)? $stat[1]->enrolments_today : 0));?>
-			<i class="<?php if(isset($stat[0]->enrolments_today)){echo ($stat[1]->enrolments_week<$stat[0]->enrolments_week or $stat[1]->enrolments_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
-            <?php echo get_string('number_this_week', 'local_intelliboard', (int) (isset($stat[1]->enrolments_week)? $stat[1]->enrolments_week : 0));?>
-		</p>
-	</div>
-	<div id="intelliboard-chart" class="intelliboard-chart-body"></div>
-</div>
-<div class="intelliboard-total clearfix">
-	<h3><?php echo get_string('total', 'local_intelliboard');?></h3>
-	<p><?php echo format_string($totals->users); ?> <span><?php echo get_string('users', 'local_intelliboard');?></span></p>
-	<p><?php echo format_string($totals->courses); ?> <span><?php echo get_string('courses', 'local_intelliboard');?></span></p>
-	<p><?php echo format_string($totals->modules); ?> <span><?php echo get_string('modules', 'local_intelliboard');?></span></p>
-	<p><?php echo format_string($totals->categories); ?> <span><?php echo get_string('categories', 'local_intelliboard');?></span></p>
-</div>
+    		<h4 class="ion-university"><?php echo get_string('user_enrolments', 'local_intelliboard');?></h4>
+    		<p>
+    			<i class="<?php if(isset($stat[0]->enrolments_today)){echo ($stat[1]->enrolments_today<$stat[0]->enrolments_today or $stat[1]->enrolments_today ==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+                <?php echo get_string('number_today', 'local_intelliboard', (int) (isset($stat[1]->enrolments_today)? $stat[1]->enrolments_today : 0));?>
+    			<i class="<?php if(isset($stat[0]->enrolments_today)){echo ($stat[1]->enrolments_week<$stat[0]->enrolments_week or $stat[1]->enrolments_week==0)?'down ion-arrow-graph-down-left':'up ion-arrow-graph-up-left';} ?>"></i>
+                <?php echo get_string('number_this_week', 'local_intelliboard', (int) (isset($stat[1]->enrolments_week)? $stat[1]->enrolments_week : 0));?>
+    		</p>
+    	</div>
+    	<div id="intelliboard-chart" class="intelliboard-chart-body"></div>
+    </div>
+<?php endif; ?>
+<?php if($settingTotals): ?>
+    <div class="intelliboard-total clearfix">
+    	<h3><?php echo get_string('total', 'local_intelliboard');?></h3>
+    	<p><?php echo format_string($totals->users); ?> <span><?php echo get_string('users', 'local_intelliboard');?></span></p>
+    	<p><?php echo format_string($totals->courses); ?> <span><?php echo get_string('courses', 'local_intelliboard');?></span></p>
+    	<p><?php echo format_string($totals->modules); ?> <span><?php echo get_string('modules', 'local_intelliboard');?></span></p>
+    	<p><?php echo format_string($totals->categories); ?> <span><?php echo get_string('categories', 'local_intelliboard');?></span></p>
+    </div>
+<?php endif; ?>
 
 <div class="intelliboard-box">
-	<div class="box60 pull-left">
-		<h3><?php echo get_string('user_site_summary_detail', 'local_intelliboard');?></h3>
+    <?php if($settingUserSiteSummary): ?>
+    	<div class="box<?php echo $settingCourseEnrollmentsTypes ? '60' : '100'; ?> pull-left">
+    		<h3><?php echo get_string('user_site_summary_detail', 'local_intelliboard');?></h3>
 
-		<div class="ajax-widget" id="report43"><?php echo get_string('loading', 'local_intelliboard');?></div>
-	</div>
-	<div class="box40 pl15 pull-right">
-		<h3><?php echo get_string('course_enrollment_types', 'local_intelliboard');?></h3>
-		<div id="enrolments" style="width: 100%; height:300px;"></div>
-	</div>
+    		<div class="ajax-widget" id="report43"><?php echo get_string('loading', 'local_intelliboard');?></div>
+    	</div>
+    <?php endif; ?>
+    <?php if($settingCourseEnrollmentsTypes): ?>
+        <div class="box<?php echo $settingUserSiteSummary ? '40' : '100'; ?> pl15 pull-right">
+    		<h3><?php echo get_string('course_enrollment_types', 'local_intelliboard');?></h3>
+    		<div id="enrolments" style="width: 100%; height:300px;"></div>
+    	</div>
+    <?php endif; ?>
 </div>
 <div class="intelliboard-box">
-	<div class="box45 pull-left">
-		<h3><?php echo get_string('user_map', 'local_intelliboard');?></h3>
-		<div id="countries" style="width:100% height:400px;"></div>
-	</div>
-	<div class="box50 pull-right">
-		<h3><?php echo get_string('course_enrollments_with_completion_overview', 'local_intelliboard');?></h3>
-		<div class="ajax-widget" id="report44"><?php echo get_string('loading', 'local_intelliboard');?></div>
-	</div>
+    <?php if($settingUserMap): ?>
+    	<div class="box<?php echo $settingEnrolComplOverview ? '45' : '100'; ?> pull-left">
+    		<h3><?php echo get_string('user_map', 'local_intelliboard');?></h3>
+    		<div id="countries" style="width:100% height:400px;"></div>
+    	</div>
+    <?php endif; ?>
+    <?php if($settingEnrolComplOverview): ?>
+    	<div class="box<?php echo $settingUserMap ? '50' : '100'; ?> pull-right">
+    		<h3><?php echo get_string('course_enrollments_with_completion_overview', 'local_intelliboard');?></h3>
+    		<div class="ajax-widget" id="report44"><?php echo get_string('loading', 'local_intelliboard');?></div>
+    	</div>
+    <?php endif; ?>
 </div>
 <?php include("views/footer.php"); ?>
 </div>
@@ -237,63 +289,80 @@ echo $OUTPUT->header();
             }]
           }"></script>
 <script type="text/javascript">
-	google.setOnLoadCallback(drawChart);
-	function drawChart() {
-		var data = new google.visualization.DataTable();
-		data.addColumn('date', '<?php echo intellitext(get_string('time', 'local_intelliboard'));?>');
-		data.addColumn('number', '<?php echo intellitext(get_string('number_of_sessions', 'local_intelliboard'));?>');
-		data.addColumn('number', '<?php echo intellitext(get_string('course_completions', 'local_intelliboard'));?>');
-		data.addColumn('number', '<?php echo intellitext(get_string('user_enrolments', 'local_intelliboard'));?>');
-		data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
+    <?php if($settingUserEnrollmentsSession) :?>
+    	google.setOnLoadCallback(drawChart);
+    	function drawChart() {
+    		var data = new google.visualization.DataTable();
+    		data.addColumn('date', '<?php echo intellitext(get_string('time', 'local_intelliboard'));?>');
+    		data.addColumn('number', '<?php echo intellitext(get_string('number_of_sessions', 'local_intelliboard'));?>');
+    		data.addColumn('number', '<?php echo intellitext(get_string('course_completions', 'local_intelliboard'));?>');
+    		data.addColumn('number', '<?php echo intellitext(get_string('user_enrolments', 'local_intelliboard'));?>');
+    		data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
 
-		var options = {
-			chartArea: {
-				width: '90%',
-				right:0,
-				top:10
-			},
-			height: 280,
-			hAxis: {
-			    type: 'category',
-				format: 'dd MMM',
-				gridlines: {color: 'none'}
-			},
-			vAxis: {
-				gridlines: {count: 5},
-				minValue: 0
-			},
-			backgroundColor:{fill:'transparent'},
-			legend: { position: 'bottom' }
-		};
-		var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
-		chart.draw(data, options);
-	}
+            let oneDay = (24 * 60 * 60 * 1000);
+            let dateRange = data.getColumnRange(0);
+            if (data.getNumberOfRows() === 1) {
+                dateRange.min = new Date(dateRange.min.getTime() - oneDay);
+                dateRange.max = new Date(dateRange.max.getTime() + oneDay);
+            }
 
-	google.setOnLoadCallback(drawRegionsMap);
-	function drawRegionsMap() {
-		var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('country'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_countries) ? implode(",", $json_countries):"";?>]);
-		var chart = new google.visualization.GeoChart(document.getElementById('countries'));
-		chart.draw(data, {backgroundColor:{fill:'transparent'}});
-	}
+    		var options = {
+    			chartArea: {
+    				width: '90%',
+    				right:0,
+    				top:10
+    			},
+    			height: 280,
+    			hAxis: {
+                    format: '<?php echo $mainChartFormat; ?>',
+    				gridlines: {color: 'none'},
+                    viewWindow: dateRange
+    			},
+    			vAxis: {
+    				gridlines: {count: 5},
+    				minValue: 0
+    			},
+    			backgroundColor:{fill:'transparent'},
+    			legend: { position: 'bottom' }
+    		};
+    		var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
+    		chart.draw(data, options);
+    	}
+    <?php endif; ?>
 
-	google.setOnLoadCallback(drawEnrolments);
-	function drawEnrolments() {
-		var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('enrolment_method', 'local_intelliboard'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_enrols) ? implode(",", $json_enrols):"";?> ]);
-		var options = {
-			backgroundColor:{fill:"transparent"},
-			title: '',
-			pieHole: 0.4,
-			chartArea: {
-				width: '100%'
-			}
-		};
-		var chart = new google.visualization.PieChart(document.getElementById('enrolments'));
-		chart.draw(data, options);
-	}
+    <?php if($settingUserMap): ?>
+    	google.setOnLoadCallback(drawRegionsMap);
+    	function drawRegionsMap() {
+    		var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('country'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_countries) ? implode(",", $json_countries):"";?>]);
+    		var chart = new google.visualization.GeoChart(document.getElementById('countries'));
+    		chart.draw(data, {backgroundColor:{fill:'transparent'}});
+    	}
+    <?php endif; ?>
+
+    <?php if($settingCourseEnrollmentsTypes): ?>
+    	google.setOnLoadCallback(drawEnrolments);
+    	function drawEnrolments() {
+    		var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('enrolment_method', 'local_intelliboard'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_enrols) ? implode(",", $json_enrols):"";?> ]);
+    		var options = {
+    			backgroundColor:{fill:"transparent"},
+    			title: '',
+    			pieHole: 0.4,
+    			chartArea: {
+    				width: '100%'
+    			}
+    		};
+    		var chart = new google.visualization.PieChart(document.getElementById('enrolments'));
+    		chart.draw(data, options);
+    	}
+    <?php endif; ?>
 	jQuery(document).ready(function(){
-		jQuery('#report43').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report43&type=users&page=<?php echo $page; ?>&type=<?php echo $type; ?>');
-		jQuery('#report44').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report44&type=users&page=<?php echo $page; ?>&type=<?php echo $type; ?>');
-	});
+        <?php if($settingUserSiteSummary): ?>
+            jQuery('#report43').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report43&type=users&page=<?php echo $page; ?>&type=<?php echo $type; ?>');
+        <?php endif; ?>
+        <?php if($settingEnrolComplOverview): ?>
+            jQuery('#report44').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report44&type=users&page=<?php echo $page; ?>&type=<?php echo $type; ?>');
+        <?php endif; ?>
+    });
 </script>
 <?php
 echo $OUTPUT->footer();

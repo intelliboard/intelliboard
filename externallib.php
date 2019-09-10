@@ -35,6 +35,8 @@ class local_intelliboard_external extends external_api {
     public $courses = [];
     public $categories = [];
     public $cohorts = [];
+    public $columns_set = [];
+    public $groupAdditionalColumns = '';
 
     /**
      * Returns description of method parameters
@@ -52,6 +54,7 @@ class local_intelliboard_external extends external_api {
                             'length' => new external_value(PARAM_INT, 'Pagination length', VALUE_OPTIONAL, 0),
                             'columns' => new external_value(PARAM_RAW, 'Profile columns', VALUE_OPTIONAL, 0),
                             'completion' => new external_value(PARAM_SEQUENCE, 'Completion status param', VALUE_OPTIONAL, 0),
+                            'extra_columns' => new external_value(PARAM_SEQUENCE, 'Extra Columns', VALUE_OPTIONAL, 0),
                             'filter_columns' => new external_value(PARAM_SEQUENCE, 'Filter columns param', VALUE_OPTIONAL, 0),
                             'filter_profile' => new external_value(PARAM_INT, 'Filter profile column param', VALUE_OPTIONAL, 0),
                             'order_column' => new external_value(PARAM_INT, 'Order column param', VALUE_OPTIONAL, 0),
@@ -121,6 +124,7 @@ class local_intelliboard_external extends external_api {
         $params->custom3 = isset($params->custom3) ? clean_raw($params->custom3) : '';
         $params->custom4 = isset($params->custom4) ? clean_raw($params->custom4) : '';
         $params->columns = isset($params->columns) ? $params->columns : '';
+        $params->extra_columns = (isset($params->extra_columns)) ? $params->extra_columns : '';
         $params->completion = (isset($params->completion)) ? $params->completion : "1,2";
         $params->filter_columns = (isset($params->filter_columns)) ? $params->filter_columns : "0,1";
         $params->filter_profile = (isset($params->filter_profile)) ? $params->filter_profile : 0;
@@ -168,9 +172,13 @@ class local_intelliboard_external extends external_api {
             }
         }
 
+
+
         $transaction = $DB->start_delegated_transaction();
         $obj = new local_intelliboard_external();
         $external = new local_external_functions();
+
+        $obj->columns_set = $external->get_columns();
 
         if (isset($params->debug) and $params->debug === 4){
             return [$external->get_functions()];
@@ -196,6 +204,7 @@ class local_intelliboard_external extends external_api {
     public static function database_query_returns() {
         return new external_value(PARAM_RAW, 'Moodle DB records');
     }
+
     private function get_limit_sql($params)
     {
         global $CFG;
@@ -245,38 +254,60 @@ class local_intelliboard_external extends external_api {
     }
     private function get_filter_columns($params)
     {
-        if(!empty($params->columns)){
-            $data = array();
+        $data = [];
+        if (isset($params->extra_columns) and $params->extra_columns) {
+            $columns = explode(",", $params->extra_columns);
+            foreach($columns as $index){
+              $index = clean_param($index, PARAM_INT);
+              if (isset($this->columns_set[$index])) {
+                $data[] = "column$index"; // {$column} defined in each report
+              }
+            }
+        }
+        if (!empty($params->columns)) {
             $columns = explode(",", $params->columns);
             foreach($columns as $column){
                 $data[] = "field$column"; // {$column} defined in each report
             }
-            return $data;
-        }else{
-            return array();
         }
+        return $data;
     }
-    private function get_columns($params, $field = "u.id")
+    private function get_columns($params, $fields = [])
     {
-        if(!empty($params->columns)){
-            $data = "";
+        $data = "";
+        if (isset($params->extra_columns) and $params->extra_columns) {
+            $extra_columns = explode(",", $params->extra_columns);
+            foreach ($extra_columns as $index) {
+              $index = clean_param($index, PARAM_INT);
+
+              $course_field = isset($fields[1]) ? $fields[1] : "c";
+              $activity_field = isset($fields[2]) ? $fields[2] : "cm";
+
+              if (isset($this->columns_set[$index])) {
+                $column = $this->columns_set[$index];
+                $column = str_replace(['course_alias_', 'cm_alias_'], [$course_field, $activity_field], $column);
+                $data .= ", $column AS column$index";
+              }
+            }
+        }
+        if (!empty($params->columns)) {
+            $field = isset($fields[0]) ? $fields[0] : "u.id";
             $columns = explode(",", $params->columns);
-            foreach($columns as $column){
-                if($column == clean_param($column,PARAM_SEQUENCE)){
+            foreach ($columns as $column) {
+                if ($column == clean_param($column,PARAM_SEQUENCE)) {
                     $this->prfx = $this->prfx + 1;
                     $key = "column$column" . $this->prfx;
                     $this->params[$key] = $column;
+                    $this->groupAdditionalColumns .= ", field$column";
                     $data .= ", (SELECT d.data FROM {user_info_data} d, {user_info_field} f WHERE f.id = :$key AND d.fieldid = f.id AND d.userid = $field) AS field$column";
-                }else{
+                } else {
                     $alias = explode('.',$field);
                     $column = clean_param($column, PARAM_ALPHANUM);
                     $data .= ", ".$alias[0].".".$column." AS field".$column;
                 }
             }
-            return $data;
-        }else{
-            return "";
         }
+        return $data;
     }
     private function get_params_key($column, $value){
         $this->prfx = $this->prfx + 1;
@@ -379,7 +410,7 @@ class local_intelliboard_external extends external_api {
         }
         return ($wrap) ? array("data" => $data) : $data;
     }
-    private function get_modules_sql($filter, $result = false)
+    private function get_modules_sql($filter, $result = false, $name = 'activity')
     {
         global $DB;
 
@@ -393,7 +424,7 @@ class local_intelliboard_external extends external_api {
         foreach($modules as $module){
             $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
-        return ($sql_columns) ? ", CASE $sql_columns ELSE 'NONE' END AS activity" : "'' AS activity";
+        return ($sql_columns) ? ", CASE $sql_columns ELSE 'NONE' END AS $name" : "'' AS $name";
     }
     private function get_suspended_sql($params, $courseid = 'c.id', $userid = 'u.id', $coursefilter = true)
     {
@@ -434,9 +465,36 @@ class local_intelliboard_external extends external_api {
     public function report1($params)
     {
         global $CFG;
-        $columns = array_merge(array("u.firstname","u.lastname", "u.username",  "u.email", "c.fullname", "c.shortname", "enrols", "l.visits", "l.timespend", "grade", "cc.timecompleted", "enrolled", "ul.timeaccess", "ue.timeend", "cc.timecompleted","u.idnumber","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country","teacher", "cohortname"), $this->get_filter_columns($params));
+        $columns = array_merge(
+          array(
+            "u.firstname",
+            "u.lastname",
+            "u.username",
+            "u.email",
+            "c.fullname",
+            "c.shortname",
+            "enrols",
+            "l.visits",
+            "l.timespend",
+            "grade",
+            "cc.timecompleted",
+            "enrolled",
+            "ul.timeaccess",
+            "ue.timeend",
+            "cc.timecompleted",
+            "u.idnumber",
+            "u.phone1",
+            "u.phone2",
+            "u.institution",
+            "u.department",
+            "u.address",
+            "u.city",
+            "u.country",
+            "teacher",
+            "cohortname"),
+            $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -553,8 +611,22 @@ class local_intelliboard_external extends external_api {
     }
     public function report2($params)
     {
-        $columns = array_merge(array("category", "c.fullname", "c.shortname", "c.idnumber", "c.visible", "learners", "modules", "completed", "visits", "timespend", "grade", "c.timecreated"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "category",
+            "c.fullname",
+            "c.shortname",
+            "c.idnumber",
+            "c.visible",
+            "learners",
+            "modules",
+            "completed",
+            "visits",
+            "timespend",
+            "grade",
+            "c.timecreated",
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses", "ue.userid" => "users"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
@@ -588,6 +660,7 @@ class local_intelliboard_external extends external_api {
                 COUNT(DISTINCT ue.userid) AS learners,
                 (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
                 (SELECT name FROM {course_categories} WHERE id = c.category) AS category
+                $sql_columns
             FROM {course} c
                 LEFT JOIN {enrol} e ON e.courseid = c.id
                 LEFT JOIN {user_enrolments} ue ON ue.enrolid=e.id
@@ -613,6 +686,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "cm.course");
         $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_columns = $this->get_modules_sql($params->custom);
+        $sql_columns .= $this->get_columns($params, [null]);
         $sql_order = $this->get_order_sql($params, $columns);
         $grade_avg = intelliboard_grade_sql(true, $params);
         $completion = $this->get_completion($params, "");
@@ -634,7 +708,7 @@ class local_intelliboard_external extends external_api {
                     l.firstaccess AS firstaccess,
                     (SELECT COUNT(id) FROM {course_modules_completion} WHERE coursemoduleid = cm.id $completion) AS completed,
                     (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND gi.itemmodule = m.name AND gi.iteminstance = cm.instance AND g.itemid = gi.id AND g.finalgrade IS NOT NULL) AS grade
-                    $sql_columns
+                    {$sql_columns}
                FROM {course_modules} cm
                JOIN {modules} m ON m.id = cm.module
                JOIN {course} c ON c.id = cm.course
@@ -660,7 +734,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->custom2, "ra.roleid");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $grade_avg = intelliboard_grade_sql(true, $params);
         $completion = $this->get_completion($params, "");
 
@@ -766,7 +840,7 @@ class local_intelliboard_external extends external_api {
           "t.userip",
           "u.timecreated"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql(
@@ -821,7 +895,23 @@ class local_intelliboard_external extends external_api {
     public function report6($params)
     {
         global $CFG;
-        $columns = array_merge(array("u.firstname", "u.lastname", "email", "c.fullname", "started", "grade", "grade", "completed", "grade", "complete", "visits", "timespend","teacher", "cohortname", "e.enrol"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "email",
+            "c.fullname",
+            "started",
+            "grade",
+            "grade",
+            "completed",
+            "grade",
+            "complete",
+            "visits",
+            "timespend",
+            "teacher",
+            "cohortname",
+            "e.enrol"
+        ), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "e.courseid");
@@ -834,7 +924,7 @@ class local_intelliboard_external extends external_api {
         $sql_order = $this->get_order_sql($params, $columns);
         $grade_avg = intelliboard_grade_sql(false, $params, 'g.', 0, 'gi.',true);
         $grade_avg_real = intelliboard_grade_sql(false, $params, 'g.', 0, 'gi.');
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $completion = $this->get_completion($params, "cmc.");
         $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
         if ($CFG->dbtype == 'pgsql') {
@@ -912,7 +1002,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $grade_single = intelliboard_grade_sql(false, $params);
         $completion1 = $this->get_completion($params, "cmc.");
         $completion2 = $this->get_completion($params, "cmc.");
@@ -962,10 +1052,14 @@ class local_intelliboard_external extends external_api {
     }
     public function report8($params)
     {
-        $columns = array_merge(
-            array("teacher","courses","learners","activelearners","completedlearners","grade"),
-            $this->get_filter_columns($params)
-        );
+        $columns = array_merge(array(
+            "teacher",
+            "courses",
+            "learners",
+            "activelearners",
+            "completedlearners",
+            "grade"
+        ), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_teacher_sql(
             $params, ["u.id" => "users", "ctx.instanceid" => "courses"]
@@ -973,7 +1067,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $grade_avg = intelliboard_grade_sql(true, $params);
 
         $sql1 = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
@@ -1042,6 +1136,7 @@ class local_intelliboard_external extends external_api {
             $this->get_filter_columns($params)
         );
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["q.course" => "courses"]);
@@ -1060,17 +1155,22 @@ class local_intelliboard_external extends external_api {
                 avg((qa.sumgrades/q.sumgrades)*100) AS grade,
                 count(distinct(qa.id)) AS attempts,
                 sum(qa.timefinish - qa.timestart) AS duration
+                {$sql_columns}
             FROM {quiz} q
                 JOIN {course} c ON c.id = q.course
                 LEFT JOIN {quiz_attempts} qa ON qa.quiz = q.id
                 LEFT JOIN (SELECT quizid, count(*) questions FROM {quiz_slots} GROUP BY quizid) ql ON ql.quizid = q.id
+                LEFT JOIN {modules} m ON m.name = 'quiz'
+                LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = q.id
             WHERE q.id > 0 $sql_filter
             GROUP BY q.id, c.id $sql_having $sql_order", $params);
     }
     public function report10($params)
     {
         global $CFG;
-        $columns = array_merge(array("name","firstname","lastname", "email", "fullname", "qa.state", "qa.timestart", "qa.timefinish", "duration", "grade", "tags", "", "cohortname"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "name","firstname","lastname", "email", "fullname", "qa.state", "qa.timestart", "qa.timefinish", "duration", "grade", "tags", "", "cohortname"
+        ), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "q.course" => "courses"]);
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1080,7 +1180,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
 
         $sql_join = "";
         if($params->cohortid){
@@ -1138,9 +1238,19 @@ class local_intelliboard_external extends external_api {
     public function report11($params)
     {
         global $CFG;
-        $columns = array_merge(array("u.firstname", "u.lastname", "course", "u.email", "enrolled", "complete", "grade", "complete", "cohortname"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "course",
+            "u.email",
+            "enrolled",
+            "complete",
+            "grade",
+            "complete",
+            "cohortname"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -1228,6 +1338,7 @@ class local_intelliboard_external extends external_api {
                         WHERE lil.id>0 $date_filter
                         GROUP BY lit.courseid, lit.userid) lit ON lit.courseid = c.id AND lit.userid = ra.userid";
         }
+        $sql_columns .= $this->get_columns($params, [null]);
         $sql_join .= $this->get_suspended_sql($params, 'c.id', 'ra.userid');
 
         return $this->get_report_data("
@@ -1260,7 +1371,7 @@ class local_intelliboard_external extends external_api {
                 "learners"),
             $this->get_filter_columns($params)
         );
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "ctx.instanceid" => "courses"]);
@@ -1329,7 +1440,7 @@ class local_intelliboard_external extends external_api {
                 "grade"),
             $this->get_filter_columns($params)
         );
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
@@ -1412,8 +1523,17 @@ class local_intelliboard_external extends external_api {
 
     public function report16($params)
     {
-        $columns = array_merge(array("c.fullname", "teacher", "total", "visits", "timespend", "posts", "discussions"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "c.fullname",
+            "teacher",
+            "total",
+            "visits",
+            "timespend",
+            "posts",
+            "discussions"
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
@@ -1436,6 +1556,7 @@ class local_intelliboard_external extends external_api {
                         JOIN {context} AS ctx ON ctx.id = ra.contextid
                     WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles LIMIT 1
                 ) AS teacher
+                {$sql_columns}
                 FROM {course} c
                     LEFT JOIN {".$forum_table."} f ON f.course = c.id
                     LEFT JOIN (SELECT lit.courseid, SUM(lit.timespend) as timespend, SUM(lit.visits) as visits FROM {local_intelliboard_tracking} lit, {course_modules} cm, {modules} m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='".$forum_table."' GROUP BY lit.courseid) v ON v.courseid = c.id
@@ -1447,9 +1568,11 @@ class local_intelliboard_external extends external_api {
     public function report17($params)
         {
             global $CFG;
-            $columns = array_merge(array("c.fullname", "f.name", "avg_month", "avg_week", "avg_day", "popular_hour.hour", "popular_week.week", "popular_day.day"), $this->get_filter_columns($params));
+            $columns = array_merge(array(
+                "c.fullname", "f.name", "avg_month", "avg_week", "avg_day", "popular_hour.hour", "popular_week.week", "popular_day.day"
+            ), $this->get_filter_columns($params));
 
-
+            $sql_columns = $this->get_columns($params, [null]);
             $sql_having = $this->get_filter_sql($params, $columns);
             $sql_order = $this->get_order_sql($params, $columns);
             $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
@@ -1473,6 +1596,7 @@ class local_intelliboard_external extends external_api {
                       MAX(popular_day.day) AS popular_day,
                       MAX(popular_hour.hour) AS popular_hour,
                       MAX(popular_week.week) AS popular_week
+                      {$sql_columns}
                     FROM {".$forum_table."} f
                       JOIN {modules} m ON m.name='".$forum_table."'
                       LEFT JOIN {course_modules} cm ON cm.course=f.course AND cm.instance=f.id AND cm.module=m.id
@@ -1541,6 +1665,7 @@ class local_intelliboard_external extends external_api {
                       popular_day.day AS popular_day,
                       popular_hour.hour AS popular_hour,
                       popular_week.week AS popular_week
+                      {$sql_columns}
                     FROM {".$forum_table."} f
                       JOIN {modules} m ON m.name='".$forum_table."'
                       LEFT JOIN {course_modules} cm ON cm.course=f.course AND cm.instance=f.id AND cm.module=m.id
@@ -1600,7 +1725,7 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array("f.name", "u.firstname","u.lastname","course", "discussions", "posts"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -1679,9 +1804,11 @@ class local_intelliboard_external extends external_api {
 
     public function report19($params)
     {
-        $columns = array_merge(array("c.fullname", "teacher", "scorms"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "c.fullname", "teacher", "scorms"
+        ), $this->get_filter_columns($params));
 
-
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
@@ -1697,6 +1824,7 @@ class local_intelliboard_external extends external_api {
                     JOIN {user} u ON ra.userid = u.id
                     JOIN {context} AS ctx ON ctx.id = ra.contextid
                     WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_role LIMIT 1) AS teacher
+                {$sql_columns}
             FROM {course} c
                 LEFT JOIN {scorm} s ON s.course = c.id
             WHERE c.category > 0 $sql_filter
@@ -1706,9 +1834,11 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
 
-        $columns = array_merge(array("s.name", "c.fullname", "sl.visits", "sm.duration", "s.timemodified"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "s.name", "c.fullname", "sl.visits", "sm.duration", "s.timemodified"
+        ), $this->get_filter_columns($params));
 
-
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
@@ -1726,9 +1856,12 @@ class local_intelliboard_external extends external_api {
                     count(sst.id) as attempts,
                     MAX(sl.visits) AS visits,
                     MAX(sm.duration) AS duration
+                    {$sql_columns}
             FROM {scorm} s
                 LEFT JOIN {scorm_scoes_track} sst ON sst.scormid = s.id AND sst.element = 'x.start.time'
                 LEFT JOIN {course} c ON c.id = s.course
+                LEFT JOIN {modules} m ON m.name = 'scorm'
+                LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = s.id
                 LEFT JOIN (SELECT cm.instance, SUM(lit.visits) as visits FROM {local_intelliboard_tracking} lit, {course_modules} cm, {modules} m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='scorm' GROUP BY cm.instance) sl ON sl.instance = s.id
                 LEFT JOIN (SELECT scormid, $time_func AS duration FROM {scorm_scoes_track} where element = 'cmi.core.total_time' GROUP BY scormid) AS sm ON sm.scormid =s.id
             WHERE s.id > 0 $sql_filter GROUP BY s.id, c.id $sql_having $sql_order", $params);
@@ -1737,9 +1870,11 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
 
-        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "u.idnumber", "s.name", "c.fullname", "attempts", "t.duration","t.starttime","cmc.timemodified", "score","l.timespend","l.visits","","cohortname"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname", "u.lastname", "u.email", "u.idnumber", "s.name", "c.fullname", "attempts", "t.duration","t.starttime","cmc.timemodified", "score","l.timespend","l.visits","","cohortname"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -1789,8 +1924,9 @@ class local_intelliboard_external extends external_api {
                             $time_func AS duration,
                             COUNT(DISTINCT(attempt)) as attempts
                       FROM {scorm_scoes_track}
-                      GROUP BY userid, scormid) t
-                    JOIN {user} u ON u.id = t.userid
+                      GROUP BY userid, scormid
+                     ) t
+                JOIN {user} u ON u.id = t.userid
                     JOIN {scorm} AS s ON s.id = t.scormid
                     JOIN {course} c ON c.id = s.course
                     JOIN {modules} m ON m.name = 'scorm'
@@ -1824,6 +1960,7 @@ class local_intelliboard_external extends external_api {
                 "grade"),
             $this->get_filter_columns($params)
         );
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
@@ -1845,6 +1982,7 @@ class local_intelliboard_external extends external_api {
                     JOIN {user} u ON ra.userid = u.id
                     JOIN {context} AS ctx ON ctx.id = ra.contextid
                     WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql1 LIMIT 1) AS teacher
+                {$sql_columns}
             FROM {quiz_attempts} qa
                 LEFT JOIN {quiz} q ON q.id = qa.quiz
                 LEFT JOIN {course} c ON c.id = q.course
@@ -1853,9 +1991,11 @@ class local_intelliboard_external extends external_api {
     }
     public function report23($params)
     {
-        $columns = array_merge(array("c.fullname", "teacher", "resources"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "c.fullname", "teacher", "resources"
+        ), $this->get_filter_columns($params));
 
-
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
@@ -1872,6 +2012,7 @@ class local_intelliboard_external extends external_api {
                     JOIN {user} u ON ra.userid = u.id
                     JOIN {context} AS ctx ON ctx.id = ra.contextid
                     WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql LIMIT 1) AS teacher
+                {$sql_columns}
             FROM {course} c
                 LEFT JOIN {resource} r ON r.course = c.id
             WHERE c.id > 0 $sql_filter
@@ -1879,9 +2020,11 @@ class local_intelliboard_external extends external_api {
     }
     public function report24($params)
     {
-        $columns = array_merge(array("r.name", "c.fullname", "visits", "timespend", "r.timemodified"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "r.name", "c.fullname", "visits", "timespend", "r.timemodified"
+        ), $this->get_filter_columns($params));
 
-
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
@@ -1896,6 +2039,7 @@ class local_intelliboard_external extends external_api {
                 r.timemodified,
                 MAX(sl.visits) AS visits,
                 MAX(sl.timespend) AS timespend
+                {$sql_columns}
               FROM {resource} r
                 JOIN {course} c ON c.id = r.course
                 LEFT JOIN (SELECT cm.instance, SUM(lit.timespend) as timespend, SUM(lit.visits) as visits FROM {local_intelliboard_tracking} lit, {course_modules} cm, {modules} m WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='resource' GROUP BY cm.instance) sl ON sl.instance = r.id
@@ -1922,7 +2066,7 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array("course", "user", "enrolled", "cc.timecompleted", "score", "completed", "l.visits", "l.timespend"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -1967,7 +2111,7 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array("course", "username", "email", "q.name", "qa.state", "qa.timestart", "qa.timefinish", "qa.timefinish", "grade"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -2003,8 +2147,8 @@ class local_intelliboard_external extends external_api {
         global $CFG;
 
         $columns = array_merge(array("c.fullname","gi.itemname", "m.name", "u.firstname", "u.lastname", "u.email", "graduated", "grade", "completionstate", "timespend", "visits","ta.tags","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
-
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params);
+        $sql_columns .= $this->get_modules_sql(null, false, 'itemname');
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -2015,16 +2159,15 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $grade_single = intelliboard_grade_sql(false, $params);
 
-        if($params->custom2 == 1) {
+        if ($params->custom2 == 1) {
             $sql_filter .= $this->get_filterdate_sql($params, "cmc.timemodified");
             $sql_filter .= $this->get_completion($params, "cmc.");
         } elseif($params->custom2 == 2) {
-
+          //skip
         } else {
             $sql_filter .= $this->get_filterdate_sql($params, "g.timemodified");
         }
-
-        if($params->sizemode){
+        if ($params->sizemode) {
             $sql_columns .= ", '0' as timespend, '0' as visits";
             $sql_join = "";
         } elseif($params->custom2 == 2) {
@@ -2032,7 +2175,7 @@ class local_intelliboard_external extends external_api {
             $sql_filter .= " AND l.visits > 0";
             $sql_columns .= ", l.timespend as timespend, l.visits as visits";
             $sql_join = " LEFT JOIN (SELECT t.userid, t.param, SUM(l.timespend) as timespend, SUM(l.visits) as visits FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l WHERE l.trackid = t.id AND t.page = 'module' $filter GROUP BY t.userid, t.param) l ON l.param = cm.id AND l.userid = u.id";
-        }else{
+        } else{
             $sql_columns .= ", l.timespend as timespend, l.visits as visits";
             $sql_join = " LEFT JOIN (SELECT userid, param, SUM(timespend) as timespend, SUM(visits) as visits FROM {local_intelliboard_tracking} WHERE page = 'module' GROUP BY userid, param) l ON l.param = cm.id AND l.userid = u.id";
         }
@@ -2044,9 +2187,8 @@ class local_intelliboard_external extends external_api {
         $sql_join .= $this->get_suspended_sql($params);
 
         return $this->get_report_data("
-            SELECT g.id,
-                gi.itemname,
-                g.userid,
+            SELECT CONCAT(ue.id, '_', cm.id),
+                ue.userid,
                 u.email,
                 u.phone1,
                 u.phone2,
@@ -2065,25 +2207,27 @@ class local_intelliboard_external extends external_api {
                 m.name AS module_name,
                 ta.tags
                 $sql_columns
-            FROM {grade_grades} g
-                JOIN {grade_items} gi ON gi.id=g.itemid
-                JOIN {user} u ON u.id = g.userid
-                JOIN {modules} m ON m.name = gi.itemmodule
-                JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
-                JOIN {course} c ON c.id=cm.course
+            FROM {user_enrolments} ue
+                JOIN {user} u ON u.id = ue.userid
+                JOIN {enrol} e ON e.id = ue.enrolid
+                JOIN {course} c ON c.id = e.courseid
+                JOIN {course_modules} cm ON cm.course = c.id
+                JOIN {modules} m ON m.id = cm.module
+                LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name
+                LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id
                 LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
                 LEFT JOIN (SELECT i.itemid, $rawname AS tags
                   FROM {tag_instance} i, {tag} t
                   WHERE t.id = i.tagid AND i.itemtype = 'course_modules' GROUP BY i.itemid) ta ON ta.itemid = cm.id
                 $sql_join
-            WHERE gi.itemtype = 'mod' $sql_filter $sql_having $sql_order", $params);
+            WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
 
     public function report29($params)
     {
         $columns = array_merge(array("user", "course", "g.grade"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -2195,7 +2339,7 @@ class local_intelliboard_external extends external_api {
         global $CFG;
         $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "courses","timesite","timecourses","timeactivities","u.timecreated","teacher", "cohortname"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "ctx.instanceid" => "courses"]);
@@ -2277,9 +2421,17 @@ class local_intelliboard_external extends external_api {
 
     public function report34($params)
     {
-       $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "timespend", "visits", "firstaccess", "lastaccess"), $this->get_filter_columns($params));
+       $columns = array_merge(array(
+           "u.firstname",
+           "u.lastname",
+           "u.email",
+           "timespend",
+           "visits",
+           "firstaccess",
+           "lastaccess"
+       ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -2303,7 +2455,7 @@ class local_intelliboard_external extends external_api {
     {
        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "t.param", "timespend", "visits", "firstaccess", "lastaccess"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -2335,7 +2487,7 @@ class local_intelliboard_external extends external_api {
         $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "ue.timecreated", "ul.firstaccess", "ul.lastaccess", "u.lastlogin", "c.fullname", "teacher"), $this->get_filter_columns($params));
 
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
@@ -2395,9 +2547,11 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
 
-        $columns = array_merge(array("c.startdate", "ccc.timeend", "course", "u.firstname","u.lastname", "u.email", "enrols", "enrolstart", "enrolend", "complete", "complete"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "c.startdate", "ccc.timeend", "course", "u.firstname","u.lastname", "u.email", "enrols", "enrolstart", "enrolend", "complete", "complete"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -2451,7 +2605,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
 
         $sql_join = "";
         if($params->cohortid){
@@ -2512,7 +2666,7 @@ class local_intelliboard_external extends external_api {
         global $CFG;
         $columns = array_merge(array("course", "c.shortname","category", "u.firstname", "u.lastname", "email", "e.enrol", "ue.timecreated", "grade", "lastaccess", "", "cohortname"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -2571,7 +2725,9 @@ class local_intelliboard_external extends external_api {
     public function report41($params)
     {
         global $CFG;
-        $columns = array_merge(array("cc.name", "course", "c.shortname", "u.firstname","u.lastname","email", "enrolled", "certificate", "ci.timecreated", "grade", "ci.code","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country",""), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "cc.name", "course", "c.shortname", "u.firstname","u.lastname","email", "enrolled", "certificate", "ci.timecreated", "grade", "ci.code","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country",""
+        ), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -2580,7 +2736,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filterdate_sql($params, "ci.timecreated");
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
 
 
         $grade_avg = intelliboard_grade_sql(true, $params, 'gg.', 0, 'gi.');
@@ -2692,7 +2848,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $grade_avg = intelliboard_grade_sql(true, $params);
 
         if($params->sizemode){
@@ -2725,8 +2881,11 @@ class local_intelliboard_external extends external_api {
     }
     public function report44($params)
     {
-        $columns = array("c.fullname", "users", "completed");
+        $columns = array_merge(array(
+            "c.fullname", "users", "completed"
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
@@ -2740,6 +2899,7 @@ class local_intelliboard_external extends external_api {
                 c.fullname,
                 COUNT(DISTINCT ue.userid) users,
                 COUNT(DISTINCT cc.userid) as completed
+                {$sql_columns}
             FROM {user_enrolments} ue
                 INNER JOIN {user} u ON u.id = ue.userid
                 LEFT JOIN {enrol} e ON e.id = ue.enrolid
@@ -2752,7 +2912,7 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "all_att", "timespend", "highest_grade", "lowest_grade", "cmc.timemodified"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "q.course" => "courses"]);
@@ -2790,9 +2950,23 @@ class local_intelliboard_external extends external_api {
     }
     public function report42($params)
     {
-        $columns = array_merge(array("u.firstname","u.lastname","u.email", "c.fullname", "c.startdate", "started", "grade", "grade", "cmc.completed", "grade", "complete", "lit.visits", "lit.timespend"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.email",
+            "c.fullname",
+            "c.startdate",
+            "started",
+            "grade",
+            "grade",
+            "cmc.completed",
+            "grade",
+            "complete",
+            "lit.visits",
+            "lit.timespend"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -2836,11 +3010,11 @@ class local_intelliboard_external extends external_api {
         }
 
         return $this->get_report_data("
-            SELECT ra.id,
+            SELECT CONCAT(ra.userid, '_', c.id) as id,
                 cri.gradepass,
                 u.email,
                 ra.userid,
-                ra.timemodified as started,
+                MAX(ra.timemodified) as started,
                 c.id as cid,
                 c.fullname,
                 c.startdate,
@@ -2872,7 +3046,7 @@ class local_intelliboard_external extends external_api {
                         GROUP BY gi.courseid) git ON git.courseid=c.id
                 LEFT JOIN (SELECT cmc.userid, cm.course, COUNT(cmc.id) as completed FROM {course_modules_completion} cmc, {course_modules} cm WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id $completion GROUP BY cm.course, cmc.userid) cmc ON cmc.course = c.id AND cmc.userid = u.id
             WHERE u.id > 0 $sql_filter
-            GROUP BY ra.id, ra.userid, ctx.instanceid,cri.gradepass, git.average, u.email, c.id ,cmc.completed, u.firstname, u.lastname, lit.timespend, lit.visits, c.enablecompletion, cc.timecompleted $sql_having $sql_order", $params);
+            GROUP BY ra.userid, ctx.instanceid,cri.gradepass, git.average, u.email, c.id ,cmc.completed, u.firstname, u.lastname, lit.timespend, lit.visits, c.enablecompletion, cc.timecompleted $sql_having $sql_order", $params);
     }
     public function report46($params)
     {
@@ -2882,9 +3056,20 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
 
-        $columns = array_merge(array("firstname","lastname", "email", "course_name", "role", "lsl.all_count", "user_action", "action_role", "action", "timecreated"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "firstname",
+            "lastname",
+            "email",
+            "course_name",
+            "role",
+            "lsl.all_count",
+            "user_action",
+            "action_role",
+            "action",
+            "timecreated"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "ra.userid");
+        $sql_columns = $this->get_columns($params, ["ra.userid"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["ra.userid" => "users", "c.id" => "courses"]);
@@ -2942,9 +3127,11 @@ class local_intelliboard_external extends external_api {
     public function report66($params)
     {
         global $CFG;
-        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "u.idnumber", "course", "assignment", "a.duedate", "s.status", "grade", "u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country",""), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname", "u.lastname", "u.email", "u.idnumber", "course", "assignment", "a.duedate", "s.status", "grade", "u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country",""
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -3168,7 +3355,7 @@ class local_intelliboard_external extends external_api {
         }
 
         if($params->custom2 == 2){
-            $sql_columns = $this->get_columns($params, "u.id");
+            $sql_columns = $this->get_columns($params, ["u.id"]);
             $sql_having = $this->get_filter_sql($params, $columns);
             $sql_order = $this->get_order_sql($params, $columns);
             $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -3206,7 +3393,7 @@ class local_intelliboard_external extends external_api {
             $cert_id_field = 'certificateid';
         }
 
-        $sql_columns = $this->get_columns($params, "mu.id");
+        $sql_columns = $this->get_columns($params, ["mu.id", "mco"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["mu.id" => "users", "mc.course" => "courses"]);
@@ -3258,7 +3445,7 @@ class local_intelliboard_external extends external_api {
             "cc.timecompleted", "grade"),
             $this->get_filter_columns($params)
         );
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -3297,6 +3484,8 @@ class local_intelliboard_external extends external_api {
             LEFT JOIN {feedback_completed} mfc ON mfc.id = mfv.completed
             LEFT JOIN {user} u ON mfc.userid = u.id
             LEFT JOIN {course} c ON c.id = mf.course
+            LEFT JOIN {modules} m ON m.name = 'feedback'
+            LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = mf.id
             LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
             LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
             LEFT JOIN {course_completions} cc ON cc.userid = u.id AND cc.course = c.id
@@ -3329,7 +3518,7 @@ class local_intelliboard_external extends external_api {
             "cc.timecompleted"),
             $this->get_filter_columns($params)
         );
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -3371,6 +3560,7 @@ class local_intelliboard_external extends external_api {
         $columns = array_merge(array(
             "u.firstname",
             "u.lastname",
+            "u.email",
             "c.fullname",
             "c.shortname",
             "category",
@@ -3388,7 +3578,7 @@ class local_intelliboard_external extends external_api {
         );
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_columns .= $this->get_modules_sql($params->custom);
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -3398,6 +3588,8 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
+
+        $sqljoin = $this->get_suspended_sql($params);
 
         if($params->custom2){
             $sql = $this->get_filter_in_sql($params->custom2, 'roleid');
@@ -3432,6 +3624,7 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {course_categories} ca ON ca.id = c.category
                 LEFT JOIN {course_modules} cm ON cm.id = l.param
                 LEFT JOIN {modules} m ON m.id = cm.module
+                {$sqljoin}
             WHERE l.page = 'module' $sql_filter $sql_having $sql_order", $params);
     }
     public function report80($params)
@@ -3514,7 +3707,7 @@ class local_intelliboard_external extends external_api {
             "lit.lastaccess"),
             $this->get_filter_columns($params)
         );
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_columns .= $this->get_modules_sql('');
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
@@ -3543,9 +3736,19 @@ class local_intelliboard_external extends external_api {
     }
     public function report82($params)
     {
-        $columns = array_merge(array("u.firstname","u.lastname","c.fullname","c.shortname","forums","discussions","posts","visits","timespend"),$this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "c.fullname",
+            "c.shortname",
+            "forums",
+            "discussions",
+            "posts",
+            "visits",
+            "timespend"
+        ),$this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -3604,9 +3807,18 @@ class local_intelliboard_external extends external_api {
 
     public function report83($params)
     {
-        $columns = array_merge(array("u.firstname","u.lastname","c.fullname","c.shortname","visits","timespend","enrolled","completed"),$this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "c.fullname",
+            "c.shortname",
+            "visits",
+            "timespend",
+            "enrolled",
+            "completed"
+        ),$this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -3662,9 +3874,20 @@ class local_intelliboard_external extends external_api {
 
     public function report84($params)
     {
-        $columns = array_merge(array("u.firstname","u.lastname","c.fullname","c.shortname","assignments","completed","submissions","grades","visits","timespend"),$this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "c.fullname",
+            "c.shortname",
+            "assignments",
+            "completed",
+            "submissions",
+            "grades",
+            "visits",
+            "timespend"
+        ),$this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -3734,7 +3957,7 @@ class local_intelliboard_external extends external_api {
             "loggedout"),
             $this->get_filter_columns($params)
         );
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
@@ -3893,7 +4116,7 @@ class local_intelliboard_external extends external_api {
             "tr.jde_eeid"),
             $this->get_filter_columns($params)
         );
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
@@ -3952,8 +4175,10 @@ class local_intelliboard_external extends external_api {
             'course_fullname',
             'course_shortname',
             'category',
-            'c.startdate'), $this->get_filter_columns($params));
+            'c.startdate'
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["g.userid" => "users", "c.id" => "courses"]);
@@ -3974,6 +4199,7 @@ class local_intelliboard_external extends external_api {
                 c.startdate,
                 $grade_avg AS average_grade,
                 COUNT(DISTINCT g.id) AS grades
+                {$sql_columns}
             FROM {grade_outcomes} o
                 LEFT JOIN {course} c ON c.id = o.courseid
                 LEFT JOIN {course_categories} ca ON ca.id = c.category
@@ -4057,7 +4283,7 @@ class local_intelliboard_external extends external_api {
         );
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
         $sql_filter .= $this->get_filterdate_sql($params, "u.timecreated");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
@@ -4116,7 +4342,7 @@ class local_intelliboard_external extends external_api {
         );
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
@@ -4158,7 +4384,7 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array("u.id", "u.firstname", "u.lastname", "u.email", "submitted", "attempted","u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -4188,8 +4414,11 @@ class local_intelliboard_external extends external_api {
     }
     public function report95($params)
     {
-        $columns = array_merge(array( "c.id", "c.fullname", "submitted", "attempted"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "c.id", "c.fullname", "submitted", "attempted"
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses", "qa.userid" => "users"]);
@@ -4202,6 +4431,7 @@ class local_intelliboard_external extends external_api {
                c.fullname,
                COUNT(DISTINCT(qa.quiz)) as submitted,
                COUNT(DISTINCT(qa.id)) as attempted
+               {$sql_columns}
             FROM {quiz_attempts} qa, {quiz} q, {course} c
             WHERE qa.quiz = q.id AND c.id = q.course $sql_filter
             GROUP BY c.id $sql_having $sql_order", $params);
@@ -4232,6 +4462,7 @@ class local_intelliboard_external extends external_api {
         global $CFG;
         $columns = array_merge(array("c.id", "c.fullname", "c.shortname","category", "c.startdate", "ue.enrolled", "x.users", "inactiveusers", "cc.completed", "x.lastaccess", "timespend", "visits","teacher"), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
@@ -4267,6 +4498,7 @@ class local_intelliboard_external extends external_api {
                         JOIN {context} AS ctx ON ctx.id = ra.contextid
                       WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles
                    ) AS teacher
+                   {$sql_columns}
             FROM {course} c
             LEFT JOIN {course_categories} ca ON ca.id = c.category
             LEFT JOIN (SELECT course, COUNT(*) AS completed FROM {course_completions} WHERE timecompleted > 0 GROUP BY course) cc ON cc.course = c.id
@@ -4285,7 +4517,7 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array("u.id", "u.firstname", "u.lastname", "u.email", "c.fullname", "c.shortname","category", "visits", "timespend", "timecompleted", "timecompleted"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -4345,7 +4577,7 @@ class local_intelliboard_external extends external_api {
             "u.currentlogin",
             "u.lastip"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
@@ -4432,8 +4664,10 @@ class local_intelliboard_external extends external_api {
 
     public function report71($params){
         global $CFG;
-        $columns = array_merge(array("u.firstname", "u.lastname","ue.timecreated", "e.enrol", "e.cost", "c.fullname"), $this->get_filter_columns($params));
-        $sql_columns = $this->get_columns($params, "u.id");
+        $columns = array_merge(array(
+            "u.firstname", "u.lastname","ue.timecreated", "e.enrol", "e.cost", "c.fullname"
+        ), $this->get_filter_columns($params));
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -4475,8 +4709,11 @@ class local_intelliboard_external extends external_api {
     public function report70($params){
         global $DB;
 
-        $columns = array("c.fullname", "forum", "d.name", "posts", "fp.student_posts", "ratio", "d.timemodified", "user", "");
+        $columns = array_merge(array(
+            "c.fullname", "forum", "d.name", "posts", "fp.student_posts", "ratio", "d.timemodified", "user", ""
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
@@ -4559,6 +4796,7 @@ class local_intelliboard_external extends external_api {
                     CONCAT(u.firstname, ' ', u.lastname) as user,
                     count(distinct p.id) as posts, d.timemodified,
                     MAX(fp.student_posts) AS student_posts, round((count(distinct p.id) / MAX(fp.student_posts) ), 2) as ratio
+                    {$sql_columns}
                 FROM {role_assignments} AS ra
                 LEFT JOIN {user} u ON u.id = ra.userid
                 LEFT JOIN {context} AS ctx ON ctx.id = ra.contextid
@@ -4566,6 +4804,8 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {".$forum_table."_discussions} d ON d.course = c.id
                 LEFT JOIN {".$forum_table."} f ON f.id = d.forum
                 LEFT JOIN {".$forum_table."_posts} p ON p.userid = ra.userid AND p.discussion =d.id
+                LEFT JOIN {modules} m ON m.name = '{$forum_table}'
+                LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = f.id
                 LEFT JOIN (
                        SELECT p.discussion AS id, count(distinct p.id) as student_posts FROM {role_assignments} AS ra
                           LEFT JOIN {context} AS ctx ON ctx.id = ra.contextid
@@ -4590,7 +4830,7 @@ class local_intelliboard_external extends external_api {
         global $DB;
         $columns = array_merge(array("l.timecreated", "l.userid", "u.firstname", "u.lastname", "u.email", "course", "c.shortname","category", "l.objecttable", "activity", "l.origin", "l.ip"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -4606,8 +4846,8 @@ class local_intelliboard_external extends external_api {
             $modules = $this->get_modules_sql($list, true);
             $where = [];
             foreach ($modules as $module) {
-              $where[] = $DB->sql_like('l.objecttable', ":".$module->name, false, false);
-              $this->params[$module->name] = "%".$module->name."%";
+              $where[] = $DB->sql_like('l.objecttable', ":objecttable_".$module->name, false, false);
+              $this->params['objecttable_'.$module->name] = "%".$module->name."%";
             }
             $sql_filter .= ' AND ('.implode(' OR ',$where).')';
             //$sql_filter .= $this->get_filter_in_sql($list,'m.id');
@@ -4898,11 +5138,13 @@ class local_intelliboard_external extends external_api {
     }
     function report99($params)
     {
-        $columns = array_merge(array("u.firstname","u.lastname","u.email","course","name","dateissued","dateexpire"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname","u.lastname","u.email","course","name","dateissued","dateexpire"
+        ), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filterdate_sql($params, "bi.dateissued");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, 'c.id');
@@ -4975,8 +5217,11 @@ class local_intelliboard_external extends external_api {
     function report33($params)
     {
         global $CFG;
-        $columns = array("c.shortname","cou.fullname","modules","users", "enrolled_student", "users_completed");
+        $columns = array_merge(array(
+            "c.shortname","cou.fullname","modules","users", "enrolled_student", "users_completed"
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null, "cou"]);
         $sql_filter = $this->get_teacher_sql($params, ["ra.userid" => "users", "cou" => "cc.courseid"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'cc.courseid');
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -5009,6 +5254,7 @@ class local_intelliboard_external extends external_api {
               COUNT(DISTINCT ra.userid) as enrolled_student,
               COUNT(DISTINCT cou_com.userid) as users_completed,
               $group_concat as modules
+              {$sql_columns}
             FROM {competency_coursecomp} cc
               LEFT JOIN {competency} c ON c.id=cc.competencyid
               LEFT JOIN {competency_usercompcourse} cu ON cu.courseid=cc.courseid AND cu.competencyid=c.id AND cu.proficiency=1
@@ -5024,12 +5270,14 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
         require_once ($CFG->dirroot . "/competency/classes/competency.php");
-        $columns = array_merge(array("u.firstname","u.lastname","course","comu.grade","comu.proficiency"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname","u.lastname","course","comu.grade","comu.proficiency"
+        ), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $learner_roles = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
         $this->params['competency_id'] = clean_param($params->custom, PARAM_INT);
 
@@ -5061,12 +5309,19 @@ class local_intelliboard_external extends external_api {
     }
     function report100($params)
     {
-        $columns = array_merge(array("u.firstname","u.lastname","cp.name","cp.timecreated","cp.status","progress"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "cp.name",
+            "cp.timecreated",
+            "cp.status",
+            "progress"
+        ), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $this->params['template_id'] = (int)$params->custom;
 
         return $this->get_report_data("
@@ -5090,11 +5345,13 @@ class local_intelliboard_external extends external_api {
     }
     function report101($params)
     {
-        $columns = array_merge(array("course","forum","discussion","post","fp.created","u.firstname","u.lastname","last_reply_time","count_reply","last_reply_time","last_reply_firstname"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "course","forum","discussion","post","fp.created","u.firstname","u.lastname","last_reply_time","count_reply","last_reply_time","last_reply_firstname"
+        ), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filterdate_sql($params, "fp.created");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, 'f.course');
@@ -5124,6 +5381,8 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {".$forum_table."_posts} fp ON fp.discussion=fd.id
               LEFT JOIN {course} c ON c.id=f.course
               LEFT JOIN {user} u ON u.id=fp.userid
+              LEFT JOIN {modules} m ON m.name = '{$forum_table}'
+              LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = f.id
               $sql_join
               LEFT JOIN (SELECT *
                           FROM(
@@ -5162,11 +5421,12 @@ class local_intelliboard_external extends external_api {
             "ass_sl.timemodified",
             "ass_gl.grade",
             "ass_gl.timemodified",
-            "last_submission_file.filename"), $this->get_filter_columns($params));
+            "last_submission_file.filename"
+        ), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filterdate_sql($params, "ass_s.timecreated");
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
@@ -5246,9 +5506,9 @@ class local_intelliboard_external extends external_api {
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["t.userid" => "users", "t.courseid" => "courses"]);
-        $sql_columns1 = $this->get_columns($params, "u.id");
-        $sql_columns2 = $this->get_columns($params, "u.id");
-        $sql_columns3 = $this->get_columns($params, "u.id");
+        $sql_columns1 = $this->get_columns($params, ["u.id"]);
+        $sql_columns2 = $this->get_columns($params, ["u.id"]);
+        $sql_columns3 = $this->get_columns($params, ["u.id"]);
         $sql_filter1 = $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter1 .= $this->get_filter_user_sql($params, "u.");
         $sql_filter1 .= $this->get_filter_course_sql($params, "c.");
@@ -5404,7 +5664,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
 
         $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra_t.roleid");
@@ -5466,11 +5726,17 @@ class local_intelliboard_external extends external_api {
     {
         global $DB;
 
-        $sql = "";
-        if($params->courseid){
-            $sql .= " WHERE ".$this->get_filter_in_sql($params->courseid,'course',false);
-        }
-        return $DB->get_records_sql("SELECT id, name FROM {assign} $sql", $this->params);
+        $sql = $this->get_teacher_sql($params, ["c.id" => "courses"]);
+        $sql .= $this->get_filter_in_sql($params->courseid,'a.course');
+
+
+        return $DB->get_records_sql("
+            SELECT a.id,
+                a.name,
+                c.id AS courseid,
+                c.fullname AS coursename
+            FROM {assign} a
+                JOIN {course} c ON c.id = a.course WHERE c.id > 0 $sql", $this->params);
     }
 
     function report105($params)
@@ -5479,7 +5745,7 @@ class local_intelliboard_external extends external_api {
 
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
         $sql_filter .= $this->get_filter_in_sql($params->custom2,'c.id');
 
@@ -5723,7 +5989,7 @@ class local_intelliboard_external extends external_api {
             "g.timemodified"
             ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -5813,6 +6079,7 @@ class local_intelliboard_external extends external_api {
             "other_platform",
         ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["lit.userid" => "users", "lit.courseid" => "courses"]);
@@ -5860,6 +6127,7 @@ class local_intelliboard_external extends external_api {
               ROUND((SUM(CASE WHEN lit.useros='BlackBerry' THEN lit.timespend ELSE 0 END)*100)/SUM(lit.timespend),2) AS blackberry,
               ROUND((SUM(CASE WHEN lit.useros='Mobile' THEN lit.timespend ELSE 0 END)*100)/SUM(lit.timespend),2) AS mobile,
               ROUND((SUM(CASE WHEN lit.useros='Unknown OS Platform' OR lit.useros IS NULL THEN lit.timespend ELSE 0 END)*100)/SUM(lit.timespend),2) AS other_platform
+              {$sql_columns}
             FROM {local_intelliboard_tracking} lit
               LEFT JOIN {course} c ON c.id = lit.courseid
               LEFT JOIN {course_categories} cc ON cc.id = c.category
@@ -5912,7 +6180,7 @@ class local_intelliboard_external extends external_api {
             "other_platform",
         ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -6012,6 +6280,8 @@ class local_intelliboard_external extends external_api {
             $datefilter = "AND (lil.timepoint BETWEEN {$params->timestart} AND {$params->timefinish})";
         }
 
+        $sql_columns1 = $this->get_columns($params, [null]);
+        $sql_columns2 = $this->get_columns($params, [null]);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "lit.courseid");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
@@ -6074,6 +6344,7 @@ class local_intelliboard_external extends external_api {
 						  CASE WHEN lid.timepoint>=15 AND lid.timepoint<18 THEN 5 ELSE
 							CASE WHEN lid.timepoint>=18 AND lid.timepoint<21 THEN 6 ELSE
 							  CASE WHEN lid.timepoint>=21 AND lid.timepoint<=23 THEN 7 ELSE 0 END END END END END END END AS time_of_day
+                  {$sql_columns1}
 
 				FROM {local_intelliboard_tracking} lit
 				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
@@ -6164,6 +6435,7 @@ class local_intelliboard_external extends external_api {
 				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 0 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS sunday_percent,
 
 				  0 AS time_of_day
+                  {$sql_columns2}
 
 				FROM {local_intelliboard_tracking} lit
 				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
@@ -6242,6 +6514,7 @@ class local_intelliboard_external extends external_api {
 						  IF(lid.timepoint>=15 && lid.timepoint<18,5,
 							IF(lid.timepoint>=18 && lid.timepoint<21,6,
 							  IF(lid.timepoint>=21 && lid.timepoint<=23,7,0))))))) AS time_of_day
+                  {$sql_columns1}
 
 				FROM {local_intelliboard_tracking} lit
 				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
@@ -6325,6 +6598,7 @@ class local_intelliboard_external extends external_api {
 				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 6,lil.timespend,0))*100/SUM(lil.timespend), 2) AS sunday_percent,
 
 				  0 AS time_of_day
+                  {$sql_columns2}
 
 				FROM {local_intelliboard_tracking} lit
 				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
@@ -6409,8 +6683,8 @@ class local_intelliboard_external extends external_api {
             $datefilter = "AND (lil.timepoint BETWEEN {$params->timestart} AND {$params->timefinish})";
         }
 
-        $sql_columns1 = $this->get_columns($params, "u.id");
-        $sql_columns2 = $this->get_columns($params, "u.id");
+        $sql_columns1 = $this->get_columns($params, ["u.id"]);
+        $sql_columns2 = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
 
@@ -6872,7 +7146,7 @@ class local_intelliboard_external extends external_api {
             "added_course_module",
         ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -6973,7 +7247,7 @@ class local_intelliboard_external extends external_api {
             "modified_course_module",
         ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -7080,7 +7354,7 @@ class local_intelliboard_external extends external_api {
             "grade"
         ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -7117,7 +7391,7 @@ class local_intelliboard_external extends external_api {
               $grade_single AS grade
               $sql_columns
             FROM {logstore_standard_log} log
-                JOIN {course_module}s cm ON cm.id = log.contextinstanceid
+                JOIN {course_modules} cm ON cm.id = log.contextinstanceid
                 JOIN {wiki} w ON w.id = cm.instance
                 JOIN {user} u ON u.id = log.userid
                 JOIN {course} c ON c.id = log.courseid
@@ -7141,7 +7415,7 @@ class local_intelliboard_external extends external_api {
             "avg_grade"
         ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["ra.userid" => "users", "c.id" => "courses"]);
@@ -7196,7 +7470,7 @@ class local_intelliboard_external extends external_api {
             "visits"
         ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -7257,7 +7531,7 @@ class local_intelliboard_external extends external_api {
 
     function report119($params){
 
-        $columns = array(
+        $columns = array_merge(array(
             "c.fullname",
             "ch.name",
             "lil.timepoint",
@@ -7266,8 +7540,9 @@ class local_intelliboard_external extends external_api {
             "students",
             "student_messages",
             "teacher_messages"
-        );
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["ra.userid" => "users", "c.id" => "courses"]);
@@ -7294,6 +7569,7 @@ class local_intelliboard_external extends external_api {
               COUNT(DISTINCT CASE WHEN $learner_roles3 THEN ra.userid ELSE NULL END) AS students,
               COUNT(DISTINCT CASE WHEN $learner_roles4 THEN chm.id ELSE NULL END) AS student_messages,
               COUNT(DISTINCT CASE WHEN $teacher_roles3 THEN chm.id ELSE NULL END) AS teacher_messages
+              {$sql_columns}
 
             FROM {chat} ch
               LEFT JOIN {course} c ON ch.course=c.id
@@ -7590,9 +7866,10 @@ class local_intelliboard_external extends external_api {
             "u.email",
             "gr.groups",
             "c.fullname",
-            "s.name"), $this->get_filter_columns($params));
+            "s.name"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -7624,6 +7901,8 @@ class local_intelliboard_external extends external_api {
             JOIN {survey} s ON s.id = a.survey
             JOIN {user} u ON u.id = a.userid
             JOIN {course} c ON c.id = s.course
+       LEFT JOIN {modules} m ON m.name = 'survey'
+       LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = s.id
             LEFT JOIN (SELECT m.userid, g.courseid, $group_concat2 AS groups FROM {groups} g, {groups_members} m WHERE m.groupid = g.id GROUP BY m.userid, g.courseid) gr ON gr.userid = u.id AND gr.courseid = c.id
             WHERE a.id > 0 $sql_filter
             GROUP BY u.id, s.id, c.fullname, gr.groups $sql_having $sql_order", $params);
@@ -7645,9 +7924,10 @@ class local_intelliboard_external extends external_api {
             "u.email",
             "gr.groups",
             "c.fullname",
-            "q.questionnairename"), $this->get_filter_columns($params));
+            "q.questionnairename"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -7691,23 +7971,26 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {questionnaire_response} r ON r.{$responce_questionnaireid} = q.questionnaire
                 JOIN {user} u ON u.id = r.{$responce_user_field}
                 JOIN {course} c ON c.id = q.course
+           LEFT JOIN {modules} m ON m.name = 'questionnaire'
+           LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = q.questionnaire
                 LEFT JOIN (SELECT m.userid, g.courseid, $group_concat AS groups FROM {groups} g, {groups_members} m WHERE m.groupid = g.id GROUP BY m.userid, g.courseid) gr ON gr.userid = u.id AND gr.courseid = c.id
                 WHERE r.complete = 'y' $sql_filter
         GROUP BY u.id, r.id, c.id, q.questionnaire, q.questionnairename, gr.groups $sql_having $sql_order", $params);
     }
      public function report126($params)
     {
-        $columns = array_merge( array(
-                            "u.firstname",
-                            "u.lastname",
-                            "u.email",
-                            "c.fullname",
-                            "e.cost",
-                            "e.currency",
-                            "p.payment_status",
-                            "p.timeupdated"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.email",
+            "c.fullname",
+            "e.cost",
+            "e.currency",
+            "p.payment_status",
+            "p.timeupdated"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -7750,7 +8033,7 @@ class local_intelliboard_external extends external_api {
                             "s.payment_status",
                             "s.timeupdated"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -7796,10 +8079,11 @@ class local_intelliboard_external extends external_api {
         try {
             require($CFG->libdir.'/gradelib.php');
 
-            $columns = array_merge( array(
+            $columns = array_merge(array(
                 "u.firstname",
                 "u.lastname",
-                "u.idnumber"), $this->get_filter_columns($params));
+                "u.idnumber"
+            ), $this->get_filter_columns($params));
 
             $courses = explode(',', $params->courseid);
             $items = array();
@@ -7821,7 +8105,7 @@ class local_intelliboard_external extends external_api {
             }
             $columns[] = 'c.fullname';
 
-            $sql_columns = $this->get_columns($params, "u.id");
+            $sql_columns = $this->get_columns($params, ["u.id"]);
             $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
             $sql_filter .= $this->get_filter_course_sql($params, "c.");
             $sql_filter .= $this->get_filter_user_sql($params, "u.");
@@ -7883,7 +8167,7 @@ class local_intelliboard_external extends external_api {
         if (!$params->custom or !$params->users) {
             return [];
         }
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, array("c.id"=>"courses"));
@@ -8041,8 +8325,11 @@ class local_intelliboard_external extends external_api {
     function report140($params)
     {
         global $CFG;
-        $columns = array("fi.name","avg_value");
+        $columns = array_merge(array(
+            "fi.name","avg_value"
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null, null]);
         $sql_filter = $this->get_filter_in_sql($params->custom,'f.id',false);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
@@ -8059,12 +8346,14 @@ class local_intelliboard_external extends external_api {
               fi.id,
               fi.name,
 			  AVG($avg_val) as avg_value
-
+              $sql_columns
 			FROM {feedback} f
 			  JOIN {feedback_completed} fc ON fc.feedback=f.id
 			  JOIN {feedback_item} fi ON fi.feedback=f.id
 			  JOIN {feedback_value} fv ON fv.completed=fc.id AND fv.item=fi.id
-			WHERE $sql_filter GROUP BY fi.id $sql_having $sql_order", $params);
+         LEFT JOIN {modules} m ON m.name = 'feedback'
+         LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = f.id
+			WHERE f.id > 0 $sql_filter GROUP BY fi.id $sql_having $sql_order", $params);
     }
 
     function report141($params)
@@ -8084,9 +8373,10 @@ class local_intelliboard_external extends external_api {
             "atd_percent",
             "grade",
             "grade",
-            "teacher"), $this->get_filter_columns($params));
+            "teacher"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -8195,9 +8485,10 @@ class local_intelliboard_external extends external_api {
             "course_completion",
             "m.modules",
             "cmc.completed",
-            "teacher"), $this->get_filter_columns($params));
+            "teacher"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -8289,7 +8580,7 @@ class local_intelliboard_external extends external_api {
                           LEFT JOIN {local_intelliboard_tracking} lit ON lit.page='course' AND lit.param=c.id AND lit.userid=u.id
                         WHERE c.id > 0 $sql_filter GROUP BY id, userid, u.firstname, u.lastname, u.email, cohorts, ue.timecreated,
                               u.lastlogin, lit.firstaccess, lit.lastaccess, m.modules, cmc.completed, course_completion, course_id,
-                              course_name, teacher {$sql_columns}
+                              course_name, teacher {$this->groupAdditionalColumns}
                               $sql_having $sql_order", $params);
 
     }
@@ -8297,7 +8588,9 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
 
-        $columns = array_merge(array("u.firstname","u.lastname","u.email","lit.firstaccess","u.idnumber"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname","u.lastname","u.email","lit.firstaccess","u.idnumber"
+        ), $this->get_filter_columns($params));
         $modules = $this->get_course_modules($params);
         $sql_select = '';
         $grade = intelliboard_grade_sql(false, $params,'gg.');
@@ -8312,7 +8605,7 @@ class local_intelliboard_external extends external_api {
             $sql_select .= ", (SELECT lit.timespend FROM {local_intelliboard_tracking} lit WHERE lit.userid=u.id AND lit.param=$module->id AND lit.page='module') AS timespend_$module->id";
             $columns[] = "timespend_$module->id";
         }
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "ctx.instanceid" => "courses"]);
@@ -8389,7 +8682,7 @@ class local_intelliboard_external extends external_api {
             $this->get_filter_columns($params)
         );
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_having  = $this->get_filter_sql($params, $columns);
         $sql_filter  = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -8419,7 +8712,7 @@ class local_intelliboard_external extends external_api {
                        AS numberofactiveattendees
                        {$sql_columns}
                   FROM {local_intelliboard_bbb_meet} AS m
-            INNER JOIN {course} AS c ON c.id = m.courseid
+                  JOIN {course} AS c ON c.id = m.courseid
              LEFT JOIN {user} AS u ON u.id = m.ownerid
                  WHERE m.endtime IS NOT NULL {$sql_filter} {$sql_having} {$sql_order}";
 
@@ -8442,7 +8735,7 @@ class local_intelliboard_external extends external_api {
         );
 
         $sql_having  = $this->get_filter_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter  = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
@@ -8488,7 +8781,7 @@ class local_intelliboard_external extends external_api {
             "u.email",
             "teacher"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -8561,8 +8854,10 @@ class local_intelliboard_external extends external_api {
             "assignment_name",
             "assignment_id",
             "cm.instance",
-            "oa2.component"), $this->get_filter_columns($params));
+            "oa2.component"
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -8597,6 +8892,7 @@ class local_intelliboard_external extends external_api {
                                     JOIN {context} AS ctx ON ctx.id = ra.contextid
                                 WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles LIMIT 1
                             ) AS teacher
+                            {$sql_columns}
                         FROM {outcome_attempts} oa
                           LEFT JOIN {outcome_used_areas} oua ON oua.id = oa.outcomeusedareaid
                           LEFT JOIN {course_modules} cm ON cm.id = oua.cmid
@@ -8619,8 +8915,10 @@ class local_intelliboard_external extends external_api {
             "teacher",
             "a.name",
             "oa.component",
-            "o.description"), $this->get_filter_columns($params));
+            "o.description"
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -8647,6 +8945,7 @@ class local_intelliboard_external extends external_api {
                                     JOIN {context} AS ctx ON ctx.id = ra.contextid
                                 WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles LIMIT 1
                             ) AS teacher
+                            {$sql_columns}
                         FROM {outcome_used_areas} oua
                            LEFT JOIN {course_modules} cm ON cm.id = oua.cmid
                            LEFT JOIN {course} c ON cm.course = c.id
@@ -8691,7 +8990,7 @@ class local_intelliboard_external extends external_api {
         global $CFG;
         $columns = array_merge(array("la.id", "u.id", "la.timeseen", "c.fullname", "c.shortname", "u.firstname", "u.lastname", "u.email", "u.username", "t.firstname", "t.lastname", "t.email", "t.username", "l.name", "lp.contents", "useranswer", "teacher_feedback"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_user_sql($params, "u.");
@@ -8753,8 +9052,11 @@ class local_intelliboard_external extends external_api {
     }
     function report155($params)
     {
-        $columns = ["c.fullname", "completed_learners", "not_completed_learners", "not_accessed_learners", "all_learners"];
+        $columns = array_merge([
+            "c.fullname", "completed_learners", "not_completed_learners", "not_accessed_learners", "all_learners"
+        ], $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -8772,6 +9074,7 @@ class local_intelliboard_external extends external_api {
                    COUNT(DISTINCT CASE WHEN comp.userid IS NOT NULL THEN u.id ELSE NULL END) as completed_learners,
                    COUNT(DISTINCT CASE WHEN comp.userid IS NULL AND lit.id IS NOT NULL THEN u.id ELSE NULL END) as not_completed_learners,
                    COUNT(DISTINCT CASE WHEN lit.id IS NULL THEN u.id ELSE NULL END) as not_accessed_learners
+                   {$sql_columns}
             FROM {role_assignments} ra
                    JOIN {context} AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                    JOIN {course} c ON c.id = ctx.instanceid
@@ -8793,7 +9096,9 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
 
-        $columns = array_merge(array("ra.id", "c.fullname", "c.shortname", "u.email", "user_name"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "ra.id", "c.fullname", "c.shortname", "u.email", "user_name"
+        ), $this->get_filter_columns($params));
         $modules = $this->get_course_modules($params);
         $sql_select = '';
         foreach($modules['modules'] as $module){
@@ -8810,7 +9115,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filterdate_sql($params, "ra.timemodified");
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $sql_join = $this->get_suspended_sql($params);
 
@@ -8890,7 +9195,7 @@ class local_intelliboard_external extends external_api {
             $this->get_filter_columns($params)
         );
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_having  = $this->get_filter_sql($params, $columns);
         $sql_filter  = $this->get_filterdate_sql($params, "f.timecreated");
@@ -8948,6 +9253,7 @@ class local_intelliboard_external extends external_api {
                        SUM(
                            CASE WHEN t.snapshot = 1 AND t.roleid IN({$rolesofstudent}) THEN t.filesize ELSE 0 END
                           ) AS snapshots_size_student
+                       {$sql_columns}
                   FROM (SELECT DISTINCT f.contenthash, f.filesize, f.filearea, cm.course, co.id, co.fullname AS coursename,
                                CASE WHEN filename LIKE '%.mp4' THEN 1 ELSE 0 END AS video,
                                CASE WHEN filename LIKE 'poodllfile%.mp3' THEN 1 ELSE 0 END AS audio,
@@ -8957,7 +9263,6 @@ class local_intelliboard_external extends external_api {
                                     ELSE 0
                                END AS snapshot,
                                ra.roleid
-                               {$sql_columns}
                           FROM {files} f
                           JOIN {context} c ON c.id = f.contextid
                           JOIN {course_modules} cm ON cm.id = c.instanceid
@@ -8970,6 +9275,7 @@ class local_intelliboard_external extends external_api {
                                f.component IN ('assignsubmission_onlinepoodll', 'assignfeedback_poodll', 'question', 'mod_data')
                                {$sql_filter} {$sql_having} {$sql_order}
                        ) t
+                  JOIN {course} c ON c.id = t.id
               GROUP BY t.course, t.coursename";
         $this->params['coursecontextlevel'] = CONTEXT_COURSE;
 
@@ -8992,7 +9298,7 @@ class local_intelliboard_external extends external_api {
             $this->get_filter_columns($params)
         );
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_having  = $this->get_filter_sql($params, $columns);
         $sql_filter  = $this->get_filterdate_sql($params, "f.timecreated");
@@ -9010,6 +9316,7 @@ class local_intelliboard_external extends external_api {
                        SUM(CASE WHEN t.audio = 1 THEN t.filesize ELSE 0 END) AS audios_size,
                        SUM(CASE WHEN t.whiteboard = 1 THEN t.filesize ELSE 0 END) AS whiteboards_size,
                        SUM(CASE WHEN t.snapshot = 1 THEN t.filesize ELSE 0 END) AS snapshots_size
+                       {$sql_columns}
                   FROM (SELECT DISTINCT f.contenthash, f.id as fid, f.filesize, co.id, co.fullname AS coursename, f.contextid,
                                CASE WHEN filename LIKE '%.mp4' THEN 1 ELSE 0 END AS video,
                                CASE WHEN filename LIKE 'poodllfile%.mp3' THEN 1 ELSE 0 END AS audio,
@@ -9020,7 +9327,6 @@ class local_intelliboard_external extends external_api {
                                     WHEN q.name IS NOT NULL THEN q.name
                                     WHEN d.name IS NOT NULL THEN d.name
                                END AS activityname
-                               {$sql_columns}
                           FROM {files} f
                           JOIN {context} c ON c.id = f.contextid
                           JOIN {course_modules} cm ON cm.id = c.instanceid
@@ -9031,10 +9337,11 @@ class local_intelliboard_external extends external_api {
                      LEFT JOIN {data} d ON d.id = cm.instance AND cm.module = :databasemoduleid
                          WHERE f.filearea NOT LIKE 'draft' AND
                                (f.filename LIKE 'poodllfile%.mp3' OR f.filename LIKE '%.mp4' OR filename LIKE 'upfile_%.jpg') AND
-                               f.component IN ('assignsubmission_onlinepoodll', 'assignfeedback_poodll', 'question', 'mod_data')
+                               f.component NOT IN ('assignsubmission_onlinepoodll', 'assignfeedback_poodll', 'question', 'mod_data')
                                {$sql_filter} {$sql_having} {$sql_order}
                        ) t
-              GROUP BY coursename, activityname, contextid";
+                    JOIN {course} c ON c.id = t.id
+                GROUP BY coursename, activityname, contextid";
         $this->params['assignmoduleid'] = $modules['assign'];
         $this->params['quizmoduleid'] = $modules['quiz'];
         $this->params['databasemoduleid'] = $modules['data'];
@@ -9049,7 +9356,7 @@ class local_intelliboard_external extends external_api {
             $this->get_filter_columns($params)
         );
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_having  = $this->get_filter_sql($params, $columns);
         $sql_filter  = $this->get_filterdate_sql($params, "f.timecreated");
@@ -9063,8 +9370,8 @@ class local_intelliboard_external extends external_api {
                        SUM(CASE WHEN t.component = 'assignfeedback_poodll' THEN 1 ELSE 0 END) AS number_of_occurrences_feedback,
                        SUM(CASE WHEN t.component = 'question' THEN 1 ELSE 0 END) AS number_of_occurrences_question,
                        SUM(CASE WHEN t.component = 'mod_data' THEN 1 ELSE 0 END) AS number_of_occurrences_dbfield
+                       {$sql_columns}
                   FROM (SELECT DISTINCT f.contenthash, f.component, co.id AS course, cm.module, cm.instance, co.fullname AS coursename
-                               {$sql_columns}
                           FROM {files} f
                           JOIN {context} c ON c.id = f.contextid
                           JOIN {course_modules} cm ON cm.id = c.instanceid
@@ -9075,6 +9382,7 @@ class local_intelliboard_external extends external_api {
                                f.component IN ('assignsubmission_onlinepoodll', 'assignfeedback_poodll', 'question', 'mod_data')
                                {$sql_filter} {$sql_having} {$sql_order}
                        ) t
+                  JOIN {course} c ON c.id = t.course
               GROUP BY t.course, t.coursename";
 
         return $this->get_report_data($sql, $this->params);
@@ -9107,7 +9415,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
 
         $data = $this->get_report_data("
@@ -9157,9 +9465,10 @@ class local_intelliboard_external extends external_api {
             "last_taken",
             "numtakensessions",
             "points",
-            "atd_percent"), $this->get_filter_columns($params));
+            "atd_percent"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id", "c", "cm1"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -9206,6 +9515,8 @@ class local_intelliboard_external extends external_api {
                JOIN {enrol} e ON e.courseid=c.id
                JOIN {user_enrolments} ue ON ue.userid=u.id AND ue.enrolid=e.id
 
+               LEFT JOIN {modules} m1 ON m1.name = 'attendance'
+               LEFT JOIN {course_modules} cm1 ON cm1.module = m1.id AND cm1.course = c.id AND cm1.instance = a.id
                LEFT JOIN {attendance_sessions} ats ON ats.attendanceid=a.id
                LEFT JOIN {attendance_log} atl ON atl.studentid=u.id AND ats.id=atl.sessionid
                LEFT JOIN {attendance_statuses} stg ON stg.id = atl.statusid AND stg.deleted = 0 AND stg.visible = 1 AND stg.attendanceid=ats.attendanceid
@@ -9245,7 +9556,7 @@ class local_intelliboard_external extends external_api {
             $this->get_filter_columns($params)
         );
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_having  = $this->get_filter_sql($params, $columns);
         $sql_filter  = $this->get_filterdate_sql($params, "f.timecreated");
@@ -9286,9 +9597,11 @@ class local_intelliboard_external extends external_api {
 
     public function report163($params)
     {
-        $columns = array_merge(array( "u.username", "u.firstname", "u.lastname", "c.shortname", "c.fullname", "cc1.name", "gi.itemname", "grade", "lit.firstaccess", "graduated", "ul.timeaccess"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.username", "u.firstname", "u.lastname", "c.shortname", "c.fullname", "cc1.name", "gi.itemname", "grade", "lit.firstaccess", "graduated", "ul.timeaccess"
+        ), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -9366,7 +9679,9 @@ class local_intelliboard_external extends external_api {
     function report164($params)
     {
         global $CFG;
-        $columns = array_merge(array("c.fullname","u.firstname","u.lastname","u.email","u.username"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "c.fullname","u.firstname","u.lastname","u.email","u.username"
+        ), $this->get_filter_columns($params));
         $modules = $this->get_course_modules($params);
         $sql_select = '';
         $columns[] = "cohort_name";
@@ -9384,7 +9699,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_in_sql($params->cohortid,'coh_m.cohortid');
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $grade_single = intelliboard_grade_sql(true, $params);
         $completion = $this->get_completion($params, "cmc.");
@@ -9452,7 +9767,7 @@ class local_intelliboard_external extends external_api {
         );
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_columns .= $this->get_modules_sql($params->custom);
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -9526,7 +9841,7 @@ class local_intelliboard_external extends external_api {
         );
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
 
         $sql_filter = $this->get_filter_in_sql($params->custom2, "t.id");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
@@ -9574,7 +9889,7 @@ class local_intelliboard_external extends external_api {
             "cohorts"),
             $this->get_filter_columns($params)
         );
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $items = $DB->get_records('checklist_item', array('checklist'=> intval($params->custom), 'userid'=>0));
         foreach($items as $item){
             $sql_columns .= ", (SELECT CASE WHEN teachermark=1 THEN teachertimestamp ELSE usertimestamp END FROM {checklist_check} WHERE item = $item->id AND userid = u.id LIMIT 1) AS completed_item_$item->id";
@@ -9624,8 +9939,10 @@ class local_intelliboard_external extends external_api {
             FROM {role_assignments} ra
                    JOIN {context} AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                    JOIN {course} c ON c.id = ctx.instanceid
-                   JOIN {user} u ON u.id = ra.userid
                    JOIN {checklist} ch ON ch.course = c.id
+              LEFT JOIN {modules} m ON m.name = 'checklist'
+              LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = ch.id
+                   JOIN {user} u ON u.id = ra.userid
                    LEFT JOIN (SELECT checklist, COUNT(id) AS all_items FROM {checklist_item} WHERE checklist = :checklist2 AND userid = 0 GROUP BY checklist) che ON che.checklist = ch.id
                    LEFT JOIN (SELECT chk.userid, COUNT(DISTINCT chk.id) AS completed_items
                                 FROM {checklist_item} chm, {checklist_check} chk
@@ -9723,8 +10040,11 @@ class local_intelliboard_external extends external_api {
 
     public function report171($params)
     {
-        $columns = array("c.fullname", "f.name", "fd.name", "u.firstname", "u.lastname", "time_started", "students_accesed", "posts", "timespend");
+        $columns = array_merge(array(
+            "c.fullname", "f.name", "fd.name", "u.firstname", "u.lastname", "time_started", "students_accesed", "posts", "timespend"
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter_roles = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
@@ -9775,6 +10095,7 @@ class local_intelliboard_external extends external_api {
                           $sql_select AS students_accesed,
                           MIN(stat.timespend) AS timespend,
                           COUNT(DISTINCT CASE WHEN fp.parent>0 THEN fp.id ELSE NULL END) AS posts
+                          {$sql_columns}
                     FROM {forum} f
                       JOIN {forum_discussions} fd ON fd.forum=f.id
                       JOIN {user} u ON u.id=fd.userid
@@ -9807,7 +10128,7 @@ class local_intelliboard_external extends external_api {
             "not_accessed")
         );
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -9866,7 +10187,7 @@ class local_intelliboard_external extends external_api {
             "cmc2.timemodified"
           ));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -9998,7 +10319,7 @@ class local_intelliboard_external extends external_api {
             $this->get_filter_columns($params)
         );
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -10058,7 +10379,7 @@ class local_intelliboard_external extends external_api {
             "ue.timecreated",
           ));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -10176,34 +10497,48 @@ class local_intelliboard_external extends external_api {
             "u.idnumber",
             "u.firstname",
             "u.lastname",
-            "c.fullname",
             "c.shortname",
             "c.fullname",
+            "teacher",
             "m.name",
-            "grade",
-            "submission_date",
-            "g.timemodified",
+            "activity",
+            "ass.submitted",
+            "assignment_submission_graded",
+            "forum_posted_date",
+            "forum_graded",
+            "quiz_started_date",
+            "quiz_graded",
+            "glossary_submission_date",
+            "glossary_graded",
+            "choice_submission_date",
+            "choice_graded",
+            "overal_submission_date",
+            "overal_submission_graded",
+            "overal_submission_grade",
             "ul.timeaccess"),
             $this->get_filter_columns($params)
         );
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
-        //$sql_filter .= $this->get_filterdate_sql($params, "g.timemodified");
+        $sql_filter .= $this->get_filterdate_sql($params, "GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0))");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, 'c.id');
         $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_columns .= $this->get_modules_sql('');
-        $grade_single = intelliboard_grade_sql(false, $params);
+        $grade_avg = intelliboard_grade_sql(true, $params);
 
-        if ($params->timestart) {
-          $sql_having .= ($sql_having) ? "" : " HAVING id > 0";
-          $sql_having .= $this->get_filterdate_sql($params, "submission_date");;
-        }
+
+        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+        $sql_inner_filter1 = $this->get_filter_in_sql($params->courseid, 'm.course');
+        $sql_inner_filter2 = $this->get_filter_in_sql($params->courseid, 'm.course');
+        $sql_inner_filter3 = $this->get_filter_in_sql($params->courseid, 'm.course');
+        $sql_inner_filter4 = $this->get_filter_in_sql($params->courseid, 'm.course');
+        $sql_inner_filter5 = $this->get_filter_in_sql($params->courseid, 'm.course');
 
         return $this->get_report_data("
               SELECT
@@ -10215,10 +10550,26 @@ class local_intelliboard_external extends external_api {
                 c.shortname,
                 c.fullname,
                 m.name AS mod_name,
-                $grade_single AS grade,
-                CASE WHEN m.name = 'assign' THEN (SELECT MAX(timemodified) FROM {assign_submission} WHERE userid = u.id AND assignment = cm.instance AND status='submitted') ELSE '' END AS 'submission_date',
-                g.timemodified,
-                ul.timeaccess
+                ass.submitted AS assignment_submission_date,
+                ass.graded AS assignment_submission_graded,
+                f.posted AS forum_posted_date,
+                f.graded AS forum_graded,
+                q.started AS quiz_started_date,
+                q.graded AS quiz_graded,
+                gl.submitted AS glossary_submission_date,
+                gl.graded AS glossary_graded,
+                ch.submitted AS choice_submission_date,
+                ch.graded AS choice_graded,
+                ul.timeaccess,
+                GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0)) AS overal_submission_date,
+                GREATEST(COALESCE(ass.graded,0), COALESCE(f.graded,0), COALESCE(q.graded,0), COALESCE(gl.graded,0), COALESCE(ch.graded,0)) AS overal_submission_graded,
+                GREATEST(COALESCE(ass.grade,''), COALESCE(f.grade,''), COALESCE(q.grade,''), COALESCE(gl.grade,''), COALESCE(ch.grade,'')) AS overal_submission_grade,
+                 (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
+                            FROM {role_assignments} AS ra
+                                JOIN {user} u ON ra.userid = u.id
+                                JOIN {context} AS ctx ON ctx.id = ra.contextid
+                            WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles LIMIT 1
+                        ) AS teacher
                 $sql_columns
                 FROM {user_enrolments} ue
                   LEFT JOIN {enrol} e ON e.id = ue.enrolid
@@ -10227,8 +10578,69 @@ class local_intelliboard_external extends external_api {
                   LEFT JOIN {course_modules} cm ON cm.course = c.id
                   LEFT JOIN {modules} m ON m.id = cm.module
                   LEFT JOIN {user_lastaccess} ul ON ul.userid = u.id AND ul.courseid = c.id
-                  LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-                  LEFT JOIN {grade_grades} g ON gi.id = g.itemid AND g.userid = u.id
+
+                  LEFT JOIN (SELECT
+                            ass.userid,
+                            ass.assignment,
+                            MAX(ass.timecreated) AS submitted,
+                            MAX(g.timemodified) AS graded,
+                            $grade_avg AS grade
+                        FROM {assign_submission} ass
+                            JOIN {assign} m ON m.id=ass.assignment $sql_inner_filter1
+                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'assign' AND gi.iteminstance = ass.assignment
+                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ass.userid
+                        WHERE ass.status='submitted'
+                        GROUP BY ass.userid, ass.assignment) ass ON ass.userid=u.id AND ass.assignment=cm.instance AND m.name='assign'
+
+                  LEFT JOIN (SELECT
+                            fd.forum,
+                            fp.userid,
+                            MAX(fp.modified) AS posted,
+                            MAX(g.timemodified) AS graded,
+                            $grade_avg AS grade
+                        FROM {forum_discussions} fd
+                            JOIN {forum} m ON m.id=fd.forum $sql_inner_filter2
+                            LEFT JOIN {forum_posts} fp ON fp.discussion=fd.id
+                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'forum' AND gi.iteminstance = fd.forum
+                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = fp.userid
+                        GROUP BY fd.forum, fp.userid) f ON f.userid=u.id AND f.forum=cm.instance AND m.name='forum'
+
+                  LEFT JOIN (SELECT
+                            qa.quiz,
+                            qa.userid,
+                            MIN(qa.timestart) AS started,
+                            MAX(g.timemodified) AS graded,
+                            $grade_avg AS grade
+                        FROM {quiz_attempts} qa
+                            JOIN {quiz} m ON m.id=qa.quiz $sql_inner_filter3
+                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'quiz' AND gi.iteminstance = qa.quiz
+                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = qa.userid
+                        GROUP BY qa.quiz, qa.userid) q ON q.userid=u.id AND q.quiz=cm.instance AND m.name='quiz'
+
+                  LEFT JOIN (SELECT
+                            ge.glossaryid,
+                            ge.userid,
+                            MAX(ge.timecreated) AS submitted,
+                            MAX(g.timemodified) AS graded,
+                            $grade_avg AS grade
+                        FROM {glossary_entries} ge
+                            JOIN {glossary} m ON m.id=ge.glossaryid $sql_inner_filter4
+                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'glossary' AND gi.iteminstance = ge.glossaryid
+                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ge.userid
+                        GROUP BY ge.glossaryid, ge.userid) gl ON gl.userid=u.id AND gl.glossaryid=cm.instance AND m.name='glossary'
+
+                  LEFT JOIN (SELECT
+                            ca.choiceid,
+                            ca.userid,
+                            MAX(ca.timemodified) AS submitted,
+                            MAX(g.timemodified) AS graded,
+                            $grade_avg AS grade
+                        FROM {choice_answers} ca
+                            JOIN {choice} m ON m.id=ca.choiceid $sql_inner_filter5
+                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'choice' AND gi.iteminstance = ca.choiceid
+                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ca.userid
+                        GROUP BY ca.choiceid, ca.userid) ch ON ch.userid=u.id AND ch.choiceid=cm.instance AND m.name='choice'
+
                 WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
 
@@ -10245,7 +10657,7 @@ class local_intelliboard_external extends external_api {
             "c.fullname"),
             $this->get_filter_columns($params)
         );
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -10339,7 +10751,7 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(array( "u.username", "u.firstname", "u.lastname", "c.shortname", "c.fullname", "cc1.name", "grader_name", "gi.itemname", "grade", "lit.firstaccess", "graduated", "ul.timeaccess"), $this->get_filter_columns($params));
 
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -10392,6 +10804,262 @@ class local_intelliboard_external extends external_api {
                   LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND ((lit.param=c.id AND lit.page='course' AND gi.itemtype = 'course') OR (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod'))
                   LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
                 WHERE c.id>0 $sql_filter $sql_having $sql_order", $params);
+    }
+
+    public function report185($params)
+    {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+        require_once($CFG->dirroot . '/mod/quiz/report/reportlib.php');
+        require_once($CFG->dirroot . '/mod/quiz/report/default.php');
+        $file = $CFG->dirroot . '/mod/quiz/report/statistics/report.php';
+        if (is_readable($file)) {
+            include_once($file);
+        }
+        if (!class_exists('quiz_statistics_report')) {
+            print_error('preprocesserror', 'quiz');
+        }
+
+        $courses = (is_array($params->custom)) ? $params->custom : explode(",", clean_param($params->custom, PARAM_SEQUENCE));
+        list($sql, $params2) = $DB->get_in_or_equal($courses, SQL_PARAMS_NAMED, 'id');
+        $quizes = $DB->get_records_sql("SELECT * FROM {quiz} WHERE id $sql", $params2);
+
+
+        $report = new quiz_statistics_report();
+        $hash_codes = array();
+        $temp_table = array();
+        foreach($quizes as $quiz){
+            $whichattempts = $quiz->grademethod;
+            $whichtries = question_attempt::LAST_TRY;
+            $groupstudentsjoins = new \core\dml\sql_join();
+
+            $qubaids = quiz_statistics_qubaids_condition($quiz->id, $groupstudentsjoins, $whichattempts);
+            $hash_codes[] = $hash_code = $qubaids->get_hash_code();
+
+            $quizcalc = new \quiz_statistics\calculator();
+            if($quizcalc->get_last_calculated_time($qubaids) === false){
+                $DB->delete_records('quiz_statistics', array('hashcode' => $hash_code));
+                $DB->delete_records('question_statistics', array('hashcode' => $hash_code));
+                $DB->delete_records('question_response_analysis', array('hashcode' => $hash_code));
+            }
+
+            $questions = $report->load_and_initialise_questions_for_calculations($quiz);
+            $report->get_all_stats_and_analysis($quiz, $whichattempts, $whichtries, $groupstudentsjoins, $questions);
+            $temp_table[] = "SELECT '$hash_code' AS hashcode, $quiz->id AS quiz";
+        }
+
+
+        $columns = array("c.fullname", "q.name", "ta_course.tags", "ta_module.tags", "qs.slot", "q.qtype", "q.name", "qs.s", "qs.facility", "qs.sd", "qs.randomguessscore", "qs.maxmark", "qs.effectiveweight", "qs.discriminationindex", "qs.discriminativeefficiency");
+
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_filter_in_sql($hash_codes, "qs.hashcode");
+        if ($CFG->dbtype == 'pgsql') {
+            $rawname = "string_agg( DISTINCT t.rawname, ', ')";
+        } else {
+            $rawname = "GROUP_CONCAT( DISTINCT t.rawname)";
+        }
+
+        return $this->get_report_data("
+                SELECT
+                    CONCAT(relations.hashcode,'_',qs.slot) AS id,
+                    c.fullname AS course_name,
+                    qz.name AS quiz_name,
+                    ta_course.tags AS course_tags,
+                    ta_module.tags AS activity_tags,
+                    qs.slot,
+                    q.qtype,
+                    q.name,
+                    qs.s AS attempts,
+                    qs.facility,
+                    (qs.sd*100)/qs.maxmark AS sd,
+                    qs.randomguessscore,
+                    (qs.maxmark*100)/$quiz->sumgrades AS intended_weight,
+                    qs.effectiveweight,
+                    qs.discriminationindex,
+                    qs.discriminativeefficiency
+                FROM {question_statistics} qs
+                    JOIN (".implode(' UNION ', $temp_table).") relations ON relations.hashcode=qs.hashcode
+                    JOIN {question} q ON q.id=qs.questionid
+                    JOIN {quiz} qz ON qz.id=relations.quiz
+                    JOIN {course} c ON c.id=qz.course
+                    JOIN {modules} m ON m.name='quiz'
+                    JOIN {course_modules} cm ON cm.course=qz.course AND cm.module=m.id AND cm.instance=qz.id
+                    LEFT JOIN (SELECT i.itemid, $rawname AS tags
+                               FROM {tag_instance} i, {tag} t
+                               WHERE t.id = i.tagid AND i.itemtype = 'course_modules' GROUP BY i.itemid) ta_module ON ta_module.itemid = cm.id
+                    LEFT JOIN (SELECT i.itemid, $rawname AS tags
+                               FROM {tag_instance} i, {tag} t
+                               WHERE t.id = i.tagid AND i.itemtype = 'course' GROUP BY i.itemid) ta_course ON ta_course.itemid = c.id
+                WHERE qs.hashcode IS NOT NULL $sql_filter $sql_having $sql_order", $params);
+    }
+
+    public function report186($params)
+    {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+        require_once($CFG->dirroot . '/mod/quiz/report/reportlib.php');
+        require_once($CFG->dirroot . '/mod/quiz/report/default.php');
+        $file = $CFG->dirroot . '/mod/quiz/report/statistics/report.php';
+        if (is_readable($file)) {
+            include_once($file);
+        }
+        if (!class_exists('quiz_statistics_report')) {
+            print_error('preprocesserror', 'quiz');
+        }
+
+        $courses = (is_array($params->courseid)) ? $params->courseid : explode(",", clean_param($params->courseid, PARAM_SEQUENCE));
+        list($sql, $params2) = $DB->get_in_or_equal($courses, SQL_PARAMS_NAMED, 'courseid');
+        $quizes = $DB->get_records_sql("SELECT * FROM {quiz} WHERE course $sql", $params2);
+
+        $temp_table = array();
+        foreach($quizes as $quiz){
+            $report = new quiz_statistics_report();
+            $whichattempts = $quiz->grademethod;
+            $whichtries = question_attempt::LAST_TRY;
+            $groupstudentsjoins = new \core\dml\sql_join();
+
+            $qubaids = quiz_statistics_qubaids_condition($quiz->id, $groupstudentsjoins, $whichattempts);
+
+            $hash_code = $qubaids->get_hash_code();
+            $questions = $report->load_and_initialise_questions_for_calculations($quiz);
+            $qcalc = new \core_question\statistics\questions\calculator($questions);
+            $quizcalc = new \quiz_statistics\calculator();
+            if ($quizcalc->get_last_calculated_time($qubaids) === false){
+                $DB->delete_records('quiz_statistics', array('hashcode' => $hash_code));
+                $DB->delete_records('question_statistics', array('hashcode' => $hash_code));
+                $DB->delete_records('question_response_analysis', array('hashcode' => $hash_code));
+            }
+
+            if(count($questions)>0){
+                $report->get_all_stats_and_analysis($quiz, $whichattempts, $whichtries, $groupstudentsjoins, $questions);
+            }
+
+            $temp_table[] = "SELECT '$hash_code' AS hashcode, $quiz->id AS quiz";
+        }
+
+        $columns = array("c.fullname", "q.name", "ta_course.tags", "ta_module.tags", "qs.firstattemptscount", "qs.allattemptscount", "qs.firstattemptsavg", "qs.allattemptsavg", "qs.lastattemptsavg", "qs.highestattemptsavg", "qs.median", "qs.standarddeviation", "qs.skewness", "qs.kurtosis");
+
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+
+        if ($CFG->dbtype == 'pgsql') {
+            $rawname = "string_agg( DISTINCT t.rawname, ', ')";
+        } else {
+            $rawname = "GROUP_CONCAT( DISTINCT t.rawname)";
+        }
+
+        return $this->get_report_data("
+                SELECT
+                    relations.hashcode,
+                    c.fullname AS course_name,
+                    q.name AS quiz_name,
+                    ta_course.tags AS course_tags,
+                    ta_module.tags AS activity_tags,
+                    qs.firstattemptscount,
+                    qs.allattemptscount,
+                    qs.firstattemptsavg*100/q.sumgrades AS firstattemptsavg,
+                    qs.allattemptsavg*100/q.sumgrades AS allattemptsavg,
+                    qs.lastattemptsavg*100/q.sumgrades AS lastattemptsavg,
+                    qs.highestattemptsavg*100/q.sumgrades AS highestattemptsavg,
+                    qs.median*100/q.sumgrades AS median,
+                    qs.standarddeviation*100/q.sumgrades AS standarddeviation,
+                    qs.skewness,
+                    qs.kurtosis
+
+                FROM {quiz_statistics} qs
+                    JOIN (".implode(' UNION ', $temp_table).") relations ON relations.hashcode=qs.hashcode
+                    JOIN {quiz} q ON q.id=relations.quiz
+                    JOIN {course} c ON c.id=q.course
+                    JOIN {modules} m ON m.name='quiz'
+                    JOIN {course_modules} cm ON cm.course=q.course AND cm.module=m.id AND cm.instance=q.id
+                    LEFT JOIN (SELECT i.itemid, $rawname AS tags
+                               FROM {tag_instance} i, {tag} t
+                               WHERE t.id = i.tagid AND i.itemtype = 'course_modules' GROUP BY i.itemid) ta_module ON ta_module.itemid = cm.id
+                    LEFT JOIN (SELECT i.itemid, $rawname AS tags
+                               FROM {tag_instance} i, {tag} t
+                               WHERE t.id = i.tagid AND i.itemtype = 'course' GROUP BY i.itemid) ta_course ON ta_course.itemid = c.id
+                $sql_having $sql_order", $params);
+    }
+
+    public function report187($params)
+    {
+        global $CFG, $DB;
+
+        $guide = $DB->get_records_sql("
+                    SELECT
+                        ggc.id,
+                        ggc.shortname
+                    FROM {modules} m
+                        JOIN {course_modules} cm ON cm.module=m.id
+                        JOIN {context} ctx ON ctx.instanceid=cm.id AND ctx.contextlevel=70
+                        JOIN {grading_areas} ga ON ga.contextid=ctx.id
+                        JOIN {grading_definitions} gd ON gd.areaid=ga.id AND gd.method='guide'
+                        JOIN {gradingform_guide_criteria} ggc ON ggc.definitionid=gd.id
+                    WHERE m.name='assign' AND cm.instance=:instance
+                    ORDER BY ggc.sortorder", array('instance'=>(int)$params->custom));
+
+
+        $columns = array();
+        $select_sql = '';
+        foreach($guide as $item){
+            $select_sql .= ", (SELECT score FROM {gradingform_guide_fillings} WHERE instanceid=gi.id AND criterionid=$item->id) AS criterion_$item->id";
+            $columns[] = "criterion_$item->id";
+        }
+        $columns = array_merge(array("u.firstname", "u.lastname", "c.fullname", "a.name"), $this->get_filter_columns($params), $columns);
+
+
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->custom, "a.id");
+        $sql_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
+
+        $data = $this->get_report_data("
+                SELECT
+                    DISTINCT u.id,
+                    u.firstname,
+                    u.lastname,
+                    c.fullname AS course,
+                    a.name AS assignment
+                    $select_sql
+                    $sql_columns
+                FROM {assign} a
+                    JOIN {context} AS ctx_c ON ctx_c.instanceid = a.course AND ctx_c.contextlevel=50
+                    JOIN {role_assignments} ra ON ra.contextid=ctx_c.id
+                    JOIN {course} c ON c.id=a.course
+                    JOIN {user} u ON u.id=ra.userid
+                
+                    LEFT JOIN {assign_grades} ag ON ag.assignment=a.id AND ag.userid=u.id
+                    LEFT JOIN {modules} m ON m.name='assign'
+                    LEFT JOIN {course_modules} cm ON cm.module=m.id AND cm.instance=a.id
+                    LEFT JOIN {context} ctx ON ctx.instanceid=cm.id AND ctx.contextlevel=70
+                    LEFT JOIN {grading_areas} ga ON ga.contextid=ctx.id
+                    LEFT JOIN {grading_definitions} gd ON gd.areaid=ga.id AND gd.method='guide'
+                
+                    LEFT JOIN {grading_instances} gi ON gi.definitionid=gd.id AND gi.itemid=ag.id AND gi.status=1
+                WHERE a.id>0 $sql_filter $sql_having $sql_order", $params);
+
+        $data['guide'] = $guide;
+        return $data;
+    }
+
+    function get_assignment_grading_definitions($params){
+        global $DB;
+
+        return $DB->get_records_sql("
+                    SELECT
+                        ggc.id,
+                        ggc.shortname
+                    FROM {modules} m
+                        JOIN {course_modules} cm ON cm.module=m.id
+                        JOIN {context} ctx ON ctx.instanceid=cm.id AND ctx.contextlevel=70
+                        JOIN {grading_areas} ga ON ga.contextid=ctx.id
+                        JOIN {grading_definitions} gd ON gd.areaid=ga.id AND gd.method='guide'
+                        JOIN {gradingform_guide_criteria} ggc ON ggc.definitionid=gd.id
+                    WHERE m.name='assign' AND cm.instance=:instance
+                    ORDER BY ggc.sortorder", array('instance'=>(int)$params->custom));
     }
 
     function get_question_tags($params){
@@ -10724,11 +11392,23 @@ class local_intelliboard_external extends external_api {
                 $where_sql = 'AND ('.implode('OR',$where).')';
             }
 
+            if(!empty($params->custom3) || $params->custom3 === 0 || $params->custom3 === '0'){
+                $join_sql .= " LEFT JOIN (SELECT ra.userid, ra.roleid FROM {role_assignments} ra GROUP BY ra.userid, ra.roleid)ra ON ra.userid=u.id ";
+                $params->custom3 = clean_param($params->custom3, PARAM_SEQUENCE);
+
+                $sql_enabled = $this->get_filter_in_sql($params->custom3,'ra.roleid',false);
+                if(in_array(0,explode(',', $params->custom3))){
+                    $where_sql .= ($params->custom3 === 0 || $params->custom3 === '0')?"AND ra.roleid IS NULL":"AND ($sql_enabled OR ra.roleid IS NULL)";
+                }else{
+                    $where_sql .= "AND $sql_enabled";
+                }
+            }
+
             $order_sql = $this->get_order_sql($params, $coll);
             $limit_sql = $this->get_limit_sql($params);
             $where_sql .= $this->get_teacher_sql($params, ["u.id" => "users"]);
 
-            $sql = "SELECT u.id,
+            $sql = "SELECT DISTINCT u.id,
                            u.firstname,
                            u.lastname,
                            u.email,
@@ -10758,7 +11438,21 @@ class local_intelliboard_external extends external_api {
 
         }
         $where_sql = $this->get_teacher_sql($params, ["u.id" => "users"]);
-        $user = $DB->get_record_sql("SELECT u.id,
+
+        if(!empty($params->custom3) || $params->custom3 === 0 || $params->custom3 === '0'){
+            $join_sql .= " LEFT JOIN (SELECT ra.userid, ra.roleid FROM {role_assignments} ra GROUP BY ra.userid, ra.roleid)ra ON ra.userid=u.id ";
+            $params->custom3 = clean_param($params->custom3, PARAM_SEQUENCE);
+
+            $sql_enabled = $this->get_filter_in_sql($params->custom3,'ra.roleid',false);
+            if(in_array(0,explode(',', $params->custom3))){
+                $where_sql .= ($params->custom3 === 0 || $params->custom3 === '0')?"AND ra.roleid IS NULL":"AND ($sql_enabled OR ra.roleid IS NULL)";
+            }else{
+                $where_sql .= "AND $sql_enabled";
+            }
+            $sql_params = array_merge($this->params, $sql_params);
+        }
+
+        $user = $DB->get_record_sql("SELECT DISTINCT u.id,
                                             u.firstname,
                                             u.lastname,
                                             u.email,
@@ -10883,7 +11577,7 @@ class local_intelliboard_external extends external_api {
 
         $join_sql = $this->get_suspended_sql($params, 'q.course', 'u.id');
         $this->params = array('questionid'=>$params->filter, 'quiz'=>$params->custom);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         if ($CFG->dbtype == 'pgsql') {
             $cohorts = "string_agg( DISTINCT coh.name, ', ')";
         } else {
@@ -10928,7 +11622,9 @@ class local_intelliboard_external extends external_api {
                                GROUP BY u.country,uid.data");
                 return array("countries" => $countries);
             }else{
-                $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "u.country", "state", "course", "MIN(e.enrol)", "grade", "MAX(l.timespend)", "complete"), $this->get_filter_columns($params));
+                $columns = array_merge(array(
+                    "u.firstname", "u.lastname", "u.email", "u.country", "state", "course", "MIN(e.enrol)", "grade", "MAX(l.timespend)", "complete"
+                ), $this->get_filter_columns($params));
 
                 $where = array();
                 $where_str = '';
@@ -10954,7 +11650,7 @@ class local_intelliboard_external extends external_api {
                 $where_sql .= $this->get_teacher_sql($params, ["u.id" => "users"]);
                 $order_sql = $this->get_order_sql($params, $columns);
                 $limit_sql = $this->get_limit_sql($params);
-                $sql_columns = $this->get_columns($params, "u.id");
+                $sql_columns = $this->get_columns($params, ["u.id"]);
                 $join_sql = $this->get_suspended_sql($params, 'c.id', 'u.id');
                 $grade_avg_sql = intelliboard_grade_sql(true,$params, 'g.', 0, 'gi.',true);
                 if ($CFG->dbtype == 'pgsql') {
@@ -11424,12 +12120,25 @@ class local_intelliboard_external extends external_api {
     public function analytic7table($params){
         global $DB, $CFG;
 
-        $columns = array_merge(array("u.firstname", "u.lastname", "u.email", "c.fullname", "u.country", "MIN(uid.data)", "MIN(e.enrol)", "visits", "timespend", "grade", "cc.timecompleted", "ue.timecreated"), $this->get_filter_columns($params));
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.email",
+            "c.fullname",
+            "u.country",
+            "MIN(uid.data)",
+            "MIN(e.enrol)",
+            "visits",
+            "timespend",
+            "grade",
+            "cc.timecompleted",
+            "ue.timecreated"
+        ), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter .= $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_limit = $this->get_limit_sql($params);
 
         $sql_enabled = $this->get_filter_in_sql($params->learner_roles,'ra.roleid',false);
@@ -11547,8 +12256,11 @@ class local_intelliboard_external extends external_api {
     public function analytic8($params){
         global $DB;
 
-        $columns = array("coursename", "cohortname", "learners_completed", "learners_not_completed", "learners_overdue", "avg_grade", "timespend");
+        $columns = array_merge(array(
+            "coursename", "cohortname", "learners_completed", "learners_not_completed", "learners_overdue", "avg_grade", "timespend"
+        ), $this->get_filter_columns($params));
 
+        $sql_columns = $this->get_columns($params, [null]);
         $sql_filter = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
         $sql_filter .= $this->get_filter_in_sql($params->cohortid,'cm.cohortid');
@@ -11573,6 +12285,7 @@ class local_intelliboard_external extends external_api {
                        COUNT(DISTINCT CASE WHEN cr.completion IS NOT NULL AND (cc.timecompleted=0 OR cc.timecompleted IS NULL) THEN cc.id ELSE NULL END) AS learners_not_completed,
                        COUNT(DISTINCT CASE WHEN cr.completion IS NOT NULL AND cc.timecompleted>:custom THEN cc.id ELSE NULL END) AS learners_overdue,
                        AVG(l.timespend) AS timespend
+                       {$sql_columns}
                 FROM {role_assignments} ra
                   JOIN {context} ctx ON ctx.id = ra.contextid
                   JOIN {course} c ON c.id=ctx.instanceid
@@ -11624,7 +12337,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses", "cm.cohortid"=>"cohorts"]);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_limit = $this->get_limit_sql($params);
-        $sql_columns = $this->get_columns($params, "u.id");
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $join_sql = $this->get_suspended_sql($params, 'c.id', 'u.id');
 
         if($params->filter){
@@ -11892,7 +12605,7 @@ class local_intelliboard_external extends external_api {
 
             $order_sql = $this->get_order_sql($params, $columns);
             $sql_limit = $this->get_limit_sql($params);
-            $sql_columns .= $this->get_columns($params, "u.id");
+            $sql_columns .= $this->get_columns($params, ["u.id"]);
             $join_sql = $this->get_suspended_sql($params, 'q.course', 'qa.userid');
 
             $sql = "SELECT
@@ -11977,6 +12690,8 @@ class local_intelliboard_external extends external_api {
             $where .= $this->get_filter_in_sql($params->courseid, "clbr.course", true, true);
         }
 
+        $cohortName = get_operator('GROUP_CONCAT', 'chrt1.name');
+
         $cohortfilter = '';
         if($params->cohortid){
             $cohortidfilter = $DB->get_in_or_equal(
@@ -12004,7 +12719,13 @@ class local_intelliboard_external extends external_api {
                        libp.duration, libp.rejoins,
                        CONCAT(
                            FORMAT(gg.finalgrade, 1), '/', FORMAT(gg.rawgrademax, 1)
-                       ) as grade, clbr.id as sessionid, clbr.course as courseid
+                       ) as grade, clbr.id as sessionid, clbr.course as courseid,
+                       (SELECT {$cohortName}
+                          FROM {cohort_members} crtm1
+                          JOIN {cohort} chrt1 ON chrt1.id = crtm1.cohortid
+                         WHERE crtm1.userid = libp.external_user_id
+                      GROUP BY crtm1.userid
+                       ) AS user_cohorts
                   FROM {local_intelliboard_bb_partic} libp
                   JOIN {collaborate} clbr ON clbr.sessionuid = libp.sessionuid
                   JOIN {course} c ON c.id = clbr.course
@@ -12901,11 +13622,12 @@ class local_intelliboard_external extends external_api {
                 que.questiontext,
                 qas.userid,
                 qas.state,
-                qas.timecreated,
+                qas_completed.timecreated,
                 $extra as questions
              FROM
                 {question_attempts} qa,
                 {question_attempt_steps} qas,
+                {question_attempt_steps} qas_completed,
                 {question_usages} qu,
                 {question} que,
                 {quiz} q,
@@ -12923,6 +13645,8 @@ class local_intelliboard_external extends external_api {
                AND qas.state <> 'todo'
                AND qas.state <> 'complete'
                AND qas.userid = qat.userid
+               AND qas_completed.questionattemptid=qas.questionattemptid
+               AND qas_completed.state='complete'
              ORDER BY qas.timecreated DESC",$this->params);
     }
 
@@ -13318,6 +14042,7 @@ class local_intelliboard_external extends external_api {
         $sql .= $this->get_filter_enrol_sql($params, "e.");
         $sql .= $this->get_filter_enrol_sql($params, "ue.");
         $sql .= $this->get_filterdate_sql($params, "ue.timemodified");
+        $sql .= $this->get_filter_in_sql($params->courseid, 'c.id');
 
         return $DB->get_records_sql("
             SELECT c.id,
@@ -14309,12 +15034,13 @@ class local_intelliboard_external extends external_api {
 
         $sql_filter = $this->get_filterdate_sql($params, "lg.timecreated");
 
-        $sql = "SELECT COUNT(*) AS all_login,
+        $sql = "SELECT floor(lg.timecreated / 86400) * 86400 AS timepoint, COUNT(*) AS all_login,
                        SUM(CASE WHEN origin = 'ws'
                                 THEN 1 ELSE 0 END
                        ) AS mobile_app_login
                   FROM {logstore_standard_log} lg
-                 WHERE other NOT LIKE '%local_%' AND lg.id > 0 {$sql_filter}";
+                 WHERE other NOT LIKE '%local_%' AND lg.id > 0 {$sql_filter}
+                 GROUP BY timepoint";
 
         return $DB->get_records_sql($sql, $this->params);
     }

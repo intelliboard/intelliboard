@@ -232,22 +232,22 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 	$intelliboardMediaTrack = get_config('local_intelliboard', 'trackmedia');
 	$path = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
 
-	if(strpos($path,'cron.php') !== false){
+	if (strpos($path,'cron.php') !== false) {
 		return false;
 	}
 
-	if ($enabled and isloggedin() and !isguestuser()){
-		if(is_siteadmin() and !$trackadmin){
+	if ($enabled and isloggedin() and !isguestuser()) {
+		if (is_siteadmin() and !$trackadmin) {
 			return false;
 		}
 		$intelliboardPage = (isset($_COOKIE['intelliboardPage'])) ? clean_param($_COOKIE['intelliboardPage'], PARAM_ALPHANUMEXT) : '';
 		$intelliboardParam = (isset($_COOKIE['intelliboardParam'])) ? clean_param($_COOKIE['intelliboardParam'], PARAM_INT) : 0;
 		$intelliboardTime = (isset($_COOKIE['intelliboardTime'])) ? clean_param($_COOKIE['intelliboardTime'], PARAM_INT) : 0;
 
-		if(!empty($intelliboardPage)){
+		if (!empty($intelliboardPage)) {
 			$userDetails = (object)local_intelliboard_user_details();
-			if($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')){
-				if(!$ajaxRequest){
+			if ($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')) {
+				if (!$ajaxRequest) {
 					$data->visits = $data->visits + 1;
 					$data->lastaccess = time();
 				}
@@ -257,11 +257,11 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 				$data->userlang = $userDetails->userlang;
 				$data->userip = $userDetails->userip;
 				$DB->update_record('local_intelliboard_tracking', $data);
-			}else{
+			} else {
 				$courseid = 0;
-				if($intelliboardPage == "module"){
+				if ($intelliboardPage == "module") {
 					$courseid = $DB->get_field_sql("SELECT c.id FROM {course} c, {course_modules} cm WHERE c.id = cm.course AND cm.id = $intelliboardParam");
-				}elseif($intelliboardPage == "course"){
+				} elseif($intelliboardPage == "course") {
 					$courseid = $intelliboardParam;
 				}
 				$data = new stdClass();
@@ -279,16 +279,16 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 				$data->userip = $userDetails->userip;
 				$data->id = $DB->insert_record('local_intelliboard_tracking', $data, true);
 			}
-			if($version >= 2016011300){
+			if ($version >= 2016011300) {
 				$currentstamp  = strtotime('today');
-				if($data->id){
-					if($log = $DB->get_record('local_intelliboard_logs', array('trackid' => $data->id, 'timepoint' => $currentstamp))){
-						if(!$ajaxRequest){
+				if ($data->id) {
+					if ($log = $DB->get_record('local_intelliboard_logs', array('trackid' => $data->id, 'timepoint' => $currentstamp))) {
+						if (!$ajaxRequest) {
 							$log->visits = $log->visits + 1;
 						}
 						$log->timespend = $log->timespend + $intelliboardTime;
 						$DB->update_record('local_intelliboard_logs', $log);
-					}else{
+					} else {
 						$log = new stdClass();
 						$log->trackid = $data->id;
 						$log->visits = 1;
@@ -297,15 +297,15 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 						$log->id = $DB->insert_record('local_intelliboard_logs', $log, true);
 					}
 
-					if($version >= 2017072300 and isset($log->id)){
+					if ($version >= 2017072300 and isset($log->id)) {
 						$currenthour  = date('G');
-						if($detail = $DB->get_record('local_intelliboard_details', array('logid' => $log->id, 'timepoint' => $currenthour))){
-							if(!$ajaxRequest){
+						if ($detail = $DB->get_record('local_intelliboard_details', array('logid' => $log->id, 'timepoint' => $currenthour))) {
+							if (!$ajaxRequest) {
 								$detail->visits = $detail->visits + 1;
 							}
 							$detail->timespend = $detail->timespend + $intelliboardTime;
 							$DB->update_record('local_intelliboard_details', $detail);
-						}else{
+						} else {
 							$detail = new stdClass();
 							$detail->logid = $log->id;
 							$detail->visits = 1;
@@ -317,46 +317,46 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 				}
 
 				$sessions = false; $courses = false;
-				if($trackpoint != $currentstamp){
+				if ($trackpoint != $currentstamp) {
 					set_config("trackpoint", $currentstamp, "local_intelliboard");
 					set_config("trackusers", '', "local_intelliboard");
 					set_config("trackcourses", '', "local_intelliboard");
 				}
-				if($intelliboardPage == 'course'){
+				if ($intelliboardPage == 'course') {
 					if($trackcourses){
 						$instances = explode(',', $trackcourses);
-						if(!in_array($intelliboardParam, $instances)){
+						if (!in_array($intelliboardParam, $instances)) {
 							$courses = true;
 							set_config("trackcourses", $trackcourses.",".$intelliboardParam, "local_intelliboard");
 						}
-					}else{
+					} else {
 						$courses = true;
 						set_config("trackcourses", $intelliboardParam, "local_intelliboard");
 					}
 				}
-				if($trackusers){
+				if ($trackusers) {
 					$users = explode(',', $trackusers);
-					if(!in_array($USER->id, $users)){
+					if (!in_array($USER->id, $users)) {
 						$sessions = true;
 						set_config("trackusers", $trackusers.",".$USER->id, "local_intelliboard");
 					}
-				}else{
+				} else {
 					$sessions = true;
 					set_config("trackusers", $USER->id, "local_intelliboard");
 				}
-				if($data = $DB->get_record('local_intelliboard_totals', array('timepoint' => $currentstamp))){
-					if(!$ajaxRequest){
+				if ($data = $DB->get_record('local_intelliboard_totals', array('timepoint' => $currentstamp))) {
+					if (!$ajaxRequest) {
 						$data->visits = $data->visits + 1;
 					}
-					if($sessions){
+					if ($sessions) {
 						$data->sessions = $data->sessions + 1;
 					}
-					if($courses){
+					if ($courses) {
 						$data->courses = $data->courses + 1;
 					}
 					$data->timespend = $data->timespend + $intelliboardTime;
 					$DB->update_record('local_intelliboard_totals', $data);
-				}else{
+				} else {
 					$data = new stdClass();
 					$data->sessions = 1;
 					$data->courses = ($courses)?1:0;
