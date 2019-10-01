@@ -317,9 +317,9 @@ class local_intelliboard_external extends external_api {
     }
     private function get_completion($params, $prefix = "", $sep = true)
     {
-        if(!empty($params->completion)){
+        if (!empty($params->completion)) {
             return $this->get_filter_in_sql($params->completion, $prefix."completionstate", $sep);
-        }else{
+        } else {
             $prefix = ($sep) ? " AND ".$prefix : $prefix;
             return $prefix . "completionstate IN(1,2)";
         }
@@ -330,10 +330,10 @@ class local_intelliboard_external extends external_api {
 
         $filter = "";
         //Filter by report columns
-        if($params->filter and !empty($columns)){
+        if ($params->filter and !empty($columns)) {
             $sql_arr = array(); $filter_columns = explode(",", $params->filter_columns);
             foreach($columns as $i => $column){
-                if($column and in_array($i, $filter_columns)){
+                if ($column and in_array($i, $filter_columns)) {
                     $this->prfx = $this->prfx + 1;
                     $key = clean_param($column, PARAM_ALPHANUMEXT).$this->prfx;
                     $sql_arr[] = $DB->sql_like($column, ":$key", false, false);
@@ -343,14 +343,14 @@ class local_intelliboard_external extends external_api {
             $filter .= ($sql_arr) ? implode(" OR ", $sql_arr) : "";
         }
         //Filter by User profile fields
-        if($params->filter_profile){
+        if ($params->filter_profile){
             $params->custom3 = clean_param($params->custom3, PARAM_SEQUENCE);
-            if($params->custom3 and !empty($params->columns)){
+            if ($params->custom3 and !empty($params->columns)) {
                 $cols = explode(",", $params->columns);
                 $fields = $DB->get_records_sql("SELECT id, fieldid, data FROM {user_info_data} WHERE id IN ($params->custom3)");
                 $fields_filter = array();
                 foreach($fields as $i => $field){
-                    if(in_array($field->fieldid, $cols)){
+                    if (in_array($field->fieldid, $cols)){
                         $this->prfx = $this->prfx + 1;
                         $field->fieldid = (int)$field->fieldid; //fieldid -> int
                         $key = "field$field->fieldid";
@@ -11113,7 +11113,7 @@ class local_intelliboard_external extends external_api {
                     pc.courses,
                     '{$currency}' AS currency
                     {$sql_columns}
-               FROM {local_intellicart_checkout} ch 
+               FROM {local_intellicart_checkout} ch
                JOIN {user} u ON u.id = ch.userid
                JOIN (SELECT il.checkoutid
                        FROM {local_intellicart_logs} il
@@ -11123,7 +11123,7 @@ class local_intelliboard_external extends external_api {
                       WHERE il.type = 'product' {$coursefilter}
                    GROUP BY il.checkoutid
                     ) pc1 ON pc1.checkoutid = ch.id
-          LEFT JOIN (SELECT SUM(quantity) AS quantity, checkoutid 
+          LEFT JOIN (SELECT SUM(quantity) AS quantity, checkoutid
                        FROM {local_intellicart_logs}
                       WHERE type = :ltype
                    GROUP BY checkoutid
@@ -11179,12 +11179,12 @@ class local_intelliboard_external extends external_api {
                     JOIN {user} uf ON uf.id=m.useridfrom
                     JOIN {user} ut ON ut.id=m.useridto
                     JOIN {context} ctx ON ctx.contextlevel=10
-                
+
                     LEFT JOIN {role_assignments} raf ON raf.contextid=ctx.id AND raf.userid=uf.id
                     LEFT JOIN {role} rf ON rf.id=raf.roleid
                     LEFT JOIN {role_assignments} rat ON rat.contextid=ctx.id AND rat.userid=ut.id
                     LEFT JOIN {role} rt ON rt.id=rat.roleid
-                WHERE m.timecreated>0 $sql_filter 
+                WHERE m.timecreated>0 $sql_filter
                 GROUP BY m.id, uf.id, ut.id $sql_having $sql_order",
             $params
         );
