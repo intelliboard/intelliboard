@@ -50,7 +50,7 @@ class local_intelliboard_notification
         global $DB;
 
         $params = compact('type');
-        $sql = "SELECT * 
+        $sql = "SELECT *
           FROM {local_intelliboard_ntf} lin
           WHERE lin.type = :type AND lin.state = 1";
 
@@ -61,8 +61,8 @@ class local_intelliboard_notification
                 $value = isset($value['value'])? $value['value'] : $value;
 
                 $sql .= ' AND lin.id IN (
-                    SELECT linp.notificationid 
-                    FROM {local_intelliboard_ntf_pms} linp 
+                    SELECT linp.notificationid
+                    FROM {local_intelliboard_ntf_pms} linp
                     WHERE linp.name = :name' . $filterCount . " AND linp.value $operator :value" . $filterCount
                     . ')';
 
@@ -169,7 +169,7 @@ class local_intelliboard_notification
         $assign_courses = [];
         $assign_cohorts = [];
 
-        $assigns = $DB->get_records_sql("SELECT * FROM {local_intelliboard_assign} WHERE userid = :userid",
+        $assigns = $DB->get_records_sql("SELECT * FROM {local_intelliboard_assign} WHERE rel = 'external' AND userid = :userid",
             ['userid' => $user]);
         foreach ($assigns as $assign) {
             $type = &${'assign_' . $assign->type};
@@ -470,10 +470,10 @@ class local_intelliboard_notification
                 return $user->id;
             }, "
                 SELECT u.id FROM {user} u WHERE u.id IN(
-                  SELECT lia.instance as id FROM {local_intelliboard_assign} lia WHERE lia.type = 'users' AND lia.userid = ?
+                  SELECT lia.instance as id FROM {local_intelliboard_assign} lia WHERE lia.rel = 'external' AND lia.type = 'users' AND lia.userid = ?
                 ) OR u.id IN (
                   SELECT chm.userid FROM {local_intelliboard_assign} lia, {cohort_members} chm
-                  WHERE lia.type = 'cohorts' AND lia.userid = ? AND chm.cohortid = lia.instance
+                  WHERE lia.rel = 'external' AND lia.type = 'cohorts' AND lia.userid = ? AND chm.cohortid = lia.instance
                 )
             ", array($notification['userid'], $notification['userid']));
 

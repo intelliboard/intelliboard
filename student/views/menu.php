@@ -172,6 +172,13 @@ $subscriptionsurl = (new moodle_url('/local/intelliboard/student/subscriptions.p
 		</ul>
 	</li>
 	<?php endif; ?>
+    <?php if(get_config('local_intelliboard', 'enable_badges_report')):?>
+        <li>
+            <a href="<?php echo $CFG->wwwroot ?>/local/intelliboard/student/badges.php">
+                <?php echo get_string('badges');?>
+            </a>
+        </li>
+    <?php endif; ?>
     <?php if($intellicartenabled): ?>
         <!-- Orders -->
         <li>

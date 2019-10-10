@@ -238,7 +238,22 @@ class intelliboard_learner_table extends table_sql {
             $params['shortname'] = "%$search%";
         }
 
-        $fields = "c.id, cc.courseid, c.shortname, c.description, c.idnumber, cu.proficiency, cu.grade, cu.usermodified, CONCAT(u2.firstname, ' ', u2.lastname) AS usermodifier, cu.timemodified AS rated, cf.scaleid";
+        $fields = "c.id,
+                   cc.courseid,
+                   c.shortname,
+                   c.description,
+                   c.idnumber,
+                   cu.proficiency,
+                   cu.grade,
+                   cu.usermodified,
+                   u2.firstname AS u2firstname,
+                   u2.lastname AS u2lastname,
+                   u2.alternatename AS u2alternatename,
+                   u2.middlename AS u2middlename,
+                   u2.lastnamephonetic AS u2lastnamephonetic,
+                   u2.firstnamephonetic AS u2firstnamephonetic,
+                   cu.timemodified AS rated,
+                   cf.scaleid";
         $from = "{competency_coursecomp} cc
             LEFT JOIN {user} u ON u.id = :userid
             LEFT JOIN {competency} c ON c.id = cc.competencyid
@@ -266,7 +281,19 @@ class intelliboard_learner_table extends table_sql {
     }
     function col_usermodified($values) {
         global $CFG;
-        return html_writer::link(new moodle_url($CFG->wwwroot.'/user/view.php', array('id'=>$values->usermodified)), $values->usermodifier, array("target"=>"_blank"));
+
+        $user = (object) [
+            'firstname' => $values->u2firstname,
+            'lastname' => $values->u2lastname,
+            'alternatename' => $values->u2alternatename,
+            'middlename' => $values->u2middlename,
+            'lastnamephonetic' => $values->u2lastnamephonetic,
+            'firstnamephonetic' => $values->u2firstnamephonetic,
+        ];
+
+        return html_writer::link(new moodle_url(
+            $CFG->wwwroot.'/user/view.php', array('id'=>$values->usermodified)
+        ), fullname($user), array("target"=>"_blank"));
     }
     function col_proficiency($values) {
         $class = ($values->proficiency)?'label-success':'label-important';
@@ -350,11 +377,19 @@ class intelliboard_learners_table extends table_sql {
         $headers = array();
         $columns = array();
 
-        $columns[] =  'firstname';
-        $headers[] =  get_string('te12','local_intelliboard');
+        if(get_config('local_intelliboard', 'names_order') == 'firstname_lastname') {
+            $columns[] =  'firstname';
+            $headers[] =  get_string('te12','local_intelliboard');
 
-        $columns[] =  'lastname';
-        $headers[] =  get_string('te13','local_intelliboard');
+            $columns[] =  'lastname';
+            $headers[] =  get_string('te13','local_intelliboard');
+        } else {
+            $columns[] =  'lastname';
+            $headers[] =  get_string('te13','local_intelliboard');
+
+            $columns[] =  'firstname';
+            $headers[] =  get_string('te12','local_intelliboard');
+        }
 
         $columns[] =  'proficiency';
         $headers[] =  get_string('a16','local_intelliboard');
@@ -385,8 +420,25 @@ class intelliboard_learners_table extends table_sql {
             $sql .= " AND " . $DB->sql_like('u.firstname', ":firstname", false, false);
             $params['firstname'] = "%$search%";
         }
-        $fields = "u.id, u.firstname, u.lastname, u.email, cu.proficiency, cu.grade, cu.usermodified, CONCAT(u2.firstname, ' ', u2.lastname) AS usermodifier, cu.timemodified AS rated, cf.scaleid,
-            (SELECT COUNT(DISTINCT ce.id) FROM {competency_usercomp} cu, {competency_evidence} ce WHERE cu.competencyid = c.id AND ce.usercompetencyid = cu.id AND cu.userid = u.id AND ce.contextid = ctx.id) AS evidences";
+        $fields = "u.id,
+                   u.firstname,
+                   u.lastname,
+                   u.email,
+                   cu.proficiency,
+                   cu.grade,
+                   cu.usermodified,
+                   u2.firstname AS u2firstname,
+                   u2.lastname AS u2lastname,
+                   u2.alternatename AS u2alternatename,
+                   u2.middlename AS u2middlename,
+                   u2.lastnamephonetic AS u2lastnamephonetic,
+                   u2.firstnamephonetic AS u2firstnamephonetic,
+                   cu.timemodified AS rated,
+                   cf.scaleid,
+                   (SELECT COUNT(DISTINCT ce.id)
+                      FROM {competency_usercomp} cu, {competency_evidence} ce
+                     WHERE cu.competencyid = c.id AND ce.usercompetencyid = cu.id AND cu.userid = u.id AND
+                           ce.contextid = ctx.id) AS evidences";
         $from = "{role_assignments} ra
             LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
             LEFT JOIN {user} u ON u.id = ra.userid
@@ -405,7 +457,19 @@ class intelliboard_learners_table extends table_sql {
     }
     function col_usermodified($values) {
         global $CFG;
-        return html_writer::link(new moodle_url($CFG->wwwroot.'/user/view.php', array('id'=>$values->usermodified)), $values->usermodifier, array("target"=>"_blank"));
+
+        $user = (object) [
+            'firstname' => $values->u2firstname,
+            'lastname' => $values->u2lastname,
+            'alternatename' => $values->u2alternatename,
+            'middlename' => $values->u2middlename,
+            'lastnamephonetic' => $values->u2lastnamephonetic,
+            'firstnamephonetic' => $values->u2firstnamephonetic,
+        ];
+
+        return html_writer::link(new moodle_url(
+            $CFG->wwwroot.'/user/view.php', array('id'=>$values->usermodified)
+        ), fullname($user), array("target"=>"_blank"));
     }
     function col_grade($values) {
         if ($values->grade) {
@@ -435,11 +499,19 @@ class intelliboard_proficient_table extends table_sql {
         $headers = array();
         $columns = array();
 
-        $columns[] =  'firstname';
-        $headers[] =  get_string('te12','local_intelliboard');
+        if(get_config('local_intelliboard', 'names_order') == 'firstname_lastname') {
+            $columns[] =  'firstname';
+            $headers[] =  get_string('te12','local_intelliboard');
 
-        $columns[] =  'lastname';
-        $headers[] =  get_string('te13','local_intelliboard');
+            $columns[] =  'lastname';
+            $headers[] =  get_string('te13','local_intelliboard');
+        } else {
+            $columns[] =  'lastname';
+            $headers[] =  get_string('te13','local_intelliboard');
+
+            $columns[] =  'firstname';
+            $headers[] =  get_string('te12','local_intelliboard');
+        }
 
         $columns[] =  'users_rated';
         $headers[] =  get_string('a23','local_intelliboard');

@@ -169,7 +169,7 @@ class intelliboard_courses_grades_table extends table_sql {
                                       WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 AND
                                             ra.roleid $sql3)
                 ) AS timespend,
-                
+
                 (SELECT SUM(l.visits)
                    FROM {local_intelliboard_tracking} l
                   WHERE l.courseid = c.id $sql33 AND
@@ -180,21 +180,21 @@ class intelliboard_courses_grades_table extends table_sql {
                                       WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 AND
                                             ra.roleid $sql4)
                 ) AS visits,
-                
+
                 (SELECT COUNT(DISTINCT ra.userid)
                    FROM {role_assignments} ra
               LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
                         $join_group_sql
                   WHERE ra.roleid $sql1 $sql44 AND ctx.instanceid = c.id
                 ) AS learners,
-                  
+
                 (SELECT $grade_avg
                    FROM {grade_items} gi
                    JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                         $join_group_sql2
                   WHERE gi.itemtype = 'course' AND gi.courseid = c.id   $sql55
                 ) AS grade,
-                  
+
                 (SELECT COUNT(DISTINCT userid)
                    FROM {course_completions}
                   WHERE timecompleted > 0 $sql66 AND
@@ -260,10 +260,16 @@ class intelliboard_courses_grades_table extends table_sql {
         $completed = intval($values->completed);
         $progress = ($learners and $completed)?(($completed/$learners) * 100): 0;
         $progress = round($progress, 0);
+        $learnersstr = get_string('learners', 'local_intelliboard');
+        $completedstr = get_string('completed', 'local_intelliboard');
 
-        $html = html_writer::start_tag("div",array("class"=>"intelliboard-tooltip","title"=>"Learners: $learners | Completed: $completed"));
+        $html = html_writer::start_tag(
+            "div",array("class"=>"intelliboard-tooltip","title"=>"{$learnersstr}: $learners | {$completedstr}: $completed")
+        );
         $html .= html_writer::start_tag("div",array("class"=>"intelliboard-progress xxl"));
-        $html .= html_writer::tag("span", "&nbsp;&nbsp;" . intval($values->learners)."/".intval($values->completed) . "&nbsp;&nbsp;", array("style"=>"width:{$progress}%"));
+        $html .= html_writer::tag(
+            "span", "&nbsp;&nbsp;" . intval($values->learners)."/".intval($values->completed) . "&nbsp;&nbsp;", array("style"=>"width:{$progress}%")
+        );
         $html .= html_writer::end_tag("div");
         $html .= html_writer::end_tag("div");
         return $html;
@@ -308,7 +314,7 @@ class intelliboard_courses_grades_table extends table_sql {
 
         if(get_config('local_intelliboard', 'table_set_icg_c11')) {
             $elements[] = html_writer::link(
-                new moodle_url($PAGE->url, array('action'=>'learners', 'id'=>$values->id)),
+                new moodle_url($PAGE->url, array('action'=>'learners', 'id'=>$values->id, 'search' => '')),
                 get_string('learners','local_intelliboard'),
                 array(
                     'class' =>'btn btn-default',
@@ -319,7 +325,7 @@ class intelliboard_courses_grades_table extends table_sql {
 
         if(get_config('local_intelliboard', 'table_set_icg_c12')) {
             $elements[] = html_writer::link(
-                new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->id)),
+                new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->id, 'search' => '')),
                 get_string('activities','local_intelliboard'),
                 array(
                     'class' =>'btn btn-default',
@@ -335,7 +341,7 @@ class intelliboard_courses_grades_table extends table_sql {
 class intelliboard_activities_grades_table extends table_sql {
     public $scale_real;
 
-    function __construct($uniqueid, $courseid = 0, $search = '', $mod = 0) {
+    function __construct($uniqueid, $courseid = 0, $search = '', $mod = 0, $module = 0) {
         global $CFG, $PAGE, $DB, $USER;
 
         parent::__construct($uniqueid);
@@ -387,13 +393,24 @@ class intelliboard_activities_grades_table extends table_sql {
 
         $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3'=>$courseid, 'c4'=>$courseid);
         $sql = "";
+        $having = 'cm.id > 0';
         if ($search) {
-            $sql .= " AND " . $DB->sql_like('m.name', ":activity", false, false);
+            $having .= sprintf(' AND (%s OR %s)',
+                $DB->sql_like('m.name', ":activity", false, false),
+                $DB->sql_like('activity', ":activity1", false, false)
+            );
             $params['activity'] = "%$search%";
+            $params['activity1'] = "%$search%";
         }
         if ($mod) {
             $sql .= " AND cm.module IN (1,15,16,17,20,23)";
         }
+
+        if ($module) {
+            $sql .= " AND m.id = :moduleid";
+            $params['moduleid'] = $module;
+        }
+
         list($sql1, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
 
@@ -414,40 +431,49 @@ class intelliboard_activities_grades_table extends table_sql {
         $sql44 = intelliboard_instructor_getcourses('m.course', false, 'cm.userid');
         $sql55 = intelliboard_instructor_getcourses('courseid', false, 'userid');
 
-        $fields = "
-                cm.id,
-                cm.course,
-                m.name as module,
-                cmc.completed,
-                g.grade,
-                l.visits,
-                l.timespend,
-                '' as actions
-                $sql_columns";
+        $fields = 't.*';
 
-        $from = "{course_modules} cm
-                LEFT JOIN {modules} m ON m.id = cm.module
-                LEFT JOIN (SELECT gi.iteminstance, gi.itemmodule, $grade_avg AS grade
+        $from = "(SELECT cm.id,
+                         cm.course,
+                         m.name AS module,
+                         cmc.completed,
+                         g.grade,
+                         l.visits,
+                         l.timespend,
+                         '' AS actions
+                         $sql_columns
+                    FROM {course_modules} cm
+               LEFT JOIN {modules} m ON m.id = cm.module
+               LEFT JOIN (SELECT gi.iteminstance, gi.itemmodule, $grade_avg AS grade
                             FROM {grade_items} gi
-                             JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                             $join_group_sql
-                            WHERE gi.itemtype = 'mod' AND gi.courseid = :c1 $sql33
-                            GROUP BY gi.iteminstance, gi.itemmodule
-                           ) as g ON g.iteminstance = cm.instance AND g.itemmodule = m.name
-                LEFT JOIN (SELECT cm.coursemoduleid, COUNT(cm.id) AS completed
+                            JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                                 $join_group_sql
+                           WHERE gi.itemtype = 'mod' AND gi.courseid = :c1 $sql33
+                        GROUP BY gi.iteminstance, gi.itemmodule
+                         ) g ON g.iteminstance = cm.instance AND g.itemmodule = m.name
+               LEFT JOIN (SELECT cm.coursemoduleid, COUNT(cm.id) AS completed
                             FROM {course_modules_completion} cm
-                                JOIN {course_modules} m ON m.id=cm.coursemoduleid
-                                $join_group_sql2
-                            WHERE $completion $sql44
-                            GROUP BY cm.coursemoduleid) cmc ON cmc.coursemoduleid = cm.id
-                LEFT JOIN (SELECT param, SUM(visits) AS visits, SUM(timespend) AS timespend
+                            JOIN {course_modules} m ON m.id=cm.coursemoduleid
+                                 $join_group_sql2
+                           WHERE $completion $sql44
+                        GROUP BY cm.coursemoduleid
+                         ) cmc ON cmc.coursemoduleid = cm.id
+               LEFT JOIN (SELECT param, SUM(visits) AS visits, SUM(timespend) AS timespend
                             FROM {local_intelliboard_tracking}
-                            WHERE page='module' $sql55 AND courseid = :c2 AND userid IN (SELECT DISTINCT ra.userid
-                                                                                    FROM {context} ctx
-                                                                                        JOIN {role_assignments} ra ON ctx.id = ra.contextid
-                                                                                        $join_group_sql3
-                                                                                    WHERE ctx.instanceid = :c4 AND ctx.contextlevel = 50 AND ra.roleid $sql1) GROUP BY param) l ON l.param=cm.id";
-        $where = "cm.visible = 1 AND cm.course = :c3 $sql";
+                           WHERE userid IN (SELECT DISTINCT ra.userid
+                                              FROM {context} ctx
+                                              JOIN {role_assignments} ra ON ctx.id = ra.contextid
+                                                   $join_group_sql3
+                                             WHERE ctx.instanceid = :c4 AND ctx.contextlevel = 50 AND ra.roleid $sql1
+                                            ) AND
+                                 page='module' $sql55 AND courseid = :c2
+                        GROUP BY param
+                         ) l ON l.param=cm.id
+                   WHERE cm.visible = 1 AND cm.course = :c3 $sql
+                  HAVING {$having}
+                 ) t";
+
+        $where = "t.id > 0";
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -486,6 +512,60 @@ class intelliboard_activities_grades_table extends table_sql {
         global  $PAGE;
 
         return html_writer::link(new moodle_url($PAGE->url, array('action'=>'activity', 'cmid'=>$values->id, 'id'=>$values->course)), get_string('grades','local_intelliboard'), array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
+    }
+
+    function finish_html() {
+        global $OUTPUT;
+        if (!$this->started_output) {
+            //no data has been added to the table.
+            $this->print_nothing_to_display();
+
+        } else {
+            // Print empty rows to fill the table to the current pagesize.
+            // This is done so the header aria-controls attributes do not point to
+            // non existant elements.
+            $emptyrow = array_fill(0, count($this->columns), '');
+            while ($this->currentrow < $this->pagesize) {
+                $this->print_row($emptyrow, 'emptyrow');
+            }
+
+            echo html_writer::end_tag('tbody');
+            echo html_writer::end_tag('table');
+            echo html_writer::end_tag('div');
+            $this->wrap_html_finish();
+
+            // Paging bar
+            if(in_array(TABLE_P_BOTTOM, $this->showdownloadbuttonsat)) {
+                echo $this->download_buttons();
+            }
+
+            if($this->use_pages) {
+                $pagingbar = new paging_bar($this->totalrows, $this->currpage, $this->pagesize, $this->baseurl);
+                $pagingbar->pagevar = $this->request[TABLE_VAR_PAGE];
+                $paginationhtml = $OUTPUT->render($pagingbar);
+            }
+
+            // pagesize
+            $baseurl = $this->baseurl;
+            $pagesize = $this->get_page_size();
+            $options = [10, 25, 50, 100];
+
+            $options = array_map(function($i) use ($baseurl, $pagesize) {
+                $url = clone $baseurl;
+                $url->params(['pagesize' => $i]);
+
+                return [
+                    'value' => $i,
+                    'url' => $url->out(),
+                    'selected' => $pagesize == $i,
+                ];
+            }, $options);
+
+            echo $OUTPUT->render_from_template(
+                'local_intelliboard/parts_table_bottom',
+                ['page_size_options' => $options, 'pagination_html' => $paginationhtml]
+            );
+        }
     }
 }
 
@@ -544,8 +624,15 @@ class intelliboard_activity_grades_table extends table_sql {
         $params = array('cmid'=>$cmid, 'courseid'=>$courseid);
         $sql = "";
         if($search){
-            $sql .= " AND " . $DB->sql_like('u.firstname', ":firstname", false, false);
-            $params['firstname'] = "%$search%";
+            $sql .= sprintf(
+                ' AND (%s OR %s OR %s)',
+                $DB->sql_like("CONCAT(u.firstname, ' ', u.lastname)", ":search1", false, false),
+                $DB->sql_like("CONCAT(u.lastname, ' ', u.firstname)", ":search2", false, false),
+                $DB->sql_like("u.email", ":search3", false, false)
+            );
+            $params['search1'] = "%$search%";
+            $params['search2'] = "%$search%";
+            $params['search3'] = "%$search%";
         }
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
@@ -707,8 +794,15 @@ class intelliboard_learners_grades_table extends table_sql {
         $params = array('c1'=>$courseid, 'c2'=>$courseid);
         $sql = "";
         if($search){
-            $sql .= " AND " . $DB->sql_like("CONCAT(u.firstname, ' ', u.lastname)", ":learner", false, false);
-            $params['learner'] = "%$search%";
+            $sql .= sprintf(
+                ' AND (%s OR %s OR %s)',
+                $DB->sql_like("CONCAT(u.firstname, ' ', u.lastname)", ":search1", false, false),
+                $DB->sql_like("CONCAT(u.lastname, ' ', u.firstname)", ":search2", false, false),
+                $DB->sql_like("u.email", ":search3", false, false)
+            );
+            $params['search1'] = "%$search%";
+            $params['search2'] = "%$search%";
+            $params['search3'] = "%$search%";
         }
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
@@ -740,7 +834,12 @@ class intelliboard_learners_grades_table extends table_sql {
                          $grade_single AS grade,
                          MAX(cc.timecompleted) AS timecompleted,
                          u.email,
-                         CONCAT(u.firstname, ' ', u.lastname) as learner,
+                         MAX(u.firstname) AS firstname,
+                         MAX(u.lastname) AS lastname,
+                         MAX(u.alternatename) AS alternatename,
+                         MAX(u.middlename) AS middlename,
+                         MAX(u.lastnamephonetic) AS lastnamephonetic,
+                         MAX(u.firstnamephonetic) AS firstnamephonetic,
                          MAX(l.timespend) AS timespend,
                          MAX(l.visits) AS visits,
                          MAX(cmc.progress) AS progress,
@@ -754,7 +853,7 @@ class intelliboard_learners_grades_table extends table_sql {
                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid
                LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
                LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-               
+
                LEFT JOIN (SELECT t.courseid, AVG(t.spent) avg_timespend
                             FROM (SELECT l.courseid, SUM(l.timespend) spent
                                     FROM {course} c1
@@ -781,13 +880,13 @@ class intelliboard_learners_grades_table extends table_sql {
                                  ) t
                         GROUP BY t.courseid
                ) AS vt ON vt.courseid = c.id
-               
+
                LEFT JOIN (SELECT cmc.userid, COUNT(DISTINCT cmc.id) as progress
                             FROM {course_modules_completion} cmc, {course_modules} cm
                            WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id $completion AND
                                  cm.completion > 0 AND cm.course = :c1 GROUP BY cmc.userid
                ) cmc ON cmc.userid = u.id
-               
+
                LEFT JOIN (SELECT t.userid,t.courseid, sum(t.timespend) as timespend, sum(t.visits) as visits
                             FROM {local_intelliboard_tracking} t
                         GROUP BY t.courseid, t.userid
@@ -839,7 +938,9 @@ class intelliboard_learners_grades_table extends table_sql {
     function col_learner($values) {
         global $CFG, $PAGE;
 
-        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), $values->learner);
+        return html_writer::link(new moodle_url(
+            $PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)
+        ), fullname($values));
     }
     function col_actions($values) {
         global  $PAGE;
@@ -847,11 +948,65 @@ class intelliboard_learners_grades_table extends table_sql {
 
         return html_writer::link(new moodle_url($PAGE->url, array('search'=>'','action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), get_string('grades','local_intelliboard'), array('class' =>'btn btn-default', 'title' =>get_string('grades','local_intelliboard')));
     }
+
+    function finish_html() {
+        global $OUTPUT;
+        if (!$this->started_output) {
+            //no data has been added to the table.
+            $this->print_nothing_to_display();
+
+        } else {
+            // Print empty rows to fill the table to the current pagesize.
+            // This is done so the header aria-controls attributes do not point to
+            // non existant elements.
+            $emptyrow = array_fill(0, count($this->columns), '');
+            while ($this->currentrow < $this->pagesize) {
+                $this->print_row($emptyrow, 'emptyrow');
+            }
+
+            echo html_writer::end_tag('tbody');
+            echo html_writer::end_tag('table');
+            echo html_writer::end_tag('div');
+            $this->wrap_html_finish();
+
+            // Paging bar
+            if(in_array(TABLE_P_BOTTOM, $this->showdownloadbuttonsat)) {
+                echo $this->download_buttons();
+            }
+
+            if($this->use_pages) {
+                $pagingbar = new paging_bar($this->totalrows, $this->currpage, $this->pagesize, $this->baseurl);
+                $pagingbar->pagevar = $this->request[TABLE_VAR_PAGE];
+                $paginationhtml = $OUTPUT->render($pagingbar);
+            }
+
+            // pagesize
+            $baseurl = $this->baseurl;
+            $pagesize = $this->get_page_size();
+            $options = [10, 25, 50, 100];
+
+            $options = array_map(function($i) use ($baseurl, $pagesize) {
+                $url = clone $baseurl;
+                $url->params(['pagesize' => $i]);
+
+                return [
+                    'value' => $i,
+                    'url' => $url->out(),
+                    'selected' => $pagesize == $i,
+                ];
+            }, $options);
+
+            echo $OUTPUT->render_from_template(
+                'local_intelliboard/parts_table_bottom',
+                ['page_size_options' => $options, 'pagination_html' => $paginationhtml]
+            );
+        }
+    }
 }
 class intelliboard_learner_grades_table extends table_sql {
     public $scale_real;
 
-    function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '', $mod = 0) {
+    function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '', $mod = 0, $module = 0) {
         global $CFG, $PAGE, $DB;
 
         parent::__construct($uniqueid);
@@ -908,12 +1063,23 @@ class intelliboard_learner_grades_table extends table_sql {
             'c2'=>$courseid
         );
         $sql = "";
+        $having = 'cm.id > 0';
         if ($search) {
-            $sql .= " AND " . $DB->sql_like('m.name', ":activity", false, false);
+            $having .= sprintf(' AND (%s OR %s)',
+                $DB->sql_like('m.name', ":activity", false, false),
+                $DB->sql_like('activity', ":activity1", false, false)
+            );
             $params['activity'] = "%$search%";
+            $params['activity1'] = "%$search%";
         }
+
         if ($mod) {
             $sql .= " AND cm.module IN (1,15,16,17,20,23)";
+        }
+
+        if ($module) {
+            $sql .= " AND m.id = :moduleid";
+            $params['moduleid'] = $module;
         }
 
         $sql_columns = "";
@@ -925,23 +1091,24 @@ class intelliboard_learner_grades_table extends table_sql {
         $grade_single = intelliboard_grade_sql();
         $completion = intelliboard_compl_sql("cmc.");
 
-        $fields = "
-            cm.id,
-            m.name as module,
-            cmc.timemodified as timecompleted,
-            $grade_single AS grade,
-            CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS graded,
-            l.visits,
-            l.timespend
-            $sql_columns";
-
-        $from = "{course_modules} cm
-            LEFT JOIN {modules} m ON m.id = cm.module
-            LEFT JOIN {grade_items} gi ON gi.iteminstance = cm.instance AND gi.itemmodule = m.name AND gi.itemtype = 'mod'
-            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :u1
-            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :u2
-            LEFT JOIN {local_intelliboard_tracking} l ON l.param=cm.id AND l.page='module' AND l.courseid=:c1 AND l.userid= :u3";
-        $where = "cm.visible = 1 AND cm.course = :c2 $sql";
+        $fields = 't.*';
+        $from = "(SELECT cm.id,
+                        m.name AS module,
+                        cmc.timemodified AS timecompleted,
+                        $grade_single AS grade,
+                        CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS graded,
+                        l.visits,
+                        l.timespend
+                        $sql_columns
+                   FROM {course_modules} cm
+              LEFT JOIN {modules} m ON m.id = cm.module
+              LEFT JOIN {grade_items} gi ON gi.iteminstance = cm.instance AND gi.itemmodule = m.name AND gi.itemtype = 'mod'
+              LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :u1
+              LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :u2
+              LEFT JOIN {local_intelliboard_tracking} l ON l.param=cm.id AND l.page='module' AND l.courseid=:c1 AND l.userid= :u3
+                  WHERE cm.visible = 1 AND cm.course = :c2 $sql
+                 HAVING $having) t";
+        $where = 't.id > 0';
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
