@@ -784,6 +784,7 @@ $string['enablebbbdebug'] = "BigBlueButton debug mode";
 $string['student_grades'] = "Student grades";
 $string['grid_view'] = "Grid view";
 $string['list_view'] = "List view";
+$string['all_modules'] = 'All modules';
 
  /* Attendance */
  $string['attendance'] = 'Frequência';
@@ -813,3 +814,20 @@ $string['adm_dshb_user_site_summary_details'] = 'User Site Summary Detail';
 $string['adm_dshb_course_enrollments_types'] = 'Course Enrollment Types';
 $string['adm_dshb_user_map'] = 'User Map';
 $string['adm_dshb_user_enrol_with_compl_overview'] = 'Course Enrollments with Completion Overview';
+
+$string['instructor_hide_need_help'] = 'Hide "Need help" button';
+$string['names_order'] = 'Names order';
+$string['firstname_lastname'] = '{First Name} {Last Name}';
+$string['lastname_firstname'] = '{Last Name} {First Name}';
+$string['issuer'] = 'Issuer';
+$string['criteria_method'] = 'Criteria method';
+$string['criteria_all_courses'] = 'All of the following courses have to be completed';
+$string['criteria_any_course'] = 'Any of the following courses have to be completed';
+$string['dashboard_settings'] = 'Dashboard settings';
+
+$string['tracklogs'] = 'Track Time by User - Daily';
+$string['trackdetails'] = 'Track Time by User - Hourly';
+$string['tracktotals'] = 'Track Time Aggregate - Daily';
+
+$string['enable_badges_report'] = 'Enable "Badges" report';
+$string['sizemode'] = 'Size Mode: Large ( > 5,000 Users)';

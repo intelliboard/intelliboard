@@ -24,6 +24,8 @@
  * @website    https://intelliboard.net/
  */
 
+use local_intelliboard\repositories\user_settings;
+
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
@@ -44,6 +46,8 @@ $course = optional_param('course', 0, PARAM_INT);
 $length = optional_param('length', 100, PARAM_INT);
 $daterange = clean_raw(optional_param('daterange', '', PARAM_RAW));
 $filter_courses = optional_param('filter_courses', '', PARAM_ALPHANUMEXT);
+$settingscourses = array_keys(user_settings::getInstructorDashboardCourses($USER->id));
+$instructorAllCourses = intelliboard_instructor_getcourses('', true, '', false, false);
 
 require_login();
 intelliboard_instructor_access();
@@ -98,6 +102,7 @@ if(file_exists('/local/intelliboard/assets/js/flatpickr_l10n/'.current_language(
 }
 $PAGE->requires->css('/local/intelliboard/assets/css/flatpickr.min.css');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
+$PAGE->requires->css('/local/intelliboard/assets/css/multiple-select.css');
 
 if($action == 'modules'){
 	$data = intelliboard_instructor_modules();
@@ -108,11 +113,13 @@ if($action == 'modules'){
 }
 
 $instructor_course_shortname = get_config('local_intelliboard', 'instructor_course_shortname');
-$mycourses = intelliboard_instructor_getcourses('', true);
+$mycourses = intelliboard_instructor_getcourses('', true, '');
 $list_of_my_courses = array();
+
 foreach($mycourses as $item){
-    $list_of_my_courses[$item->id] = ($instructor_course_shortname)?$item->shortname:$item->fullname;
+    $list_of_my_courses[$item->id] = ($instructor_course_shortname) ? $item->shortname : $item->fullname;
 }
+
 if($course == 0){
     $course = key($list_of_my_courses);
 }
@@ -168,6 +175,10 @@ $users = intelliboard_instructor_getcourses('', false, '', true);
 
 $courses = intelliboard_instructor_courses($view, $page, $length, $course, $daterange);
 
+$PAGE->requires->js_call_amd(
+    'local_intelliboard/instructor', 'dashboardSettings', [get_string('all_courses', 'local_intelliboard')]
+);
+
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
@@ -177,6 +188,21 @@ echo $OUTPUT->header();
 	<?php include("views/menu.php"); ?>
 	<?php if(isset($stats->courses) and isset($stats->enrolled) and $stats->courses > 0 and $stats->enrolled > 0): ?>
 	<div class="intelli-instructor-header clearfix">
+        <div class="instructor-dashboard-settings-wrapper">
+            <select class="instructor-courses-settings" multiple="multiple" autocomplete="off">
+                <?php foreach($instructorAllCourses as $item): ?>
+                    <?php if(in_array($item->id, $settingscourses)): ?>
+                        <option value="<?php echo $item->id; ?>" selected="selected">
+                            <?php echo $item->fullname; ?>
+                        </option>
+                    <?php else: ?>
+                        <option value="<?php echo $item->id; ?>">
+                            <?php echo $item->fullname; ?>
+                        </option>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </select>
+        </div>
 		<div class="instructor-head <?php echo($n5 || $n13)?'':'full'; ?>">
 			<?php if($n1 or $n2 or $n3 or $n12): ?>
 				<h3><?php echo get_string('in1', 'local_intelliboard'); ?></h3>

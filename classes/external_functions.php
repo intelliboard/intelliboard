@@ -350,7 +350,15 @@ class local_external_functions
             'report185',
             'report186',
             'report187',
-            'get_assignment_grading_definitions'
+            'get_assignment_grading_definitions',
+            'report188',
+            'report193',
+            'get_system_roles_fix_names',
+            'report195',
+            'report196',
+            'get_cohort_courses',
+            'get_course_items',
+            'get_cohort_items'
         ];
     }
     public function get_function($params = null)

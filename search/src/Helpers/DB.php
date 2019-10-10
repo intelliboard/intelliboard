@@ -30,7 +30,6 @@ use Containers\TablesContainer;
 
 class DB
 {
-
     private static $systemWords = array(
         'students?',
         'users?',
@@ -267,7 +266,7 @@ class DB
         }
 
         if (!static::$assigns) {
-            $assigns = $DB->get_records_sql("SELECT * FROM {local_intelliboard_assign} WHERE userid = :userid", ['userid' => $settings['external_id']]);
+            $assigns = $DB->get_records_sql("SELECT * FROM {local_intelliboard_assign} WHERE rel =  'external' AND userid = :userid", ['userid' => $settings['external_id']]);
 
             static::$assigns = [];
             foreach ( $assigns as  $assign) {
@@ -425,8 +424,8 @@ class DB
 
             $choices = $pluralize ? static::pluralize($choices) : $choices;
             static::removeInitialization();
-            return $length ? array_slice($choices, 0, $length) : $choices;
 
+            return $length ? array_slice($choices, 0, $length) : $choices;
         }
 
         static::applyFilters($table, $column, $getter, $types, $alias, $settings, $paramFilters, $additionalFields);
@@ -484,7 +483,6 @@ class DB
         $paramFilters = array(),
         $additionalFields = array()
     ) {
-
         global $DB;
 
         $courseFilter = !empty($paramFilters['course']) ? $paramFilters['course'] : false;
@@ -716,7 +714,7 @@ class DB
                 $getter->setParam('external_id', $settings['external_id']);
                 $getter->add('tables', 'INNER JOIN {course} c ON cm.course = c.id');
                 $getter->add('filters',
-                    '(c.id IN (SELECT instance FROM {local_intelliboard_assign} WHERE userid = :external_id AND type = \'courses\'))');
+                    '(c.id IN (SELECT instance FROM {local_intelliboard_assign} WHERE rel = \'external\' AND userid = :external_id AND type = \'courses\'))');
 
             }
 
@@ -809,7 +807,6 @@ class DB
         }
 
         return $getter;
-
     }
 
     protected static function addAdditionalFields($getter, $column, $additionalFields = array(), $alias = false)
@@ -830,7 +827,6 @@ class DB
         } else {
             $getter->add('columns', ' DISTINCT(' . $column . ') AS value');
         }
-
     }
 
     protected static function generateCountrySynonyms()
@@ -862,5 +858,4 @@ class DB
             'name2' => $column
         ));
     }
-
 }

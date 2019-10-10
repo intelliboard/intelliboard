@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -19,13 +18,20 @@
  *
  *
  * @package    local_intelliboard
- * @copyright  2017 IntelliBoard, Inc
+ * @copyright  2019 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    https://intelliboard.net/
  */
 
-$plugin->version = 2019101002;
-$plugin->requires = 2011120500;
-$plugin->release = '6.0.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+define(['jquery', 'local_intelliboard/intb_circlechart'], function($, circleChart) {
+    let Intelliboard = {
+        circleProgress: function(options) {
+            options = JSON.parse(options);
+            $(document).ready(function(){
+                $('.circle-progress').percentcircle(options);
+            });
+        }
+    };
+
+    return Intelliboard;
+});

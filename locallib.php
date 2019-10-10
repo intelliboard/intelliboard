@@ -234,6 +234,17 @@ function chart_options()
     $res['GradesFCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:80,guage:2,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'15px',percentWeight:'normal'}";
 
     $res['GradesXCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:40,guage:1,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'11px',percentWeight:'normal'}";
+    $res['GradesXCalculationJSON'] = json_encode([
+        'factor' => md5("#FGS$%FGH245$".rand(0,1000)),
+        'animate' => true,
+        'diameter' => 40,
+        'guage' => 1,
+        'coverBg' => '#fff',
+        'bgColor' => '#efefef',
+        'fillColor' => '#5c93c8',
+        'percentSize' => '11px',
+        'percentWeight' => 'normal',
+    ]);
 
     $res['GradesZCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:80,guage:2,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'15px',percentWeight:'normal'}";
 
@@ -457,21 +468,21 @@ function exclude_not_owners($columns) {
 
     foreach ($columns as $type => $value) {
         if ($type == "users") {
-            $owners_users = array_merge($owners_users, $DB->get_fieldset_sql("SELECT userid FROM {local_intelliboard_assign} WHERE type = 'users' AND instance = :userid", array('userid' => $value)));
+            $owners_users = array_merge($owners_users, $DB->get_fieldset_sql("SELECT userid FROM {local_intelliboard_assign} WHERE rel = 'external' AND type = 'users' AND instance = :userid", array('userid' => $value)));
             $owners_users = array_merge($owners_users, $DB->get_fieldset_sql("SELECT lia.userid FROM {local_intelliboard_assign} lia
               INNER JOIN {context} ctx ON  ctx.instanceid" . $typeChange . " = lia.instance AND ctx.contextlevel = 50
               INNER JOIN {role_assignments} ra ON ctx.id = ra.contextid
-              WHERE ra.userid = ? AND lia.type = 'courses'
+              WHERE ra.userid = ? AND lia.type = 'courses' AND lia.rel = 'external'
             ", array('userid' => $value)));
             $owners_users = array_merge($owners_users, $DB->get_fieldset_sql("SELECT lia.userid FROM {local_intelliboard_assign}  lia
               INNER JOIN {cohort_members} cm ON cm.cohortid" . $typeChange . " = lia.instance
-              WHERE cm.userid = ? AND lia.type = 'cohorts'
+              WHERE cm.userid = ? AND lia.type = 'cohorts' AND lia.rel = 'external'
             ", array('userid' => $value)));
 
         } elseif ($type == 'courses') {
-            $owners_courses = array_merge($owners_courses, $DB->get_fieldset_sql(" SELECT userid FROM {local_intelliboard_assign} WHERE type = 'courses' AND instance = :courseid", array('courseid' => $value)));
+            $owners_courses = array_merge($owners_courses, $DB->get_fieldset_sql(" SELECT userid FROM {local_intelliboard_assign} WHERE rel = 'external' AND type = 'courses' AND instance = :courseid", array('courseid' => $value)));
         } elseif ($type == 'cohorts') {
-            $owners_cohorts = array_merge($owners_cohorts, $DB->get_fieldset_sql(" SELECT userid FROM {local_intelliboard_assign} WHERE type = 'cohorts' AND instance = :cohortid", array('cohortid' => $value)));
+            $owners_cohorts = array_merge($owners_cohorts, $DB->get_fieldset_sql(" SELECT userid FROM {local_intelliboard_assign} WHERE rel = 'external' AND type = 'cohorts' AND instance = :cohortid", array('cohortid' => $value)));
         }
     }
 
@@ -479,7 +490,7 @@ function exclude_not_owners($columns) {
     $sql = "SELECT userid FROM {local_intelliboard_assign}";
 
     if ($owners) {
-        $sql .= " WHERE userid NOT IN (" . implode(",", $owners) . ")";
+        $sql .= " WHERE rel = 'external' AND userid NOT IN (" . implode(",", $owners) . ")";
     }
 
     return $DB->get_fieldset_sql($sql);

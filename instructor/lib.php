@@ -24,6 +24,8 @@
  * @website    https://intelliboard.net/
  */
 
+use local_intelliboard\repositories\user_settings;
+
 defined('MOODLE_INTERNAL') || die();
 
 function intelliboard_instructor_access()
@@ -349,6 +351,7 @@ function intelliboard_instructor_stats()
             $join_sql1
         WHERE c.id > 0 $sql $sql2", $params);
 }
+
 function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $daterange = '')
 {
     global $DB, $USER;
@@ -486,70 +489,109 @@ function intelliboard_instructor_course_access($course)
   }
   return false;
 }
-function intelliboard_instructor_getcourses($column = 'c.id', $list = false, $col_user = '', $onlyusers = false)
-{
-  global $DB, $USER, $CFG;
 
-  $mode = get_config('local_intelliboard', 'instructor_mode');
-  $visibility = get_config('local_intelliboard', 'instructor_course_visibility');
-  $roles = get_config('local_intelliboard', 'filter10');
-  $instructor_custom_groups = get_config('local_intelliboard', 'instructor_custom_groups');
+function intelliboard_instructor_getcourses(
+    $column = 'c.id', $list = false, $col_user = '', $onlyusers = false, $filtercoursesbysettings = true
+) {
+    global $DB, $USER, $CFG;
 
-  if ($onlyusers and !$instructor_custom_groups) {
-    return 0;
-  }
-  if ($instructor_custom_groups) {
-    $sql_data = get_filter_usersql("u.");
-    $data = $DB->get_record_sql("SELECT d.data AS codea FROM {user_info_field} f, {user_info_data} d WHERE d.fieldid = f.id AND d.userid = ? and f.shortname= 'codea'", [$USER->id]);
-    $result = $DB->get_records_sql("SELECT DISTINCT d.userid FROM {user_info_field} f, {user_info_data} d, {user} u
-        WHERE d.fieldid = f.id AND d.data = ? AND u.id = d.userid $sql_data and f.shortname IN ('codsm', 'coddm', 'codam')", [$data->codea]);
+    $mode = get_config('local_intelliboard', 'instructor_mode');
+    $visibility = get_config('local_intelliboard', 'instructor_course_visibility');
+    $roles = get_config('local_intelliboard', 'filter10');
+    $instructor_custom_groups = get_config('local_intelliboard', 'instructor_custom_groups');
+    $coursefilter = [" > 0", []];
 
-    if ($result) {
-      $users = [];
-      foreach ($result as $row) {
-        $users[] = $row->userid;
-      }
+    if($filtercoursesbysettings) {
+        $usrcourses = array_keys(user_settings::getInstructorDashboardCourses($USER->id));
 
-      $result = new stdClass();
-      $result->users = implode(',', $users);
+        if($usrcourses) {
+            $coursefilter = $DB->get_in_or_equal($usrcourses, SQL_PARAMS_NAMED, 'usrcrs');
+        }
+    }
+
+    if ($onlyusers and !$instructor_custom_groups) {
+        return 0;
+    }
+    if ($instructor_custom_groups) {
+        $sql_data = get_filter_usersql("u.");
+        $data = $DB->get_record_sql(
+            "SELECT d.data AS codea
+               FROM {user_info_field} f, {user_info_data} d
+              WHERE d.fieldid = f.id AND d.userid = ? and f.shortname= 'codea'",
+            [$USER->id]
+        );
+        $result = $DB->get_records_sql(
+            "SELECT DISTINCT d.userid
+               FROM {user_info_field} f, {user_info_data} d, {user} u
+              WHERE d.fieldid = f.id AND d.data = ? AND u.id = d.userid $sql_data AND
+                    f.shortname IN ('codsm', 'coddm', 'codam')",
+            [$data->codea]
+        );
+
+        if ($result) {
+            $users = [];
+
+            foreach ($result as $row) {
+              $users[] = $row->userid;
+            }
+
+            $result = new stdClass();
+            $result->users = implode(',', $users);
+        } else {
+            $result = new stdClass();
+            $result->users = 0;
+        }
+
+        if ($onlyusers) {
+            return ($result->users) ? count(explode(",", $result->users)) : 0;
+        }
+        if ($result->users) {
+            list($sql, $params) = intelliboard_filter_in_sql($result->users, "ra.userid", []);
+            $courses = $DB->get_records_sql(
+                "SELECT c.*
+                   FROM {role_assignments} ra, {context} ctx, {course} c
+                  WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid $sql AND
+                        c.id {$coursefilter[0]}
+               GROUP BY c.id",
+                array_merge($params, $coursefilter[1])
+            );
+            $users = $result->users;
+        } else {
+            $courses = [];
+            $users = '0,0';
+        }
+    } elseif ($mode) {
+        $courses = $DB->get_records_sql(
+            "SELECT * FROM {course} WHERE category > 0 AND id {$coursefilter[0]}",
+            $coursefilter[1]
+        );
     } else {
-      $result = new stdClass();
-      $result->users = 0;
+        $params = ['userid' => $USER->id];
+        list($sql, $params) = intelliboard_filter_in_sql($roles, "ra.roleid", $params);
+        $courses = $DB->get_records_sql(
+            "SELECT DISTINCT c.*
+               FROM {role_assignments} ra, {context} ctx, {course} c
+              WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND
+                    c.id=ctx.instanceid AND ra.userid = :userid $sql AND
+                    c.id {$coursefilter[0]}",
+            array_merge($params, $coursefilter[1])
+        );
     }
 
-    if ($onlyusers) {
-      return ($result->users) ? count(explode(",", $result->users)) : 0;
+    foreach ($courses as $key=>$course) {
+        if (!intelliboard_instructor_course_access($course)) {
+            unset($courses[$key]);
+        }
+        if (!$visibility and !$course->visible) {
+          unset($courses[$key]);
+        }
     }
-    if ($result->users) {
-      list($sql, $params) = intelliboard_filter_in_sql($result->users, "ra.userid", []);
-      $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid $sql GROUP BY c.id", $params);
-      $users = $result->users;
+    if ($list) {
+        return (!$courses) ? [] : $courses;
     } else {
-      $courses = [];
-      $users = '0,0';
+        $courses = (!$courses) ? '0,0' : implode(",", array_keys($courses));
+        return ($col_user and $instructor_custom_groups) ? " AND ($column IN ($courses) and $col_user IN ($users))" : " AND $column IN ($courses)";
     }
-  } elseif ($mode) {
-    $courses = $DB->get_records_sql("SELECT * FROM {course} WHERE category > 0");
-  } else {
-    $params = ['userid' => $USER->id];
-    list($sql, $params) = intelliboard_filter_in_sql($roles, "ra.roleid", $params);
-    $courses = $DB->get_records_sql("SELECT c.* FROM {role_assignments} ra, {context} ctx, {course} c WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid AND ra.userid = :userid $sql", $params);
-  }
-
-  foreach ($courses as $key=>$course) {
-    if (!intelliboard_instructor_course_access($course)) {
-        unset($courses[$key]);
-      }
-      if (!$visibility and !$course->visible) {
-        unset($courses[$key]);
-      }
-  }
-  if ($list) {
-    return (!$courses) ? [] : $courses;
-  } else {
-    $courses = (!$courses) ? '0,0' : implode(",", array_keys($courses));
-    return ($col_user and $instructor_custom_groups) ? " AND ($column IN ($courses) and $col_user IN ($users))" : " AND $column IN ($courses)";
-  }
 }
 
 function intelliboard_get_widget($id, $data, $params) {

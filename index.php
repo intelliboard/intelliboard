@@ -42,10 +42,10 @@ $page = optional_param('page', 0, PARAM_INT);
 $length = optional_param('length', 10, PARAM_INT);
 $type = optional_param('type', '', PARAM_RAW);
 
-if($action == 'noalert'){
+if ($action == 'noalert') {
 	$USER->noalert = true;
 }
-if($action == 'clear_ntf' and is_siteadmin()){
+if ($action == 'clear_ntf' and is_siteadmin()) {
 	$DB->delete_records('local_intelliboard_ntf');
 	$DB->delete_records('local_intelliboard_ntf_hst');
 	$DB->delete_records('local_intelliboard_ntf_pms');
@@ -68,7 +68,7 @@ $params = (object) array(
 	'teacher_roles'=>get_config('local_intelliboard', 'filter10'),
 	'learner_roles'=>get_config('local_intelliboard', 'filter11'),
 	'filter_profile'=>0,
-	'sizemode'=> false,
+	'sizemode'=> get_config('local_intelliboard', 'sizemode'),
 	'debug'=>0,
 	'start'=>0,
 	'userid'=>0,
@@ -84,7 +84,7 @@ $params = (object) array(
 );
 $plugin = new local_intelliboard_external();
 
-if($time == 'monthly') {
+if ($time == 'monthly') {
     $mainChartFormat = 'MMM, yyyy';
     $params->timestart = strtotime('-364 days');
 } else if($time == 'weekly') {
@@ -95,18 +95,18 @@ if($time == 'monthly') {
     $params->timestart = strtotime('-44 days');
 }
 
-if($action == 'report43'){
+if ($action == 'report43') {
 	$params->length = $length;
 	if ($type == 'users' and $page > 1) {
 		$params->start = (($page-1) * $length);
 	}
-	$avg = $plugin->get_dashboard_avg($params);
+	$avg = (!$params->sizemode) ? $plugin->get_dashboard_avg($params) : null;
 	$params->timestart = 0;
 	$report43 = $plugin->report43($params);
 	$page = ($page)?$page:1;
 	include("views/report43.php");
 	exit;
-}elseif($action == 'report44'){
+} elseif ($action == 'report44') {
 	$params->length = $length;
 	if ($type == 'courses' and $page > 1) {
 		$params->start = (($page-1) * $length);
@@ -147,7 +147,6 @@ $settingEnrolComplOverview = get_config(
     'local_intelliboard', 'adm_dshb_user_enrol_with_compl_overview'
 );
 
-$params->sizemode = 0;
 $json_data = array();
 
 if($settingUserEnrollmentsSession) {
@@ -167,11 +166,11 @@ if($settingUserEnrollmentsSession) {
     }
 }
 
-if($settingTotals) {
+if ($settingTotals) {
     $totals = $plugin->get_total_info($params);
 }
 
-if($settingCourseEnrollmentsTypes) {
+if ($settingCourseEnrollmentsTypes) {
     $enrols = $plugin->get_enrols($params);
     $json_enrols = array();
     foreach($enrols as $enrol){
@@ -179,7 +178,7 @@ if($settingCourseEnrollmentsTypes) {
     }
 }
 
-if($settingUserMap) {
+if ($settingUserMap) {
     $json_countries = array();
     $countries = $plugin->get_countries($params);
     foreach($countries as $country){

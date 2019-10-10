@@ -168,6 +168,35 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configselect($name, $title,'',"Y-m-d",$options);
         $settings->add($setting);
 
+        $options = array(
+            "firstname_lastname" => get_string('firstname_lastname', 'local_intelliboard'),
+            "lastname_firstname" => get_string('lastname_firstname', 'local_intelliboard'),
+        );
+        $name = 'local_intelliboard/names_order';
+        $title = new lang_string('names_order', 'local_intelliboard');
+        $setting = new admin_setting_configselect($name, $title,'',"firstname_lastname",$options);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/tracklogs';
+        $title = new lang_string('tracklogs', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/trackdetails';
+        $title = new lang_string('trackdetails', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/tracktotals';
+        $title = new lang_string('tracktotals', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/sizemode';
+        $title = new lang_string('sizemode', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/filter1';
@@ -439,6 +468,11 @@ if($ADMIN->fulltree){
 
         $name = 'local_intelliboard/instructor_custom_groups';
         $title = new lang_string('instructor_custom_groups', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/instructor_hide_need_help';
+        $title = new lang_string('instructor_hide_need_help', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
@@ -739,14 +773,18 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
-        $roles_user = $DB->get_records_sql("SELECT r.id, r.name, r.shortname, r.description, r.sortorder, r.archetype
-                                            FROM {role} r
-                                              JOIN {role_context_levels} rcl ON rcl.roleid=r.id
-                                            WHERE rcl.contextlevel=:contextlevel GROUP BY r.id, r.name, r.shortname, r.description, r.sortorder, r.archetype",array('contextlevel'=>CONTEXT_USER));
+        $roles_user = $DB->get_records_sql(
+            "SELECT r.id, r.name, r.shortname, r.description, r.sortorder, r.archetype
+                   FROM {role} r
+                   JOIN {role_context_levels} rcl ON rcl.roleid=r.id
+                  WHERE rcl.contextlevel=:contextlevel
+               GROUP BY r.id, r.name, r.shortname, r.description, r.sortorder, r.archetype",
+            array('contextlevel' => CONTEXT_USER)
+        );
 
         $roles_user = role_fix_names($roles_user);
-        $roles_user_arr = array('0'=>get_string('disable'));
-        foreach($roles_user as $role){
+        $roles_user_arr = array('0' => get_string('disable'));
+        foreach ($roles_user as $role){
             $roles_user_arr[$role->id] = $role->localname;
         }
 
@@ -764,6 +802,11 @@ if($ADMIN->fulltree){
 
         $name = 'local_intelliboard/student_course_visibility';
         $title = new lang_string('student_course_visibility', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/enable_badges_report';
+        $title = new lang_string('enable_badges_report', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 

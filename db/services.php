@@ -152,32 +152,41 @@ $functions = array(
             'description' => 'Attendance API',
             'type'        => 'read',
         ),
+        'local_intelliboard_save_instructor_courses' => array(
+            'classname'   => 'local_intelliboard_instructorlib',
+            'methodname'  => 'save_instructor_courses',
+            'classpath'   => 'local/intelliboard/classes/instructorlib.php',
+            'description' => 'Save instructor courses',
+            'type'        => 'write',
+            'ajax'        => true
+        ),
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
 $services = array(
-        'IntelliBoard service' => array(
-                'functions' => array (
-                        'local_intelliboard_database_query',
-                        'local_intelliboard_save_assigns',
-                        'local_intelliboard_delete_assigns',
-                        'local_intelliboard_run_report',
-                        'local_intelliboard_save_report',
-                        'local_intelliboard_delete_report',
-                        'local_intelliboard_get_param_values',
-                        'local_intelliboard_get_data_by_query',
-                        'local_intelliboard_extract_db_params_from_sentence',
-                        'local_intelliboard_process_auto_complete_db',
-                        'local_intelliboard_check_installed_plugins',
-                        'local_intelliboard_get_gradebook_fields',
-                        'local_intelliboard_send_notifications',
-                        'local_intelliboard_save_notification',
-                        'local_intelliboard_delete_notification',
-                        'local_intelliboard_get_history',
-                        'local_intelliboard_clear_notifications',
-                        'local_intelliboard_attendance_api',
-                ),
-                'restrictedusers' => 1,
-                'enabled'=>1,
-        )
+    'IntelliBoard service' => array(
+        'functions' => array (
+            'local_intelliboard_database_query',
+            'local_intelliboard_save_assigns',
+            'local_intelliboard_delete_assigns',
+            'local_intelliboard_run_report',
+            'local_intelliboard_save_report',
+            'local_intelliboard_delete_report',
+            'local_intelliboard_get_param_values',
+            'local_intelliboard_get_data_by_query',
+            'local_intelliboard_extract_db_params_from_sentence',
+            'local_intelliboard_process_auto_complete_db',
+            'local_intelliboard_check_installed_plugins',
+            'local_intelliboard_get_gradebook_fields',
+            'local_intelliboard_send_notifications',
+            'local_intelliboard_save_notification',
+            'local_intelliboard_delete_notification',
+            'local_intelliboard_get_history',
+            'local_intelliboard_clear_notifications',
+            'local_intelliboard_attendance_api',
+            'local_intelliboard_save_instructor_courses',
+        ),
+        'restrictedusers' => 1,
+        'enabled'=>1,
+    )
 );

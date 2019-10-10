@@ -48,7 +48,7 @@
 .intelliboard-filterform input{width:100%; display: block; margin-bottom: 10px}
 .intelliboard-filterform button{  margin: 30px 0 0;}
 
-.intelliboard-search{margin: 30px 0 20px;}
+.intelliboard-search{margin: 30px 0 20px;width: 100%;}
 .intelliboard-search form{margin: 0;}
 .intelliboard-search form input{float: left; margin: 0}
 .intelliboard-search form button{float: left; margin: 0 10px 0}
@@ -57,6 +57,7 @@
 .intelliboard-search form span a{font-size: 24px;color:#ddd; margin-left: 6px;}
 .intelliboard-search form span a.active,
 .intelliboard-search form span a:hover{color:#666;}
+.intelliboard-search > form > select {width: 25%; margin-right: 10px;}
 
 .intelliboard-overflow{width:100%;overflow: hidden;}
 .intelliboard-overflow .no-overflow{width:100%;}
@@ -949,4 +950,60 @@ div[aria-label="A tabular representation of the data in the chart."] {
 }
 .intelliboard-student .intelliboard-dropdown {
     width: 150px;
+}
+
+.intelliboard-table-bottom {
+	float: left;
+	width: 100%;
+	margin-top: 10px;
+}
+.intelliboard-table-bottom > .intb-pagination {
+	float: left;
+	width: 90%;
+	height: 40px;
+}
+.intelliboard-table-bottom > .intb-pagination ul.pagination.mt-3 {
+	margin-top: 0 !important;
+}
+.intelliboard-table-bottom > .intb-page-size {
+	float: left;
+    width: 10%;
+    height: 40px;
+    text-align: right;
+}
+.intelliboard-table-bottom > .intb-page-size > select {
+	width: 60px;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+	background: #fff;
+	color: black;
+	padding: 5px;
+}
+
+.badge-report-crit-item:after {
+    content: ",";
+}
+.badge-report-item .badge-report-crit-item:last-child:after {
+    content: "";
+}
+.badge-report-item .bad {
+    color: #d33939;
+}
+.badge-report-item .good {
+    color: #49955e;
+}
+
+.instructor-dashboard-settings-wrapper button.ms-choice span:hover {
+    color: #999;
+}
+.instructor-dashboard-settings-wrapper button.ms-choice {
+    background: #fff;
+}
+.instructor-dashboard-settings-wrapper {
+    margin-top: 15px;
+}
+.instructor-courses-settings .ms-drop.bottom button.btn.btn-primary {
+    width: 100%;
+    margin-left: 0;
+    background: #428bca none repeat scroll 0 0;;
 }

@@ -54,17 +54,17 @@
 			<td align="center" class="intelliboard-tooltip" title="<?php echo get_string('enrolled_completed', 'local_intelliboard', $row); ?>">
 				<div class="intelliboard-progress xl"><span style="width:<?php echo ($row->completed_courses) ? (($row->completed_courses / $row->courses) * 100) : 0; ?>%"></span></div>
 			</td>
-			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo get_string('user_grade_avg', 'local_intelliboard', $row);} ?>">
+			<td align="center" class="<?php echo ($avg) ? 'intelliboard-tooltip':''; ?>" title="<?php if($avg){echo get_string('user_grade_avg', 'local_intelliboard', $row);} ?>">
 				<span class='<?php if($avg){echo ($avg->grade_site > $row->grade) ? "down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left";} ?>'>
 					 <?php echo $row->grade; ?>
 				</span>
 			</td>
-			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo get_string('user_visit_avg', 'local_intelliboard', $row);} ?>">
+			<td align="center" class="<?php echo ($avg) ? 'intelliboard-tooltip':''; ?>" title="<?php if($avg){echo get_string('user_visit_avg', 'local_intelliboard', $row);} ?>">
 				<span class='<?php if($avg){echo ($avg->visits_site > $row->visits)?"down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left";} ?>'>
 					 <?php echo $row->visits; ?>
 				</span>
 			</td>
-			<td align="center" class="intelliboard-tooltip" title="<?php if($avg){echo get_string('user_time_avg', 'local_intelliboard', $row);} ?>">
+			<td align="center" class="<?php echo ($avg) ? 'intelliboard-tooltip':''; ?>" title="<?php if($avg){echo get_string('user_time_avg', 'local_intelliboard', $row);} ?>">
 				<span class='<?php if($avg){echo ($avg->timespend_site > $row->timespend)?"down ion-arrow-graph-down-left":"up ion-arrow-graph-up-left";} ?>'>
 					 <?php echo $row->timespend; ?>
 				</span>

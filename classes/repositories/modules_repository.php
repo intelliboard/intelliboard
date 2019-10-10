@@ -19,13 +19,24 @@
  *
  *
  * @package    local_intelliboard
- * @copyright  2017 IntelliBoard, Inc
+ * @copyright  2019 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    https://intelliboard.net/
  */
 
-$plugin->version = 2019101002;
-$plugin->requires = 2011120500;
-$plugin->release = '6.0.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+ namespace local_intelliboard\repositories;
+
+class modules_repository
+{
+    public static function getAllModules($showInvisible = false) {
+        global $DB;
+
+        $condifitons = [];
+
+        if(!$showInvisible) {
+            $condifitons['visible'] = 1;
+        }
+
+        return $DB->get_records('modules', $condifitons);
+    }
+}
