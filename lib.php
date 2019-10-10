@@ -165,10 +165,8 @@ function local_intelliboard_extend_navigation(global_navigation $nav){
 
 function local_intelliboard_user_details()
 {
-
-
-    $platform    =   "Unknown OS Platform";
-		$browser = "Unknown Browser";
+	$platform = "Unknown OS Platform";
+	$browser = "Unknown Browser";
 
 		try {
 			$regexes = local_intelliboard_get_regexes();
@@ -204,12 +202,7 @@ function local_intelliboard_user_details()
 		$userlang = 'Unknown';
 	}
 
-	return array(
-        'useragent'  => $browser,
-        'useros' => $platform,
-        'userip' => $ip,
-        'userlang'     => $userlang
-    );
+	return array('useragent' => $browser, 'useros' => $platform, 'userip' => $ip, 'userlang' => $userlang);
 }
 
 function local_intelliboard_get_regexes(){
@@ -218,7 +211,7 @@ function local_intelliboard_get_regexes(){
     return json_decode(file_get_contents($CFG->dirroot .'/local/intelliboard/classes/regexes.json'));
 }
 
-function local_intelliboard_insert_tracking($ajaxRequest = false){
+function local_intelliboard_insert_tracking($ajaxRequest = false) {
     global $CFG, $PAGE, $SITE, $DB, $USER;
 
 	$version = get_config('local_intelliboard', 'version');
@@ -236,6 +229,8 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 		return false;
 	}
 
+
+
 	if ($enabled and isloggedin() and !isguestuser()) {
 		if (is_siteadmin() and !$trackadmin) {
 			return false;
@@ -244,20 +239,19 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 		$intelliboardParam = (isset($_COOKIE['intelliboardParam'])) ? clean_param($_COOKIE['intelliboardParam'], PARAM_INT) : 0;
 		$intelliboardTime = (isset($_COOKIE['intelliboardTime'])) ? clean_param($_COOKIE['intelliboardTime'], PARAM_INT) : 0;
 
-		if (!empty($intelliboardPage)) {
-			$userDetails = (object)local_intelliboard_user_details();
+		if (!empty($intelliboardPage) and !empty($intelliboardParam) and !empty($intelliboardTime)) {
 			if ($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')) {
 				if (!$ajaxRequest) {
 					$data->visits = $data->visits + 1;
 					$data->lastaccess = time();
+				} else {
+					unset($data->lastaccess);
+					unset($data->visits);
 				}
 				$data->timespend = $data->timespend + $intelliboardTime;
-				$data->useragent = $userDetails->useragent;
-				$data->useros = $userDetails->useros;
-				$data->userlang = $userDetails->userlang;
-				$data->userip = $userDetails->userip;
 				$DB->update_record('local_intelliboard_tracking', $data);
 			} else {
+				$userDetails = (object)local_intelliboard_user_details();
 				$courseid = 0;
 				if ($intelliboardPage == "module") {
 					$courseid = $DB->get_field_sql("SELECT c.id FROM {course} c, {course_modules} cm WHERE c.id = cm.course AND cm.id = $intelliboardParam");
@@ -279,9 +273,14 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 				$data->userip = $userDetails->userip;
 				$data->id = $DB->insert_record('local_intelliboard_tracking', $data, true);
 			}
+
+			$tracklogs = get_config('local_intelliboard', 'tracklogs');
+			$trackdetails = get_config('local_intelliboard', 'trackdetails');
+			$tracktotals = get_config('local_intelliboard', 'tracktotals');
+
 			if ($version >= 2016011300) {
 				$currentstamp  = strtotime('today');
-				if ($data->id) {
+				if ($data->id and $tracklogs) {
 					if ($log = $DB->get_record('local_intelliboard_logs', array('trackid' => $data->id, 'timepoint' => $currentstamp))) {
 						if (!$ajaxRequest) {
 							$log->visits = $log->visits + 1;
@@ -297,7 +296,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 						$log->id = $DB->insert_record('local_intelliboard_logs', $log, true);
 					}
 
-					if ($version >= 2017072300 and isset($log->id)) {
+					if ($version >= 2017072300 and isset($log->id) and $trackdetails) {
 						$currenthour  = date('G');
 						if ($detail = $DB->get_record('local_intelliboard_details', array('logid' => $log->id, 'timepoint' => $currenthour))) {
 							if (!$ajaxRequest) {
@@ -315,55 +314,56 @@ function local_intelliboard_insert_tracking($ajaxRequest = false){
 						}
 					}
 				}
-
-				$sessions = false; $courses = false;
-				if ($trackpoint != $currentstamp) {
-					set_config("trackpoint", $currentstamp, "local_intelliboard");
-					set_config("trackusers", '', "local_intelliboard");
-					set_config("trackcourses", '', "local_intelliboard");
-				}
-				if ($intelliboardPage == 'course') {
-					if($trackcourses){
-						$instances = explode(',', $trackcourses);
-						if (!in_array($intelliboardParam, $instances)) {
+				if ($tracktotals) {
+					$sessions = false; $courses = false;
+					if ($trackpoint != $currentstamp) {
+						set_config("trackpoint", $currentstamp, "local_intelliboard");
+						set_config("trackusers", '', "local_intelliboard");
+						set_config("trackcourses", '', "local_intelliboard");
+					}
+					if ($intelliboardPage == 'course') {
+						if($trackcourses){
+							$instances = explode(',', $trackcourses);
+							if (!in_array($intelliboardParam, $instances)) {
+								$courses = true;
+								set_config("trackcourses", $trackcourses.",".$intelliboardParam, "local_intelliboard");
+							}
+						} else {
 							$courses = true;
-							set_config("trackcourses", $trackcourses.",".$intelliboardParam, "local_intelliboard");
+							set_config("trackcourses", $intelliboardParam, "local_intelliboard");
+						}
+					}
+					if ($trackusers) {
+						$users = explode(',', $trackusers);
+						if (!in_array($USER->id, $users)) {
+							$sessions = true;
+							set_config("trackusers", $trackusers.",".$USER->id, "local_intelliboard");
 						}
 					} else {
-						$courses = true;
-						set_config("trackcourses", $intelliboardParam, "local_intelliboard");
-					}
-				}
-				if ($trackusers) {
-					$users = explode(',', $trackusers);
-					if (!in_array($USER->id, $users)) {
 						$sessions = true;
-						set_config("trackusers", $trackusers.",".$USER->id, "local_intelliboard");
+						set_config("trackusers", $USER->id, "local_intelliboard");
 					}
-				} else {
-					$sessions = true;
-					set_config("trackusers", $USER->id, "local_intelliboard");
-				}
-				if ($data = $DB->get_record('local_intelliboard_totals', array('timepoint' => $currentstamp))) {
-					if (!$ajaxRequest) {
-						$data->visits = $data->visits + 1;
+					if ($data = $DB->get_record('local_intelliboard_totals', array('timepoint' => $currentstamp))) {
+						if (!$ajaxRequest) {
+							$data->visits = $data->visits + 1;
+						}
+						if ($sessions) {
+							$data->sessions = $data->sessions + 1;
+						}
+						if ($courses) {
+							$data->courses = $data->courses + 1;
+						}
+						$data->timespend = $data->timespend + $intelliboardTime;
+						$DB->update_record('local_intelliboard_totals', $data);
+					} else {
+						$data = new stdClass();
+						$data->sessions = 1;
+						$data->courses = ($courses)?1:0;
+						$data->visits = 1;
+						$data->timespend = $intelliboardTime;
+						$data->timepoint = $currentstamp;
+						$DB->insert_record('local_intelliboard_totals', $data);
 					}
-					if ($sessions) {
-						$data->sessions = $data->sessions + 1;
-					}
-					if ($courses) {
-						$data->courses = $data->courses + 1;
-					}
-					$data->timespend = $data->timespend + $intelliboardTime;
-					$DB->update_record('local_intelliboard_totals', $data);
-				} else {
-					$data = new stdClass();
-					$data->sessions = 1;
-					$data->courses = ($courses)?1:0;
-					$data->visits = 1;
-					$data->timespend = $intelliboardTime;
-					$data->timepoint = $currentstamp;
-					$DB->insert_record('local_intelliboard_totals', $data);
 				}
 			}
 		}
