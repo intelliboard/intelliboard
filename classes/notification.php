@@ -674,7 +674,7 @@ class local_intelliboard_notification
             'user' => fullname($user),
             'courseName' => $DB->get_record('course', array('id' => $event['contextinstanceid']),
                 'fullname')->fullname,
-            'timeEnrolled' => date('Y/m/d', 'H:i:s')
+            'timeEnrolled' => date('Y/m/d H:i:s')
         );
 
         $notification['email'] = $this->get_related_emails($notification, $event);
