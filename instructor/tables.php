@@ -780,7 +780,7 @@ class intelliboard_learners_grades_table extends table_sql {
         }
 
         if(get_config('local_intelliboard', 'table_set_ilg_c12')) {
-            $columns[] =  'avg_timespent';
+            $columns[] =  'avg_timespend';
             $headers[] =  get_string('avg_time_spent_per_stud','local_intelliboard');
         }
 
@@ -838,6 +838,7 @@ class intelliboard_learners_grades_table extends table_sql {
                          MAX(ul.timeaccess) AS timeaccess,
                          $grade_single AS grade,
                          MAX(cc.timecompleted) AS timecompleted,
+                         CONCAT(u.firstname, ' ', u.lastname) AS learner,
                          u.email,
                          MAX(u.firstname) AS firstname,
                          MAX(u.lastname) AS lastname,
@@ -848,7 +849,7 @@ class intelliboard_learners_grades_table extends table_sql {
                          MAX(l.timespend) AS timespend,
                          MAX(l.visits) AS visits,
                          MAX(cmc.progress) AS progress,
-                         '' as action,
+                         '' as actions,
                          at.avg_timespend, vt.avg_visits
                     FROM {role_assignments} ra
                LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
@@ -925,7 +926,7 @@ class intelliboard_learners_grades_table extends table_sql {
     function col_timespend($values) {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
     }
-    function col_avg_timespent($values) {
+    function col_avg_timespend($values) {
         return ($values->avg_timespend) ? seconds_to_time($values->avg_timespend) : '-';
     }
     function col_avg_visits($values) {

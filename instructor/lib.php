@@ -25,6 +25,7 @@
  */
 
 use local_intelliboard\repositories\user_settings;
+use local_intelliboard\repositories\category_repositoriy;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -576,6 +577,28 @@ function intelliboard_instructor_getcourses(
                     c.id {$coursefilter[0]}",
             array_merge($params, $coursefilter[1])
         );
+    }
+
+    // category enrollments
+    $categories = category_repositoriy::get_categories_with_subcategories(
+        category_repositoriy::catgories_enrollments($USER->id, $roles)
+    );
+
+    if($categories) {
+        list($categoriesfilter, $params) = intelliboard_filter_in_sql(array_keys($categories), "c.category", []);
+
+        $catcourses = $DB->get_records_sql(
+            "SELECT c.* 
+               FROM {course} c
+              WHERE c.id > 0 {$categoriesfilter}",
+            $params
+        );
+
+        foreach ($catcourses as $course) {
+            if(!isset($courses[$course->id])) {
+                $courses[$course->id] = $course;
+            }
+        }
     }
 
     foreach ($courses as $key=>$course) {
