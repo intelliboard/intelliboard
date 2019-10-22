@@ -154,6 +154,7 @@ function intelliboard_data($type, $userid, $showing_user) {
             foreach($data as $item){
                 $categories[$item->category] = true;
             }
+            $inner_sql = (!empty($categories))?"AND c.category IN(".implode(',', array_keys($categories)).")":"";
 
             $grade_avg = intelliboard_grade_sql(true);
             $grade_category = $DB->get_records_sql("SELECT c.category, cc.name, $grade_avg AS grade
@@ -161,7 +162,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                                                       JOIN {course_categories} cc ON cc.id=c.category
                                                       LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                                                       LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                                                    WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND c.category IN(".implode(',', array_keys($categories)).")
+                                                    WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) $inner_sql
                                                     GROUP BY c.category");
 
             $i=0;

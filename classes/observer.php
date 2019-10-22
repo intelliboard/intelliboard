@@ -88,7 +88,7 @@ class local_intelliboard_observer
                 ROUND((CASE WHEN SUM(g.rawgrademax) > 0 THEN (SUM(g.finalgrade) / SUM(g.rawgrademax)) * 100 ELSE SUM(g.finalgrade) END), 2) as grade
                 FROM {grade_grades} as g
                 INNER JOIN {grade_items} as gi ON gi.id = g.itemid
-                WHERE gi.courseid = ? AND gi.itemtype = \"mod\" AND g.userid = ? AND g.finalgrade IS NOT NULL
+                WHERE gi.courseid = ? AND gi.itemtype = 'mod' AND g.userid = ? AND g.finalgrade IS NOT NULL
                 GROUP BY gi.courseid
         ", [$eventData['courseid'], $eventData['relateduserid']]);
 
@@ -105,8 +105,8 @@ class local_intelliboard_observer
 
         $eventData = $event->get_data();
 
-        $isNeededGrading = $DB->get_record_sql("SELECT 
-            COUNT(qas.id) AS checking 
+        $isNeededGrading = $DB->get_record_sql("SELECT
+            COUNT(qas.id) AS checking
             FROM {question_attempt_steps} qas
             INNER JOIN {question_attempts} qa ON qa.id = qas.questionattemptid
             INNER JOIN {quiz_attempts} q ON q.uniqueid = qa.questionusageid
