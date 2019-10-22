@@ -112,15 +112,21 @@ function intelliboard_filter_in_sql($sequence, $column, $params = array(), $prfx
 	global $DB;
 
 	$sql = '';
-	if($sequence){
-		$items = explode(",", clean_param($sequence, PARAM_SEQUENCE));
-		if(!empty($items)){
+	if ($sequence){
+	    if (!is_array($sequence)) {
+            $items = explode(",", clean_param($sequence, PARAM_SEQUENCE));
+        } else {
+	        $items = $sequence;
+        }
+
+		if (!empty($items)){
 			$key = clean_param($column.$prfx, PARAM_ALPHANUM);
 			list($sql, $sqp) = $DB->get_in_or_equal($items, SQL_PARAMS_NAMED, $key, $equal);
 			$params = array_merge($params, $sqp);
 			$sql = ($sep) ? " AND $column $sql ": " $column $sql ";
 		}
 	}
+
 	return array($sql, $params);
 }
 

@@ -8405,7 +8405,7 @@ class local_intelliboard_external extends external_api {
         ), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, [null, null]);
-        $sql_filter = $this->get_filter_in_sql($params->custom,'f.id',false);
+        $sql_filter = $this->get_filter_in_sql($params->custom,'f.id');
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter .= $this->get_filterdate_sql($params, "fc.timemodified");
@@ -11411,6 +11411,66 @@ class local_intelliboard_external extends external_api {
           'totals' => $totals,
           'completions' => $completions,
         ];
+    }
+
+    public function report198($params) {
+        global $CFG;
+
+        if(empty($params->courseid) || empty($params->custom)) {
+            return ['data' => []];
+        }
+
+        $columns = array_merge([
+            "c.fullname",
+            "f.name",
+            "fp.subject",
+            "u1.firstname",
+            "u1.lastname",
+            "fp.created",
+            "fp1.message",
+            "fp1.created",
+            "u2.firstname",
+            "u2.lastname",
+        ], $this->get_filter_columns($params));
+        $sqlcolumns = $this->get_columns($params, [null]);
+        $sqlfilter = $this->get_filter_in_sql($params->courseid, 'c.id');
+        $sqlfilter = $this->get_filter_in_sql($params->custom, 'f.id');
+        $sqlhaving = $this->get_filter_sql($params, $columns);
+        $sqlorder = $this->get_order_sql($params, $columns);
+
+        if ($CFG->dbtype == 'pgsql') {
+            $randomnumber = "FLOOR(extract(epoch from now()) * random())";
+        } else {
+            $randomnumber = "FLOOR(RAND() * NOW())";
+        }
+
+        return $this->get_report_data(
+            "SELECT {$randomnumber} as id,
+                    c.fullname AS course,
+                    f.name AS forum,
+                    fp.subject AS discussion_post,
+                    u1.firstname AS forum_started_by_first_name,
+                    u1.lastname AS forum_started_by_last_name,
+                    fp.created AS date_started,
+                    fp1.message AS response,
+                    fp1.created AS response_date,
+                    u2.firstname AS response_first_name,
+                    u2.lastname AS response_laste_name
+                    {$sqlcolumns}
+               FROM {forum} f
+               JOIN {course} c ON c.id = f.course
+               JOIN {modules} m ON m.name = 'forum'
+               JOIN {course_modules} cm ON cm.course = c.id AND cm.module = m.id AND cm.instance = f.id
+               JOIN {forum_discussions} fd ON fd.forum = f.id AND fd.course = c.id
+               JOIN {forum_posts} fp ON fp.discussion = fd.id AND fp.parent = 0
+               JOIN {user} u1 ON u1.id = fp.userid
+          LEFT JOIN {forum_posts} fp1 ON fp1.discussion = fd.id AND fp1.parent <> 0
+          LEFT JOIN {user} u2 ON u2.id = fp1.userid
+              WHERE c.id > 0 {$sqlfilter}
+                    {$sqlhaving}
+                    {$sqlorder}",
+            $params
+        );
     }
 
     function get_assignment_grading_definitions($params){
@@ -14565,6 +14625,46 @@ class local_intelliboard_external extends external_api {
         return $DB->get_records_sql("SELECT $group_time AS group_time, MIN(timecreated) AS timepoint, COUNT(id) AS users
             FROM {user}
             WHERE timecreated BETWEEN :timestart AND :timefinish $sql
+            GROUP BY group_time
+            ORDER BY timepoint", $this->params);
+    }
+    public function get_relation_users_per_day($params){
+        global $DB, $CFG;
+
+        $datediff = $params->timefinish - $params->timestart;
+        $days = floor($datediff/(60*60*24)) + 1;
+
+        if($days <= 1){
+            $ext = 3600; //by hour
+            $group_time = ($CFG->dbtype == 'pgsql')?"to_char(date(to_timestamp(u.timecreated)),'YYYYDDDHH24')":"DATE_FORMAT(FROM_UNIXTIME(u.timecreated), '%Y%j%H')";
+        }elseif($days <= 45){
+            $ext = 86400; //by day
+            $group_time = ($CFG->dbtype == 'pgsql')?"to_char(date(to_timestamp(u.timecreated)),'YYYYDDD')":"DATE_FORMAT(FROM_UNIXTIME(u.timecreated), '%Y%j')";
+        }elseif($days <= 90){
+            $ext = 604800; //by week
+            $group_time = ($CFG->dbtype == 'pgsql')?"to_char(date(to_timestamp(u.timecreated)),'WW')":"YEARWEEK(FROM_UNIXTIME(u.timecreated))";
+        }elseif($days <= 365){
+            $ext = 2592000; //by month
+            $group_time = ($CFG->dbtype == 'pgsql')?"to_char(date(to_timestamp(u.timecreated)),'YYYYMM')":"DATE_FORMAT(FROM_UNIXTIME(u.timecreated), '%Y%m')";
+        }else{
+            $ext = 31556926; //by year
+            $group_time = ($CFG->dbtype == 'pgsql')?"to_char(date(to_timestamp(u.timecreated)),'YYYY')":"DATE_FORMAT(FROM_UNIXTIME(u.timecreated), '%Y')";
+        }
+        $sql = $this->get_teacher_sql($params, ["u.id" => "users"]);
+        $sql .= $this->get_filter_user_sql($params, "u.");
+        $sql2 = $this->get_teacher_sql($params, ["id" => "users"]);
+        $sql2 .= $this->get_filter_user_sql($params, "");
+
+        $this->params['timestart'] = $params->timestart;
+        $this->params['timefinish'] = $params->timefinish;
+
+        return $DB->get_records_sql("SELECT 
+                $group_time AS group_time, 
+                MIN(u.timecreated) AS timepoint, 
+                COUNT(u.id) AS users,
+                (SELECT COUNT(id) FROM {user} WHERE timecreated>0 AND timecreated<=MAX(u.timecreated) $sql2) AS all_users
+            FROM {user} u
+            WHERE u.timecreated>0 AND u.timecreated BETWEEN :timestart AND :timefinish $sql
             GROUP BY group_time
             ORDER BY timepoint", $this->params);
     }

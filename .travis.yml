@@ -2,17 +2,22 @@ language: php
 
 sudo: required
 
-cache:
-  directories:
-    - $HOME/.composer/cache
-
-php:
- - 7.0
- - 7.1
+addons:
+  firefox: "47.0.1"
+  postgresql: "9.4"
 
 services:
   - mysql
   - postgresql
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+    - $HOME/.npm
+
+php:
+ - 7.0
+ - 7.1
 
 env:
  global:
