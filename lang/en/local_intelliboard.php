@@ -45,6 +45,7 @@
  $string['trackadmin'] = 'Tracking Admins';
  $string['logs'] = 'Migration Tool';
  $string['trackadmin_desc'] = 'Enable Time Tracking for Admin Users (not recommended)';
+ $string['cachedef_bb_collaborate_access_token'] = 'BB collaborate access token';
  $string['intelliboard:instructors'] = 'IntelliBoard [instructor]';
  $string['intelliboard:students'] = 'IntelliBoard [student]';
  $string['intelliboard:view'] = 'IntelliBoard [view]';
