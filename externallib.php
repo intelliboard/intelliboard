@@ -5552,7 +5552,7 @@ class local_intelliboard_external extends external_api {
     }
      function report103($params)
     {
-        global $CFG;
+        global $CFG, $DB;
 
         $columns = array_merge(array("t.fullname","t.name","t.activity","t.due_date","t.firstname","t.lastname", "t.email", "t.time_on", ""), $this->get_filter_columns($params));
 
@@ -5588,7 +5588,7 @@ class local_intelliboard_external extends external_api {
 
         $turnitinsql = "";
 
-        if(file_exists($CFG->dirroot . '/mod/turnitintooltwo/lib.php')) {
+        if ($DB->get_manager()->table_exists('turnitintooltwo_submissions')) {
             $turnitinsql = "UNION ALL
                (SELECT {$uniqueid} AS uniqueid,
                        cm.id AS cmid,
@@ -11427,16 +11427,20 @@ class local_intelliboard_external extends external_api {
             "u1.firstname",
             "u1.lastname",
             "fp.created",
-            "fp1.message",
-            "fp1.created",
+            "fp2.message",
+            "fp2.created",
             "u2.firstname",
             "u2.lastname",
+            "fp3.message",
+            "fp3.created",
+            "u3.firstname",
+            "u3.lastname",
         ], $this->get_filter_columns($params));
         $sqlcolumns = $this->get_columns($params, [null]);
-        $sqlfilter = $this->get_filter_in_sql($params->courseid, 'c.id');
-        $sqlfilter = $this->get_filter_in_sql($params->custom, 'f.id');
-        $sqlhaving = $this->get_filter_sql($params, $columns);
-        $sqlorder = $this->get_order_sql($params, $columns);
+        $sqlfilter  = $this->get_filter_in_sql($params->courseid, 'c.id');
+        $sqlfilter .= $this->get_filter_in_sql($params->custom, 'f.id');
+        $sqlhaving  = $this->get_filter_sql($params, $columns);
+        $sqlorder   = $this->get_order_sql($params, $columns);
 
         if ($CFG->dbtype == 'pgsql') {
             $randomnumber = "FLOOR(extract(epoch from now()) * random())";
@@ -11452,10 +11456,14 @@ class local_intelliboard_external extends external_api {
                     u1.firstname AS forum_started_by_first_name,
                     u1.lastname AS forum_started_by_last_name,
                     fp.created AS date_started,
-                    fp1.message AS response,
-                    fp1.created AS response_date,
+                    fp2.message AS response,
+                    fp2.created AS response_date,
                     u2.firstname AS response_first_name,
-                    u2.lastname AS response_laste_name
+                    u2.lastname AS response_laste_name,
+                    fp3.message AS response_immediatey_prior,
+                    fp3.created AS response_immediatey_prior_date,
+                    u3.firstname AS response_immediatey_prior_first_name,
+                    u3.lastname AS response_immediatey_prior_last_name
                     {$sqlcolumns}
                FROM {forum} f
                JOIN {course} c ON c.id = f.course
@@ -11464,8 +11472,10 @@ class local_intelliboard_external extends external_api {
                JOIN {forum_discussions} fd ON fd.forum = f.id AND fd.course = c.id
                JOIN {forum_posts} fp ON fp.discussion = fd.id AND fp.parent = 0
                JOIN {user} u1 ON u1.id = fp.userid
-          LEFT JOIN {forum_posts} fp1 ON fp1.discussion = fd.id AND fp1.parent <> 0
-          LEFT JOIN {user} u2 ON u2.id = fp1.userid
+          LEFT JOIN {forum_posts} fp2 ON fp2.discussion = fd.id AND fp2.parent <> 0
+          LEFT JOIN {user} u2 ON u2.id = fp2.userid
+          LEFT JOIN {forum_posts} fp3 ON fp3.discussion = fd.id AND fp3.id = fp2.parent AND fp3.parent <> 0
+          LEFT JOIN {user} u3 ON u3.id = fp3.userid
               WHERE c.id > 0 {$sqlfilter}
                     {$sqlhaving}
                     {$sqlorder}",
