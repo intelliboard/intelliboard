@@ -1316,21 +1316,24 @@ class local_intelliboard_external extends external_api {
     public function report12($params)
     {
         $columns = array_merge(
-            array(
+            [
                 "c.fullname",
                 "learners",
                 "completed",
                 "visits",
                 "timespend",
-                "grade"),
-            $this->get_filter_columns($params)
+                "grade"
+            ], $this->get_filter_columns($params)
         );
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
-        $sql_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $role_filter = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $grade_avg = intelliboard_grade_sql(true, $params);
+        $completion_date_filter = $this->get_filterdate_sql($params, "cc.timecompleted");
+        $assignment_date_filter = $this->get_filterdate_sql($params, "ra.timemodified");
+        $grade_date_filter = $this->get_filterdate_sql($params, "g.timemodified");
 
         if($params->sizemode){
             $sql_columns = ", '0' as timespend, '0' as visits";
@@ -1338,32 +1341,37 @@ class local_intelliboard_external extends external_api {
         }else{
             $date_filter = $this->get_filterdate_sql($params, "lil.timepoint");
             $sql_columns = ", MAX(lit.timespend) AS timespend, MAX(lit.visits) AS visits";
-            $sql_join = "
-                    LEFT JOIN (SELECT lit.userid, lit.courseid, SUM(lil.timespend) as timespend, SUM(lil.visits) as visits
-                        FROM {local_intelliboard_tracking} lit
-                            JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
-                        WHERE lil.id>0 $date_filter
-                        GROUP BY lit.courseid, lit.userid) lit ON lit.courseid = c.id AND lit.userid = ra.userid";
+            $sql_join = "LEFT JOIN (SELECT lit.userid, lit.courseid,
+                                           SUM(lil.timespend) AS timespend, SUM(lil.visits) AS visits
+                                      FROM {local_intelliboard_tracking} lit
+                                      JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id
+                                     WHERE lil.id>0 {$date_filter}
+                                  GROUP BY lit.courseid, lit.userid
+                                   ) lit ON lit.courseid = c.id AND lit.userid = ra.userid";
         }
         $sql_columns .= $this->get_columns($params, [null]);
         $sql_join .= $this->get_suspended_sql($params, 'c.id', 'ra.userid');
 
-        return $this->get_report_data("
-            SELECT c.id,
-                c.fullname,
-                COUNT(DISTINCT ra.userid) as learners,
-                COUNT(DISTINCT cc.userid) as completed,
-                $grade_avg AS grade
-                $sql_columns
-            FROM {role_assignments} ra
-                JOIN {context} AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                JOIN {course} c ON c.id = ctx.instanceid
-                LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-                LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ra.userid
-                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid AND cc.timecompleted > 0
-                $sql_join
-            WHERE c.id > 1 $sql_filter
-            GROUP BY c.id $sql_having $sql_order", $params);
+        return $this->get_report_data(
+            "SELECT c.id,
+                    c.fullname,
+                    COUNT(DISTINCT ra.userid) AS learners,
+                    COUNT(DISTINCT cc.userid) AS completed,
+                    {$grade_avg} AS grade
+                    {$sql_columns}
+               FROM {course} c
+               JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
+          LEFT JOIN {role_assignments} AS ra ON ra.contextid = ctx.id {$assignment_date_filter} {$role_filter}
+          LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+          LEFT JOIN {grade_grades} g ON g.itemid = gi.id {$grade_date_filter}
+          LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 {$completion_date_filter}
+                    {$sql_join}
+              WHERE c.id > 1 {$sql_filter}
+           GROUP BY c.id, c.fullname
+                    {$sql_having}
+                    {$sql_order}",
+            $params
+        );
     }
 
 
@@ -10895,10 +10903,28 @@ class local_intelliboard_external extends external_api {
             print_error('preprocesserror', 'quiz');
         }
 
-        $courses = (is_array($params->custom)) ? $params->custom : explode(",", clean_param($params->custom, PARAM_SEQUENCE));
-        list($sql, $params2) = $DB->get_in_or_equal($courses, SQL_PARAMS_NAMED, 'id');
-        $quizes = $DB->get_records_sql("SELECT * FROM {quiz} WHERE id $sql", $params2);
+        if (is_array($params->custom)) {
+            $quizesids = $params->custom;
+        } elseif ($params->custom) {
+            $quizesids = explode(",", clean_param($params->custom, PARAM_SEQUENCE));
+        } else {
+            $quizesids = [];
+        }
 
+        if($quizesids) {
+            list($sql, $params2) = $DB->get_in_or_equal($quizesids, SQL_PARAMS_NAMED, 'id');
+            $quizes = $DB->get_records_sql(
+                "SELECT * FROM {quiz} WHERE id $sql", $params2
+            );
+        } else {
+            $quizes = $DB->get_records_sql(
+                "SELECT qz.*
+                   FROM {course} c
+                   JOIN {quiz} qz ON qz.course = c.id
+                  WHERE c.id = :courseid",
+                ['courseid' => $params->courseid]
+            );
+        }
 
         $report = new quiz_statistics_report();
         $hash_codes = array();
@@ -11376,7 +11402,7 @@ class local_intelliboard_external extends external_api {
         foreach($courses as $course) {
             $sql_columns .= ", (SELECT timecompleted FROM {course_completions} WHERE userid = u.id AND course = $course->id) AS completed_$course->id";
             $sql_columns .= ", (SELECT MAX(ue.id) FROM {user_enrolments} ue, {enrol} e WHERE ue.enrolid = e.id AND ue.userid = u.id AND e.courseid = $course->id) AS enrol_$course->id";
-            $columns[] = "completed_$module->id";
+            $columns[] = "completed_$course->id";
         }
       }
       $sql_having = $this->get_filter_sql($params, $columns);
@@ -11482,6 +11508,226 @@ class local_intelliboard_external extends external_api {
             $params
         );
     }
+
+    function report200($params)
+    {
+        global $CFG;
+        $columns = ["c.name", "enrolled_users", "completed_users", "percent_completed_users", "avg_rating", "registered_users", "percent_registered_users"];
+
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["co.id" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->cohortid, "c.id");
+        $sql_filter .= $this->get_filter_course_sql($params, "co.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+
+        $value = ($CFG->dbtype == 'pgsql') ? "fv.value::int" : "fv.value";
+
+        return $this->get_report_data("
+          SELECT
+            c.name,
+            COUNT(DISTINCT cm.userid) AS enrolled_users,
+            COUNT(DISTINCT fc.userid) AS completed_users,
+            COUNT(DISTINCT fc.userid)/COUNT(DISTINCT cm.userid)*100 AS percent_completed_users,
+            AVG($value) AS avg_rating,
+            COUNT(DISTINCT ul.userid) AS registered_users,
+            COUNT(DISTINCT ul.userid)/COUNT(DISTINCT cm.userid)*100 AS percent_registered_users
+
+        FROM {cohort} c
+            JOIN {cohort_members} cm ON cm.cohortid=c.id
+            JOIN {user_enrolments} ue ON ue.userid = cm.userid
+            JOIN {enrol} e ON e.id = ue.enrolid
+            JOIN {course} co ON co.id = e.courseid
+            JOIN {feedback} f ON f.course = co.id
+
+            LEFT JOIN {feedback_completed} fc ON fc.feedback=f.id AND fc.userid=cm.userid
+            LEFT JOIN {feedback_item} fi ON fi.feedback=f.id
+            LEFT JOIN {feedback_value} fv ON fv.item=fi.id AND fv.completed=fc.id
+            LEFT JOIN {user_lastaccess} ul ON ul.userid=cm.userid AND ul.courseid=co.id
+        WHERE c.id>0 $sql_filter
+        GROUP BY c.id $sql_having $sql_order", $params);
+    }
+
+    function report202($params)
+    {
+      global $CFG, $DB;
+
+      if (!$params->cohortid) {
+        return [];
+      }
+
+      $columns = array_merge(["u.firstname", "u.lastname", "u.email"], $this->get_filter_columns($params));
+      $sql_columns = $this->get_columns($params, ["u.id"]);
+      $sql_course = $this->get_filter_course_sql($params, "c.");
+      $sql_course .= $this->get_filter_enrol_sql($params, "e.");
+      $sql_course .= $this->get_filter_enrol_sql($params, "ue.");
+      $sql_course .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+
+      if ($items = $DB->get_records_sql("SELECT DISTINCT i.id FROM {feedback} f, {feedback_item} i, {user_enrolments} ue, {enrol} e, {course} c, {cohort_members} cm  WHERE f.course = c.id AND i.feedback = f.id AND c.id = e.courseid AND ue.userid = cm.userid AND e.id = ue.enrolid $sql_course", $this->params)) {
+        foreach($items as $item) {
+            $sql_columns .= ", (SELECT v.value FROM {feedback_value} v, {feedback_completed} c WHERE c.userid = u.id AND v.completed = c.id AND v.item = $item->id) AS completed_$item->id";
+            $columns[] = "completed_$item->id";
+        }
+      }
+
+      $sql_having = $this->get_filter_sql($params, $columns);
+      $sql_order = $this->get_order_sql($params, $columns);
+      $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
+      $sql_filter .= $this->get_filter_user_sql($params, "u.");
+      $sql_filter .= $this->get_filterdate_sql($params, "u.firstaccess");
+      $sql_filter .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+
+      return $this->get_report_data("
+          SELECT
+            DISTINCT u.id,
+            u.email,
+            u.firstname,
+            u.lastname,
+            u.firstaccess,
+            (SELECT MAX(timemodified) FROM {feedback_completed} WHERE userid = u.id) AS completed_on
+            $sql_columns
+          FROM {user} u, {cohort_members} cm WHERE cm.userid = u.id $sql_filter $sql_having $sql_order", $params);
+    }
+
+    function report201($params)
+    {
+      global $DB;
+
+      if (!$params->cohortid) {
+        return [];
+      }
+
+      $sql_course = $this->get_filter_course_sql($params, "c.");
+      $sql_course .= $this->get_filter_enrol_sql($params, "e.");
+      $sql_course .= $this->get_filter_enrol_sql($params, "ue.");
+      $sql_course .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+
+      $feedback = $DB->get_record_sql("SELECT MAX(f.id) AS id
+        FROM {feedback} f, {feedback_item} i, {user_enrolments} ue, {enrol} e, {course} c, {cohort_members} cm
+        WHERE f.course = c.id AND i.feedback = f.id AND c.id = e.courseid AND ue.userid = cm.userid AND e.id = ue.enrolid $sql_course", $this->params);
+
+      $this->params['feedback'] = isset($feedback->id) ? $feedback->id : 0;
+
+      $sql_cohort = $this->get_filter_in_sql($params->cohortid, "cm.cohortid", false);
+
+      return $this->get_report_data(
+        "SELECT
+          DISTINCT i.id,
+          i.name,
+          i.label,
+          i.feedback,
+          f.name AS feedback_name,
+          i.position,
+          v.value_0,
+          v.value_1,
+          v.value_2,
+          v.value_3,
+          v.value_4,
+          v.value_5,
+          v.value_6,
+          v.value_7,
+          v.value_8,
+          v.value_9,
+          v.value_10
+        FROM {feedback_item} i
+        LEFT JOIN {feedback} f ON f.id = i.feedback
+        LEFT JOIN (
+          SELECT
+            v.item,
+            SUM(CASE WHEN v.value = '0' OR v.value IS NULL THEN 1 ELSE 0 END) as value_0,
+            SUM(CASE WHEN v.value = '1' THEN 1 ELSE 0 END) as value_1,
+            SUM(CASE WHEN v.value = '2' THEN 1 ELSE 0 END) as value_2,
+            SUM(CASE WHEN v.value = '3' THEN 1 ELSE 0 END) as value_3,
+            SUM(CASE WHEN v.value = '4' THEN 1 ELSE 0 END) as value_4,
+            SUM(CASE WHEN v.value = '5' THEN 1 ELSE 0 END) as value_5,
+            SUM(CASE WHEN v.value = '6' THEN 1 ELSE 0 END) as value_6,
+            SUM(CASE WHEN v.value = '7' THEN 1 ELSE 0 END) as value_7,
+            SUM(CASE WHEN v.value = '8' THEN 1 ELSE 0 END) as value_8,
+            SUM(CASE WHEN v.value = '9' THEN 1 ELSE 0 END) as value_9,
+            SUM(CASE WHEN v.value = '10' THEN 1 ELSE 0 END) as value_10
+          FROM
+            {feedback_value} v,
+            {feedback_completed} c
+          WHERE v.completed = c.id AND c.userid IN (SELECT userid FROM {cohort_members} cm WHERE $sql_cohort) GROUP BY v.item
+        ) v ON v.item = i.id
+        WHERE i.feedback = :feedback
+        ORDER BY i.position ASC", $params);
+    }
+
+    function get_cohort_stats($params)
+    {
+        global $DB, $CFG;
+
+        if (!$params->cohortid) {
+          return [];
+        }
+        $sql_filter = $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+
+        $sql_course = $this->get_filter_course_sql($params, "c.");
+        $sql_course .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_course .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_course .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+
+        if ($CFG->dbtype == 'pgsql') {
+            $cohorts = "string_agg( DISTINCT coh.name, ', ')";
+        } else {
+            $cohorts = "GROUP_CONCAT( DISTINCT coh.name)";
+        }
+
+        $data = $DB->get_record_sql("SELECT
+          $cohorts AS cohorts,
+          COUNT(DISTINCT cm.userid) AS cohort_size,
+          COUNT(DISTINCT CASE WHEN u.lastaccess > 0 THEN u.id ELSE null END) AS registered,
+          COUNT(DISTINCT f.userid) AS completed
+          FROM {cohort} coh, {cohort_members} cm
+            LEFT JOIN {user} u ON u.id = cm.userid
+            LEFT JOIN {feedback_completed} f ON f.userid = cm.userid
+          WHERE coh.id = cm.cohortid $sql_filter", $this->params);
+
+        $data->courses = $DB->get_records_sql("SELECT DISTINCT c.id, c.fullname FROM {user_enrolments} ue, {enrol} e, {course} c, {cohort_members} cm
+          WHERE c.id = e.courseid AND ue.userid = cm.userid AND e.id = ue.enrolid $sql_course", $this->params);
+
+        return $data;
+    }
+
+    function get_cohort_feedbacks($params)
+    {
+        global $DB;
+
+        if (!$params->cohortid) {
+          return [];
+        }
+        $sql_course = $this->get_filter_course_sql($params, "c.");
+        $sql_course .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_course .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_course .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+
+        return $DB->get_records_sql("SELECT
+          DISTINCT f.id, f.name
+          FROM {feedback} f, {feedback_item} i, {user_enrolments} ue, {enrol} e, {course} c, {cohort_members} cm
+          WHERE f.course = c.id AND i.feedback = f.id AND c.id = e.courseid AND ue.userid = cm.userid AND e.id = ue.enrolid $sql_course", $this->params);
+    }
+
+    function get_cohort_feedback_items($params)
+    {
+        global $DB;
+
+        if (!$params->cohortid) {
+          return [];
+        }
+        $sql_course = $this->get_filter_course_sql($params, "c.");
+        $sql_course .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_course .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_course .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+
+        return $DB->get_records_sql("SELECT
+          DISTINCT i.id, i.name, i.label
+          FROM {feedback} f, {feedback_item} i, {user_enrolments} ue, {enrol} e, {course} c, {cohort_members} cm
+          WHERE f.course = c.id AND i.feedback = f.id AND c.id = e.courseid AND ue.userid = cm.userid AND e.id = ue.enrolid $sql_course", $this->params);
+    }
+
 
     function get_assignment_grading_definitions($params){
         global $DB;
@@ -11590,8 +11836,8 @@ class local_intelliboard_external extends external_api {
                 $parts[] = ['translate' => true, 'key' => 'total'];
                 $format = '%s %s (%s)';
 
-            } else if ($this->is_category_item()) {
-                $category = $this->load_parent_category();
+            } else if ($item->is_category_item()) {
+                $category = $item->load_parent_category();
                 $value = $category->get_name();
                 $parts[] = ['translate' => false, 'value' => $value];
                 $parts[] = ['translate' => true, 'key' => 'total'];
@@ -14668,9 +14914,9 @@ class local_intelliboard_external extends external_api {
         $this->params['timestart'] = $params->timestart;
         $this->params['timefinish'] = $params->timefinish;
 
-        return $DB->get_records_sql("SELECT 
-                $group_time AS group_time, 
-                MIN(u.timecreated) AS timepoint, 
+        return $DB->get_records_sql("SELECT
+                $group_time AS group_time,
+                MIN(u.timecreated) AS timepoint,
                 COUNT(u.id) AS users,
                 (SELECT COUNT(id) FROM {user} WHERE timecreated>0 AND timecreated<=MAX(u.timecreated) $sql2) AS all_users
             FROM {user} u
@@ -16414,5 +16660,24 @@ class local_intelliboard_external extends external_api {
         }
 
         return $sql;
+    }
+
+    public function get_course_categories($params){
+        global $DB;
+
+        $sql_filter = "";
+        if($params->filter){
+            $sql_filter = " AND ".$DB->sql_like('cc.name', ":name", false, false);
+            $this->params['name'] = "%$params->filter%";
+        }
+
+
+        return $this->get_report_data("SELECT cc.id,
+                                            cc.name,
+                                            cc.idnumber,
+                                            cc.parent
+                                        FROM {course_categories} cc
+                                        WHERE cc.id>0 $sql_filter
+                                        ORDER BY cc.sortorder", $params, false);
     }
 }
