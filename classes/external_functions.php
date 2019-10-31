@@ -361,6 +361,17 @@ class local_external_functions
             'get_cohort_items',
             'get_relation_users_per_day',
             'report198',
+            'report200',
+            'report201',
+            'report202',
+            'report203',
+            'report204',
+            'report205',
+            'report206',
+            'get_cohort_stats',
+            'get_cohort_feedback_items',
+            'get_course_categories',
+            'get_cohort_feedbacks',
         ];
     }
     public function get_function($params = null)
