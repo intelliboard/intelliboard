@@ -1029,11 +1029,11 @@ class local_intelliboard_external extends external_api {
             "SELECT MIN(ue.id) AS id,
                     u.id AS userid,
                     u.email,
-                    ((MAX(cmca.cmcnuma) / MAX(cma.cmnuma))*100 ) as assignments,
-                    ((MAX(cmc.cmcnums) / MAX(cmx.cmnumx))*100 ) as participations,
-                    ((COUNT(DISTINCT lit.id) / MAX(cm.cmnums))*100 ) as visits,
-                    MAX(cma.cmnuma) as assigns,
-                    c.fullname as course,
+                    ((MAX(cmca.cmcnuma) / MAX(cma.cmnuma))*100 ) AS assignments,
+                    ((MAX(cmc.cmcnums) / MAX(cmx.cmnumx))*100 ) AS participations,
+                    ((MAX(lit.vsts) / MAX(cm.cmnums))*100 ) AS visits,
+                    MAX(cma.cmnuma) AS assigns,
+                    c.fullname AS course,
                     u.firstname,
                     u.lastname
                     $sql_columns
@@ -1041,7 +1041,11 @@ class local_intelliboard_external extends external_api {
           LEFT JOIN {user} u ON u.id = ue.userid
           LEFT JOIN {enrol} e ON e.id = ue.enrolid
           LEFT JOIN {course} c ON c.id = e.courseid
-          LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid = c.id AND lit.page = 'module' AND lit.userid = u.id
+          LEFT JOIN (SELECT COUNT(DISTINCT id) AS vsts, courseid, userid
+                       FROM {local_intelliboard_tracking}
+                      WHERE page = 'module'
+                   GROUP BY courseid, userid
+                    ) lit ON lit.courseid = c.id AND lit.userid = u.id
           LEFT JOIN (SELECT course, count(id) as cmnums FROM {course_modules} WHERE visible = 1 GROUP BY course) as cm ON cm.course = c.id
           LEFT JOIN (SELECT course, count(id) as cmnumx FROM {course_modules} WHERE visible = 1 and completion > 0 GROUP BY course) cmx ON cmx.course = c.id
           LEFT JOIN (SELECT cm.course, count(cm.id) as cmnuma
@@ -8463,7 +8467,7 @@ class local_intelliboard_external extends external_api {
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filter_in_sql($params->courseid,'c.id');
-        $sql_filter .= $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
+        $student_filter_roles = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_teacher_sql($params, array("c.id"=>"courses", "u.id"=>"users"));
@@ -8477,60 +8481,54 @@ class local_intelliboard_external extends external_api {
             $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u.firstname,' ',u.lastname) SEPARATOR ', ')";
         }
 
-        $data = $this->get_report_data("
-            SELECT
-              CONCAT(u.id,'_',c.id) AS id,
-              u.id AS userid,
-              u.idnumber,
-              u.username,
-              u.firstname,
-              u.lastname,
-              c.id AS course_id,
-              c.fullname AS course_name,
-              c.shortname AS course_shortname,
-              COUNT(DISTINCT atl.id) AS numtakensessions,
-              SUM(stg.grade)         AS points,
-              MAX(stm.maxgrade)      AS maxpoints,
-              (100*SUM(stg.grade))/MAX(stm.maxgrade)      AS atd_percent,
-              $grade_avg AS grade,
-              (SELECT $group_concat
-                        FROM {role_assignments} AS ra
-                            JOIN {user} u ON ra.userid = u.id
-                            JOIN {context} AS ctx ON ctx.id = ra.contextid
-                        WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles
+        $data = $this->get_report_data(
+            "SELECT CONCAT(u.id,'_',c.id) AS id,
+                    u.id AS userid,
+                    u.idnumber,
+                    u.username,
+                    u.firstname,
+                    u.lastname,
+                    c.id AS course_id,
+                    c.fullname AS course_name,
+                    c.shortname AS course_shortname,
+                    COUNT(DISTINCT atl.id) AS numtakensessions,
+                    SUM(stg.grade) AS points,
+                    SUM(stm.maxgrade) AS maxpoints,
+                    (100 * SUM(stg.grade)) / SUM(stm.maxgrade) AS atd_percent,
+                    {$grade_avg} AS grade,
+                    (SELECT {$group_concat}
+                       FROM {role_assignments} AS ra
+                       JOIN {user} u ON ra.userid = u.id
+                       JOIN {context} AS ctx ON ctx.id = ra.contextid
+                      WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 {$sql_teacher_roles}
                     ) AS teacher
-              $sql_columns
-            FROM {course} c
-                JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
-                JOIN {role_assignments} ra ON ra.contextid = ctx.id
-                JOIN {user} u ON ra.userid = u.id
-                JOIN {attendance} a ON a.course=c.id
-
-                LEFT JOIN {attendance_sessions} ats ON ats.attendanceid=a.id
-                LEFT JOIN {attendance_log} atl ON atl.studentid=u.id AND ats.id=atl.sessionid
-                LEFT JOIN {attendance_statuses} stg ON stg.id = atl.statusid AND stg.deleted = 0 AND stg.visible = 1 AND stg.attendanceid=ats.attendanceid
-
-                LEFT JOIN (SELECT
-                                   t.course,
-                                   t.studentid,
-                                   SUM(t.maxgrade) AS maxgrade
-                            FROM (SELECT
-                                         att.course,
-                                         atl.studentid,
-                                         MAX(ass2.grade) AS maxgrade
-                                  FROM {attendance_log} atl
-                                      JOIN {attendance_statuses} ass ON ass.id=atl.statusid
-                                      JOIN {attendance_statuses} ass2 ON ass2.attendanceid=ass.attendanceid
-                                      JOIN {attendance} att ON att.id=ass.attendanceid
-                                  WHERE ass2.deleted = 0 AND ass2.visible = 1
-                                  GROUP BY ass.attendanceid,atl.studentid, atl.sessionid) t
-                            GROUP BY t.course,t.studentid) stm ON stm.studentid=u.id AND stm.course = c.id
-
-                JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='course'
-                LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=u.id
-                $sql_join
-            WHERE c.id>0 $sql_filter
-            GROUP BY u.id,c.id $sql_having $sql_order", $params, false);
+                    {$sql_columns}
+               FROM {course} c
+               JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
+               JOIN (SELECT ra.contextid, ra.userid
+                       FROM {role_assignments} ra
+                      WHERE ra.id > 0 {$student_filter_roles}
+                   GROUP BY ra.contextid, ra.userid
+                    ) rac ON rac.contextid = ctx.id
+               JOIN {user} u ON rac.userid = u.id
+               JOIN {attendance} a ON a.course = c.id
+          LEFT JOIN {attendance_sessions} ats ON ats.attendanceid=a.id
+          LEFT JOIN {attendance_log} atl ON atl.studentid = u.id AND ats.id = atl.sessionid
+          LEFT JOIN {attendance_statuses} stg ON stg.id = atl.statusid AND stg.deleted = 0 AND
+                                                 stg.visible = 1 AND stg.attendanceid = ats.attendanceid
+          LEFT JOIN (SELECT st.setnumber, MAX(st.grade) AS maxgrade
+                       FROM {attendance_statuses} st
+                   GROUP BY st.setnumber
+                    ) stm ON stm.setnumber = ats.statusset
+               JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+          LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid = u.id
+                    {$sql_join}
+              WHERE c.id > 0 {$sql_filter}
+           GROUP BY u.id, c.id
+                    {$sql_having}
+                    {$sql_order}",
+            $params, false
+        );
 
         foreach($data AS &$item){
             if(isset($params->scale_real) and $params->scale_real){
@@ -9719,44 +9717,58 @@ class local_intelliboard_external extends external_api {
         }
 
         return $this->get_report_data("
-                SELECT concat_ws('', cm.id, u.id, c.id) as unique_id,
+                SELECT concat_ws('', cm.id, u.id, c.id) AS unique_id,
                        gi.itemname AS activity_name,
                        g.userid,
                        u.username,
                        u.firstname,
                        u.lastname,
                        c.fullname,
-                       cc1.name as course_category,
+                       cc1.name AS course_category,
                        c.shortname,
                        {$teachersselect}
-                       g.timemodified as graduated,
-                       $grade_single AS grade,
-                       $grade_percent AS grade_percent,
+                       g.timemodified AS graduated,
+                       {$grade_single} AS grade,
+                       {$grade_percent} AS grade_percent,
+                       wg.firstname AS who_graded_first_name,
+                       wg.lastname AS who_graded_last_name,
                        gi.itemtype,
                        CASE WHEN m.name='assign' THEN sg.timemodified ELSE 0 END AS need_grade_assignment,
                        lit.firstaccess,
                        ul.timeaccess AS course_lastaccess
-                       $sql_columns
+                       {$sql_columns}
 
                 FROM {course} c
            LEFT JOIN {course_categories} cc1 ON cc1.id = c.category
                      {$teachersfilter}
-                  JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
-                  JOIN {role_assignments} ra ON ra.contextid = ctx.id
-                  JOIN {user} u ON u.id=ra.userid
+                JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
+                JOIN {role_assignments} ra ON ra.contextid = ctx.id
+                JOIN {user} u ON u.id = ra.userid
 
-                  LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND (gi.itemtype = 'mod' OR gi.itemtype = 'course')
-                  LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
+           LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND (gi.itemtype = 'mod' OR gi.itemtype = 'course')
+           LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
+           LEFT JOIN {user} wg ON wg.id = g.usermodified
 
-                  LEFT JOIN {modules} m ON m.name = gi.itemmodule
-                  LEFT JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
-                  LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
-                  LEFT JOIN {assign_submission} ass ON ass.userid=u.id AND ass.assignment=cm.instance AND ass.status='submitted' AND ass.latest = 1
-                  LEFT JOIN {assign_grades} sg ON ass.assignment = sg.assignment AND ass.userid = sg.userid AND sg.attemptnumber = ass.attemptnumber AND (ass.timemodified >= sg.timemodified OR sg.timemodified IS NULL OR sg.grade IS NULL)
+           LEFT JOIN {modules} m ON m.name = gi.itemmodule
+           LEFT JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
+           LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
+           LEFT JOIN {assign_submission} ass ON ass.userid=u.id AND ass.assignment=cm.instance AND
+                                                ass.status='submitted' AND ass.latest = 1
+           LEFT JOIN {assign_grades} sg ON ass.assignment = sg.assignment AND ass.userid = sg.userid AND
+                                           sg.attemptnumber = ass.attemptnumber AND
+                                           (ass.timemodified >= sg.timemodified OR sg.timemodified IS NULL OR sg.grade IS NULL)
 
-                  LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND ((lit.param=c.id AND lit.page='course' AND gi.itemtype = 'course') OR (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod'))
-                  LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
-                WHERE c.id>0 $sql_filter $sql_having $sql_order", $params);
+           LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND
+                                                          (
+                                                           (lit.param=c.id AND lit.page='course' AND gi.itemtype = 'course') OR
+                                                           (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod')
+                                                          )
+           LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
+               WHERE c.id>0 {$sql_filter}
+                     {$sql_having}
+                     {$sql_order}",
+            $params
+        );
     }
 
     function report164($params)
@@ -11655,6 +11667,59 @@ class local_intelliboard_external extends external_api {
         ORDER BY i.position ASC", $params);
     }
 
+    public function report207($params) {
+        global $CFG;
+
+        $columns = array_merge([
+            "c.fullname",
+            "e.name",
+            "elt.secret",
+            "",
+            "",
+            "",
+            "elt.gradesync",
+            "elt.gradesynccompletion",
+        ], $this->get_filter_columns($params));
+
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
+        
+        if ($CFG->dbtype == 'pgsql') {
+            $randomnumber = "FLOOR(extract(epoch from now()) * random())";
+        } else {
+            $randomnumber = "FLOOR(RAND() * NOW())";
+        }
+        
+        $data = $this->get_report_data(
+            "SELECT {$randomnumber} AS frst,
+                    elt.id AS tool_id,
+                    c.fullname AS course,
+                    e.name,
+                    elt.secret,
+                    elt.gradesync,
+                    elt.gradesynccompletion
+               FROM {enrol_lti_tools} elt
+               JOIN {enrol} e ON elt.enrolid = e.id
+               JOIN {course} c ON c.id = e.courseid
+              WHERE e.enrol = 'lti' {$sql_filter}
+                    {$sql_having}
+                    {$sql_order}",
+            $params, false
+        );
+
+        foreach ($data as &$item) {
+            $tool = (object) ['id' => $item->tool_id];
+            $item->cartridge_url = (\enrol_lti\helper::get_cartridge_url($tool))->out();
+            $item->launch_url = (\enrol_lti\helper::get_launch_url($tool->id))->out();
+            $item->registration_url = (\enrol_lti\helper::get_proxy_url($tool))->out();
+        }
+
+        return ['data' => $data];
+    }
+
     function get_cohort_stats($params)
     {
         global $DB, $CFG;
@@ -13450,14 +13515,18 @@ class local_intelliboard_external extends external_api {
                   WHERE ch.id {$cohortidfilter[0]}",
                 $cohortidfilter[1]
             ));
-            $cohortmember = " AND libp.external_user_id IN(".implode(',', $cohortmembers).')';
-            $notcohortmember = "libp.external_user_id NOT IN(".implode(',', $cohortmembers).')';
+            $cohortmember = " AND libp.external_user_id IN(".implode(',', $cohortmembers).")";
+            $notcohortmember = "libp.external_user_id NOT IN(".implode(',', $cohortmembers).")";
             $numbernotcohortusers = "SUM(CASE WHEN {$notcohortmember} THEN 1 ELSE 0 END)";
         }
 
         $data = $this->get_report_data(
-            "SELECT clb.sessionuid, c.id as courseid, c.fullname as course, tcrs.teachers,
-                    clb.name as session, prtcp.particip_num,
+            "SELECT clb.sessionuid,
+                    c.id AS courseid,
+                    c.fullname AS course,
+                    tcrs.teachers,
+                    clb.name AS session,
+                    prtcp.particip_num,
                     SUM(CASE WHEN libp.first_join_time <= clb.timestart
                                   {$cohortmember} THEN 1 ELSE 0 END) on_time,
                     SUM(CASE WHEN libp.first_join_time > clb.timestart AND
@@ -13470,7 +13539,7 @@ class local_intelliboard_external extends external_api {
                                       libp.first_join_time <= clb.timeend
                                       {$cohortmember} THEN 1 ELSE 0 END) +
                         {$numbernotcohortusers}
-                    ) as absent
+                    ) AS absent
                FROM {collaborate} clb
           LEFT JOIN {course} c ON c.id = clb.course
           LEFT JOIN {local_intelliboard_bb_partic} libp ON libp.sessionuid = clb.sessionuid
@@ -13492,7 +13561,8 @@ class local_intelliboard_external extends external_api {
                     ) as prtcp ON prtcp.crs = c.id
               WHERE clb.id > 0 {$sql_filter}
            GROUP BY clb.sessionuid, c.id, c.fullname, tcrs.teachers, clb.name, prtcp.particip_num
-                    {$sql_having} {$sql_order}",
+                    {$sql_having}
+                    {$sql_order}",
             $params, false
         );
 
@@ -13504,9 +13574,12 @@ class local_intelliboard_external extends external_api {
         $params->length = -1;
         $sql_filter = $this->get_filterdate_sql($params, "clb.timestart");
         $comparedata = $this->get_report_data(
-            "SELECT t.course as courseid, AVG(t.on_time) on_time, AVG(t.late) late,
+            "SELECT t.course AS courseid,
+                    AVG(t.on_time) on_time,
+                    AVG(t.late) late,
                     AVG(t.absent) absent
-               FROM (SELECT clb.sessionuid, clb.course,
+               FROM (SELECT clb.sessionuid,
+                            clb.course,
                             SUM(CASE WHEN libp.first_join_time <= clb.timestart
                                           {$cohortmember} THEN 1 ELSE 0 END) on_time,
                             SUM(CASE WHEN libp.first_join_time > clb.timestart AND
@@ -13519,7 +13592,7 @@ class local_intelliboard_external extends external_api {
                                               libp.first_join_time <= clb.timeend
                                               {$cohortmember} THEN 1 ELSE 0 END) +
                                 {$numbernotcohortusers}
-                            ) as absent
+                            ) AS absent
                        FROM {collaborate} as clb
                        JOIN {course} c ON c.id = clb.course
                   LEFT JOIN {local_intelliboard_bb_partic} libp ON libp.sessionuid = clb.sessionuid
