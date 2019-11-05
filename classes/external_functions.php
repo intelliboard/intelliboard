@@ -372,6 +372,7 @@ class local_external_functions
             'get_cohort_feedback_items',
             'get_course_categories',
             'get_cohort_feedbacks',
+            'report207',
         ];
     }
     public function get_function($params = null)

@@ -1010,3 +1010,6 @@ div[aria-label="A tabular representation of the data in the chart."] {
     margin-left: 0;
     background: #428bca none repeat scroll 0 0;;
 }
+.summary-chart-wrap {
+    z-index: 1;
+}
