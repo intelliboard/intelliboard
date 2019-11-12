@@ -235,7 +235,10 @@ class intelliboard_courses_grades_table extends table_sql {
     }
 
     function col_percentage_completed_learners($values) {
-        $progress = round($values->percentage_completed_learners, 0);
+        $learners = intval($values->learners);
+        $completed = intval($values->completed);
+        $progress = ($learners and $completed)?(($completed/$learners) * 100): 0;
+        $progress = round($progress, 0);
 
         $html = html_writer::start_tag("div", array("class" => "grade"));
         $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => $progress));
