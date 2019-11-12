@@ -253,10 +253,10 @@ class intelliboard_courses_grades_table extends table_sql {
     function col_timespend($values) {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
     }
-    function avg_timespend($values) {
+    function col_avg_timespend($values) {
         return ($values->avg_timespend) ? seconds_to_time($values->avg_timespend) : '-';
     }
-    function avg_visits($values) {
+    function col_avg_visits($values) {
         return html_writer::tag("span", intval($values->avg_visits), array("class"=>"info-average"));
     }
     function col_learners($values) {
