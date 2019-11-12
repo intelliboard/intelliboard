@@ -34,7 +34,7 @@ intelliboard_instructor_access();
 $report = optional_param('id', '', PARAM_RAW);
 $alias = optional_param('alias', '', PARAM_RAW);
 $intelliboard = intelliboard(['task'=>'reports', 'mode' => 2]);
-$params = http_build_query(['userid'=>$USER->id ]);
+$params = http_build_query(['userid' => $USER->id, 'dashboard_type' => 'instructor']);
 
 if ($alias and !empty($intelliboard->reports)) {
 	foreach($intelliboard->reports as $key=>$val) {
