@@ -37,6 +37,11 @@ class intelliboard_courses_grades_table extends table_sql {
 
         $headers = array();
         $columns = array();
+        $params = array();
+
+        $grade_avg = intelliboard_grade_sql(true);
+        $join_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
+        $sql_columns = "";
 
         if(get_config('local_intelliboard', 'table_set_icg_c1')) {
             $columns[] =  'course';
@@ -65,9 +70,15 @@ class intelliboard_courses_grades_table extends table_sql {
             );
         }
 
-        if(get_config('local_intelliboard', 'table_set_icg_c5')) {
+        if (get_config('local_intelliboard', 'table_set_icg_c5')) {
             $columns[] =  'grade';
             $headers[] =  get_string('in21', 'local_intelliboard');
+
+            $join_sql .= " LEFT JOIN {grade_items} gi ON gi.courseid = ctx.instanceid AND gi.itemtype = 'course'
+            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ra.userid AND g.finalgrade IS NOT NULL";
+            $sql_columns .= ", $grade_avg AS grade";
+        } else {
+          $sql_columns .= ", '0' AS grade";
         }
 
         if(get_config('local_intelliboard', 'table_set_icg_c6')) {
@@ -112,134 +123,78 @@ class intelliboard_courses_grades_table extends table_sql {
             return false;
         }
 
+        if (get_config('local_intelliboard', 'table_set_icg_c8') or get_config('local_intelliboard', 'table_set_icg_c9')) {
+          $join_sql .= " LEFT JOIN (SELECT lit.userid, lit.courseid, SUM(lit.timespend) as timespend, SUM(lit.visits) as visits FROM {local_intelliboard_tracking} lit GROUP BY lit.courseid, lit.userid) lit ON lit.userid = u.id AND lit.courseid = c.id";
+          $sql_columns .= ", SUM(lit.timespend) AS timespend, SUM(lit.visits) AS visits";
+        } else {
+          $sql_columns .= ", '0' AS timespend, '0' AS visits";
+        }
+
+        if (get_config('local_intelliboard', 'table_set_icg_c14') or get_config('local_intelliboard', 'table_set_icg_c15')) {
+          if (get_config('local_intelliboard', 'table_set_icg_c8') or get_config('local_intelliboard', 'table_set_icg_c9')) {
+            //skip
+          } else {
+            $join_sql .= " LEFT JOIN (SELECT lit.userid, lit.courseid, SUM(lit.timespend) as timespend, SUM(lit.visits) as visits FROM {local_intelliboard_tracking} lit GROUP BY lit.courseid, lit.userid) lit ON lit.userid = u.id AND lit.courseid = c.id";
+          }
+          $sql_columns .= ", AVG(lit.timespend) AS avg_timespend, AVG(lit.visits) AS avg_visits";
+        } else{
+          $sql_columns .= ", '0' AS avg_timespend, '0' AS avg_visits";
+        }
+
+
+
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $sql = intelliboard_instructor_getcourses();
-        $params = array('userid'=>$USER->id);
-
-        if($search){
+        if ($search) {
             $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
             $params['fullname'] = "%$search%";
         }
 
-        list($sql1, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
-        $params = array_merge($params,$sql_params);
-        list($sql2, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter10')), SQL_PARAMS_NAMED, 'r');
-        $params = array_merge($params,$sql_params);
+        $sql1 = intelliboard_instructor_getcourses('c.id');
+        $sql2 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
 
-        list($sql3, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
-        $params = array_merge($params,$sql_params);
-        list($sql4, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
-        $params = array_merge($params,$sql_params);
-        list($sql5, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
-
-        $params = array_merge($params,$sql_params);
-        list($sql6, $sql_params) = $DB->get_in_or_equal(
-            explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r6'
-        );
+        list($sql_r, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
 
-        $params = array_merge($params,$sql_params);
-        list($sql7, $sql_params) = $DB->get_in_or_equal(
-            explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r7'
-        );
-        $params = array_merge($params,$sql_params);
+        if ($sql_r) {
+          $sql2 .= " AND ra.roleid $sql_r";
+        }
 
-        $grade_avg = intelliboard_grade_sql(true);
-        $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
-        $join_group_sql2 = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'gi.courseid');
+        $fields = "
+                  c.id,
+                  c.fullname AS course,
+                  c.shortname AS course_shortname,
+                  c.enablecompletion,
+                  ca.name AS category,
+                  x.timespend,
+                  x.visits,
+                  x.learners,
+                  x.completed,
+                  x.grade,
+                  x.avg_timespend,
+                  x.avg_visits,
+                  '' AS percentage_completed_learners,
+                  '' AS actions,
+                  (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
+                  (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections
+                  ";
 
-
-        $sql33 = intelliboard_instructor_getcourses('l.courseid', false, 'l.userid');
-        $sql44 = intelliboard_instructor_getcourses('ctx.instanceid', false, 'ra.userid');
-        $sql55 = intelliboard_instructor_getcourses('gi.courseid', false, 'g.userid');
-        $sql66 = intelliboard_instructor_getcourses('course', false, 'userid');
-
-        $fields = "tg.*,
-                   CASE WHEN tg.learners = 0 THEN 0 ELSE (tg.completed / tg.learners) * 100 END AS percentage_completed_learners";
-        $from = "(SELECT c.id, c.fullname AS course, c.shortname AS course_shortname,
-                         c.enablecompletion,
-                         ca.name AS category,
-                         (SELECT SUM(l.timespend)
-                            FROM {local_intelliboard_tracking} l
-                           WHERE l.courseid = c.id $sql33 AND
-                                 l.userid IN (SELECT DISTINCT ra.userid
-                                                FROM {context} ctx
-                                                JOIN {role_assignments} ra ON ctx.id = ra.contextid
-                                                     $join_group_sql
-                                               WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 AND
-                                                     ra.roleid $sql3)
-                         ) AS timespend,
-
-                         (SELECT SUM(l.visits)
-                            FROM {local_intelliboard_tracking} l
-                           WHERE l.courseid = c.id $sql33 AND
-                                 l.userid IN (SELECT DISTINCT ra.userid
-                                                FROM {context} ctx
-                                                JOIN {role_assignments} ra ON ctx.id = ra.contextid
-                                                     $join_group_sql
-                                               WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 AND
-                                                     ra.roleid $sql4)
-                         ) AS visits,
-
-                         (SELECT COUNT(DISTINCT ra.userid)
-                            FROM {role_assignments} ra
-                       LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                                 $join_group_sql
-                           WHERE ra.roleid $sql1 $sql44 AND ctx.instanceid = c.id
-                         ) AS learners,
-
-                         (SELECT $grade_avg
-                            FROM {grade_items} gi
-                            JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                                 $join_group_sql2
-                           WHERE gi.itemtype = 'course' AND gi.courseid = c.id   $sql55
-                         ) AS grade,
-
-                         (SELECT COUNT(DISTINCT userid)
-                            FROM {course_completions}
-                           WHERE timecompleted > 0 $sql66 AND
-                                 course = c.id AND userid IN (SELECT DISTINCT ra.userid
-                                                                FROM {context} ctx
-                                                                JOIN {role_assignments} ra ON ctx.id = ra.contextid
-                                                                     $join_group_sql
-                                                               WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 AND
-                                                                     ra.roleid $sql5)) AS completed,
-                         (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
-                         (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
-                         '' AS actions, at.avg_timespend, vt.avg_visits
-                    FROM {course} c
-               LEFT JOIN {course_categories} ca ON ca.id = c.category
-               LEFT JOIN (SELECT t.courseid, AVG(t.spent) avg_timespend
-                            FROM (SELECT l.courseid, SUM(l.timespend) spent
-                                    FROM {course} c1
-                                    JOIN {context} ctx ON ctx.contextlevel = 50 AND
-                                                          ctx.instanceid = c1.id
-                                    JOIN {role_assignments} ra ON ctx.id = ra.contextid AND
-                                                                  ra.roleid {$sql6}
-                                    JOIN {local_intelliboard_tracking} l ON l.courseid = c1.id AND
-                                                                            ra.userid = l.userid
-                                 GROUP BY l.courseid, l.userid
-                                 ) t
-                        GROUP BY t.courseid
-                         ) AS at ON at.courseid = c.id
-                
-               LEFT JOIN (SELECT t.courseid, AVG(t.visits) avg_visits
-                            FROM (SELECT l.courseid, SUM(l.visits) visits
-                                    FROM {course} c1
-                                    JOIN {context} ctx ON ctx.contextlevel = 50 AND
-                                                          ctx.instanceid = c1.id
-                                    JOIN {role_assignments} ra ON ctx.id = ra.contextid AND
-                                                                  ra.roleid {$sql7}
-                                    JOIN {local_intelliboard_tracking} l ON l.courseid = c1.id AND
-                                                                            ra.userid = l.userid
-                                GROUP BY l.courseid, l.userid
-                                 ) t
-                        GROUP BY t.courseid
-                         ) AS vt ON vt.courseid = c.id
-                   WHERE c.id > 0 $sql) tg";
-        $where = "tg.id > 0";
+        $from = "{course} c
+                  JOIN {course_categories} ca ON ca.id = c.category
+                  LEFT JOIN (SELECT
+                        c.id,
+                        COUNT(DISTINCT ra.userid) learners,
+                        COUNT(DISTINCT cc.userid) as completed
+                        $sql_columns
+                      FROM {role_assignments} ra
+                         JOIN {user} u ON ra.userid = u.id
+                         JOIN {context} ctx ON ctx.id = ra.contextid
+                         JOIN {course} c ON c.id = ctx.instanceid
+                         LEFT JOIN {course_completions} cc ON cc.course = ctx.instanceid AND cc.userid = u.id AND cc.timecompleted > 0
+                         $join_sql
+                 WHERE ctx.contextlevel = 50 $sql2 GROUP BY c.id) x ON x.id = c.id";
+        $where = "c.id > 0 $sql1";
 
 
         $this->set_sql($fields, $from, $where, $params);
