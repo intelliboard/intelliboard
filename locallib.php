@@ -207,6 +207,7 @@ function intelliboard($params, $function = 'sso'){
 		$data->status = (isset($data->status))?$data->status:'';
         $data->token = (isset($data->token))?$data->token:'';
 		$data->reports = (isset($data->reports))?(array)$data->reports:null;
+		$data->intellicart_reports = isset($data->intellicart_reports) ? (array) $data->intellicart_reports : null;
 		$data->sets = (isset($data->reports))?(array)$data->sets:null;
 		$data->alerts = (isset($data->alerts))?(array)$data->alerts:null;
 		$data->alert = (isset($data->alert))?$data->alert:'';
