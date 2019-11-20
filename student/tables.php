@@ -77,18 +77,36 @@ class intelliboard_courses_grades_table extends table_sql {
         $completion = intelliboard_compl_sql("cmc.");
         $sql2 = (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
 
-        $fields = "c.id, c.fullname as course, c.timemodified, c.startdate, c.enablecompletion, cri.gradepass, $grade_single AS grade, gc.average, cc.timecompleted, m.modules, cm.completedmodules, '' as actions, '' as letter";
+        $fields = "c.id, c.fullname AS course, c.timemodified, c.startdate, c.enablecompletion,
+                   cri.gradepass, {$grade_single} AS grade, gc.average, cc.timecompleted, m.modules,
+                   cm.completedmodules, '' AS actions, '' AS letter";
 
-        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, MIN(ue.timemodified) AS timemodified, ue.userid FROM {user_enrolments} ue, {enrol} e, {course} c WHERE ue.userid = :userid  AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid $sql2 GROUP BY c.id, ue.userid) c
-
-            LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = c.userid
-            LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) m ON m.course = c.id
-            LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.completion > 0 GROUP BY cm.course, cmc.userid) cm ON cm.course = c.id AND cm.userid = c.userid
-            LEFT JOIN {course_completion_criteria} as cri ON cri.course = c.id AND cri.criteriatype = 6
-            LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = c.userid AND g.finalgrade IS NOT NULL
-            LEFT JOIN (SELECT gi.courseid, $grade_avg AS average FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL GROUP BY gi.courseid) as gc ON gc.courseid = c.id";
-        $where = "c.id > 0 $sql";
+        $from = "(SELECT DISTINCT c.id, c.fullname, c.startdate, c.enablecompletion, MIN(ue.timemodified) AS timemodified, ue.userid
+                    FROM {user_enrolments} ue, {enrol} e, {course} c
+                   WHERE ue.userid = :userid  AND ue.status = 0 AND e.id = ue.enrolid AND e.status = 0 AND c.id = e.courseid $sql2
+                GROUP BY c.id, ue.userid
+                 ) c
+       LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = c.userid
+       LEFT JOIN (SELECT course, count(id) as modules
+                    FROM {course_modules}
+                   WHERE visible = 1 AND completion > 0
+                GROUP BY course
+                 ) m ON m.course = c.id
+       LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules
+                    FROM {course_modules} cm, {course_modules_completion} cmc
+                   WHERE cm.id = cmc.coursemoduleid {$completion} AND cm.visible = 1 AND cm.completion > 0
+                GROUP BY cm.course, cmc.userid
+                 ) cm ON cm.course = c.id AND cm.userid = c.userid
+       LEFT JOIN {course_completion_criteria} as cri ON cri.course = c.id AND cri.criteriatype = 6
+       LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+       LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = c.userid
+       LEFT JOIN (SELECT gi.courseid, {$grade_avg} AS average
+                    FROM {grade_items} gi, {grade_grades} g
+                   WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND
+                         gi.itemtype = 'course' AND g.itemid = gi.id AND
+                         g.finalgrade IS NOT NULL GROUP BY gi.courseid
+                 ) as gc ON gc.courseid = c.id";
+        $where = "c.id > 0 {$sql}";
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
     }

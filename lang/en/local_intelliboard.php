@@ -587,6 +587,7 @@
  $string['delete_message'] = 'Delete SQL report?';
  $string['success_message'] = 'SQL report has been saved';
  $string['scale_percentage_round'] = 'Percentage round';
+ $string['instructor_show_suspended_enrollments'] = 'Show suspended enrollments';
  // BigBlueButton meetings
  $string['bbbapiendpoint'] = 'BBB API endpoint';
  $string['bbbserversecret'] = 'BBB server secret';
@@ -791,6 +792,7 @@
  $string['bb_col_consumer_key'] = 'BlackBoard Collaborate consumer key';
  $string['bb_col_secret'] = 'BlackBoard Collaborate secret';
  $string['enable_bb_col_meetings'] = 'Enable BlackBoard Collaborate meetings';
+ $string['check_active_bb_col_meetings'] = 'Check active BlackBoard Collaborate meeting';
 
 /* Admin dashboard */
 $string['admin_dashboard'] = 'Admin dashboard';

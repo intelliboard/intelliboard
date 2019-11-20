@@ -713,7 +713,7 @@
  $string['support_close'] = "Fechar";
 
  $string['instructor_custom_groups'] = "Grupos personalizados do instrutor";
-
+ $string['instructor_show_suspended_enrollments'] = 'Show suspended enrollments';
 
  // settings of tables
  $string['show_dashboard_tab'] = 'Mostrar aba da dashboard';
@@ -805,6 +805,7 @@ $string['all_modules'] = 'All modules';
  $string['bb_col_consumer_key'] = 'BlackBoard Collaborate chave do consumidor';
  $string['bb_col_secret'] = 'Segredo do BlackBoard Collaborate';
  $string['enable_bb_col_meetings'] = 'Ativar reuniões do BlackBoard Collaborate';
+ $string['check_active_bb_col_meetings'] = 'Check active BlackBoard Collaborate meeting';
 
 /* Admin dashboard */
 $string['admin_dashboard'] = 'Admin dashboard';
