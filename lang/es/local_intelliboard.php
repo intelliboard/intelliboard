@@ -664,6 +664,7 @@ $string['sslversion'] = "CURLOPT SSLVERSION";
 $string['sslversion_desc'] = "Pasar un campo Long como parámetro como para controlar qué rango de versiones de SSL / TLS usar";
 $string['debug'] = "Depurar solicitudes CURL";
 $string['debug_desc'] = "";
+$string['instructor_show_suspended_enrollments'] = 'Show suspended enrollments';
 /* IntelliCart */
 $string['intellicart'] = "Integración IntelliCart";
 $string['intellicart_desc'] = "Permitir a los estudiantes ver informes de IntelliCart";
@@ -783,6 +784,7 @@ $string['bb_col_api_endpoint'] = 'BlackBoard Collaborate API endpoint';
 $string['bb_col_consumer_key'] = 'Clave de consumidor de BlackBoard Collaborate';
 $string['bb_col_secret'] = 'Secreto BlackBoard Collaborate';
 $string['enable_bb_col_meetings'] = 'Habilitar reunions BlackBoard Collaborate';
+$string['check_active_bb_col_meetings'] = 'Check active BlackBoard Collaborate meeting';
 
 /* Admin dashboard */
 $string['admin_dashboard'] = 'Admin dashboard';

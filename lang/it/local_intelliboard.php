@@ -753,6 +753,7 @@ $string['support_demo'] = "Prenota una demo";
 $string['support_trial'] = "Inizia periodo di prova";
 $string['support_close'] = "Chiudi";
 $string['instructor_custom_groups'] = "Gruppi personalizzati docente";
+$string['instructor_show_suspended_enrollments'] = 'Show suspended enrollments';
 
 // settings of tables
 $string['table_set_icg'] = 'Corsi del Docente';
@@ -843,6 +844,7 @@ $string['bb_col_api_endpoint'] = 'BlackBoard Collaborate API endpoint';
 $string['bb_col_consumer_key'] = 'BlackBoard Collaborate consumer key';
 $string['bb_col_secret'] = 'BlackBoard Collaborate secret';
 $string['enable_bb_col_meetings'] = 'Enable BlackBoard Collaborate meetings';
+$string['check_active_bb_col_meetings'] = 'Check active BlackBoard Collaborate meeting';
 
 /* Admin dashboard */
 $string['admin_dashboard'] = 'Admin dashboard';

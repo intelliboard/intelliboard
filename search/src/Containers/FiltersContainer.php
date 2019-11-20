@@ -66,6 +66,7 @@ class FiltersContainer extends BaseContainer {
             11 => "LIKE",
             12 => ">=",
             13 => "<=",
+            14 => "IS NOT NULL",
         );
 
 
