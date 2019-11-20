@@ -476,6 +476,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/instructor_show_suspended_enrollments';
+        $title = new lang_string('instructor_show_suspended_enrollments', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
         // tables settings
         $settings->add(
             new admin_setting_heading(

@@ -243,6 +243,10 @@ function intelliboard_instructor_correlations($page, $length)
     $join_sql = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'c.id');
     $sql = intelliboard_instructor_getcourses('c.id', false, 'g.userid');
 
+    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+        $sql .= ' AND enr.status = 0';
+    }
+
     $items = $DB->get_records_sql("
             SELECT
                 c.id,
@@ -253,6 +257,11 @@ function intelliboard_instructor_correlations($page, $length)
             FROM {course} c
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                 LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                             FROM {user_enrolments} ue
+                             JOIN {enrol} e ON ue.enrolid = e.id
+                         GROUP BY ue.userid, e.courseid
+                          ) enr ON enr.userid = g.userid AND enr.courseid = c.id
                 LEFT JOIN (SELECT courseid, userid, sum(timespend) AS duration FROM {local_intelliboard_tracking} WHERE courseid > 0 GROUP BY courseid, userid) l ON l.courseid = c.id AND l.userid = g.userid
                 $join_sql
             WHERE c.id > 0 $sql GROUP BY c.id", [], $page, $length);
@@ -292,6 +301,10 @@ function intelliboard_instructor_modules()
     $sql = intelliboard_instructor_getcourses('c.id', false, 'ra.userid');
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", []);
 
+    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+        $sql .= ' AND enr.status = 0';
+    }
+
     $items = $DB->get_records_sql("
         SELECT
             m.id,
@@ -304,6 +317,11 @@ function intelliboard_instructor_modules()
             LEFT JOIN {course_modules} cm ON cm.course = c.id
             LEFT JOIN {modules} m ON m.id = cm.module
             LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = ra.userid AND l.param = cm.id
+            LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                         FROM {user_enrolments} ue
+                         JOIN {enrol} e ON ue.enrolid = e.id
+                     GROUP BY ue.userid, e.courseid
+                      ) enr ON enr.userid = ra.userid AND enr.courseid = ctx.instanceid
             $join_sql1
         WHERE c.id > 0 $sql $sql2 GROUP BY m.id", $params);
 
@@ -336,21 +354,32 @@ function intelliboard_instructor_stats()
 
     $sql .= get_filter_usersql("u.");
 
-    return $DB->get_record_sql("SELECT
-            COUNT(DISTINCT c.id) as courses,
-            COUNT(DISTINCT ra.userid) as enrolled,
-            COUNT(DISTINCT cc.userid) as completed,
-            COUNT(DISTINCT g.id) as grades,
-            $grade_avg AS grade
-        FROM {role_assignments} ra
-            LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-            LEFT JOIN {course} c ON c.id = ctx.instanceid
-            LEFT JOIN {user} u ON u.id = ra.userid
-            LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
-            LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
-            LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-            $join_sql1
-        WHERE c.id > 0 $sql $sql2", $params);
+    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+        $sql .= ' AND enr.status = 0';
+    }
+
+    return $DB->get_record_sql(
+        "SELECT COUNT(DISTINCT c.id) as courses,
+                COUNT(DISTINCT ra.userid) as enrolled,
+                COUNT(DISTINCT cc.userid) as completed,
+                COUNT(DISTINCT g.id) as grades,
+                {$grade_avg} AS grade
+           FROM {role_assignments} ra
+           JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+           JOIN {course} c ON c.id = ctx.instanceid
+           JOIN {user} u ON u.id = ra.userid
+      LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                   FROM {user_enrolments} ue
+                   JOIN {enrol} e ON ue.enrolid = e.id
+               GROUP BY ue.userid, e.courseid
+                ) enr ON enr.userid = u.id AND enr.courseid = c.id
+      LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
+      LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
+      LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                {$join_sql1}
+          WHERE c.id > 0 {$sql} {$sql2}",
+        $params
+    );
 }
 
 function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $daterange = '')
@@ -365,8 +394,11 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", []);
 
     if($view == 'grades'){
-      $sql = intelliboard_instructor_getcourses('c.id', false, 'g.userid');
+        $sql = intelliboard_instructor_getcourses('c.id', false, 'g.userid');
 
+        if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+            $sql .= ' AND enr.status = 0';
+        }
 
         $timerange_sql = '';
         if (!empty($daterange)) {
@@ -379,22 +411,27 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
             }
         }
         $join_sql = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'c.id');
-        $courses = $DB->get_records_sql("
-            SELECT
-                c.id,
-                c.fullname,
-                $grade_avg AS data1,
-                $grade_avg_percent AS data1_percent,
-                (SELECT cc.gradepass FROM {course_completion_criteria} cc WHERE cc.course = c.id AND cc.criteriatype = 6 ) as data2
-            FROM {course} c
-                LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-                LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL $timerange_sql
-                $join_sql
-            WHERE c.id > 0 $sql GROUP BY c.id", $params, $page, $length);
+        $courses = $DB->get_records_sql(
+            "SELECT c.id,
+                    c.fullname,
+                    {$grade_avg} AS data1,
+                    {$grade_avg_percent} AS data1_percent,
+                    (SELECT cc.gradepass FROM {course_completion_criteria} cc WHERE cc.course = c.id AND cc.criteriatype = 6 ) as data2
+               FROM {course} c
+          LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+          LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL {$timerange_sql}
+          LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                       FROM {user_enrolments} ue
+                       JOIN {enrol} e ON ue.enrolid = e.id
+                   GROUP BY ue.userid, e.courseid
+                    ) enr ON enr.userid = g.userid AND enr.courseid = c.id
+                    {$join_sql}
+              WHERE c.id > 0 {$sql}
+           GROUP BY c.id, c.fullname",
+            $params, $page, $length
+        );
     }elseif($view == 'activities'){
-
-      $sql = intelliboard_instructor_getcourses('ctx.instanceid', false, 'ra.userid');
-
+        $sql = intelliboard_instructor_getcourses('ctx.instanceid', false, 'ra.userid');
 
         if (!empty($daterange)) {
             $range = preg_split("/ (.)+ /", $daterange);
@@ -408,24 +445,36 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
         $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
         $join_sql2 = intelliboard_group_aggregation_sql('cmc.userid', $USER->id, 'c.id');
         list($sql3, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
-        $courses = $DB->get_records_sql("
-            SELECT
-                c.id,
-                c.fullname,
-                (SELECT count(distinct ra.userid) as learners
-                  FROM {role_assignments} ra
-                    JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                    $join_sql1
-                  WHERE ctx.instanceid = c.id $sql $sql2 ) AS learners,
-                COUNT(DISTINCT cmc.id) as data1,
-                (SELECT COUNT(cm.id) FROM {course_modules} cm WHERE cm.course = c.id AND cm.visible = 1 AND cm.completion > 0) AS data2
-            FROM {course} c
-                LEFT JOIN {course_modules} cm ON cm.course = c.id AND cm.visible = 1 AND cm.completion > 0
-                LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion
-                LEFT JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
-                LEFT JOIN {role_assignments} ra ON ctx.id = ra.contextid AND ra.userid=cmc.userid
-                $join_sql2
-            WHERE c.id > 0 $sql $sql3 GROUP BY c.id", $params, $page, $length);
+
+        if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+            $sql2 .= ' AND enr.status = 0';
+        }
+
+        $courses = $DB->get_records_sql(
+            "SELECT c.id,
+                    c.fullname,
+                    (SELECT COUNT(DISTINCT ra.userid) as learners
+                       FROM {role_assignments} ra
+                       JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+                  LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                               FROM {user_enrolments} ue
+                               JOIN {enrol} e ON ue.enrolid = e.id
+                           GROUP BY ue.userid, e.courseid
+                            ) enr ON enr.userid = ra.userid AND enr.courseid = ctx.instanceid
+                            {$join_sql1}
+                      WHERE ctx.instanceid = c.id {$sql} {$sql2}
+                    ) AS learners,
+                    COUNT(DISTINCT cmc.id) as data1,
+                    (SELECT COUNT(cm.id) FROM {course_modules} cm WHERE cm.course = c.id AND cm.visible = 1 AND cm.completion > 0) AS data2
+               FROM {course} c
+          LEFT JOIN {course_modules} cm ON cm.course = c.id AND cm.visible = 1 AND cm.completion > 0
+          LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id {$completion}
+          LEFT JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
+                    {$join_sql2}
+              WHERE c.id > 0 {$sql} {$sql3}
+           GROUP BY c.id",
+            $params, $page, $length
+        );
 
         foreach($courses as $course){
             $course->data1 = ($course->data2) ? ($course->data1 / ($course->learners * $course->data2)) * 100 : 0;
@@ -433,9 +482,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
     }elseif($view == 'course_overview'){
         return array();
     }else{
-
-      $sql = intelliboard_instructor_getcourses('c.id', false, 'ra.userid');
-
+        $sql = intelliboard_instructor_getcourses('c.id', false, 'ra.userid');
 
         if (!empty($daterange)) {
             $range = preg_split("/ (.)+ /", $daterange);
@@ -450,18 +497,20 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
         }
         $join_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c.id');
 
-        $courses = $DB->get_records_sql("
-            SELECT
-                c.id,
-                c.fullname,
-                COUNT(DISTINCT ra.userid) as data1,
-                COUNT(distinct cc.userid) as data2
-            FROM {role_assignments} ra
-                LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                LEFT JOIN {course} c ON c.id = ctx.instanceid
-                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
-                $join_sql
-            WHERE c.id > 0 $sql $sql2 GROUP BY c.id", $params, $page, $length);
+        $courses = $DB->get_records_sql(
+            "SELECT c.id,
+                    c.fullname,
+                    COUNT(DISTINCT ra.userid) as data1,
+                    COUNT(distinct cc.userid) as data2
+               FROM {role_assignments} ra
+          LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+          LEFT JOIN {course} c ON c.id = ctx.instanceid
+          LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
+                    {$join_sql}
+              WHERE c.id > 0 {$sql} {$sql2}
+           GROUP BY c.id",
+            $params, $page, $length
+        );
 
         if(empty($courses)){
             $row = new stdClass();

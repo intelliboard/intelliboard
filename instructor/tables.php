@@ -146,11 +146,6 @@ class intelliboard_courses_grades_table extends table_sql {
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        if ($search) {
-            $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
-            $params['fullname'] = "%$search%";
-        }
-
         $sql1 = intelliboard_instructor_getcourses('c.id');
         $sql2 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
 
@@ -159,6 +154,15 @@ class intelliboard_courses_grades_table extends table_sql {
 
         if ($sql_r) {
           $sql2 .= " AND ra.roleid $sql_r";
+        }
+
+        if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+            $sql2 .= ' AND enr.status = 0';
+        }
+
+        if ($search) {
+            $sql1 .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
+            $params['fullname'] = "%$search%";
         }
 
         $fields = "
@@ -182,18 +186,24 @@ class intelliboard_courses_grades_table extends table_sql {
 
         $from = "{course} c
                   JOIN {course_categories} ca ON ca.id = c.category
-                  LEFT JOIN (SELECT
-                        c.id,
-                        COUNT(DISTINCT ra.userid) learners,
-                        COUNT(DISTINCT cc.userid) as completed
-                        $sql_columns
-                      FROM {role_assignments} ra
-                         JOIN {user} u ON ra.userid = u.id
-                         JOIN {context} ctx ON ctx.id = ra.contextid
-                         JOIN {course} c ON c.id = ctx.instanceid
-                         LEFT JOIN {course_completions} cc ON cc.course = ctx.instanceid AND cc.userid = u.id AND cc.timecompleted > 0
-                         $join_sql
-                 WHERE ctx.contextlevel = 50 $sql2 GROUP BY c.id) x ON x.id = c.id";
+                  LEFT JOIN (SELECT c.id,
+                                    COUNT(DISTINCT ra.userid) learners,
+                                    COUNT(DISTINCT cc.userid) as completed
+                                    {$sql_columns}
+                               FROM {role_assignments} ra
+                               JOIN {user} u ON ra.userid = u.id
+                               JOIN {context} ctx ON ctx.id = ra.contextid
+                               JOIN {course} c ON c.id = ctx.instanceid
+                          LEFT JOIN {course_completions} cc ON cc.course = ctx.instanceid AND cc.userid = u.id AND cc.timecompleted > 0
+                          LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                                       FROM {user_enrolments} ue
+                                       JOIN {enrol} e ON ue.enrolid = e.id
+                                   GROUP BY ue.userid, e.courseid
+                                    ) enr ON enr.userid = u.id AND enr.courseid = c.id
+                                    {$join_sql}
+                              WHERE ctx.contextlevel = 50 $sql2
+                           GROUP BY c.id
+                            ) x ON x.id = c.id";
         $where = "c.id > 0 $sql1";
 
 
@@ -390,6 +400,10 @@ class intelliboard_activities_grades_table extends table_sql {
         $sql44 = intelliboard_instructor_getcourses('m.course', false, 'cm.userid');
         $sql55 = intelliboard_instructor_getcourses('courseid', false, 'userid');
 
+        if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+            $sql33 .= ' AND enr.status = 0';
+        }
+
         $fields = 't.*';
 
         $from = "(SELECT cm.id,
@@ -406,6 +420,11 @@ class intelliboard_activities_grades_table extends table_sql {
                LEFT JOIN (SELECT gi.iteminstance, gi.itemmodule, $grade_avg AS grade
                             FROM {grade_items} gi
                             JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                       LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                                    FROM {user_enrolments} ue
+                                    JOIN {enrol} e ON ue.enrolid = e.id
+                                GROUP BY ue.userid, e.courseid
+                                 ) enr ON enr.userid = g.userid AND enr.courseid = gi.courseid
                                  $join_group_sql
                            WHERE gi.itemtype = 'mod' AND gi.courseid = :c1 $sql33
                         GROUP BY gi.iteminstance, gi.itemmodule
@@ -602,6 +621,10 @@ class intelliboard_activity_grades_table extends table_sql {
         $grade_single = intelliboard_grade_sql();
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'e.instanceid');
 
+        if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+            $sql .= ' AND enr.status = 0';
+        }
+
 
         $sql55 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
 
@@ -623,7 +646,12 @@ class intelliboard_activity_grades_table extends table_sql {
                 LEFT JOIN {course_modules_completion} cc ON cc.coursemoduleid = cm.id AND cc.userid = ra.userid
                 LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = m.name AND gi.iteminstance = cm.instance
                 LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                LEFT JOIN {local_intelliboard_tracking} l ON l.userid = u.id AND l.param = cm.id AND l.page = 'module'";
+                LEFT JOIN {local_intelliboard_tracking} l ON l.userid = u.id AND l.param = cm.id AND l.page = 'module'
+                LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                             FROM {user_enrolments} ue
+                             JOIN {enrol} e ON ue.enrolid = e.id
+                         GROUP BY ue.userid, e.courseid
+                          ) enr ON enr.userid = u.id AND enr.courseid = c.id";
         $where = "ra.roleid $sql_roles $sql55 AND e.instanceid = :courseid $sql";
 
         $this->set_sql($fields, $from, $where, $params);
@@ -776,6 +804,10 @@ class intelliboard_learners_grades_table extends table_sql {
         $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
         $sql .= get_filter_usersql("u.");
 
+        if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+            $sql .= ' AND enr.status = 0';
+        }
+
         $params = array_merge($params,$sql_params);
         list($sql6, $sql_params) = $DB->get_in_or_equal(
             explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r6'
@@ -817,6 +849,12 @@ class intelliboard_learners_grades_table extends table_sql {
                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid
                LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
                LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
+               
+               LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                            FROM {user_enrolments} ue
+                            JOIN {enrol} e ON ue.enrolid = e.id
+                        GROUP BY ue.userid, e.courseid
+               ) enr ON enr.userid = u.id AND enr.courseid = c.id
 
                LEFT JOIN (SELECT t.courseid, AVG(t.spent) avg_timespend
                             FROM (SELECT l.courseid, SUM(l.timespend) spent
@@ -1046,6 +1084,10 @@ class intelliboard_learner_grades_table extends table_sql {
             $params['moduleid'] = $module;
         }
 
+        if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+            $sql .= ' AND enr.status = 0';
+        }
+
         $sql_columns = "";
         $modules = $DB->get_records_sql("SELECT m.id, m.name FROM {modules} m WHERE m.visible = 1");
         foreach($modules as $module){
@@ -1070,6 +1112,11 @@ class intelliboard_learner_grades_table extends table_sql {
               LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :u1
               LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :u2
               LEFT JOIN {local_intelliboard_tracking} l ON l.param=cm.id AND l.page='module' AND l.courseid=:c1 AND l.userid= :u3
+              LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                           FROM {user_enrolments} ue
+                           JOIN {enrol} e ON ue.enrolid = e.id
+                       GROUP BY ue.userid, e.courseid
+                        ) enr ON enr.userid = g.userid AND enr.courseid = gi.courseid
                   WHERE cm.visible = 1 AND cm.course = :c2 $sql
                  HAVING $having) t";
         $where = 't.id > 0';
