@@ -8644,7 +8644,7 @@ class local_intelliboard_external extends external_api {
             "cohorts",
             "u.timecreated",
             "lit.firstaccess",
-            "lit.lastaccess",
+            "ul.timeaccess",
             "u.lastlogin",
             "c.fullname",
             "course_completion",
@@ -8717,7 +8717,7 @@ class local_intelliboard_external extends external_api {
                           ue.timecreated,
                           u.lastlogin,
                           lit.firstaccess,
-                          lit.lastaccess,
+                          ul.timeaccess AS lastaccess,
                           m.modules,
                           cmc.completed,
                           cc1.timecompleted as course_completion,
@@ -8744,8 +8744,10 @@ class local_intelliboard_external extends external_api {
 
 
                           LEFT JOIN {local_intelliboard_tracking} lit ON lit.page='course' AND lit.param=c.id AND lit.userid=u.id
+                          LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
+
                         WHERE c.id > 0 $sql_filter {$sql_vendor_filter} GROUP BY u.id, c.id, u.firstname, u.lastname, u.email, cohorts, ue.timecreated,
-                              u.lastlogin, lit.firstaccess, lit.lastaccess, m.modules, cmc.completed, course_completion, course_id,
+                              u.lastlogin, lit.firstaccess, ul.timeaccess, m.modules, cmc.completed, course_completion, course_id,
                               course_name, teacher {$this->groupAdditionalColumns}
                               $sql_having $sql_order", $params);
 
@@ -9801,7 +9803,7 @@ class local_intelliboard_external extends external_api {
 
         if($teacherroles) {
             $teachersselect = 'tcrs.teachers as courseteachers,';
-            $teachersgroupconcat = get_operator('GROUP_CONCAT', "CONCAT(u.firstname, ' ', u.lastname)");
+            $teachersgroupconcat = get_operator('GROUP_CONCAT', "CONCAT(u.firstname, ' ', u.lastname)", ['separator' => ', ']);
             $teachersfilter = "LEFT JOIN (SELECT cx.instanceid, {$teachersgroupconcat} as teachers
                                             FROM {context} cx
                                             JOIN {role_assignments} ra ON ra.contextid = cx.id AND
@@ -11819,13 +11821,6 @@ class local_intelliboard_external extends external_api {
                     {$sql_order}",
             $params, false
         );
-
-        foreach ($data as &$item) {
-            $tool = (object) ['id' => $item->tool_id];
-            $item->cartridge_url = (\enrol_lti\helper::get_cartridge_url($tool))->out();
-            $item->launch_url = (\enrol_lti\helper::get_launch_url($tool->id))->out();
-            $item->registration_url = (\enrol_lti\helper::get_proxy_url($tool))->out();
-        }
 
         return ['data' => $data];
     }
@@ -15873,22 +15868,7 @@ class local_intelliboard_external extends external_api {
                  WHERE ba.id > 0{$sql_filter}
               GROUP BY it.useros";
 
-        $oslist = $DB->get_records_sql($sql, $this->params);
-
-        $devicesinfo = [
-            'monitortype' => 'bbbreport_devices_info',
-            'devices_info' => [
-                \local_intelliboard\tools\os_classifier::TYPE_DESKTOP => 0,
-                \local_intelliboard\tools\os_classifier::TYPE_MOBILE => 0,
-                \local_intelliboard\tools\os_classifier::TYPE_OTHER => 0,
-            ]
-        ];
-
-        foreach($oslist as $os) {
-            $devicesinfo['devices_info'][\local_intelliboard\tools\os_classifier::getOSType($os->useros)] += $os->amountofuse;
-        }
-
-        return $devicesinfo;
+        return $DB->get_records_sql($sql, $this->params);
     }
     public function monitor38($params) {
         global $DB, $CFG;
@@ -16032,7 +16012,19 @@ class local_intelliboard_external extends external_api {
         $sql = $this->get_filter_in_sql($params->filter, 'fieldid');
         $sql .= $this->get_filter_in_sql($params->custom, 'userid');
 
-        
+        if ($params->custom2) {
+            $items = explode(',', $params->custom2);
+
+            for ($i = 0; $i < count($items); $i++) {
+                $rawitem = explode('|', $items[$i]);
+
+                if (count($rawitem) === 2) {
+                    $sql .= " AND (fieldid <> :fieldid{$i} OR data <> :dataval{$i})";
+                    $this->params["fieldid{$i}"] = $rawitem[0];
+                    $this->params["dataval{$i}"] = $rawitem[1];
+                }
+            }
+        }
 
         return $DB->get_records_sql(
             "SELECT MAX(id) AS id, MAX(fieldid) AS fieldid, data, COUNT(id) AS items
