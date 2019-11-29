@@ -38,11 +38,11 @@ require_login();
 require_capability('local/intelliboard:students', context_system::instance());
 
 if ($search) {
-	require_sesskey();
+    require_sesskey();
 }
 
 if(!get_config('local_intelliboard', 't1') or !get_config('local_intelliboard', 't3')){
-	throw new moodle_exception('invalidaccess', 'error');
+    throw new moodle_exception('invalidaccess', 'error');
 }
 $scale_real = get_config('local_intelliboard', 'scale_real');
 $email = get_config('local_intelliboard', 'te1');
@@ -53,35 +53,35 @@ if(get_config('local_intelliboard', 't09')>0 && $other_user>0 && intelliboard_in
 }
 
 $params = array(
-	'do'=>'learner',
-	'mode'=> 1
+    'do'=>'learner',
+    'mode'=> 1
 );
 $intelliboard = intelliboard($params);
 $factorInfo = chart_options();
 
 if($courseid and $action == 'details'){
-	$progress = intelliboard_learner_course_progress($courseid, $showing_user->id);
-	$json_data = array();
-	foreach($progress[0] as $item){
-		$l = '';
+    $progress = intelliboard_learner_course_progress($courseid, $showing_user->id);
+    $json_data = array();
+    foreach($progress[0] as $item){
+        $l = '';
         $lp = 0;
-		if(isset($progress[1][$item->timepoint])){
-			$d = $progress[1][$item->timepoint];
-			$l = $d->grade;
+        if(isset($progress[1][$item->timepoint])){
+            $d = $progress[1][$item->timepoint];
+            $l = $d->grade;
             $lp = $d->grade_percent;
-		}
-		$tooltip = "<div class=\"chart-tooltip\">";
-		$tooltip .= "<div class=\"chart-tooltip-header\">".date('D, M d Y', $item->timepoint)."</div>";
-		$tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-		$tooltip .= "<div class=\"chart-tooltip-left\"><span>". ((!$scale_real)?round($item->grade, 2)."%":$item->grade)."</span> ".get_string('current_grade','local_intelliboard')."</div>";
-		$tooltip .= "<div class=\"chart-tooltip-right\"><span>". ((!$scale_real)?round($l, 2)."%":$l)."</span> ".get_string('average_grade','local_intelliboard')."</div>";
-		$tooltip .= "</div>";
-		$tooltip .= "</div>";
-		$item->timepoint = $item->timepoint*1000;
-		$json_data[] = array($item->timepoint, round((($scale_real)?$item->grade_percent:$item->grade), 2), $tooltip, $lp, $tooltip);
-	}
-	echo json_encode($json_data);
-	exit;
+        }
+        $tooltip = "<div class=\"chart-tooltip\">";
+        $tooltip .= "<div class=\"chart-tooltip-header\">".date('D, M d Y', $item->timepoint)."</div>";
+        $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
+        $tooltip .= "<div class=\"chart-tooltip-left\"><span>". ((!$scale_real)?round($item->grade, 2)."%":$item->grade)."</span> ".get_string('current_grade','local_intelliboard')."</div>";
+        $tooltip .= "<div class=\"chart-tooltip-right\"><span>". ((!$scale_real)?round($l, 2)."%":$l)."</span> ".get_string('average_grade','local_intelliboard')."</div>";
+        $tooltip .= "</div>";
+        $tooltip .= "</div>";
+        $item->timepoint = $item->timepoint*1000;
+        $json_data[] = array($item->timepoint, round((($scale_real)?$item->grade_percent:$item->grade), 2), $tooltip, $lp, $tooltip);
+    }
+    echo json_encode($json_data);
+    exit;
 }
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/student/courses.php", array("search"=>s($search), "sesskey"=> sesskey(), "user"=>$other_user)));
@@ -112,181 +112,184 @@ $scale_percentage_round = get_config('local_intelliboard', 'scale_percentage_rou
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-	<div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+    <div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
-<div class="intelliboard-page intelliboard-student">
-	<?php include("views/menu.php"); ?>
+    <div class="intelliboard-page intelliboard-student">
+        <?php include("views/menu.php"); ?>
 
-		<div class="intelliboard-search clearfix">
-			<form action="<?php echo $PAGE->url; ?>" method="GET">
-				<input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>">
+        <div class="intelliboard-search clearfix">
+            <form action="<?php echo $PAGE->url; ?>" method="GET">
+                <input type="hidden" name="sesskey" value="<?php p(sesskey()); ?>">
 
-				<span class="pull-left">
+                <span class="pull-left">
                     <input class="form-control" name="search" aria-label="<?php echo get_string('search');?>"
                            type="text" value="<?php echo format_string($search); ?>"
                            placeholder="<?php echo get_string('type_here', 'local_intelliboard');?>"
                     >
                 </span>
-				<button class="btn btn-default"><?php echo get_string('search');?></button>
-				<span aria-hidden="true">
-					<a class="active" value="grid" href="" aria-label="Grid view">
+                <button class="btn btn-default"><?php echo get_string('search');?></button>
+                <span aria-hidden="true">
+                    <a class="active" value="grid" href="" aria-label="Grid view">
                         <span class="screen-reader-content">
                             <?php echo get_string('grid_view', 'local_intelliboard'); ?>
                         </span>
                         <i class="ion-android-apps"></i>
                     </a>
-					<a href="" value="list" aria-label="List view">
+                    <a href="" value="list" aria-label="List view">
                         <span class="screen-reader-content">
                             <?php echo get_string('list_view', 'local_intelliboard'); ?>
                         </span>
                         <i class="ion-android-menu"></i>
                     </a>
-				</span>
+                </span>
+            </form>
+        </div>
+        <div class="intelliboard-overflow">
+            <ul class="intelliboard-courses-grid clearfix">
+                <?php $i=0; foreach($courses['data'] as $item): $i++; ?>
+                    <li class="f<?php echo $t47+1; ?> course-item">
+                        <div class="course-info clearfix">
+                            <div class="icon">
+                                <i class="ion-social-buffer"></i>
+                                <?php if($t22): ?>
+                                    <span title="<?php echo get_string('enrolled_date','local_intelliboard');?>"><?php echo date("d F", $item->timemodified); ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="title">
+                                <strong>
+                                    <a href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo $item->id; ?>">
+                                        <?php echo format_string($item->fullname); ?>
+                                    </a>
+                                </strong>
+                                <?php if($t16): ?>
+                                    <?php if($item->teacher and $teacher = core_user::get_user($item->teacher)): ?>
+                                        <p title="<?php echo get_string('teacher','local_intelliboard');?>"><?php echo $OUTPUT->user_picture($teacher, array('size'=>20)); ?> <?php echo fullname($teacher); ?></p>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                <?php if($t17): ?>
+                                    <span title="<?php echo get_string('category','local_intelliboard');?>"><i class="ion-ios-folder-outline"></i> <?php echo format_string($item->category); ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <?php if($t19): ?>
+                                <div class="grade" title="<?php echo get_string('current_grade','local_intelliboard');?>">
+                                    <div class="circle-progress"  data-percent="<?php echo ($scale_real)?$item->grade:round($item->grade, $scale_percentage_round); ?>"></div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="course-stats clearfix">
+                            <?php if($t18): ?>
+                                <div>
+                                    <span><?php echo get_string('completion','local_intelliboard');?></span>
+                                    <p><?php echo (int)$item->completedmodules; ?>/<?php echo (int)$item->modules; ?></p>
+                                </div>
+                            <?php endif; ?>
 
-			</form>
-		</div>
-		<div class="intelliboard-overflow">
-			<ul class="intelliboard-courses-grid clearfix">
-			<?php $i=0; foreach($courses['data'] as $item): $i++; ?>
-				<li class="f<?php echo $t47+1; ?> course-item">
-					<div class="course-info clearfix">
-						<div class="icon">
-							<i class="ion-social-buffer"></i>
-							<?php if($t22): ?>
-							<span title="<?php echo get_string('enrolled_date','local_intelliboard');?>"><?php echo date("d F", $item->timemodified); ?></span>
-							<?php endif; ?>
-						</div>
-						<div class="title">
-							<strong><?php echo format_string($item->fullname); ?></strong>
-							<?php if($t16): ?>
-								<?php if($item->teacher and $teacher = core_user::get_user($item->teacher)): ?>
-									<p title="<?php echo get_string('teacher','local_intelliboard');?>"><?php echo $OUTPUT->user_picture($teacher, array('size'=>20)); ?> <?php echo fullname($teacher); ?></p>
-								<?php endif; ?>
-							<?php endif; ?>
-							<?php if($t17): ?>
-								<span title="<?php echo get_string('category','local_intelliboard');?>"><i class="ion-ios-folder-outline"></i> <?php echo format_string($item->category); ?></span>
-							<?php endif; ?>
-						</div>
-						<?php if($t19): ?>
-						<div class="grade" title="<?php echo get_string('current_grade','local_intelliboard');?>">
-							<div class="circle-progress"  data-percent="<?php echo ($scale_real)?$item->grade:round($item->grade, $scale_percentage_round); ?>"></div>
-						</div>
-						<?php endif; ?>
-					</div>
-					<div class="course-stats clearfix">
-						<?php if($t18): ?>
-						<div>
-							<span><?php echo get_string('completion','local_intelliboard');?></span>
-							<p><?php echo (int)$item->completedmodules; ?>/<?php echo (int)$item->modules; ?></p>
-						</div>
-						<?php endif; ?>
+                            <?php if($t20): ?>
+                                <div>
+                                    <span><?php echo get_string('class_average','local_intelliboard');?></span>
+                                    <p><?php echo ($scale_real)?$item->average:(int)$item->average.'%'; ?></p>
+                                </div>
+                            <?php endif; ?>
 
-						<?php if($t20): ?>
-						<div>
-							<span><?php echo get_string('class_average','local_intelliboard');?></span>
-							<p><?php echo ($scale_real)?$item->average:(int)$item->average.'%'; ?></p>
-						</div>
-						<?php endif; ?>
-
-						<?php if($t21): ?>
-						<div>
-							<span><?php echo get_string('time_spent','local_intelliboard');?></span>
-							<p><?php echo ($item->duration)?seconds_to_time(intval($item->duration)):'-'; ?></p>
-						</div>
-						<?php endif; ?>
-					</div>
-					<div class="course-chart" id="course-chart<?php echo format_string($item->id); ?>"></div>
-					<div class="course-more clearfix">
-						<span>
-							<?php if($item->timecompleted): ?><a title="<?php echo get_string('completed_on','local_intelliboard',date("m/d/Y", $item->timecompleted));?>" href="#completed"><i class="ion-android-done-all"></i></a><?php endif; ?>
-							<?php //<a href=""><i class="ion-alert-circled"></i></a> ?>
-							<?php if($item->certificates): ?><a title="<?php echo get_string('you_have_certificates','local_intelliboard',s($item->certificates));?>" href="#certificates"><i class="ion-ribbon-b"></i></a><?php endif; ?>
-							<a class="course-details" href="" value="<?php echo $item->id; ?>"><i class="ion-podium"></i>
-								<strong><?php echo get_string('close','local_intelliboard');?></strong>
-							</a>
-                            <?php if($course_activities):?>
-                                <a class="course-activities" href="grades.php">
-                                    <span class="screen-reader-content"><?php echo get_string('student_grades', 'local_intelliboard'); ?></span>
-                                    <i class="ion-university"></i>
+                            <?php if($t21): ?>
+                                <div>
+                                    <span><?php echo get_string('time_spent','local_intelliboard');?></span>
+                                    <p><?php echo ($item->duration)?seconds_to_time(intval($item->duration)):'-'; ?></p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="course-chart" id="course-chart<?php echo format_string($item->id); ?>"></div>
+                        <div class="course-more clearfix">
+                            <span>
+                                <?php if($item->timecompleted): ?><a title="<?php echo get_string('completed_on','local_intelliboard',date("m/d/Y", $item->timecompleted));?>" href="#completed"><i class="ion-android-done-all"></i></a><?php endif; ?>
+                                <?php //<a href=""><i class="ion-alert-circled"></i></a> ?>
+                                <?php if($item->certificates): ?><a title="<?php echo get_string('you_have_certificates','local_intelliboard',s($item->certificates));?>" href="#certificates"><i class="ion-ribbon-b"></i></a><?php endif; ?>
+                                <a class="course-details" href="" value="<?php echo $item->id; ?>"><i class="ion-podium"></i>
+                                    <strong><?php echo get_string('close','local_intelliboard');?></strong>
                                 </a>
-                            <?php endif;?>
-						</span>
-						<a class="more" href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo $item->id; ?>"><?php echo get_string('view_course_details','local_intelliboard');?></a>
-					</div>
-				</li>
-			<?php endforeach; ?>
-			</ul>
-			<?php echo $courses['pagination']; ?>
-		</div>
-	<?php include("../views/footer.php"); ?>
-</div>
-<script type="text/javascript"
-          src="https://www.google.com/jsapi?autoload={
+                                <?php if($course_activities):?>
+                                    <a class="course-activities" href="grades.php">
+                                        <span class="screen-reader-content"><?php echo get_string('student_grades', 'local_intelliboard'); ?></span>
+                                        <i class="ion-university"></i>
+                                    </a>
+                                <?php endif;?>
+                            </span>
+                            <a class="more" href="<?php echo $CFG->wwwroot; ?>/course/view.php?id=<?php echo $item->id; ?>"><?php echo get_string('view_course_details','local_intelliboard');?></a>
+                        </div>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+            <?php echo $courses['pagination']; ?>
+        </div>
+        <?php include("../views/footer.php"); ?>
+    </div>
+    <script type="text/javascript"
+            src="https://www.google.com/jsapi?autoload={
             'modules':[{
               'name':'visualization',
               'version':'1',
-							'language': '<?php echo current_language(); ?>',
+                'language': '<?php echo current_language(); ?>',
               'packages':['corechart']
             }]
           }"></script>
-<script type="text/javascript">
-	jQuery(document).ready(function(){
-		jQuery('.course-details').click(function(e){
-			e.preventDefault();
-			var id = jQuery(this).attr('value');
-			var icon = jQuery(this).find('i');
+    <script type="text/javascript">
+        jQuery(document).ready(function(){
+            jQuery('.course-details').click(function(e){
+                e.preventDefault();
+                var id = jQuery(this).attr('value');
+                var icon = jQuery(this).find('i');
 
-			if(jQuery(this).hasClass('active')){
-				jQuery('.intelliboard-courses-grid').removeClass('list cview');
-				jQuery('.course-item').removeClass('active');
-				jQuery(this).removeClass('active');
-			}else{
-				jQuery('.intelliboard-courses-grid').addClass('list cview');
-				jQuery('.course-item').removeClass('active');
-				jQuery(this).addClass('active')
-				jQuery(this).parents('.course-item').addClass('active');
+                if(jQuery(this).hasClass('active')){
+                    jQuery('.intelliboard-courses-grid').removeClass('list cview');
+                    jQuery('.course-item').removeClass('active');
+                    jQuery(this).removeClass('active');
+                }else{
+                    jQuery('.intelliboard-courses-grid').addClass('list cview');
+                    jQuery('.course-item').removeClass('active');
+                    jQuery(this).addClass('active');
+                    jQuery(this).parents('.course-item').addClass('active');
 
-				jQuery.ajax({
-					url: '<?php echo str_replace('amp;','', $PAGE->url); ?>&action=details&courseid='+id,
-					dataType: "json",
-					beforeSend: function(){
-						jQuery(icon).attr('class','ion-ios-loop-strong ion-spin-animation');
-					}
-				}).done(function( data ) {
-					jQuery(icon).attr('class','ion-podium ion-spin-animation');
+                    jQuery.ajax({
+                        url: '<?php echo str_replace('amp;','', $PAGE->url); ?>&action=details&courseid='+id,
+                        dataType: "json",
+                        beforeSend: function(){
+                            jQuery(icon).attr('class','ion-ios-loop-strong ion-spin-animation');
+                        }
+                    }).done(function( data ) {
+                        jQuery(icon).attr('class','ion-podium ion-spin-animation');
 
-					var json_data = [];
-					for(var i = 0; i < data.length; i++){
-						var item = data[i];
-						json_data.push([new Date(item[0]), item[1], item[2], Number(item[3]), item[4]]);
-					}
+                        var json_data = [];
+                        for(var i = 0; i < data.length; i++){
+                            var item = data[i];
+                            json_data.push([new Date(item[0]), item[1], item[2], Number(item[3]), item[4]]);
+                        }
 
-					var data = new google.visualization.DataTable();
-					data.addColumn('date', 'Time');
-					data.addColumn('number', 'My grade progress');
-					data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-					data.addColumn('number', 'Average grade');
-					data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-					data.addRows(json_data);
+                        data = new google.visualization.DataTable();
+                        data.addColumn('date', 'Time');
+                        data.addColumn('number', 'My grade progress');
+                        data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+                        data.addColumn('number', 'Average grade');
+                        data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
+                        data.addRows(json_data);
 
-					var options = <?php echo format_string($factorInfo->CoursesCalculation); ?>;
-					var chart = new google.visualization.LineChart(document.getElementById('course-chart'+id));
-					chart.draw(data, options);
-				});
-			}
-		});
+                        var options = <?php echo format_string($factorInfo->CoursesCalculation); ?>;
+                        var chart = new google.visualization.LineChart(document.getElementById('course-chart'+id));
+                        chart.draw(data, options);
+                    });
+                }
+            });
 
-		jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesFCalculation); ?>);
-		jQuery('.intelliboard-search span a').click(function(e){
-			e.preventDefault();
-			jQuery(this).parent().find('a').removeClass("active");
-			jQuery(this).addClass("active");
-			jQuery('.intelliboard-courses-grid').removeClass('list');
-			jQuery('.intelliboard-courses-grid').addClass(jQuery(this).attr('value'));
-			jQuery('.intelliboard-courses-grid').removeClass('cview');
-			jQuery('.course-item').removeClass('active');
-		});
-	});
-</script>
+            jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesFCalculation); ?>);
+            jQuery('.intelliboard-search span a').click(function(e){
+                e.preventDefault();
+                jQuery(this).parent().find('a').removeClass("active");
+                jQuery(this).addClass("active");
+                jQuery('.intelliboard-courses-grid').removeClass('list');
+                jQuery('.intelliboard-courses-grid').addClass(jQuery(this).attr('value'));
+                jQuery('.intelliboard-courses-grid').removeClass('cview');
+                jQuery('.course-item').removeClass('active');
+            });
+        });
+    </script>
 <?php endif; ?>
 <?php echo $OUTPUT->footer();

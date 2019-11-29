@@ -259,6 +259,9 @@
 .sheader .stats .sum-courses-list{max-height: 300px;overflow: auto;margin-bottom: 10px;}
 .sheader .stats .dropdown-menu{min-width: 180px;}
 .sheader .stats .dropdown-menu button{margin: 0;}
+.course-item .course-info > .title > strong > a {
+    color: #000;
+}
 
 .s-progress{float: right;width: 180px;}
 .s-progress div{position:relative; border-bottom:3px solid #eee; margin-top: 6px;font-size:13px;}

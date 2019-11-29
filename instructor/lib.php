@@ -444,7 +444,6 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
         }
         $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
         $join_sql2 = intelliboard_group_aggregation_sql('cmc.userid', $USER->id, 'c.id');
-        list($sql3, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
 
         if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
             $sql2 .= ' AND enr.status = 0';
@@ -471,13 +470,17 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
           LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id {$completion}
           LEFT JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
                     {$join_sql2}
-              WHERE c.id > 0 {$sql} {$sql3}
+              WHERE c.id > 0 {$sql}
            GROUP BY c.id",
             $params, $page, $length
         );
 
         foreach($courses as $course){
-            $course->data1 = ($course->data2) ? ($course->data1 / ($course->learners * $course->data2)) * 100 : 0;
+            if ($course->learners * $course->data2 == 0) {
+                $course->data1 = 0;
+            } else {
+                $course->data1 = ($course->data2) ? ($course->data1 / ($course->learners * $course->data2)) * 100 : 0;
+            }
         }
     }elseif($view == 'course_overview'){
         return array();
