@@ -34,6 +34,7 @@ var intelliboardPage = '';
 var intelliboardParam = '';
 var intelliboardTime = 0;
 var intelliboardMediaTrack = 0;
+var intelliboardSSOLink = false;
 
 function intelliboardInit(Y, options){
 	options = options || {};
@@ -47,6 +48,20 @@ function intelliboardInit(Y, options){
 	intelliboardParam = options.intelliboardParam || intelliboardParam;
 	intelliboardTime = options.intelliboardTime || intelliboardTime;
 	intelliboardMediaTrack = options.intelliboardMediaTrack || intelliboardTime;
+	intelliboardSSOLink = options.intelliboardSSOLink || intelliboardSSOLink;
+
+	if (intelliboardSSOLink) {
+		try {
+		  var links = document.querySelectorAll("a[href='"+intelliboardSSOLink+"']");
+			if (links.length > 0) {
+				links.forEach(function(link) {
+					link.setAttribute("target", "_blank");
+				});
+			}
+		} catch(error) {
+			//console.log('SSO link not found');
+		}
+	}
 }
 
 function intelliboardProgress(){

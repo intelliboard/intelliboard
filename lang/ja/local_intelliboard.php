@@ -870,3 +870,5 @@ $string['tracktotals'] = 'Track Time Aggregate - Daily';
 $string['enable_badges_report'] = 'Enable "Badges" report';
 $string['sizemode'] = 'Size Mode: Large ( > 5,000 Users)';
 $string['cachedef_bb_collaborate_access_token'] = 'BB collaborate access token';
+
+$string['learner_menu'] = '学習者が一部のコースに登録した場合にのみ、ナビゲーションブロックメニューにリンクを表示します';

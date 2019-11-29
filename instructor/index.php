@@ -786,39 +786,43 @@ echo $OUTPUT->header();
 		}
 		<?php endif; ?>
 
-		google.setOnLoadCallback(drawInsructorChart);
-		function drawInsructorChart() {
-			var options = {
-				title:'',
-				legend:{position: 'top', alignment: 'end'},
-				vAxis: {title:'<?php echo intellitext(get_string('learners', 'local_intelliboard')); ?>'},
-				hAxis:{textPosition: 'none', title:'<?php echo intellitext(get_string('courses')); ?>'},
-				seriesType:'bars',
-				series:{1:{type:'line'}},
-				chartArea:{width:'90%',height: '76%',right:10 },
-				colors:['#1d7fb3', '#1db34f'],
-				backgroundColor:{fill:'transparent'}
-			};
-			<?php if($view == 'grades'): ?>
-				options.vAxis.title = "<?php echo intellitext(get_string('in19', 'local_intelliboard')); ?>";
-				var data = google.visualization.arrayToDataTable([
-				['Course', '<?php echo intellitext(get_string('in19', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('in25', 'local_intelliboard')); ?>'],
-				<?php foreach($courses as $row):  ?>
-				['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo (int)$row->data1_percent; ?>, f: '<?php echo $row->data1; ?>'}, <?php echo (int)$row->data2; ?>],
-				<?php endforeach; ?>
-				]);
-	        <?php elseif($view == 'activities'): ?>
-	        	options.vAxis.title = "<?php echo intellitext(get_string('in14', 'local_intelliboard')); ?>";
-	        	options.vAxis.minValue = 0;
-	        	options.vAxis.maxValue = 1;
-	        	options.vAxis.format = 'percent';
-
-	        	<?php if(count($courses)): ?>
-                    var data = google.visualization.arrayToDataTable([
-                    ['<?php echo intellitext(get_string('course')); ?>', '<?php echo intellitext(get_string('in15', 'local_intelliboard')); ?>'],
-                    <?php foreach($courses as $row): ?>
-                    ['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
+        google.setOnLoadCallback(drawInsructorChart);
+        function drawInsructorChart() {
+            var options = {
+                title:'',
+                legend:{position: 'top', alignment: 'end'},
+                vAxis: {title:'<?php echo intellitext(get_string('learners', 'local_intelliboard')); ?>'},
+                hAxis:{textPosition: 'none', title:'<?php echo intellitext(get_string('courses')); ?>'},
+                seriesType:'bars',
+                series:{1:{type:'line'}},
+                chartArea:{width:'90%',height: '76%',right:10 },
+                colors:['#1d7fb3', '#1db34f'],
+                backgroundColor:{fill:'transparent'}
+            };
+            <?php if($view == 'grades'): ?>
+                options.vAxis.title = "<?php echo intellitext(get_string('in19', 'local_intelliboard')); ?>";
+                var data = google.visualization.arrayToDataTable([
+                    ['Course', '<?php echo intellitext(get_string('in19', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('in25', 'local_intelliboard')); ?>'],
+                    <?php foreach($courses as $row):  ?>
+                        ['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo (int)$row->data1; ?>, f: '<?php echo $row->data1; ?>'}, <?php echo (int)$row->data2; ?>],
                     <?php endforeach; ?>
+
+                    <?php if (!count($courses)): ?>
+                        ['', {v: 0, f: '0'}, 0],
+                    <?php endif; ?>
+                ]);
+            <?php elseif($view == 'activities'): ?>
+                options.vAxis.title = "<?php echo intellitext(get_string('in14', 'local_intelliboard')); ?>";
+                options.vAxis.minValue = 0;
+                options.vAxis.maxValue = 1;
+                options.vAxis.format = 'percent';
+
+                <?php if(count($courses)): ?>
+                    var data = google.visualization.arrayToDataTable([
+                        ['<?php echo intellitext(get_string('course')); ?>', '<?php echo intellitext(get_string('in15', 'local_intelliboard')); ?>'],
+                        <?php foreach($courses as $row): ?>
+                        ['<?php echo addslashes(format_string($row->fullname)); ?>', {v: <?php echo $row->data1 / 100; ?>, f: '<?php echo (int)$row->data1; ?>%'} ],
+                        <?php endforeach; ?>
                     ]);
                 <?php else: ?>
                     var data = google.visualization.arrayToDataTable([
@@ -826,11 +830,11 @@ echo $OUTPUT->header();
                         ['', {v: 0, f: 0}]
                     ]);
                 <?php endif; ?>
-	        <?php elseif($view == 'course_overview'): ?>
+            <?php elseif($view == 'course_overview'): ?>
                 jQuery('#instructor-chart<?php echo ($view)?"-".$view:""; ?>').html('<?php echo intellitext(get_string('loading', 'local_intelliboard')); ?>');
-	        	options.vAxis.textPosition = 'none';
-	        	options.tooltip = {isHtml: true};
-	        	options.chartArea.width = '95%';
+                options.vAxis.textPosition = 'none';
+                options.tooltip = {isHtml: true};
+                options.chartArea.width = '95%';
 
                 //var course = jQuery('#chart5 .intelliboard-dropdown button').val();
                 var chart = new google.visualization.ComboChart(document.getElementById('instructor-chart<?php echo ($view)?"-".$view:""; ?>'));
@@ -852,19 +856,19 @@ echo $OUTPUT->header();
                     chart.draw(data, options);
                 });
                 return;
-	        <?php else: ?>
-	        	var data = google.visualization.arrayToDataTable([
-	        	['<?php echo intellitext(get_string('course')); ?>', '<?php echo intellitext(get_string('enrolled', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('completed', 'local_intelliboard')); ?>'],
-	        	<?php foreach($courses as $row): ?>
-				['<?php echo addslashes(format_string($row->fullname)); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
-				<?php endforeach; ?>
-				]);
-	        <?php endif; ?>
-			//var options = <?php echo $factorInfo->CourseProgressCalculation; ?>;
-			var chart = new google.visualization.ComboChart(document.getElementById('instructor-chart<?php echo ($view)?"-".$view:""; ?>'));
-			chart.draw(data, options);
-			jQuery('.intelliboard-origin-head a:first').trigger('click');
-		}
+            <?php else: ?>
+                var data = google.visualization.arrayToDataTable([
+                    ['<?php echo intellitext(get_string('course')); ?>', '<?php echo intellitext(get_string('enrolled', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('completed', 'local_intelliboard')); ?>'],
+                    <?php foreach($courses as $row): ?>
+                    ['<?php echo addslashes(format_string($row->fullname)); ?>', <?php echo (int)$row->data1; ?>, <?php echo (int)$row->data2; ?>],
+                    <?php endforeach; ?>
+                ]);
+            <?php endif; ?>
+            //var options = <?php echo $factorInfo->CourseProgressCalculation; ?>;
+            var chart = new google.visualization.ComboChart(document.getElementById('instructor-chart<?php echo ($view)?"-".$view:""; ?>'));
+            chart.draw(data, options);
+            jQuery('.intelliboard-origin-head a:first').trigger('click');
+        }
 
         google.setOnLoadCallback(load_graded_activities_overview_chart);
         function load_graded_activities_overview_chart() {
