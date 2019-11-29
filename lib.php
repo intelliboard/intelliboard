@@ -34,7 +34,16 @@ function local_intelliboard_extends_navigation(global_navigation $nav){
 		$alt_name = get_config('local_intelliboard', 't0');
 		$def_name = get_string('ts1', 'local_intelliboard');
 		$name = ($alt_name) ? $alt_name : $def_name;
-		$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+
+
+		$learner_menu = get_config('local_intelliboard', 'learner_menu');
+		if ($learner_menu) {
+			if($courses = enrol_get_users_courses($USER->id)) {
+				$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+			}
+		} else {
+			$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+		}
 	}
 
 	if(has_capability('local/intelliboard:view', $context) and get_config('local_intelliboard', 'ssomenu')){
@@ -75,22 +84,33 @@ function local_intelliboard_extend_navigation(global_navigation $nav){
 		local_intelliboard_insert_tracking(false);
 		$context = context_system::instance();
 
-        if(has_capability('local/intelliboard:view', $context) and get_config('local_intelliboard', 'ssomenu')){
-            $name = get_string('ianalytics', 'local_intelliboard');
-            $url = new moodle_url($CFG->wwwroot.'/local/intelliboard/index.php?action=sso');
-            $nav->add($name, $url);
-            $node = $mynode->add($name, $url, 0, null, 'intelliboard_admin');
-            $node->showinflatnavigation = true;
-        }
+    if(has_capability('local/intelliboard:view', $context) and get_config('local_intelliboard', 'ssomenu')){
+        $name = get_string('ianalytics', 'local_intelliboard');
+        $url = new moodle_url($CFG->wwwroot.'/local/intelliboard/index.php?action=sso');
+        $nav->add($name, $url);
+        $node = $mynode->add($name, $url, 0, null, 'intelliboard_admin');
+        $node->showinflatnavigation = true;
+    }
 
 		if (isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)) {
 			$alt_name = get_config('local_intelliboard', 't0');
 			$def_name = get_string('ts1', 'local_intelliboard');
 			$name = ($alt_name) ? $alt_name : $def_name;
-			$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
-			$nav->add($name, $url);
-			$node = $mynode->add($name, $url, 0, null, 'intelliboard_student');
-			$node->showinflatnavigation = true;
+
+			$learner_menu = get_config('local_intelliboard', 'learner_menu');
+			if ($learner_menu) {
+				if($courses = enrol_get_users_courses($USER->id)) {
+					$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
+					$nav->add($name, $url);
+					$node = $mynode->add($name, $url, 0, null, 'intelliboard_student');
+					$node->showinflatnavigation = true;
+				}
+			} else {
+				$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
+				$nav->add($name, $url);
+				$node = $mynode->add($name, $url, 0, null, 'intelliboard_student');
+				$node->showinflatnavigation = true;
+			}
 		}
 
 		if (isloggedin() and get_config('local_intelliboard', 'n10')) {
@@ -428,7 +448,6 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 			$intelliboardPage = 'site';
 			$intelliboardParam = 0;
 		}
-
 		$params = new stdClass();
 		$params->intelliboardAjax = $ajax;
 		$params->intelliboardAjaxUrl = $ajax ? "$CFG->wwwroot/local/intelliboard/ajax.php" : "";
@@ -438,6 +457,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 		$params->intelliboardParam = $intelliboardParam;
 		$params->intelliboardMediaTrack = $intelliboardMediaTrack;
 		$params->intelliboardTime = 0;
+		$params->intelliboardSSOLink = (get_config('local_intelliboard', 'ssomenu')) ? $CFG->wwwroot.'/local/intelliboard/index.php?action=sso' : false;
 
 		$PAGE->requires->js('/local/intelliboard/module.js', false);
 		$PAGE->requires->js_init_call('intelliboardInit', array($params), false);
