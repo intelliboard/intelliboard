@@ -824,3 +824,5 @@ $string['cachedef_bb_collaborate_access_token'] = 'BB collaborate access token';
 
 
 $string['learner_menu'] = 'Show "Learner Dashboard" in Navigation Block menu only for enrolled learners';
+$string['learning_plan_filter'] = 'Learning Plan Filter';
+$string['learning_plan_viewer_role'] = '"Learning Plan Viewer" role';
