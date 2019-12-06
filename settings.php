@@ -1131,6 +1131,29 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/learning_plan_filter';
+        $title = new lang_string('learning_plan_filter', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
+        $roles = role_fix_names(
+            get_all_roles(context_system::instance()), context_system::instance(), ROLENAME_ORIGINALANDSHORT
+        );
+        $options = array();
+        $default = null;
+
+        foreach ($roles as $role) {
+            if ($default === null) {
+                $default = $role->id;
+            }
+            $options[$role->id] = $role->localname;
+        }
+
+        $name = 'local_intelliboard/learning_plan_viewer_role';
+        $title = new lang_string('learning_plan_viewer_role', 'local_intelliboard');
+        $setting = new admin_setting_configselect($name, $title, '', $default, $options);
+        $settings->add($setting);
+
 
         $settings->add(new admin_setting_heading('local_intelliboard/scalesettings', new lang_string('scalesettings', 'local_intelliboard'), ''));
 
