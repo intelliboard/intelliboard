@@ -114,9 +114,9 @@ function intelliboard_data($type, $userid, $showing_user) {
         $params['userid3'] = $userid;
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
-    }elseif ($type == 'course') {
+    } elseif ($type == 'course') {
         $sql = "";
-        if($search and $t == 'course'){
+        if ($search and $t == 'course') {
             $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
             $params['fullname'] = "%$search%";
         }
@@ -126,51 +126,87 @@ function intelliboard_data($type, $userid, $showing_user) {
         $params['userid4'] = $userid;
         $params['userid5'] = $userid;
 
-        $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
+        $grade_single = intelliboard_grade_sql(
+            false, null, 'g.',
+            get_config('local_intelliboard', 'scale_percentage_round'), 'gi.',
+            !get_config('local_intelliboard', 'scale_real')
+        );
 
         $completion = intelliboard_compl_sql("cmc.");
 
         $order_by = 'ORDER BY c.sortorder';
-        if(get_config('local_intelliboard', 't52')){
+
+        if (get_config('local_intelliboard', 't52')) {
             $order_by = 'ORDER BY c.sortorder,c.category';
         }
+
         $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
 
-        $query = "SELECT MAX(c.id) AS id, c.fullname, MIN(ue.timemodified) AS timemodified, c.category, 'course' AS type,
-                         (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid1) AS grade,
-                         (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
-                         (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid3 AND courseid = c.id) AS duration,
-                         (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND completion > 0 AND course = c.id) AS modules,
-                         (SELECT timecompleted FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted
+        $query = "SELECT MAX(c.id) AS id, c.fullname,
+                         MIN(ue.timemodified) AS timemodified,
+                         c.category, 'course' AS type,
+                         (SELECT $grade_single
+                            FROM {grade_items} gi, {grade_grades} g
+                           WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND
+                                 g.finalgrade IS NOT NULL AND gi.courseid = c.id AND
+                                 g.userid = :userid1
+                         ) AS grade,
+                         (SELECT COUNT(cmc.id)
+                            FROM {course_modules} cm, {course_modules_completion} cmc
+                           WHERE cm.id = cmc.coursemoduleid $completion AND
+                                 cm.visible = 1 AND cm.course = c.id AND
+                                 cmc.userid = :userid4
+                         ) AS completedmodules,
+                         (SELECT SUM(timespend)
+                            FROM {local_intelliboard_tracking}
+                           WHERE userid = :userid3 AND courseid = c.id
+                         ) AS duration,
+                         (SELECT COUNT(id)
+                            FROM {course_modules}
+                           WHERE visible = 1 AND completion > 0 AND course = c.id
+                         ) AS modules,
+                         (SELECT timecompleted
+                            FROM {course_completions}
+                           WHERE course = c.id AND userid = :userid5
+                         ) AS timecompleted
                     FROM {user_enrolments} ue
                LEFT JOIN {enrol} e ON e.id = ue.enrolid
-                    JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid
+                    JOIN {course_completions} cc ON cc.course = e.courseid AND
+                                                    cc.userid = ue.userid
                LEFT JOIN {course} c ON c.id = e.courseid
-                   WHERE ue.userid = :userid2 AND ue.status = 0 $sql GROUP BY c.id $order_by";
+                   WHERE ue.userid = :userid2 AND ue.status = 0 $sql
+                GROUP BY c.id
+                         $order_by";
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
 
-        if(get_config('local_intelliboard', 't52')){
+        if (get_config('local_intelliboard', 't52')) {
             $categories = array();
-            foreach($data as $item){
+            foreach ($data as $item) {
                 $categories[$item->category] = true;
             }
             $inner_sql = (!empty($categories))?"AND c.category IN(".implode(',', array_keys($categories)).")":"";
 
             $grade_avg = intelliboard_grade_sql(true);
-            $grade_category = $DB->get_records_sql("SELECT c.category, cc.name, $grade_avg AS grade
-                                                    FROM {course} c
-                                                      JOIN {course_categories} cc ON cc.id=c.category
-                                                      LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-                                                      LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                                                    WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) $inner_sql
-                                                    GROUP BY c.category");
+            $grade_category = $DB->get_records_sql(
+                "SELECT c.category, cc.name, $grade_avg AS grade
+                   FROM {course} c
+                   JOIN {course_categories} cc ON cc.id=c.category
+              LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND
+                                            gi.itemtype = 'course'
+              LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND
+                                            g.finalgrade IS NOT NULL
+                  WHERE gi.courseid NOT IN (SELECT DISTINCT courseid
+                                              FROM {grade_items}
+                                             WHERE hidden = 1) $inner_sql
+               GROUP BY c.category"
+            );
 
             $i=0;
             $inserted_cats=0;
             $old_cat = 0;
-            foreach($data as $record){
-                if(($i == 1 && $old_cat == 0) || $old_cat != $record->category){
+            foreach ($data as $record) {
+                if (($i == 1 && $old_cat == 0) || $old_cat != $record->category) {
                     $cat = $grade_category[$record->category];
                     $cat_row = new stdClass();
                     $cat_row->type = 'category';
@@ -184,9 +220,9 @@ function intelliboard_data($type, $userid, $showing_user) {
                 $i++;
             }
         }
-    }elseif ($type == 'courses') {
+    } elseif ($type == 'courses') {
         $sql = "";
-        if($search){
+        if ($search) {
             $sql .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
             $params['fullname'] = "%$search%";
         }
