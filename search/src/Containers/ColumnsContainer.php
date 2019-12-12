@@ -460,6 +460,7 @@ class ColumnsContainer extends BaseContainer {
             230 => array("name" => "path", "sql" => "path"),
             231 => array("name" => "depth", "sql" => "depth"),
             232 => array("name" => "productid", "sql" => "productid"),
+            233 => array("name" => "expiration", "sql" => "expiration"),
         );
 
         static::$modifiers = array_map(function($modifier) use ($mode) {
