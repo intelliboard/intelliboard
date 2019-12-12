@@ -35,7 +35,7 @@ class local_intelliboard_observer
         $data = $event->get_data();
         $relatedUser = $data['relateduserid'];
 
-        self::process_event(2, $event, array(), array('users' => $relatedUser, 'courses' => $data['courseid']));
+        self::process_event(2, $event, [], ['users' => $relatedUser, 'courses' => $data['courseid']]);
     }
 
     protected static function process_event($type, $event, $filter = array(), $ex_params = array())
