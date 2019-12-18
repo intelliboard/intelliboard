@@ -175,7 +175,7 @@ function setIntelliboardCookie(name, value, options) {
 	}
 	options.path = "/";
 	value = encodeURIComponent(value);
-	var updatedCookie = name + "=" + value;
+	var updatedCookie = name + "=" + value + (location.protocol === 'https:' ? ';secure' : '');
 	for(var propName in options) {
 		updatedCookie += "; " + propName;
 		var propValue = options[propName];
@@ -186,5 +186,5 @@ function setIntelliboardCookie(name, value, options) {
 	document.cookie = updatedCookie;
 }
 function deleteIntelliboardCookie(name) {
-	setIntelliboardCookie(name, "", { expires: -1 })
+	setIntelliboardCookie(name, "", { expires: -1 });
 }
