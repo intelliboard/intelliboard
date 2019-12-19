@@ -171,7 +171,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                          ) AS timecompleted
                     FROM {user_enrolments} ue
                LEFT JOIN {enrol} e ON e.id = ue.enrolid
-                    JOIN {course_completions} cc ON cc.course = e.courseid AND
+               LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND
                                                     cc.userid = ue.userid
                LEFT JOIN {course} c ON c.id = e.courseid
                    WHERE ue.userid = :userid2 AND ue.status = 0 $sql
