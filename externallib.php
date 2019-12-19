@@ -3961,7 +3961,6 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_in_sql($params->teacher_roles,'ra.roleid');
-        $sql_filter .= $this->get_filter_in_sql($params->users, "ra.userid");
 
         $sql1 = ($params->timestart) ? $this->get_filterdate_sql($params, 'd.timemodified') : '';
         $sql2 = ($params->timestart) ? $this->get_filterdate_sql($params, 'p.created') : '';
