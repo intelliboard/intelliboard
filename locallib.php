@@ -199,7 +199,21 @@ function intelliboard($params, $function = 'sso'){
 			$output = ob_get_clean();
 		} else {
 			$curl = new curl;
-			$json = $curl->post($url . 'moodleApi/' . $function, $params, $options);
+			if ($function == 'downloadExportFile' && isset($params['filepath'])) {
+                $tempdir = make_temp_directory('local_intelliboard/export');
+                $downloadto = $tempdir . '/' . $params['filepath'];
+
+                $options = ['filepath' => $downloadto, 'timeout' => 15, 'followlocation' => true, 'maxredirs' => 5];
+                $success = $curl->download_one($url . 'moodleApi/' . $function, $params, $options);
+                if($success){
+                    $json = json_encode((object)array('filepath' => $downloadto));
+                }else{
+                    $json = json_encode((object)array('filepath' => null));
+                }
+
+            } else {
+                $json = $curl->post($url . 'moodleApi/' . $function, $params, $options);
+            }
 			$output = $json;
 		}
 
