@@ -2663,6 +2663,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
 
         if($params->custom2 == 6){
             $this->params['lsta'] = strtotime("-90 days");
@@ -10945,6 +10946,8 @@ class local_intelliboard_external extends external_api {
 
     public function report182($params)
     {
+        global $CFG;
+
         $columns = array_merge(array(
             "u.firstname",
             "u.lastname",
@@ -10974,6 +10977,12 @@ class local_intelliboard_external extends external_api {
             'GROUP_CONCAT', "qc.content", ['separator' => ", "]
         );
 
+        if ($CFG->dbtype == 'pgsql') {
+            $typecast = '::TEXT';
+        } else {
+            $typecast = '';
+        }
+
         $data = $this->get_report_data(
             "SELECT CONCAT(u.id, '_', qa.id, '_', qaq.id, '_', qar.submitted) AS id,
                     u.firstname,
@@ -10981,12 +10990,12 @@ class local_intelliboard_external extends external_api {
                     u.email,
                     qa.name AS questionnaire,
                     qaq.content AS question,
-                    CASE WHEN qqt.response_table = 'response_bool' THEN bt.answer
-                         WHEN qqt.response_table = 'resp_multiple' THEN mst.answer
-                         WHEN qqt.response_table = 'response_text' THEN tt.answer
-                         WHEN qqt.response_table = 'response_date' THEN dt.answer
-                         WHEN qqt.response_table = 'resp_single' THEN sst.answer
-                         WHEN qqt.response_table = 'response_rank' THEN rst.answer
+                    CASE WHEN qqt.response_table = 'response_bool' THEN bt.answer{$typecast}
+                         WHEN qqt.response_table = 'resp_multiple' THEN mst.answer{$typecast}
+                         WHEN qqt.response_table = 'response_text' THEN tt.answer{$typecast}
+                         WHEN qqt.response_table = 'response_date' THEN dt.answer{$typecast}
+                         WHEN qqt.response_table = 'resp_single' THEN sst.answer{$typecast}
+                         WHEN qqt.response_table = 'response_rank' THEN rst.answer{$typecast}
                          ELSE '-'
                      END AS answer,
                     qar.submitted AS answer_time,
