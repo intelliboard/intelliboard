@@ -819,3 +819,6 @@ $string['sizemode'] = 'Size Mode: Large ( > 5,000 Users)';
 $string['cachedef_bb_collaborate_access_token'] = 'BB collaborate access token';
 
 $string['learner_menu'] = 'Mostrar enlace en el menú Bloqueo de navegación solo si los alumnos se inscribieron en algunos cursos';
+#new strings
+$string['intelliboard_reports'] = 'IntelliBoard Reports';
+$string['n19'] = 'Course Navigation Link for Reports';

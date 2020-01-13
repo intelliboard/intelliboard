@@ -34,8 +34,17 @@ function intelliboard_instructor_access()
     global $USER;
 
     if(!get_config('local_intelliboard', 'n10')){
+        throw new moodle_exception('invalidaccessparameter', 'error');
+    }
+    $access = check_intelliboard_instructor_access();
+    if (!$access) {
         throw new moodle_exception('invalidaccess', 'error');
     }
+}
+function check_intelliboard_instructor_access()
+{
+    global $USER;
+
     $access = false;
     $instructor_roles = get_config('local_intelliboard', 'filter10');
     if (!empty($instructor_roles)) {
@@ -49,9 +58,8 @@ function intelliboard_instructor_access()
             }
         }
     }
-    if (!$access) {
-        throw new moodle_exception('invalidaccess', 'error');
-    }
+
+    return $access;
 }
 function intelliboard_course_learners_total($courseid)
 {
@@ -640,7 +648,7 @@ function intelliboard_instructor_getcourses(
         list($categoriesfilter, $params) = intelliboard_filter_in_sql(array_keys($categories), "c.category", []);
 
         $catcourses = $DB->get_records_sql(
-            "SELECT c.* 
+            "SELECT c.*
                FROM {course} c
               WHERE c.id > 0 {$categoriesfilter}",
             $params

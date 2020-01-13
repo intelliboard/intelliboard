@@ -742,6 +742,28 @@ class local_intelliboard_notification
         return [$recipients, $notifications];
     }
 
+    protected function notification30(&$notification, $events = [])
+    {
+        global $DB;
+
+        $event = $events[0];
+        if (!$this->filter_by_cohort($notification, [$event['userid']])) {
+            return [[], []];
+        }
+        $user = $DB->get_record('user', ['id' => $event['userid']]);
+
+        $result = [
+            'user' => fullname($user),
+            'courseName' => $DB->get_record('course', ['id' => $event['courseid']], 'fullname')->fullname,
+            'timeCompleted' => date('Y/m/d H:i:s')
+        ];
+
+        $notification['email'] = $this->get_related_emails($notification, $event);
+        $recipients = $this->get_recipients_for_notification($notification);
+        $notifications = array_fill(0, count($recipients), $this->prepare_notification($notification, [$result]));
+        return [$recipients, $notifications];
+    }
+
     protected function get_related_emails($notification, $event)
     {
         global $DB;
@@ -880,9 +902,9 @@ class local_intelliboard_notification
     protected function filter_by_cohort(array $notification, array $userIds)
     {
         global $DB;
-
         $filteredUserIds = $userIds;
-        if (!empty($notification['params']['cohort'])) {
+
+        if (!empty($notification['params']['cohort']) and (count($notification['params']['cohort']) > 1 or current($notification['params']['cohort']))) {
             $sql = 'SELECT cm.userid
                 FROM {cohort_members} cm
                 WHERE cm.cohortid IN(' . rtrim(str_repeat('?,', count($notification['params']['cohort'])), ',') . ') and cm.userid IN (' . rtrim(str_repeat('?,', count($userIds)), ',') . ')
@@ -890,6 +912,7 @@ class local_intelliboard_notification
             $params = array_merge([], $notification['params']['cohort'], $userIds);
             $filteredUserIds = $DB->get_records_sql($sql, $params);
         }
+
         return $filteredUserIds;
     }
 }

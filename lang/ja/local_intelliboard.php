@@ -809,3 +809,6 @@ $string['check_active_bb_col_meetings'] = "Check active BlackBoard Collaborate m
 $string['learner_menu'] = "Show Learner Dashboard in Navigation Block menu only for enrolled learners";
 $string['learning_plan_filter'] = "Learning Plan Filter";
 $string['learning_plan_viewer_role'] = " Learning Plan Viewer role";
+#new strings
+$string['intelliboard_reports'] = 'IntelliBoard Reports';
+$string['n19'] = 'Course Navigation Link for Reports';

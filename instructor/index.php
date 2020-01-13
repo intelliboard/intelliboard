@@ -124,7 +124,7 @@ if($course == 0){
     $course = key($list_of_my_courses);
 }
 if (!$course) {
-	throw new moodle_exception('invalidaccess', 'error');
+	throw new moodle_exception('invalidcourse', 'error');
 }
 
 $enrolled_users = get_enrolled_users(context_course::instance($course));

@@ -58,4 +58,8 @@ $observers = [
         'eventname' => 'core\event\user_enrolment_created',
         'callback' => 'local_intelliboard_observer::user_enrolment_created',
     ),
+    array(
+        'eventname' => 'core\event\course_completed',
+        'callback' => 'local_intelliboard_observer::course_completed',
+    ),
 ];
