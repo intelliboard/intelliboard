@@ -373,6 +373,10 @@ class local_external_functions
             'get_course_categories',
             'get_cohort_feedbacks',
             'report207',
+            'report208',
+            'report209',
+            'get_attendance_statuses',
+            'subaccount_export_prepare'
         ];
     }
     public function get_function($params = null)

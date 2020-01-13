@@ -182,6 +182,32 @@ function local_intelliboard_extend_navigation(global_navigation $nav){
         }
 	} catch (Exception $e) {}
 }
+function local_intelliboard_extend_settings_navigation(settings_navigation $settingsnav, context $context){
+    global $CFG;
+    require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
+    require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
+
+    $coursenode = $settingsnav->get('courseadmin');
+    if ($coursenode && get_config('local_intelliboard', 'n19') && get_config('local_intelliboard', 'n10') && check_intelliboard_instructor_access()) {
+        $cache = cache::make('local_intelliboard', 'reports_list');
+
+        $reports = $cache->get('reports_list');
+        if(!$reports){
+            $params = array('do'=>'instructor','mode'=> 2);
+            $intelliboard = intelliboard($params);
+
+            if(isset($intelliboard->reports)){
+                $reports = $intelliboard->reports;
+                $cache->set('reports_list', $reports);
+            }
+        }
+
+        $cat = $coursenode->add(get_string('intelliboard_reports', 'local_intelliboard'), null, navigation_node::TYPE_CONTAINER, null, 'intelliboard');
+        foreach ($reports as $key=>$report) {
+            $cat->add(format_string($report->name), new moodle_url('/local/intelliboard/instructor/reports.php',array('id'=>format_string($key))), navigation_node::TYPE_CUSTOM);
+        }
+    }
+}
 
 function local_intelliboard_user_details()
 {

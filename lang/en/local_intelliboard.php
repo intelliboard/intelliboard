@@ -31,6 +31,7 @@
  $string['settings'] = 'Settings';
  $string['adv_settings'] = 'Advanced Settings';
  $string['intelliboardroot'] = 'IntelliBoard';
+ $string['intelliboard_reports'] = 'IntelliBoard Reports';
  $string['report'] = 'Report';
  $string['reports'] = 'Reports';
  $string['learners'] = 'Learners';
@@ -103,6 +104,7 @@
  $string['n16'] = 'Widget: Topic Utilization';
  $string['n8'] = 'Courses Page';
  $string['n9'] = 'Reports Page';
+ $string['n19'] = 'Course Navigation Link for Reports';
  $string['n10'] = 'Instructor Dashboard';
  $string['n101'] = 'Enable Instructor Dashboard';
  $string['n11'] = 'Alternative text for Navigation Block menu';

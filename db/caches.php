@@ -26,5 +26,8 @@
 $definitions = [
     'bb_collaborate_access_token' => [
         'mode' => cache_store::MODE_APPLICATION
+    ],
+    'reports_list' => [
+        'mode' => cache_store::MODE_APPLICATION
     ]
 ];

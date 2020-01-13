@@ -182,4 +182,15 @@ class local_intelliboard_observer
 
         return true;
     }
+
+    public static function course_completed(\core\event\course_completed $event)
+    {
+        $eventData = $event->get_data();
+        $filters = array(
+            'course' => $eventData['courseid']
+        );
+
+        self::process_event(30, $event, $filters,
+            array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
+    }
 }
