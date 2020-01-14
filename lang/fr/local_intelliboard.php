@@ -827,3 +827,4 @@ $string['learner_menu'] = 'Afficher le lien dans le menu Bloc de navigation uniq
 #new strings
 $string['intelliboard_reports'] = 'IntelliBoard Reports';
 $string['n19'] = 'Course Navigation Link for Reports';
+$string['t54'] = 'Enable [Activity Grades] Time Spent column';

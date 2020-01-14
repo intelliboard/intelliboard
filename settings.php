@@ -1083,6 +1083,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/t54';
+        $title = new lang_string('t54', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/ts5', new lang_string('ts5', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/t48';
