@@ -8730,10 +8730,21 @@ class local_intelliboard_external extends external_api {
                       WHERE ra.id > 0 {$student_filter_roles}
                    GROUP BY ra.contextid, ra.userid
                     ) rac ON rac.contextid = ctx.id AND rac.userid = u.id
-          LEFT JOIN (SELECT st.setnumber, MAX(st.grade) AS maxgrade
-                       FROM {attendance_statuses} st
-                   GROUP BY st.setnumber
-                    ) stm ON stm.setnumber = ats.statusset
+          LEFT JOIN (SELECT
+                              t.attendanceid,
+                              t.studentid,
+                              SUM(t.maxgrade) AS maxgrade
+                            FROM (SELECT
+                                    ass2.attendanceid,
+                                    atl.studentid,
+                                    MAX(ass2.grade) AS maxgrade
+                                  FROM {attendance_log} atl
+                                         JOIN {attendance_statuses} ass ON ass.id=atl.statusid
+                                         JOIN {attendance_statuses} ass2 ON ass2.attendanceid=ass.attendanceid
+                                         JOIN {attendance} att ON att.id=ass.attendanceid
+                                  WHERE ass2.deleted = 0 AND ass2.visible = 1
+                                  GROUP BY ass2.attendanceid,atl.studentid, atl.sessionid) t
+                            GROUP BY t.attendanceid,t.studentid) stm ON stm.studentid=u.id AND stm.attendanceid = a.id
                JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
           LEFT JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid = u.id
                     {$sql_join}
@@ -17084,15 +17095,17 @@ class local_intelliboard_external extends external_api {
                     }
 
                     $courses = array_keys($DB->get_records_sql(
-                        "SELECT lir.instanceid
-                           FROM {local_intellicart_users} liu
-                           JOIN {local_intellicart_users} liu1 ON liu1.instanceid = liu.instanceid AND liu1.id <> liu.id AND
+                        "SELECT DISTINCT lir.instanceid
+                           FROM (SELECT id, instanceid, userid
+                                   FROM {local_intellicart_users}
+                                  WHERE type = 'vendor' AND role = 'manager' AND userid = :user
+                                ) liu
+                      LEFT JOIN {local_intellicart_users} liu1 ON liu1.instanceid = liu.instanceid AND liu1.id <> liu.id AND
                                                                   liu1.type = 'vendor' AND liu1.role = 'manager'
                            JOIN {local_intellicart_logs} lil ON lil.type = 'seat' AND lil.status = 'completed' AND
                                                                 (lil.userid = liu.userid OR lil.userid = liu1.userid)
                            JOIN {local_intellicart_relations} lir ON lir.type = 'course' AND lir.productid = lil.instanceid
-                           {$seatsexpirationfilter}
-                          WHERE liu.type = 'vendor' AND liu.role = 'manager' AND liu.userid = :user",
+                           {$seatsexpirationfilter}",
                         $sqlparams
                     ));
                 }

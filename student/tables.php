@@ -206,6 +206,9 @@ class intelliboard_activities_grades_table extends table_sql {
         }if(get_config('local_intelliboard', 't46')){
             $columns[] =  'timecompleted';
             $headers[] =  get_string('completed', 'local_intelliboard');
+        }if(get_config('local_intelliboard', 't54')) {
+            $columns[] =  'timespend';
+            $headers[] =  get_string('time_spent','local_intelliboard');
         }
 
         $this->define_headers($headers);
@@ -222,18 +225,20 @@ class intelliboard_activities_grades_table extends table_sql {
         }
         $params['userid1'] = $userid;
         $params['userid2'] = $userid;
+        $params['userid3'] = $userid;
         $params['courseid'] = $courseid;
 
         $grade_single = intelliboard_grade_sql();
         $completion = intelliboard_compl_sql("cmc.");
 
         $fields = "gi.id, gi.itemname, cm.id as cmid, gi.itemmodule, cmc.timemodified as timecompleted, $grade_single AS grade,
-            CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS timepoint";
+            CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS timepoint, lit.timespend";
         $from = "{grade_items} gi
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid1
             LEFT JOIN {modules} m ON m.name = gi.itemmodule
             LEFT JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
-            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :userid2";
+            LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :userid2
+            LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=:userid3 AND lit.courseid=gi.courseid AND lit.page='module' AND lit.param=cm.id ";
         $where = "gi.hidden = 0 AND gi.courseid = :courseid AND gi.itemtype = 'mod' AND cm.visible = 1 $sql";
 
         $this->set_sql($fields, $from, $where, $params);
@@ -270,6 +275,9 @@ class intelliboard_activities_grades_table extends table_sql {
         } else {
           return format_string($values->itemname);
         }
+    }
+    function col_timespend($values) {
+        return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
     }
 }
 

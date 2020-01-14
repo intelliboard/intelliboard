@@ -172,6 +172,7 @@
  $string['t44'] = 'Enable [Activity Grades] Grade column';
  $string['t45'] = 'Enable [Activity Grades] Graded column';
  $string['t46'] = 'Enable [Activity Grades] Completed column';
+ $string['t54'] = 'Enable [Activity Grades] Time Spent column';
  $string['t47'] = 'Courses [grid] background color';
  $string['t49'] = 'Report filter columns';
  $string['t50'] = 'Teacher roles';
