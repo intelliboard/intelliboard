@@ -838,3 +838,4 @@ $string['learner_menu'] = 'Mostrar link no menu Bloco de Navegação apenas se o
 #new strings
 $string['intelliboard_reports'] = 'IntelliBoard Reports';
 $string['n19'] = 'Course Navigation Link for Reports';
+$string['t54'] = 'Enable [Activity Grades] Time Spent column';
