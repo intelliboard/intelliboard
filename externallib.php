@@ -10874,16 +10874,6 @@ class local_intelliboard_external extends external_api {
             "teacher",
             "m.name",
             "activity",
-            "ass.submitted",
-            "assignment_submission_graded",
-            "forum_posted_date",
-            "forum_graded",
-            "quiz_started_date",
-            "quiz_graded",
-            "glossary_submission_date",
-            "glossary_graded",
-            "choice_submission_date",
-            "choice_graded",
             "overal_submission_date",
             "overal_submission_graded",
             "overal_submission_grade",
@@ -11180,7 +11170,7 @@ class local_intelliboard_external extends external_api {
                   LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
                   LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
                   LEFT JOIN {assign_submission} ass ON ass.userid=u.id AND ass.assignment=cm.instance AND ass.status='submitted' AND ass.latest = 1
-                  LEFT JOIN {assign_grades} sg ON ass.assignment = sg.assignment AND ass.userid = sg.userid AND sg.attemptnumber = ass.attemptnumber AND (ass.timemodified >= sg.timemodified OR sg.timemodified IS NULL OR sg.grade IS NULL)
+                  LEFT JOIN {assign_grades} sg ON ass.assignment = sg.assignment AND ass.userid = sg.userid AND sg.attemptnumber = ass.attemptnumber AND sg.grade > -1
                   LEFT JOIN {user} gu ON gu.id=sg.grader
                   LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND ((lit.param=c.id AND lit.page='course' AND gi.itemtype = 'course') OR (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod'))
                   LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
@@ -17102,9 +17092,9 @@ class local_intelliboard_external extends external_api {
                                 ) liu
                       LEFT JOIN {local_intellicart_users} liu1 ON liu1.instanceid = liu.instanceid AND liu1.id <> liu.id AND
                                                                   liu1.type = 'vendor' AND liu1.role = 'manager'
-                           JOIN {local_intellicart_logs} lil ON lil.type = 'seat' AND lil.status = 'completed' AND
+                      LEFT JOIN {local_intellicart_logs} lil ON lil.type = 'seat' AND lil.status = 'completed' AND
                                                                 (lil.userid = liu.userid OR lil.userid = liu1.userid)
-                           JOIN {local_intellicart_relations} lir ON lir.type = 'course' AND lir.productid = lil.instanceid
+                      LEFT JOIN {local_intellicart_relations} lir ON lir.type = 'course' AND lir.productid = lil.instanceid
                            {$seatsexpirationfilter}",
                         $sqlparams
                     ));
