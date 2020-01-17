@@ -5968,11 +5968,10 @@ class local_intelliboard_external extends external_api {
       }
       $sql_course = $this->get_filter_course_sql($params, "c.");
       $sql_course .= $this->get_filter_enrol_sql($params, "e.");
-      $sql_course .= $this->get_filter_enrol_sql($params, "ue.");
-      $sql_course .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+      $sql_course .= $this->get_filter_in_sql($params->cohortid, "e.customint1");
 
-      return $DB->get_records_sql("SELECT DISTINCT c.id, c.fullname, c.shortname FROM {user_enrolments} ue, {enrol} e, {course} c, {cohort_members} cm
-        WHERE ue.userid = cm.userid AND e.id = ue.enrolid $sql_course", $this->params);
+      return $DB->get_records_sql("SELECT DISTINCT c.id, c.fullname, c.shortname
+        FROM {enrol} e, {course} c WHERE c.id = e.courseid $sql_course", $this->params);
 
     }
     function get_course_modules($params)
@@ -11679,12 +11678,10 @@ class local_intelliboard_external extends external_api {
       }
       $columns = array_merge(["u.firstname", "u.lastname", "u.email"], $this->get_filter_columns($params));
       $sql_columns = $this->get_columns($params, ["u.id"]);
-      $sql_course = $this->get_filter_course_sql($params, "c.");
-      $sql_course .= $this->get_filter_enrol_sql($params, "e.");
-      $sql_course .= $this->get_filter_enrol_sql($params, "ue.");
-      $sql_course .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+      $sql_course = $this->get_filter_enrol_sql($params, "");
+      $sql_course .= $this->get_filter_in_sql($params->cohortid, "customint1");
 
-      if ($courses = $DB->get_records_sql("SELECT DISTINCT c.id FROM {user_enrolments} ue, {enrol} e, {course} c, {cohort_members} cm  WHERE c.id = e.courseid AND ue.userid = cm.userid AND e.id = ue.enrolid $sql_course", $this->params)) {
+      if ($courses = $DB->get_records_sql("SELECT DISTINCT courseid AS id FROM {enrol} WHERE id > 0 $sql_course", $this->params)) {
         foreach($courses as $course) {
             $sql_columns .= ", (SELECT timecompleted FROM {course_completions} WHERE userid = u.id AND course = $course->id) AS completed_$course->id";
             $sql_columns .= ", (SELECT MAX(ue.id) FROM {user_enrolments} ue, {enrol} e WHERE ue.enrolid = e.id AND ue.userid = u.id AND e.courseid = $course->id) AS enrol_$course->id";
@@ -11848,10 +11845,9 @@ class local_intelliboard_external extends external_api {
       $sql_columns = $this->get_columns($params, ["u.id"]);
       $sql_course = $this->get_filter_course_sql($params, "c.");
       $sql_course .= $this->get_filter_enrol_sql($params, "e.");
-      $sql_course .= $this->get_filter_enrol_sql($params, "ue.");
-      $sql_course .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+      $sql_course .= $this->get_filter_in_sql($params->cohortid, "e.customint1");
 
-      if ($items = $DB->get_records_sql("SELECT DISTINCT i.id FROM {feedback} f, {feedback_item} i, {user_enrolments} ue, {enrol} e, {course} c, {cohort_members} cm  WHERE f.course = c.id AND i.feedback = f.id AND c.id = e.courseid AND ue.userid = cm.userid AND e.id = ue.enrolid $sql_course", $this->params)) {
+      if ($items = $DB->get_records_sql("SELECT DISTINCT i.id FROM {feedback} f, {feedback_item} i, {user_enrolments} ue, {enrol} e, {course} c  WHERE f.course = c.id AND i.feedback = f.id AND c.id = e.courseid $sql_course", $this->params)) {
         foreach($items as $item) {
             $sql_columns .= ", (SELECT v.value FROM {feedback_value} v, {feedback_completed} c WHERE c.userid = u.id AND v.completed = c.id AND v.item = $item->id) AS completed_$item->id";
             $columns[] = "completed_$item->id";
@@ -12103,7 +12099,7 @@ class local_intelliboard_external extends external_api {
                 MAX(l.visits) AS visits,
                 MAX(e.completed) AS completed,
                 MAX(e.learners) AS learners,
-                (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,                
+                (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
                 MAX(cat.name) AS category,
                 (SELECT name FROM {course_categories} WHERE id = MAX(cat.parent)) AS parent_category,
                 MAX(t.teachers) AS teachers,
