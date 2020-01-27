@@ -124,24 +124,28 @@ class intelliboard_courses_grades_table extends table_sql {
         }
 
         if (get_config('local_intelliboard', 'table_set_icg_c8') or get_config('local_intelliboard', 'table_set_icg_c9')) {
-          $join_sql .= " LEFT JOIN (SELECT lit.userid, lit.courseid, SUM(lit.timespend) as timespend, SUM(lit.visits) as visits FROM {local_intelliboard_tracking} lit GROUP BY lit.courseid, lit.userid) lit ON lit.userid = u.id AND lit.courseid = c.id";
-          $sql_columns .= ", SUM(lit.timespend) AS timespend, SUM(lit.visits) AS visits";
+            $join_sql .= " LEFT JOIN (SELECT lit.userid, lit.courseid, SUM(lit.timespend) AS timespend,
+                                             SUM(lit.visits) AS visits
+                                      FROM {local_intelliboard_tracking} lit
+                                  GROUP BY lit.courseid, lit.userid
+                                   ) lit ON lit.userid = u.id AND lit.courseid = c.id";
+            $sql_columns .= ", SUM(lit.timespend) AS timespend, SUM(lit.visits) AS visits";
         } else {
-          $sql_columns .= ", '0' AS timespend, '0' AS visits";
+            $sql_columns .= ", '0' AS timespend, '0' AS visits";
         }
 
         if (get_config('local_intelliboard', 'table_set_icg_c14') or get_config('local_intelliboard', 'table_set_icg_c15')) {
-          if (get_config('local_intelliboard', 'table_set_icg_c8') or get_config('local_intelliboard', 'table_set_icg_c9')) {
-            //skip
-          } else {
-            $join_sql .= " LEFT JOIN (SELECT lit.userid, lit.courseid, SUM(lit.timespend) as timespend, SUM(lit.visits) as visits FROM {local_intelliboard_tracking} lit GROUP BY lit.courseid, lit.userid) lit ON lit.userid = u.id AND lit.courseid = c.id";
-          }
-          $sql_columns .= ", AVG(lit.timespend) AS avg_timespend, AVG(lit.visits) AS avg_visits";
+            if (!get_config('local_intelliboard', 'table_set_icg_c8') && !get_config('local_intelliboard', 'table_set_icg_c9')) {
+                $join_sql .= " LEFT JOIN (SELECT lit.userid, lit.courseid, SUM(lit.timespend) AS timespend,
+                                                 SUM(lit.visits) AS visits
+                                            FROM {local_intelliboard_tracking} lit
+                                        GROUP BY lit.courseid, lit.userid
+                                         ) lit ON lit.userid = u.id AND lit.courseid = c.id";
+            }
+            $sql_columns .= ", AVG(lit.timespend) AS avg_timespend, AVG(lit.visits) AS avg_visits";
         } else{
-          $sql_columns .= ", '0' AS avg_timespend, '0' AS avg_visits";
+            $sql_columns .= ", '0' AS avg_timespend, '0' AS avg_visits";
         }
-
-
 
         $this->define_headers($headers);
         $this->define_columns($columns);
@@ -181,8 +185,7 @@ class intelliboard_courses_grades_table extends table_sql {
                   '' AS percentage_completed_learners,
                   '' AS actions,
                   (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
-                  (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections
-                  ";
+                  (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections";
 
         $from = "{course} c
                   JOIN {course_categories} ca ON ca.id = c.category
@@ -704,6 +707,8 @@ class intelliboard_activity_grades_table extends table_sql {
 
 class intelliboard_learners_grades_table extends table_sql {
     public $scale_real;
+    private $course_avg_visits;
+    private $course_avg_timespent;
 
     function __construct($uniqueid, $courseid = 0, $search = '') {
         global $CFG, $PAGE, $DB, $USER;
@@ -782,7 +787,7 @@ class intelliboard_learners_grades_table extends table_sql {
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $params = array('c1'=>$courseid, 'c2'=>$courseid);
+        $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3' => $courseid);
         $sql = "";
         if($search){
             $sql .= sprintf(
@@ -803,9 +808,11 @@ class intelliboard_learners_grades_table extends table_sql {
 
         $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
         $sql .= get_filter_usersql("u.");
+        $mainsql = '';
 
         if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
             $sql .= ' AND enr.status = 0';
+            $mainsql = ' AND enr.status = 0';
         }
 
         $params = array_merge($params,$sql_params);
@@ -839,8 +846,7 @@ class intelliboard_learners_grades_table extends table_sql {
                          MAX(l.timespend) AS timespend,
                          MAX(l.visits) AS visits,
                          MAX(cmc.progress) AS progress,
-                         '' as actions,
-                         at.avg_timespend, vt.avg_visits
+                         '' as actions
                     FROM {role_assignments} ra
                LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
                LEFT JOIN {user} u ON u.id = ra.userid
@@ -855,33 +861,6 @@ class intelliboard_learners_grades_table extends table_sql {
                             JOIN {enrol} e ON ue.enrolid = e.id
                         GROUP BY ue.userid, e.courseid
                ) enr ON enr.userid = u.id AND enr.courseid = c.id
-
-               LEFT JOIN (SELECT t.courseid, AVG(t.spent) avg_timespend
-                            FROM (SELECT l.courseid, SUM(l.timespend) spent
-                                    FROM {course} c1
-                                    JOIN {context} ctx ON ctx.contextlevel = 50 AND
-                                                          ctx.instanceid = c1.id
-                                    JOIN {role_assignments} ra ON ctx.id = ra.contextid AND
-                                                                  ra.roleid {$sql6}
-                                    JOIN {local_intelliboard_tracking} l ON l.courseid = c1.id AND
-                                                                            ra.userid = l.userid
-                                GROUP BY l.courseid, l.userid
-                                 ) t
-                        GROUP BY t.courseid
-               ) AS at ON at.courseid = c.id
-               LEFT JOIN (SELECT t.courseid, AVG(t.visits) avg_visits
-                            FROM (SELECT l.courseid, SUM(l.visits) visits
-                                    FROM {course} c1
-                                    JOIN {context} ctx ON ctx.contextlevel = 50 AND
-                                                          ctx.instanceid = c1.id
-                                    JOIN {role_assignments} ra ON ctx.id = ra.contextid AND
-                                                                  ra.roleid {$sql7}
-                                    JOIN {local_intelliboard_tracking} l ON l.courseid = c1.id AND
-                                                                            ra.userid = l.userid
-                                GROUP BY l.courseid, l.userid
-                                 ) t
-                        GROUP BY t.courseid
-               ) AS vt ON vt.courseid = c.id
 
                LEFT JOIN (SELECT cmc.userid, COUNT(DISTINCT cmc.id) as progress
                             FROM {course_modules_completion} cmc, {course_modules} cm
@@ -901,6 +880,38 @@ class intelliboard_learners_grades_table extends table_sql {
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
         $this->scale_real = get_config('local_intelliboard', 'scale_real');
+
+        /** Count course avg visits and avg time spent */
+        if(get_config('local_intelliboard', 'table_set_ilg_c12') or get_config('local_intelliboard', 'table_set_ilg_c11')) {
+            $data = $DB->get_record_sql(
+                "SELECT t.courseid, AVG(t.spent) AS avg_timespend, AVG(t.visits) AS avg_visits
+                   FROM (SELECT l.courseid, l.userid, SUM(l.timespend) AS spent, SUM(l.visits) AS visits
+                           FROM {course} c1
+                           JOIN {context} ctx ON ctx.contextlevel = 50 AND
+                                                 ctx.instanceid = c1.id
+                           JOIN {role_assignments} ra ON ctx.id = ra.contextid AND
+                                                         ra.roleid {$sql6}
+                           JOIN {local_intelliboard_tracking} l ON l.courseid = c1.id AND
+                                                                   ra.userid = l.userid AND l.courseid = :c1
+                       GROUP BY l.courseid, l.userid
+                        ) t
+                   JOIN (SELECT ue.userid, MIN(ue.status) AS status
+                           FROM {user_enrolments} ue
+                           JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = :c3
+                       GROUP BY ue.userid
+                        ) enr ON enr.userid = t.userid
+                  WHERE t.courseid > 0 {$mainsql}
+               GROUP BY t.courseid", $params
+            );
+
+            if ($data) {
+                $this->course_avg_timespent = $data->avg_timespend;
+                $this->course_avg_visits = $data->avg_visits;
+            } else {
+                $this->course_avg_timespent = 0;
+                $this->course_avg_visits = 0;
+            }
+        }
     }
 
     function col_grade($values) {
@@ -923,10 +934,10 @@ class intelliboard_learners_grades_table extends table_sql {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
     }
     function col_avg_timespend($values) {
-        return ($values->avg_timespend) ? seconds_to_time($values->avg_timespend) : '-';
+        return ($this->course_avg_timespent) ? seconds_to_time($this->course_avg_timespent) : '-';
     }
     function col_avg_visits($values) {
-        return html_writer::tag("span", intval($values->avg_visits), array("class"=>"info-average"));
+        return html_writer::tag("span", intval($this->course_avg_visits), array("class"=>"info-average"));
     }
     function col_timecompleted($values) {
       return ($values->timecompleted) ? get_string('completed_on','local_intelliboard', intelli_date($values->timecompleted)) : get_string('incomplete','local_intelliboard');

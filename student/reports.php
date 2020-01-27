@@ -41,7 +41,7 @@ if(get_config('local_intelliboard', 't09')>0 && $other_user>0 && intelliboard_in
 $report = optional_param('id', '', PARAM_RAW);
 $intelliboard = intelliboard(['task'=>'reports', 'mode' => 1]);
 $report_type = $intelliboard->reports[$report]->type;
-$params = http_build_query(['users'=>$showing_user->id ]);
+$params = http_build_query(['users'=>$showing_user->id,'admin_userid' => $USER->id]);
 
 $totals = intelliboard_learner_totals($showing_user->id);
 

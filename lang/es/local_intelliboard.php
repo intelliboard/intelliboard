@@ -823,3 +823,25 @@ $string['learner_menu'] = 'Mostrar enlace en el menú Bloqueo de navegación sol
 $string['intelliboard_reports'] = 'IntelliBoard Reports';
 $string['n19'] = 'Course Navigation Link for Reports';
 $string['t54'] = 'Enable [Activity Grades] Time Spent column';
+
+// date formats
+$string['mysqlweek'] = '%Y, week %v';
+$string['mysqlmonthyear'] = '%M %Y';
+$string['mysqlyear'] = '%Y';
+$string['mysqlmonth'] = '%c';
+$string['mysqlhour'] = '%h:%i %p';
+$string['mysqlquarter'] = 'quarter';
+$string['mysqldayshortmonthyear'] = '%d %b, %Y';
+$string['mysqltimedate'] = '%h:%i%p, %d %b %Y';
+$string['mysqlmonthyearday'] = '%M %Y, %d';
+
+$string['postgreweek'] = 'YYYY, "week" WW';
+$string['postgremonthyear'] = 'Month YYYY';
+$string['postgreyear'] = 'YYYY';
+$string['postgremonth'] = 'MM';
+$string['postgrehour'] = 'HH12:MI AM';
+$string['postgrequarter'] = 'quarter';
+$string['postgredayshortmonthyear'] = 'DD Mon, YYYY';
+$string['postgretimedate'] = 'HH12:MIAM, DD Mon YYYY';
+$string['postgremonthyearday'] = 'Month YYYY, DD';
+$string['postgrequarteryear'] = 'Q YYYY';

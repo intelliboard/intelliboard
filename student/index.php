@@ -184,24 +184,23 @@ foreach($courses as $item){
 
 $menu = array();
 if(get_config('local_intelliboard', 'learner_tf_last_week')){
-    array_push($menu, get_string('last_week','local_intelliboard'));
+    $menu[0] = get_string('last_week','local_intelliboard');
 }
 if(get_config('local_intelliboard', 't01')){
-    array_push($menu, get_string('last_month','local_intelliboard'));
+    $menu[1] = get_string('last_month','local_intelliboard');
 }
 if(get_config('local_intelliboard', 't02')){
-    array_push($menu, get_string('last_quarter','local_intelliboard'));
+    $menu[2] = get_string('last_quarter','local_intelliboard');
 }
 if(get_config('local_intelliboard', 't03')){
-    array_push($menu, get_string('last_semester','local_intelliboard'));
+    $menu[3] =  get_string('last_semester','local_intelliboard');
 }
 if(get_config('local_intelliboard', 'this_year')){
-    array_push($menu, get_string('this_year','local_intelliboard'));
+    $menu[4] = get_string('this_year','local_intelliboard');
 }
 if(get_config('local_intelliboard', 'last_year')){
-    array_push($menu, get_string('last_year','local_intelliboard'));
+    $menu[5] = get_string('last_year','local_intelliboard');
 }
-
 
 echo $OUTPUT->header();
 ?>
@@ -220,11 +219,11 @@ echo $OUTPUT->header();
                         <a href="#" class="nofilter"><?php echo get_string('course_progress', 'local_intelliboard'); ?></a>
                     <?php endif; ?>
                     <div class="intelliboard-dropdown">
-                        <?php foreach($menu as $key=>$value): ?>
-                            <?php if($key == $time): ?>
-                                <button><span value="<?php echo $key; ?>"><?php echo format_string($value); ?></span> <i class="ion-android-arrow-dropdown"></i></button>
-                            <?php endif; ?>
-                        <?php endforeach; ?>
+                        <?php if(isset($menu[$time])): ?>
+                            <button><span value="<?php echo $time; ?>"><?php echo format_string($menu[$time]); ?></span> <i class="ion-android-arrow-dropdown"></i></button>
+                        <?php else:?>
+                            <button><span value="-1"><?php echo get_string('select_date', 'local_intelliboard'); ?></span> <i class="ion-android-arrow-dropdown"></i></button>
+                        <?php endif; ?>
                         <ul>
                             <?php foreach($menu as $key=>$value): ?>
                                 <?php if($key != $time): ?>
