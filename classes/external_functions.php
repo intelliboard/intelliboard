@@ -376,7 +376,11 @@ class local_external_functions
             'report208',
             'report209',
             'get_attendance_statuses',
-            'subaccount_export_prepare'
+            'subaccount_export_prepare',
+            'monitor69',
+            'get_hospitals',
+            'get_hospital_cohorts',
+            'get_hospital_info',
         ];
     }
     public function get_function($params = null)
