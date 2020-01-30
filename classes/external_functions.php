@@ -370,6 +370,7 @@ class local_external_functions
             'report206',
             'get_cohort_stats',
             'get_cohort_feedback_items',
+            'get_course_feedback_items',
             'get_course_categories',
             'get_cohort_feedbacks',
             'report207',
