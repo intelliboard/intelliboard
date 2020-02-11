@@ -52,6 +52,7 @@
  $string['intelliboard:manage'] = 'IntelliBoard [manage]';
  $string['intelliboard:competency'] = 'IntelliBoard [competency]';
  $string['intelliboard:attendanceadmin'] = 'Attendance Admin';
+ $string['intelliboard:browseallcohorts'] = 'IntelliBoard [Browse All Cohorts]';
  $string['tls12'] = 'TLS v1.2';
  $string['tls12_desc'] = 'Advanced settings: TLS v1.2';
  $string['sso'] = 'SSO link';
@@ -829,6 +830,7 @@ $string['cachedef_bb_collaborate_access_token'] = 'BB collaborate access token';
 $string['learner_menu'] = 'Show "Learner Dashboard" in Navigation Block menu only for enrolled learners';
 $string['learning_plan_filter'] = 'Learning Plan Filter';
 $string['learning_plan_viewer_role'] = '"Learning Plan Viewer" role';
+$string['all_cohorts'] = 'All cohorts';
 
 // date formats
 $string['mysqlweek'] = '%Y, week %v';

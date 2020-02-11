@@ -645,5 +645,20 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2019082804, 'local', 'intelliboard');
     }
 
+
+
+		if ($oldversion < 2020021133) {
+		  $table = new xmldb_table('local_intelliboard_config');
+		  $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+		  $table->add_field('type', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, null);
+		  $table->add_field('instanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+		  $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+		  $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+		  if (!$dbman->table_exists($table)) {
+		    $dbman->create_table($table);
+		  }
+		  upgrade_plugin_savepoint(true, 2020021133, 'local', 'intelliboard');
+		}
+
 	return true;
 }

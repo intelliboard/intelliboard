@@ -304,6 +304,7 @@ $string['intelliboard:instructors'] = 'インテリボード [教師]';
 $string['intelliboard:manage'] = 'インテリボード [管理]';
 $string['intelliboard:students'] = 'インテリボード [学習者]';
 $string['intelliboard:view'] = 'インテリボード [ビュー]';
+$string['intelliboard:browseallcohorts'] = 'Browse All Cohorts';
 $string['intelliboardaccess'] = 'このページを表示する権限がありません。管理者に連絡してください。';
 $string['intelliboardnet'] = 'インテリボード.net';
 $string['intelliboardroot'] = 'インテリボード';
@@ -813,6 +814,7 @@ $string['learning_plan_viewer_role'] = " Learning Plan Viewer role";
 $string['intelliboard_reports'] = 'IntelliBoard Reports';
 $string['n19'] = 'Course Navigation Link for Reports';
 $string['t54'] = 'Enable [Activity Grades] Time Spent column';
+$string['all_cohorts'] = 'All cohorts';
 
 // date formats
 $string['mysqlweek'] = '%Y, week %v';

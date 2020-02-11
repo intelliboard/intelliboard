@@ -104,4 +104,26 @@ class DBHelper
 
         return $result;
     }
+
+    /**
+     * @param $type
+     * @return string
+     * @throws \Exception
+     */
+    public static function get_typecast($type) {
+        global $CFG;
+
+        if ($CFG->dbtype != self::POSTGRES_TYPE) {
+            return '';
+        }
+
+        switch ($type) {
+            case 'numeric':
+                return '::NUMERIC';
+            case 'text':
+                return '::TEXT';
+            default:
+                throw new \Exception('Invalid type');
+        }
+    }
 }

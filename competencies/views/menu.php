@@ -27,24 +27,24 @@
 	$id = optional_param('id', 0, PARAM_RAW);
 ?>
 <ul class="intelliboard-menu">
-	<li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
+    <li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
 
-	<?php if(get_config('local_intelliboard', 'competency_dashboard')): ?>
-		<li><a href="courses.php" <?php echo ($PAGE->pagetype == 'competencies')?'class="active"':''; ?>><?php echo get_string('a1', 'local_intelliboard');?></a></li>
-	<?php endif; ?>
+    <?php if(get_config('local_intelliboard', 'competency_dashboard')): ?>
+        <li><a href="courses.php" <?php echo ($PAGE->pagetype == 'competencies')?'class="active"':''; ?>><?php echo get_string('a1', 'local_intelliboard');?></a></li>
+    <?php endif; ?>
 
-	<?php if(get_config('local_intelliboard', 'competency_reports') and isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
-		<li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'reports')?'class="active"':''; ?>><?php echo get_string('reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
-		<ul>
-			<?php if(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
-				<?php foreach($intelliboard->reports as $key=>$val): ?>
-					<li><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id === $key)?'class="active"':''; ?>><?php echo format_string($val->name); ?></a></li>
-				<?php endforeach; ?>
-			<?php endif; ?>
-		</ul>
-		</li>
-	<?php endif; ?>
+    <?php if(get_config('local_intelliboard', 'competency_reports') and isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
+        <li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'reports')?'class="active"':''; ?>><?php echo get_string('reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>
+            <ul>
+                <?php if(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
+                    <?php foreach($intelliboard->reports as $key=>$val): ?>
+                        <li><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id === $key)?'class="active"':''; ?>><?php echo format_string($val->name); ?></a></li>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </ul>
+        </li>
+    <?php endif; ?>
 
 
-	<li><a href="<?php echo $CFG->wwwroot ?>/local/intelliboard/help.php?event=competencies"><?php echo get_string('help', 'local_intelliboard');?></a></li>
+    <li><a href="<?php echo $CFG->wwwroot ?>/local/intelliboard/help.php?event=competencies"><?php echo get_string('help', 'local_intelliboard');?></a></li>
 </ul>
