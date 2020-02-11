@@ -85,10 +85,10 @@ class attendance_api
             }
 
 
-            $select .= ", CASE WHEN ra.roleid {$checkThatTeacherFilter[0]}
+            $select .= ", MAX(CASE WHEN ra.roleid {$checkThatTeacherFilter[0]}
                                THEN 1
                                ELSE 0
-                           END as is_teacher";
+                           END) AS is_teacher";
             $from .= " JOIN {context} cx ON cx.instanceid = c.id AND
                                             cx.contextlevel = :coursecx
                        JOIN {role_assignments} ra ON ra.userid = :userid AND
@@ -114,7 +114,7 @@ class attendance_api
         }
 
         return $DB->get_records_sql(
-            "SELECT {$select} FROM {$from} WHERE {$where}", $sqlarguments,
+            "SELECT {$select} FROM {$from} WHERE {$where} GROUP BY c.id", $sqlarguments,
             $offset, $limit
         );
     }

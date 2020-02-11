@@ -518,6 +518,25 @@ function exclude_not_owners($columns) {
 
 }
 
+function user_cohorts($userid) {
+    global $DB;
+
+    $user = $DB->get_record("user", ["id" => $userid], "*", MUST_EXIST);
+
+    if (has_capability("local/intelliboard:browseallcohorts", context_system::instance(), $user)) {
+        return $DB->get_records("cohort", ["visible" => 1], "name");
+    }
+
+    return $DB->get_records_sql(
+        "SELECT DISTINCT ch.*
+           FROM {cohort_members} chm
+           JOIN {cohort} ch ON ch.id = chm.cohortid
+          WHERE chm.userid = :userid AND visible = 1
+       ORDER BY ch.name",
+        ["userid" => $userid]
+    );
+}
+
 function get_intelliboard_filter($id, $dbtype = null)
 {
     global $CFG;

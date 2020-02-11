@@ -1016,3 +1016,42 @@ div[aria-label="A tabular representation of the data in the chart."] {
 .summary-chart-wrap {
     z-index: 1;
 }
+.competency-cohort-filter-wrapper select[name="cohort_filter"] {
+    height: 36px;
+    background: #fff;
+    border-color: #ccc;
+    border-radius: 3px;
+}
+.competency-dashboard .cohort-filter-wrapper {
+    position: absolute;
+    right: 10px;
+    top: 22px;
+}
+
+.competency-dashboard .cohort-filter-wrapper .ms-parent .ms-drop.bottom {
+    right: 0;
+}
+
+.competency-cohort-filter-wrapper.courses .ms-parent .ms-choice {
+    height: 37px;
+    margin-top: 3px;
+    margin-left: 0;
+}
+
+.competency-cohort-filter-wrapper.courses .ms-parent .ms-choice > div {
+    right: 0;
+    top: 4px;
+}
+
+.competency-cohort-filter-wrapper.courses .ms-parent .ms-choice:hover > span.placeholder {
+    color: #999;
+}
+
+.competency-cohort-filter-wrapper.courses .ms-parent .ms-choice > span {
+    top: 4px;
+}
+
+.competency-cohort-filter-wrapper.courses .ms-parent .ms-choice > span.placeholder {
+    top: 3px;
+    left: 0;
+}

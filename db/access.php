@@ -78,5 +78,12 @@ $capabilities = array(
         'archetypes' => array(
             'manager' => CAP_ALLOW
         ),
+    ),
+    'local/intelliboard:browseallcohorts' => array(
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW
+        ),
     )
 );

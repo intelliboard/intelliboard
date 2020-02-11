@@ -48,6 +48,7 @@
  $string['intelliboard:view'] = 'IntelliBoard [ver]';
  $string['intelliboard:manage'] = 'IntelliBoard [gerir]';
  $string['intelliboard:competency'] = 'IntelliBoard [competências]';
+$string['intelliboard:browseallcohorts'] = 'IntelliBoard [Browse All Cohorts]';
  $string['tls12'] = 'TLS v1.2';
  $string['tls12_desc'] = 'Configurações Avançadas: TLS v1.2';
  $string['sso'] = 'SSO link';
@@ -839,6 +840,7 @@ $string['learner_menu'] = 'Mostrar link no menu Bloco de Navegação apenas se o
 $string['intelliboard_reports'] = 'IntelliBoard Reports';
 $string['n19'] = 'Course Navigation Link for Reports';
 $string['t54'] = 'Enable [Activity Grades] Time Spent column';
+$string['all_cohorts'] = 'All cohorts';
 
 // date formats
 $string['mysqlweek'] = '%Y, week %v';

@@ -75,7 +75,7 @@ function intelliboard_competency_courses()
         GROUP BY c.id", $params);
 }
 
-function intelliboard_competencies_progress()
+function intelliboard_competencies_progress($cohortid = [])
 {
     global $DB, $USER;
 
@@ -87,6 +87,9 @@ function intelliboard_competencies_progress()
         'userid2' => $USER->id,
         'userid3' => $USER->id
     );
+
+    $cohortmembersjoin = \local_intelliboard\helpers\SQLEntityHelper::cohortMembersJoin($USER->id, "cu.userid", $cohortid);
+
     if (!is_siteadmin()) {
         $roles = explode(',', get_config('local_intelliboard', 'filter10'));
 
@@ -106,14 +109,28 @@ function intelliboard_competencies_progress()
         $sql3 = " AND courseid IN (SELECT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.roleid $sql_roles3 AND ra.userid = :userid3 GROUP BY ctx.instanceid)";
     }
 
-    return $DB->get_records_sql("
-        SELECT c.id, c.shortname,
-            (SELECT count(id) FROM {competency_usercompcourse} WHERE competencyid = c.id AND proficiency = 1 $sql1) AS proficient,
-            (SELECT count(id) FROM {competency_usercompcourse} WHERE competencyid = c.id AND proficiency = 0 AND grade IS NOT NULL $sql2) AS unproficient,
-            (SELECT count(id) FROM {competency_usercompcourse} WHERE competencyid = c.id AND grade IS NULL $sql3) AS unrated
-        FROM {competency} c", $params);
+    return $DB->get_records_sql(
+        "SELECT c.id, c.shortname,
+                (SELECT count(id)
+                   FROM {competency_usercompcourse} cu
+                   {$cohortmembersjoin}
+                  WHERE competencyid = c.id AND proficiency = 1 {$sql1}
+                ) AS proficient,
+                (SELECT count(id)
+                   FROM {competency_usercompcourse} cu
+                   {$cohortmembersjoin}
+                  WHERE competencyid = c.id AND proficiency = 0 AND grade IS NOT NULL {$sql2}
+                ) AS unproficient,
+                (SELECT count(id)
+                   FROM {competency_usercompcourse} cu
+                   {$cohortmembersjoin}
+                  WHERE competencyid = c.id AND grade IS NULL {$sql3}
+                ) AS unrated
+           FROM {competency} c",
+        $params
+    );
 }
-function intelliboard_competencies_total()
+function intelliboard_competencies_total($cohortid = [])
 {
     global $DB, $USER;
 
@@ -127,6 +144,9 @@ function intelliboard_competencies_total()
         'userid3' => $USER->id,
         'userid4' => $USER->id
     );
+
+    $cohortmembersjoin = \local_intelliboard\helpers\SQLEntityHelper::cohortMembersJoin($USER->id, "cu.userid", $cohortid);
+
     if (!is_siteadmin()) {
         $roles = explode(',', get_config('local_intelliboard', 'filter10'));
 
@@ -156,9 +176,11 @@ function intelliboard_competencies_total()
             (SELECT count(id) FROM {competency} $sql4) AS competencies,
             (SELECT count(id) FROM {competency_framework}) AS frameworks,
             (SELECT count(id) FROM {competency_plan}) AS plans,
-            (SELECT count(id) FROM {competency_usercompcourse} WHERE proficiency = 1 $sql1) AS proficient,
-            (SELECT count(id) FROM {competency_usercompcourse} WHERE proficiency = 0 AND grade IS NOT NULL $sql2) AS unproficient,
-            (SELECT count(id) FROM {competency_usercompcourse} WHERE grade IS NULL $sql3) AS unrated", $params);
+            (SELECT count(id) FROM {competency_usercompcourse} cu {$cohortmembersjoin} WHERE proficiency = 1 $sql1) AS proficient,
+            (SELECT count(id) FROM {competency_usercompcourse} cu {$cohortmembersjoin} WHERE proficiency = 0 AND grade IS NOT NULL $sql2) AS unproficient,
+            (SELECT count(id) FROM {competency_usercompcourse} cu {$cohortmembersjoin} WHERE grade IS NULL $sql3) AS unrated",
+        $params
+    );
 }
 function intelliboard_competency_frameworks()
 {
