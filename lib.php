@@ -265,8 +265,6 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 	$ajax = (int) get_config('local_intelliboard', 'ajax');
 	$inactivity = (int) get_config('local_intelliboard', 'inactivity');
 	$trackadmin = get_config('local_intelliboard', 'trackadmin');
-	$trackcourses = get_config('local_intelliboard', 'trackcourses');
-	$trackusers = get_config('local_intelliboard', 'trackusers');
 	$trackpoint = get_config('local_intelliboard', 'trackpoint');
 	$intelliboardMediaTrack = get_config('local_intelliboard', 'trackmedia');
 	$path = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
@@ -274,7 +272,6 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 	if (strpos($path,'cron.php') !== false) {
 		return false;
 	}
-
 
 
 	if ($enabled and isloggedin() and !isguestuser()) {
@@ -364,31 +361,25 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 					$sessions = false; $courses = false;
 					if ($trackpoint != $currentstamp) {
 						set_config("trackpoint", $currentstamp, "local_intelliboard");
-						set_config("trackusers", '', "local_intelliboard");
-						set_config("trackcourses", '', "local_intelliboard");
+
+						$DB->delete_records('local_intelliboard_config');
 					}
-					if ($intelliboardPage == 'course') {
-						if($trackcourses){
-							$instances = explode(',', $trackcourses);
-							if (!in_array($intelliboardParam, $instances)) {
-								$courses = true;
-								set_config("trackcourses", $trackcourses.",".$intelliboardParam, "local_intelliboard");
-							}
-						} else {
-							$courses = true;
-							set_config("trackcourses", $intelliboardParam, "local_intelliboard");
-						}
+					if (!$DB->get_record('local_intelliboard_config', ['type'=>0, 'instanceid' => $USER->id])) {
+						$sessions = new stdClass();
+						$sessions->type = 0;
+						$sessions->instanceid = $USER->id;
+						$sessions->timecreated = $currentstamp;
+						$DB->insert_record('local_intelliboard_config', $sessions);
 					}
-					if ($trackusers) {
-						$users = explode(',', $trackusers);
-						if (!in_array($USER->id, $users)) {
-							$sessions = true;
-							set_config("trackusers", $trackusers.",".$USER->id, "local_intelliboard");
-						}
-					} else {
-						$sessions = true;
-						set_config("trackusers", $USER->id, "local_intelliboard");
+
+					if ($intelliboardPage == 'course' and !$DB->get_record('local_intelliboard_config', ['type'=>1, 'instanceid' => $intelliboardParam])) {
+						$courses = new stdClass();
+						$courses->type = 1;
+						$courses->instanceid = $intelliboardParam;
+						$courses->timecreated = $currentstamp;
+						$DB->insert_record('local_intelliboard_config', $courses);
 					}
+
 					if ($data = $DB->get_record('local_intelliboard_totals', array('timepoint' => $currentstamp))) {
 						if (!$ajaxRequest) {
 							$data->visits = $data->visits + 1;

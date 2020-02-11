@@ -29,10 +29,29 @@ require_once($CFG->libdir . '/gradelib.php');
 
 class intelliboard_courses_table extends table_sql {
 
-    function __construct($uniqueid, $search = '') {
+    function __construct($uniqueid, $search = '', $cohortid = 0) {
         global $CFG, $PAGE, $DB, $USER;
 
         parent::__construct($uniqueid);
+
+        if (!$cohortid) {
+            $cohorts = array_keys(user_cohorts($USER->id));
+        } else {
+            $cohorts = [$cohortid];
+        }
+
+        if ($cohorts) {
+            list($cohortfilter, $cohortparams) = $DB->get_in_or_equal($cohorts, SQL_PARAMS_NAMED, 'chrts');
+            list($cohortfilter1, $cohortparams1) = $DB->get_in_or_equal($cohorts, SQL_PARAMS_NAMED, 'chrts1');
+            list($cohortfilter2, $cohortparams2) = $DB->get_in_or_equal($cohorts, SQL_PARAMS_NAMED, 'chrts2');
+        } else {
+            $cohortfilter = ' IN (-1)';
+            $cohortparams = [];
+            $cohortfilter1 = ' IN (-1)';
+            $cohortparams1 = [];
+            $cohortfilter2 = ' IN (-1)';
+            $cohortparams2 = [];
+        }
 
         $headers = array();
         $columns = array();
@@ -75,14 +94,45 @@ class intelliboard_courses_table extends table_sql {
         }
 
         $fields = "c.id, c.fullname AS course,
-            (SELECT COUNT(DISTINCT cu.id) FROM {competency_usercompcourse} cu WHERE cu.courseid = c.id AND cu.proficiency = 1) AS proficiency,
+            cu.cnt_proficiency AS proficiency,
             (SELECT COUNT(DISTINCT cc.competencyid) FROM {competency_coursecomp} cc WHERE cc.courseid = c.id) AS competencies,
-            (SELECT COUNT(DISTINCT ra.userid) FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 $sql2 AND ctx.instanceid = c.id) AS learners,
-            (SELECT COUNT(DISTINCT cu.id) FROM {competency_usercompcourse} cu WHERE cu.courseid = c.id AND cu.grade IS NOT NULL) AS rated,
+            cl.cnt_learners AS learners,
+            cr.cnt_related AS rated,
             '' AS Actions";
-        $from = "{course} c";
+        $from = "{course} c
+       LEFT JOIN (SELECT ctx.instanceid AS courseid, COUNT(DISTINCT ra.userid) AS cnt_learners
+                    FROM {role_assignments} ra
+                    JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.id = ra.contextid
+                    JOIN (SELECT userid
+                            FROM {cohort_members}
+                           WHERE id > 0 AND cohortid {$cohortfilter}
+                        GROUP BY userid
+                         ) cm ON cm.userid = ra.userid
+                   WHERE ra.id > 0 {$sql2}
+                GROUP BY ctx.instanceid
+                 ) cl ON cl.courseid = c.id
+       LEFT JOIN (SELECT cu.courseid, COUNT(DISTINCT cu.id) AS cnt_related
+                    FROM {competency_usercompcourse} cu
+                    JOIN (SELECT userid
+                            FROM {cohort_members}
+                           WHERE id > 0 AND cohortid {$cohortfilter1}
+                        GROUP BY userid
+                         ) cm ON cm.userid = cu.userid
+                   WHERE cu.grade IS NOT NULL
+                GROUP BY cu.courseid
+                 ) cr ON cr.courseid = c.id
+       LEFT JOIN (SELECT cu.courseid, COUNT(DISTINCT cu.id) AS cnt_proficiency
+                    FROM {competency_usercompcourse} cu
+                    JOIN (SELECT userid
+                            FROM {cohort_members}
+                           WHERE id > 0 AND cohortid {$cohortfilter2}
+                        GROUP BY userid
+                         ) cm ON cm.userid = cu.userid
+                   WHERE cu.proficiency = 1
+                GROUP BY cu.courseid
+                 ) cu ON cu.courseid = c.id";
         $where = "c.id IN (SELECT courseid FROM {competency_coursecomp}) AND c.visible = 1 $sql";
-        $this->set_sql($fields, $from, $where, $params);
+        $this->set_sql($fields, $from, $where, array_merge($params, $cohortparams, $cohortparams1, $cohortparams2));
         $this->define_baseurl($PAGE->url);
     }
      function col_course($values) {
@@ -116,7 +166,7 @@ class intelliboard_courses_table extends table_sql {
 
 class intelliboard_competencies_table extends table_sql {
 
-    function __construct($uniqueid, $courseid = 0, $search = '') {
+    function __construct($uniqueid, $courseid = 0, $search = '', $cohortid = 0) {
         global $CFG, $PAGE, $DB, $USER;
 
         parent::__construct($uniqueid);
@@ -151,6 +201,22 @@ class intelliboard_competencies_table extends table_sql {
         $this->define_headers($headers);
         $this->define_columns($columns);
 
+        if (!$cohortid) {
+            $cohorts = array_keys(user_cohorts($USER->id));
+        } else {
+            $cohorts = [$cohortid];
+        }
+
+        if ($cohorts) {
+            list($cohortfilter, $cohortparams) = $DB->get_in_or_equal($cohorts, SQL_PARAMS_NAMED, 'chrts');
+            list($cohortfilter1, $cohortparams1) = $DB->get_in_or_equal($cohorts, SQL_PARAMS_NAMED, 'chrts');
+        } else {
+            $cohortfilter = ' IN (-1)';
+            $cohortparams = [];
+            $cohortfilter1 = ' IN (-1)';
+            $cohortparams1 = [];
+        }
+
         $sql = "";
         $params = array('courseid' => $courseid);
         if($search){
@@ -162,14 +228,30 @@ class intelliboard_competencies_table extends table_sql {
         list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
 
         $fields = "c.id, cc.courseid, c.shortname, c.idnumber, c.timecreated AS created, cc.timecreated AS asigned,
-            (SELECT COUNT(DISTINCT cu.id) FROM {competency_usercompcourse} cu WHERE cu.competencyid = c.id AND cu.courseid = cc.courseid AND cu.proficiency = 1) AS proficient,
-            (SELECT COUNT(DISTINCT cu.id) FROM {competency_usercompcourse} cu WHERE cu.competencyid = c.id AND cu.courseid = cc.courseid AND cu.grade IS NOT NULL) AS rated,
-            (SELECT COUNT(DISTINCT m.cmid) FROM {course_modules} cm, {competency_modulecomp} m WHERE cm.visible = 1 AND m.cmid = cm.id AND cm.course = cc.courseid AND m.competencyid = cc.competencyid) AS activities, '' AS Actions";
+                  (SELECT COUNT(DISTINCT cu.id)
+                     FROM {competency_usercompcourse} cu
+                     JOIN (SELECT userid
+                             FROM {cohort_members}
+                            WHERE id > 0 AND cohortid {$cohortfilter}
+                         GROUP BY userid
+                          ) cm ON cm.userid = cu.userid
+                    WHERE cu.competencyid = c.id AND cu.courseid = cc.courseid AND cu.proficiency = 1
+                  ) AS proficient,
+                  (SELECT COUNT(DISTINCT cu.id)
+                     FROM {competency_usercompcourse} cu
+                     JOIN (SELECT userid
+                             FROM {cohort_members}
+                            WHERE id > 0 AND cohortid {$cohortfilter1}
+                         GROUP BY userid
+                          ) cm ON cm.userid = cu.userid
+                    WHERE cu.competencyid = c.id AND cu.courseid = cc.courseid AND cu.grade IS NOT NULL
+                  ) AS rated,
+                  (SELECT COUNT(DISTINCT m.cmid) FROM {course_modules} cm, {competency_modulecomp} m WHERE cm.visible = 1 AND m.cmid = cm.id AND cm.course = cc.courseid AND m.competencyid = cc.competencyid) AS activities, '' AS Actions";
         $from = "{competency_coursecomp} cc
             LEFT JOIN {competency} c ON c.id = cc.competencyid";
         $where = "cc.courseid = :courseid $sql";
 
-        $this->set_sql($fields, $from, $where, $params);
+        $this->set_sql($fields, $from, $where, array_merge($params, $cohortparams, $cohortparams1));
         $this->define_baseurl($PAGE->url);
     }
     function col_created($values) {
@@ -369,10 +451,23 @@ class intelliboard_activities_table extends table_sql {
 }
 class intelliboard_learners_table extends table_sql {
 
-    function __construct($uniqueid, $courseid = 0, $competencyid = 0, $search = '') {
+    function __construct($uniqueid, $courseid = 0, $competencyid = 0, $search = '', $cohortid = 0) {
         global $CFG, $PAGE, $DB, $USER;
 
         parent::__construct($uniqueid);
+
+        if (!$cohortid) {
+            $cohorts = array_keys(user_cohorts($USER->id));
+        } else {
+            $cohorts = [$cohortid];
+        }
+
+        if ($cohorts) {
+            list($cohortfilter, $cohortparams) = $DB->get_in_or_equal($cohorts, SQL_PARAMS_NAMED, 'chrts');
+        } else {
+            $cohortfilter = ' IN (-1)';
+            $cohortparams = [];
+        }
 
         $headers = array();
         $columns = array();
@@ -415,7 +510,8 @@ class intelliboard_learners_table extends table_sql {
             'competencyid' => $competencyid
         );
         $learner_roles = get_config('local_intelliboard', 'filter11');
-        list($sql, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+        $sql = "";
+        list($rolefilter, $params) = intelliboard_filter_in_sql($learner_roles, "roleid", $params);
         if($search){
             $sql .= " AND " . $DB->sql_like('u.firstname', ":firstname", false, false);
             $params['firstname'] = "%$search%";
@@ -439,9 +535,18 @@ class intelliboard_learners_table extends table_sql {
                       FROM {competency_usercomp} cu, {competency_evidence} ce
                      WHERE cu.competencyid = c.id AND ce.usercompetencyid = cu.id AND cu.userid = u.id AND
                            ce.contextid = ctx.id) AS evidences";
-        $from = "{role_assignments} ra
-            LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-            LEFT JOIN {user} u ON u.id = ra.userid
+        $from = "(SELECT userid, contextid
+                    FROM {role_assignments}
+                   WHERE id > 0 {$rolefilter}
+                GROUP BY userid, contextid
+                 ) ra
+            JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+            JOIN {user} u ON u.id = ra.userid
+            JOIN (SELECT userid
+                    FROM {cohort_members}
+                   WHERE id > 0 AND cohortid {$cohortfilter}
+                GROUP BY userid
+                 ) cm ON cm.userid = ra.userid
             LEFT JOIN {competency} c ON c.id = :competencyid
             LEFT JOIN {competency_framework} cf ON cf.id = c.competencyframeworkid
             LEFT JOIN {competency_usercompcourse} cu ON cu.courseid = ctx.instanceid AND cu.userid = u.id AND cu.competencyid = c.id
@@ -449,7 +554,7 @@ class intelliboard_learners_table extends table_sql {
         ";
         $where = "ctx.instanceid = :courseid $sql";
 
-        $this->set_sql($fields, $from, $where, $params);
+        $this->set_sql($fields, $from, $where, array_merge($params, $cohortparams));
         $this->define_baseurl($PAGE->url);
     }
     function col_rated($values) {
@@ -491,10 +596,23 @@ class intelliboard_learners_table extends table_sql {
 
 class intelliboard_proficient_table extends table_sql {
 
-    function __construct($uniqueid, $courseid = 0, $search = '') {
+    function __construct($uniqueid, $courseid = 0, $search = '', $cohortid = 0) {
         global $CFG, $PAGE, $DB, $USER;
 
         parent::__construct($uniqueid);
+
+        if (!$cohortid) {
+            $cohorts = array_keys(user_cohorts($USER->id));
+        } else {
+            $cohorts = [$cohortid];
+        }
+
+        if ($cohorts) {
+            list($cohortfilter, $cohortparams) = $DB->get_in_or_equal($cohorts, SQL_PARAMS_NAMED, 'chrts');
+        } else {
+            $cohortfilter = ' IN (-1)';
+            $cohortparams = [];
+        }
 
         $headers = array();
         $columns = array();
@@ -550,11 +668,16 @@ class intelliboard_proficient_table extends table_sql {
             (SELECT COUNT(DISTINCT cu.id) FROM {competency_usercompcourse} cu WHERE cu.courseid = ctx.instanceid AND cu.userid = u.id AND cu.grade IS NOT NULL) AS users_rated,
             (SELECT COUNT(DISTINCT ce.id) FROM {competency_coursecomp} c, {competency_usercomp} cu, {competency_evidence} ce WHERE c.courseid = ctx.instanceid AND cu.competencyid = c.competencyid AND ce.usercompetencyid = cu.id AND cu.userid = u.id AND ce.contextid = ctx.id) AS users_evidences";
         $from = "{role_assignments} ra
-            LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-            LEFT JOIN {user} u ON u.id = ra.userid";
+            JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+            JOIN {user} u ON u.id = ra.userid
+            JOIN (SELECT userid
+                    FROM {cohort_members}
+                   WHERE id > 0 AND cohortid {$cohortfilter}
+                GROUP BY userid
+                 ) cm ON cm.userid = ra.userid";
         $where = "ctx.instanceid = :courseid $sql";
 
-        $this->set_sql($fields, $from, $where, $params);
+        $this->set_sql($fields, $from, $where, array_merge($params, $cohortparams));
         $this->define_baseurl($PAGE->url);
     }
     function col_competencycount($values) {

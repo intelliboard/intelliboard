@@ -142,7 +142,7 @@ class intelliboard_courses_grades_table extends table_sql {
                                         GROUP BY lit.courseid, lit.userid
                                          ) lit ON lit.userid = u.id AND lit.courseid = c.id";
             }
-            $sql_columns .= ", AVG(lit.timespend) AS avg_timespend, AVG(lit.visits) AS avg_visits";
+            $sql_columns .= ", SUM(lit.timespend)/COUNT(DISTINCT ra.userid) AS avg_timespend, SUM(lit.visits)/COUNT(DISTINCT ra.userid) AS avg_visits";
         } else{
             $sql_columns .= ", '0' AS avg_timespend, '0' AS avg_visits";
         }
