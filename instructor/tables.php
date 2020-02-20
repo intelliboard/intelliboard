@@ -40,7 +40,7 @@ class intelliboard_courses_grades_table extends table_sql {
         $params = array();
 
         $grade_avg = intelliboard_grade_sql(true);
-        $join_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
+        $join_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c.id');
         $sql_columns = "";
 
         if(get_config('local_intelliboard', 'table_set_icg_c1')) {
@@ -74,7 +74,7 @@ class intelliboard_courses_grades_table extends table_sql {
             $columns[] =  'grade';
             $headers[] =  get_string('in21', 'local_intelliboard');
 
-            $join_sql .= " LEFT JOIN {grade_items} gi ON gi.courseid = ctx.instanceid AND gi.itemtype = 'course'
+            $join_sql .= " LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ra.userid AND g.finalgrade IS NOT NULL";
             $sql_columns .= ", $grade_avg AS grade";
         } else {
@@ -152,12 +152,13 @@ class intelliboard_courses_grades_table extends table_sql {
 
         $sql1 = intelliboard_instructor_getcourses('c.id');
         $sql2 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
+        $rolefilter = "";
 
         list($sql_r, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
 
         if ($sql_r) {
-          $sql2 .= " AND ra.roleid $sql_r";
+            $rolefilter = " AND ra1.roleid $sql_r";
         }
 
         if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
@@ -190,21 +191,25 @@ class intelliboard_courses_grades_table extends table_sql {
         $from = "{course} c
                   JOIN {course_categories} ca ON ca.id = c.category
                   LEFT JOIN (SELECT c.id,
-                                    COUNT(DISTINCT ra.userid) learners,
-                                    COUNT(DISTINCT cc.userid) as completed
+                                    COUNT(ra.userid) AS learners,
+                                    COUNT(DISTINCT cc.userid) AS completed
                                     {$sql_columns}
-                               FROM {role_assignments} ra
+                               FROM (SELECT ra1.userid, ctx.instanceid AS course_id
+                                       FROM {role_assignments} ra1
+                                       JOIN {context} ctx ON ctx.id = ra1.contextid AND ctx.contextlevel = 50
+                                      WHERE ra1.id > 0 {$rolefilter}
+                                   GROUP BY ra1.userid, ctx.instanceid
+                                    ) ra
                                JOIN {user} u ON ra.userid = u.id
-                               JOIN {context} ctx ON ctx.id = ra.contextid
-                               JOIN {course} c ON c.id = ctx.instanceid
-                          LEFT JOIN {course_completions} cc ON cc.course = ctx.instanceid AND cc.userid = u.id AND cc.timecompleted > 0
+                               JOIN {course} c ON c.id = ra.course_id
+                          LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = u.id AND cc.timecompleted > 0
                           LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
                                        FROM {user_enrolments} ue
                                        JOIN {enrol} e ON ue.enrolid = e.id
                                    GROUP BY ue.userid, e.courseid
                                     ) enr ON enr.userid = u.id AND enr.courseid = c.id
                                     {$join_sql}
-                              WHERE ctx.contextlevel = 50 $sql2
+                              WHERE c.id > 0 {$sql2}
                            GROUP BY c.id
                             ) x ON x.id = c.id";
         $where = "c.id > 0 $sql1";
@@ -787,7 +792,7 @@ class intelliboard_learners_grades_table extends table_sql {
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3' => $courseid);
+        $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3' => $courseid, 'c4' => $courseid);
         $sql = "";
         if($search){
             $sql .= sprintf(
@@ -805,6 +810,7 @@ class intelliboard_learners_grades_table extends table_sql {
         $grade_single = intelliboard_grade_sql();
         $completion = intelliboard_compl_sql("cmc.");
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'e.instanceid');
+        $join_group_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c1.id');
 
         $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
         $sql .= get_filter_usersql("u.");
@@ -885,15 +891,19 @@ class intelliboard_learners_grades_table extends table_sql {
         if(get_config('local_intelliboard', 'table_set_ilg_c12') or get_config('local_intelliboard', 'table_set_ilg_c11')) {
             $data = $DB->get_record_sql(
                 "SELECT t.courseid, AVG(t.spent) AS avg_timespend, AVG(t.visits) AS avg_visits
-                   FROM (SELECT l.courseid, l.userid, SUM(l.timespend) AS spent, SUM(l.visits) AS visits
+                   FROM (SELECT c1.id AS courseid, ra.userid,
+                                CASE WHEN SUM(l.timespend) IS NULL THEN 0 ELSE SUM(l.timespend) END AS spent,
+                                CASE WHEN SUM(l.visits) IS NULL THEN 0 ELSE SUM(l.visits) END AS visits
                            FROM {course} c1
-                           JOIN {context} ctx ON ctx.contextlevel = 50 AND
-                                                 ctx.instanceid = c1.id
-                           JOIN {role_assignments} ra ON ctx.id = ra.contextid AND
-                                                         ra.roleid {$sql6}
-                           JOIN {local_intelliboard_tracking} l ON l.courseid = c1.id AND
-                                                                   ra.userid = l.userid AND l.courseid = :c1
-                       GROUP BY l.courseid, l.userid
+                           JOIN (SELECT ra1.userid, ctx.instanceid AS course_id
+                                   FROM {role_assignments} ra1
+                                   JOIN {context} ctx ON ctx.id = ra1.contextid AND ctx.contextlevel = 50 AND ctx.instanceid = :c4
+                                  WHERE ra1.id > 0 AND ra1.roleid {$sql6}
+                               GROUP BY ra1.userid, ctx.instanceid
+                                ) ra ON ra.course_id = c1.id
+                           {$join_group_sql1}
+                      LEFT JOIN {local_intelliboard_tracking} l ON l.courseid = c1.id AND ra.userid = l.userid
+                       GROUP BY c1.id, ra.userid
                         ) t
                    JOIN (SELECT ue.userid, MIN(ue.status) AS status
                            FROM {user_enrolments} ue

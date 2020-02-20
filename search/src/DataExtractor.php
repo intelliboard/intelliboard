@@ -43,7 +43,7 @@ class DataExtractor
 
     private $mode = self::MYSQL_MODE;
 
-    public function __construct($scenarios, $arguments, $params, $settings, $mode = null)
+    public function __construct($scenarios, $arguments, $params, $mode = null)
     {
         $this->scenarios = $scenarios;
         $this->rawValues = $arguments;

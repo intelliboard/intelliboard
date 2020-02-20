@@ -183,11 +183,16 @@ echo $OUTPUT->header();
 							<span class="intelliboard-tooltip" title='<?php echo get_string('total_time_spent_enrolled_learners','local_intelliboard'); ?>'><i class='ion-ios-clock-outline'></i> <?php echo seconds_to_time($course->timespend); ?> </span>
 							<span class="intelliboard-tooltip" title='<?php echo get_string('total_visits_enrolled_learners','local_intelliboard'); ?>'><i class='ion-log-in'></i> <?php echo (int)$course->visits; ?></span>
 							</div>
-							<ul class="totals">
-								<li><?php echo (int)$course->learners; ?> <span><?php echo get_string('learners_enrolled','local_intelliboard'); ?></span></li>
-								<li><?php echo (int)$course->learners_completed; ?><span><?php echo get_string('in6','local_intelliboard'); ?></span></li>
-								<li><?php echo intval((intval($course->learners_completed) / intval($course->learners))*100); ?>%<span><?php echo get_string('learning_progress','local_intelliboard'); ?></span></li>
-							</ul>
+                            <ul class="totals">
+                                <li><?php echo isset($course->learners) ? (int)$course->learners : 0; ?> <span><?php echo get_string('learners_enrolled','local_intelliboard'); ?></span></li>
+                                <li><?php echo isset($course->learners_completed) ? (int)$course->learners_completed : 0; ?><span><?php echo get_string('in6','local_intelliboard'); ?></span></li>
+                                <li>
+                                    <?php echo (isset($course->learners_completed) && $course->learners) ? (intval((intval($course->learners_completed) / intval($course->learners))*100)) : 0; ?>%
+                                    <span>
+                                        <?php echo get_string('learning_progress','local_intelliboard'); ?>
+                                    </span>
+                                </li>
+                            </ul>
 						<?php elseif($action === 'activities'): ?>
 							<div class="grade" title="<?php echo get_string('in21','local_intelliboard'); ?>">
 									<div class="circle-progress-course"  data-percent="<?php echo ($scale_real>0)?$course->grade:(int)$course->grade; ?>"></div>

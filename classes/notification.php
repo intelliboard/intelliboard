@@ -745,12 +745,13 @@ class local_intelliboard_notification
     protected function notification30(&$notification, $events = [])
     {
         global $DB;
-
         $event = $events[0];
-        if (!$this->filter_by_cohort($notification, [$event['userid']])) {
+
+        $userId = !empty($event['relateduserid'])? $event['relateduserid'] : $event['userid'];
+        if (!$this->filter_by_cohort($notification, [$userId])) {
             return [[], []];
         }
-        $user = $DB->get_record('user', ['id' => $event['userid']]);
+        $user = $DB->get_record('user', ['id' => $userId]);
 
         $result = [
             'user' => fullname($user),
