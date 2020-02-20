@@ -25,6 +25,16 @@ class DBHelper
         }
 
         switch ($groupperiod) {
+            case 'daymonth':
+                if ($CFG->dbtype == self::POSTGRES_TYPE) {
+                    $format = get_string('postgredaymonth', 'local_intelliboard');;
+                    $result = "to_char(to_timestamp({$sqlfield} + {$offset}),'{$format}')";
+                } else {
+                    $format = get_string('mysqldaymonth', 'local_intelliboard');
+                    $result = "FROM_UNIXTIME({$sqlfield} + {$offset}, '{$format}')";
+                }
+
+                break;
             case 'daytime':
                 if ($CFG->dbtype == self::POSTGRES_TYPE) {
                     $format = get_string('postgretimedate', 'local_intelliboard');;
@@ -35,7 +45,6 @@ class DBHelper
                 }
 
                 break;
-
             case 'week':
                 if ($CFG->dbtype == self::POSTGRES_TYPE) {
                     $format = get_string('postgreweek', 'local_intelliboard');;
