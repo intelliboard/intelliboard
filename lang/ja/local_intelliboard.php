@@ -826,6 +826,7 @@ $string['mysqlquarter'] = 'quarter';
 $string['mysqldayshortmonthyear'] = '%d %b, %Y';
 $string['mysqltimedate'] = '%h:%i%p, %d %b %Y';
 $string['mysqlmonthyearday'] = '%M %Y, %d';
+$string['mysqldaymonth'] = '%d %b %Y';
 
 $string['postgreweek'] = 'YYYY, "week" WW';
 $string['postgremonthyear'] = 'Month YYYY';
@@ -837,3 +838,4 @@ $string['postgredayshortmonthyear'] = 'DD Mon, YYYY';
 $string['postgretimedate'] = 'HH12:MIAM, DD Mon YYYY';
 $string['postgremonthyearday'] = 'Month YYYY, DD';
 $string['postgrequarteryear'] = 'Q YYYY';
+$string['postgredaymonth'] = 'DD Mon YYYY';

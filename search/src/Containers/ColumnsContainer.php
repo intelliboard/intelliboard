@@ -75,7 +75,7 @@ class ColumnsContainer extends BaseContainer {
                         $params['order'] = '';
                     }
 
-                    return "GROUP_CONCAT($value, '" . $params['separator'] . "')";
+                    return "GROUP_CONCAT({$value} SEPARATOR '{$params['separator']}')";
                 },
                 DataExtractor::POSTGRES_MODE => function($value, $params = array('separator' => ', '), DataExtractor $extractor) {
 
