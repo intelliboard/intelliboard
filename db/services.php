@@ -160,6 +160,38 @@ $functions = array(
             'type'        => 'write',
             'ajax'        => true
         ),
+    'local_intelliboard_setup_base_settings' => array(
+        'classname'   => 'local_intelliboard_setuplib',
+        'methodname'  => 'save_base_settings',
+        'classpath'   => 'local/intelliboard/classes/setuplib.php',
+        'description' => 'Save settings',
+        'type'        => 'write',
+        'ajax'        => true
+    ),
+    'local_intelliboard_setup_login' => array(
+        'classname'   => 'local_intelliboard_setuplib',
+        'methodname'  => 'login',
+        'classpath'   => 'local/intelliboard/classes/setuplib.php',
+        'description' => 'Intelliboard login',
+        'type'        => 'write',
+        'ajax'        => true
+    ),
+    'local_intelliboard_setup_register' => array(
+        'classname'   => 'local_intelliboard_setuplib',
+        'methodname'  => 'register',
+        'classpath'   => 'local/intelliboard/classes/setuplib.php',
+        'description' => 'Intelliboard register',
+        'type'        => 'write',
+        'ajax'        => true
+    ),
+    'local_intelliboard_setup_check_email' => array(
+        'classname'   => 'local_intelliboard_setuplib',
+        'methodname'  => 'check_email',
+        'classpath'   => 'local/intelliboard/classes/setuplib.php',
+        'description' => 'Check email',
+        'type'        => 'read',
+        'ajax'        => true
+    ),
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
@@ -185,6 +217,10 @@ $services = array(
             'local_intelliboard_clear_notifications',
             'local_intelliboard_attendance_api',
             'local_intelliboard_save_instructor_courses',
+            'local_intelliboard_setup_base_settings',
+            'local_intelliboard_setup_login',
+            'local_intelliboard_setup_register',
+            'local_intelliboard_setup_check_email',
         ),
         'restrictedusers' => 1,
         'enabled'=>1,

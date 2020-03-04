@@ -43,13 +43,30 @@
 
 <?php if ($intelliboard->alerts): ?>
 	<?php foreach($intelliboard->alerts as $key => $value): ?>
-			<div class="alert alert-<?php echo format_string($value); ?>"><?php echo format_string($key); ?></div>
+			<div class="alert alert-<?php echo format_string($value); ?>"><?php echo $key; ?></div>
 	<?php endforeach; ?>
 <?php endif; ?>
 
 
 <ul class="intelliboard-menu">
 	<li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
+
+    <?php if (!isset($intelliboard->token) || !$intelliboard->token): ?>
+        <li class="submenu">
+            <a href="#">
+                <?php echo get_string('initial_reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i>
+            </a>
+            <ul>
+                <?php foreach(intelli_initial_reports() as $report): ?>
+                    <li>
+                        <a href="<?php echo $report["url"]; ?>">
+                            <?php echo $report["name"]; ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </li>
+    <?php endif; ?>
 
     <?php if(isset($intelliboard->sets) and !empty($intelliboard->sets)): ?>
     <li class="submenu"><a href="#" <?php echo ($PAGE->pagetype == 'monitors')?'class="active"':''; ?>><?php echo get_string('monitors', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i></a>

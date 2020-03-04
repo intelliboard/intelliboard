@@ -834,29 +834,35 @@ class intelliboard_learners_grades_table extends table_sql {
         $params = array_merge($params,$sql_params);
 
         $fields = "t.*";
-        $from = "(SELECT MAX(ra.id) AS id,
-                         MAX(ra.userid) AS userid,
-                         MAX(c.id) as courseid,
-                         MAX(ra.timemodified) as enrolled,
-                         MAX(ul.timeaccess) AS timeaccess,
+        $from = "(SELECT CONCAT(ra.userid,'_',c.id) as id,
+                         ra.userid AS userid,
+                         c.id as courseid,
+                         ra.timemodified as enrolled,
+                         ul.timeaccess AS timeaccess,
                          $grade_single AS grade,
-                         MAX(cc.timecompleted) AS timecompleted,
+                         cc.timecompleted AS timecompleted,
                          CONCAT(u.firstname, ' ', u.lastname) AS learner,
                          u.email,
-                         MAX(u.firstname) AS firstname,
-                         MAX(u.lastname) AS lastname,
-                         MAX(u.alternatename) AS alternatename,
-                         MAX(u.middlename) AS middlename,
-                         MAX(u.lastnamephonetic) AS lastnamephonetic,
-                         MAX(u.firstnamephonetic) AS firstnamephonetic,
-                         MAX(l.timespend) AS timespend,
-                         MAX(l.visits) AS visits,
-                         MAX(cmc.progress) AS progress,
+                         u.firstname AS firstname,
+                         u.lastname AS lastname,
+                         u.alternatename AS alternatename,
+                         u.middlename AS middlename,
+                         u.lastnamephonetic AS lastnamephonetic,
+                         u.firstnamephonetic AS firstnamephonetic,
+                         l.timespend AS timespend,
+                         l.visits AS visits,
+                         cmc.progress AS progress,
                          '' as actions
-                    FROM {role_assignments} ra
-               LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
-               LEFT JOIN {user} u ON u.id = ra.userid
-               LEFT JOIN {course} c ON c.id = e.instanceid
+                    FROM (SELECT 
+                            ra.userid, 
+                            CONCAT(',', GROUP_CONCAT(ra.roleid),',') AS roles, 
+                            e.instanceid AS courseid, 
+                            MIN(ra.timemodified) AS timemodified 
+                          FROM {role_assignments} ra, {context} e 
+                          WHERE e.id = ra.contextid AND e.contextlevel = 50 AND ra.roleid $sql_roles
+                          GROUP BY ra.userid, e.instanceid) ra
+                    JOIN {user} u ON u.id = ra.userid
+                    JOIN {course} c ON c.id = ra.courseid
                LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid
                LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
@@ -879,8 +885,7 @@ class intelliboard_learners_grades_table extends table_sql {
                         GROUP BY t.courseid, t.userid
                ) l ON l.courseid = c.id AND l.userid = u.id
                          $join_group_sql
-                   WHERE ra.roleid $sql_roles AND e.instanceid = :c2 $sql $sql33
-                GROUP BY ra.userid, c.id) t";
+                   WHERE ra.courseid = :c2 $sql $sql33) t";
         $where = "t.id > 0";
 
         $this->set_sql($fields, $from, $where, $params);
