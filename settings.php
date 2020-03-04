@@ -37,8 +37,11 @@ $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardmonitors', n
 
 $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardreports', new lang_string('reports', 'local_intelliboard'),
         $CFG->wwwroot.'/local/intelliboard/reports.php', 'local/intelliboard:manage'));
-$ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcompetency', new lang_string('a1', 'local_intelliboard'),
+
+if (get_config("local_intelliboard", "competency_dashboard")) {
+    $ADMIN->add('intelliboardroot', new admin_externalpage('intelliboardcompetency', new lang_string('a1', 'local_intelliboard'),
         $CFG->wwwroot.'/local/intelliboard/competencies/index.php', 'local/intelliboard:competency'));
+}
 
 
 

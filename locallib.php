@@ -232,6 +232,42 @@ function intelliboard($params, $function = 'sso'){
 
 		return $data;
 }
+
+function intelliboard_auth($params, $function) {
+    global $CFG;
+
+    require_once($CFG->libdir . '/filelib.php');
+
+    $api = get_config('local_intelliboard', 'api');
+    $url = intelliboard_url($api);
+    $options =[];
+
+    if (get_config('local_intelliboard', 'verifypeer')) {
+        $options['CURLOPT_SSL_VERIFYPEER'] = false;
+    }
+    if (get_config('local_intelliboard', 'verifyhost')) {
+        $options['CURLOPT_SSL_VERIFYHOST'] = false;
+    }
+    $cipherlist = get_config('local_intelliboard', 'cipherlist');
+    $sslversion = get_config('local_intelliboard', 'sslversion');
+
+    if ($cipherlist) {
+        $options['CURLOPT_SSL_CIPHER_LIST'] = $cipherlist;
+    }
+    if ($sslversion) {
+        $options['CURLOPT_SSLVERSION'] = $sslversion;
+    }
+
+    $curl = new curl;
+    $json = $curl->post($url . 'moodleApi/' . $function, $params, $options);
+
+    if (get_config('local_intelliboard', 'debug')) {
+        echo "<pre>";var_dump($json);
+    }
+
+    return json_decode($json, true);
+}
+
 function chart_options()
 {
 		$timespent = get_string('timespent', 'local_intelliboard');
@@ -725,4 +761,39 @@ function intelli_date_format() {
  */
 function intelli_date($date) {
     return date(intelli_date_format(), $date);
+}
+
+function intelli_lms_admins() {
+    global $CFG, $DB;
+
+    $adminsids = explode(',', $CFG->siteadmins);
+
+    if (!$adminsids) {
+        $adminsids = ["-1"];
+    }
+
+    list($insql, $inparams) = $DB->get_in_or_equal($adminsids);
+
+    return $DB->get_records_sql(
+        "SELECT id, firstname, lastname, email
+           FROM {user}
+          WHERE id {$insql}",
+        $inparams
+    );
+}
+
+function intelli_initial_reports() {
+    $reports = [
+        ["id" => 1, "class" => \local_intelliboard\output\tables\initial_reports\report1::class],
+        ["id" => 3, "class" => \local_intelliboard\output\tables\initial_reports\report3::class],
+        ["id" => 45, "class" => \local_intelliboard\output\tables\initial_reports\report45::class],
+    ];
+
+    foreach ($reports as &$report) {
+        $url = new \moodle_url("/local/intelliboard/initial_report.php", ["id" => $report["id"]]);
+        $report["url"] = $url->out();
+        $report["name"] = get_string("report{$report["id"]}_name", "local_intelliboard");
+    }
+
+    return $reports;
 }

@@ -25,29 +25,18 @@
 
 namespace local_intelliboard\attendance\reports;
 
-class attendance_report implements attendance_report_interface {
-    public static function get_data($params) {
+use local_intelliboard\reports\entities\in_filter;
+use local_intelliboard\reports\report_trait;
+
+class attendance_report extends report {
+    use report_trait;
+
+    public function get_data($params) {
         global $DB;
 
         $order = '';
         $where = 'u.id > 0';
-        $sqlparams = [
-            'coursecxlvl' => CONTEXT_COURSE
-        ];
-        $studentroles = explode(
-            ',', get_config('local_intelliboard', 'filter11')
-        );
-
-        if(!$studentroles) {
-            return [
-                'rows' => [], 'filteredRows' => 0
-            ];
-        }
-
-        $studentrolefilter = $DB->get_in_or_equal(
-            $studentroles, SQL_PARAMS_NAMED, 'strole'
-        );
-        $sqlparams += $studentrolefilter[1];
+        $sqlparams = ['coursecxlvl' => CONTEXT_COURSE];
 
         if($params['order']) {
             $order = "ORDER BY {$params['order']['field']} {$params['order']['dir']}";
@@ -64,12 +53,23 @@ class attendance_report implements attendance_report_interface {
             $sqlparams['search1'] = "%{$params['search']}%";
         }
 
+        if ($params["teacher_id"]) {
+            $studentsfilter = new in_filter(
+                $this->get_courses_students($this->get_teacher_courses($params["teacher_id"])), "st1"
+            );
+            $sqlparams = array_merge($sqlparams, $studentsfilter->get_params());
+            $where .= " AND u.id {$studentsfilter->get_sql()}";
+        }
+
+        $studentrolefilter = new in_filter($this->get_student_roles(), "strole");
+        $sqlparams = array_merge($sqlparams, $studentrolefilter->get_params());
+
         return $DB->get_records_sql(
             "SELECT DISTINCT u.id, CONCAT(u.firstname, ' ', u.lastname) as fullname,
                     u.email
                FROM {user} u
                JOIN {context} cx ON cx.contextlevel = :coursecxlvl
-               JOIN {role_assignments} ra ON ra.roleid {$studentrolefilter[0]} AND
+               JOIN {role_assignments} ra ON ra.roleid {$studentrolefilter->get_sql()} AND
                                              ra.userid = u.id AND
                                              ra.contextid = cx.id
               WHERE {$where} {$order}",

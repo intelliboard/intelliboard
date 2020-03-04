@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -17,14 +16,18 @@
 /**
  * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
+ *
  * @package    local_intelliboard
- * @copyright  2019 IntelliBoard, Inc
+ * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    http://intelliboard.net/
+ * @website    https://intelliboard.net/
  */
 
-namespace local_intelliboard\attendance\reports;
-
-interface attendance_report_interface {
-    public static function get_data($params);
-}
+define([], function() {
+    return {
+        validateEmail: function(email) {
+            var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+            return re.test(String(email).toLowerCase());
+        }
+    };
+});

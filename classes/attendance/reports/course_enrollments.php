@@ -25,37 +25,30 @@
 
 namespace local_intelliboard\attendance\reports;
 
-class course_enrollments implements attendance_report_interface {
-    public static function get_data($params) {
+use local_intelliboard\reports\entities\in_filter;
+use local_intelliboard\reports\report_trait;
+
+class course_enrollments extends report {
+    use report_trait;
+
+    public function get_data($params) {
         global $DB;
 
         $order = '';
         $where = 'c.id <> 1';
         $sqlparams = ['coursecx' => CONTEXT_COURSE];
-        $studentroles = explode(
-            ',', get_config('local_intelliboard', 'filter11')
-        );
-
-        if(!$studentroles) {
-          return [];
-        }
-
-        $studentrolefilter = $DB->get_in_or_equal(
-            $studentroles, SQL_PARAMS_NAMED, 'role'
-        );
-        $sqlparams += $studentrolefilter[1];
 
         if($params['order']) {
             $order = "ORDER BY {$params['order']['field']} {$params['order']['dir']}";
         }
 
-        if(isset($params['courses']) && $params['courses']) {
-            $coursefilter = $DB->get_in_or_equal(
-                $params['courses'], SQL_PARAMS_NAMED, 'course'
-            );
-            $where .= " AND c.id {$coursefilter[0]}";
-            $sqlparams += $coursefilter[1];
+        if ($params["teacher_id"]) {
+            $coursefilter = new in_filter($this->get_teacher_courses($params["teacher_id"]), "teacher");
+            $where .= " AND c.id {$coursefilter->get_sql()}";
+            $sqlparams = array_merge($sqlparams, $coursefilter->get_params());
         }
+
+        $studentrolefilter = new in_filter($this->get_student_roles(), "role");
 
         $courses = $DB->get_records_sql(
            "SELECT  c.id, c.fullname as course,
@@ -65,13 +58,13 @@ class course_enrollments implements attendance_report_interface {
                JOIN {context} cx ON cx.instanceid = c.id AND
                                     cx.contextlevel = :coursecx
           LEFT JOIN {role_assignments} ra ON ra.contextid = cx.id AND
-                                             ra.roleid {$studentrolefilter[0]}
+                                             ra.roleid {$studentrolefilter->get_sql()}
           LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND 
                                         gi.itemtype = 'course'
           LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id
               WHERE {$where}
            GROUP BY c.id {$order}",
-            $sqlparams,
+            array_merge($sqlparams, $studentrolefilter->get_params()),
             $params['offset'], $params['limit']
         );
 

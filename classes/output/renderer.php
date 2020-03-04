@@ -41,7 +41,7 @@ class renderer extends plugin_renderer_base {
     }
 
     /**
-     * Return the dashboard content for the intellicart.
+     * Return content of student navigation
      *
      * @param student_menu $studentmenu
      * @return string HTML string
@@ -52,6 +52,36 @@ class renderer extends plugin_renderer_base {
     public function render_student_menu(student_menu $studentmenu) {
         return $this->render_from_template(
             'local_intelliboard/student_menu', $studentmenu->export_for_template($this)
+        );
+    }
+
+    /**
+     * Return content of "Setup" page
+     *
+     * @param setup $setup
+     * @return string HTML string
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function render_setup(setup $setup) {
+        return $this->render_from_template(
+            'local_intelliboard/setup', $setup->export_for_template($this)
+        );
+    }
+
+    /**
+     * Return content of "Initial Report" page
+     *
+     * @param initial_report $report
+     * @return string HTML string
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function render_initial_report(\local_intelliboard\output\initial_report $report) {
+        return $this->render_from_template(
+            'local_intelliboard/initial_report', $report->export_for_template($this)
         );
     }
 }

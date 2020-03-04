@@ -1,0 +1,28 @@
+<ul class="intelliboard-menu">
+    <li>
+        <a href="index.php?action=dashboard">
+            <i class="ion-ios-pulse"></i> {{#str}}dashboard, local_intelliboard{{/str}}
+        </a>
+    </li>
+
+    <li class="submenu">
+        <a href="#">
+            {{#str}}initial_reports, local_intelliboard{{/str}} <i class="arr ion-arrow-down-b"></i>
+        </a>
+        <ul>
+            {{#initial_reports}}
+                <li>
+                    <a href="{{{url}}}">
+                        {{name}}
+                    </a>
+                </li>
+            {{/initial_reports}}
+        </ul>
+    </li>
+
+    <li>
+        <a href="help.php">
+            {{#str}}help, local_intelliboard{{/str}}
+        </a>
+    </li>
+</ul>

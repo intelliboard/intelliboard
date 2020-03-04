@@ -25,21 +25,26 @@
 
 namespace local_intelliboard\attendance\reports;
 
-class lateness_percent_table implements attendance_report_interface {
-    public static function get_data($params) {
+use local_intelliboard\reports\entities\in_filter;
+use local_intelliboard\reports\report_trait;
+
+class lateness_percent_table extends report {
+    use report_trait;
+
+    public function get_data($params) {
         global $DB;
 
         if(!$params['users']) {
           return [];
         }
 
-        $userFilter = $DB->get_in_or_equal($params['users']);
+        $userFilter = new in_filter($params['users'], "user");
 
         return $DB->get_records_sql(
             "SELECT u.*
                FROM {user} u
-              WHERE u.id {$userFilter[0]}",
-            $userFilter[1]
+              WHERE u.id {$userFilter->get_sql()}",
+            $userFilter->get_params()
         );
     }
 }
