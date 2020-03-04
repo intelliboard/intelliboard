@@ -85,6 +85,16 @@ class DBHelper
                 }
 
                 break;
+            case 'monthdayyear':
+                if ($CFG->dbtype == self::POSTGRES_TYPE) {
+                    $format = get_string('postgremonthdayyear', 'local_intelliboard');;
+                    $result = "to_char(to_timestamp({$sqlfield} + {$offset}),'{$format}')";
+                } else {
+                    $format = get_string('mysqlmonthdayyear', 'local_intelliboard');
+                    $result = "FROM_UNIXTIME({$sqlfield} + {$offset}, '{$format}')";
+                }
+
+                break;
             case 'quarter':
                 if ($CFG->dbtype == self::POSTGRES_TYPE) {
                     $format = get_string('postgrequarteryear', 'local_intelliboard');;

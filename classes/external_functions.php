@@ -382,6 +382,8 @@ class local_external_functions
             'get_hospitals',
             'get_hospital_cohorts',
             'get_hospital_info',
+            'monitor71',
+            'monitor72',
         ];
     }
     public function get_function($params = null)

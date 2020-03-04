@@ -24,6 +24,7 @@
  */
 
 use local_intelliboard\attendance_api;
+use local_intelliboard\repositories\attendance_repository;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -74,10 +75,11 @@ class local_intelliboard_attendancelib extends external_api {
     public static function attendance_api($params) {
         if(self::method_available($params['action'])) {
             $methodname = $params['action'];
-            
+            $repository = new attendance_repository();
+
             return [
                 'code' => 200,
-                'content' => json_encode(attendance_api::$methodname($params))
+                'content' => json_encode($repository->{$methodname}($params))
             ];
         } else {
             return [

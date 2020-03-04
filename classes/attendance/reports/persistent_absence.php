@@ -25,36 +25,32 @@
 
 namespace local_intelliboard\attendance\reports;
 
-class persistent_absence implements attendance_report_interface {
-    public static function get_data($params) {
+use local_intelliboard\reports\entities\in_filter;
+use local_intelliboard\reports\report_trait;
+
+class persistent_absence extends report {
+    use report_trait;
+
+    public function get_data($params) {
         global $DB;
 
-        $studentroles = explode(
-            ',', get_config('local_intelliboard', 'filter11')
-        );
-
-        if(!$params['users'] or !$studentroles) {
+        if(!$params['users']) {
           return [];
         }
 
-        $studentrolefilter = $DB->get_in_or_equal(
-            $studentroles, SQL_PARAMS_NAMED, 'role'
-        );
-
-        $userFilter = $DB->get_in_or_equal(
-          $params['users'], SQL_PARAMS_NAMED, 'user'
-        );
+        $studentrolefilter = new in_filter($this->get_student_roles(), "role");
+        $userfilter = new in_filter($params['users'], "user");
 
         return $DB->get_records_sql(
             "SELECT u.id, u.firstname, u.lastname, COUNT(DISTINCT ra.contextid) as student_courses
                FROM {user} u
                JOIN {role_assignments} ra ON ra.userid = u.id AND
-                                             ra.roleid {$studentrolefilter[0]}
+                                             ra.roleid {$studentrolefilter->get_sql()}
                JOIN {context} cx ON cx.id = ra.contextid AND
                                     cx.contextlevel = :cxcourse 
-              WHERE u.id {$userFilter[0]}
+              WHERE u.id {$userfilter->get_sql()}
            GROUP BY u.id, u.firstname, u.lastname",
-            ['cxcourse' => CONTEXT_COURSE] + $userFilter[1] + $studentrolefilter[1]
+            array_merge(['cxcourse' => CONTEXT_COURSE], $userfilter->get_params(), $studentrolefilter->get_params())
         );
     }
 }

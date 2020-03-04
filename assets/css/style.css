@@ -715,8 +715,8 @@ position: relative;
 	background: url('../img/play-button.png') no-repeat top left;
 	background-size: 200px 200px;
 	position: absolute;
-	left: calc(50% - 100px);
-	top: calc(50% - 100px);
+	right: 3%;
+	bottom: 3%;
 	z-index: 0;
 	cursor: pointer;
 }
@@ -747,14 +747,15 @@ position: relative;
 	position: relative;
 }
 .intelliboard-support-terms{
-	font-size: 13px;
-	max-width: 355px;
-  line-height: 1.53;
-  color: #a2aac1;
-	margin-bottom: 30px;
-	letter-spacing: .3px;
-	z-index: 1;
-	position: relative;
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.53;
+    color: #a2aac1;
+    margin-bottom: 30px;
+    letter-spacing: .3px;
+    z-index: 1;
+    position: relative;
+    width: 100%;
 }
 .intelliboard-support-info a{
 	text-decoration: underline;
@@ -764,16 +765,25 @@ position: relative;
 	max-width: 270px;
   line-height: 1.53;
   color: #536383;
-	margin-bottom: 25px;
+	margin-bottom: 0px;
 	letter-spacing: .3px;
 	z-index: 1;
 	position: relative;
 }
 .intelliboard-support-links{
 	margin-bottom: 25px;
-	margin-left: -5px;
 	z-index: 1;
 	position: relative;
+}
+.intelliboard-support-links.actions {
+    margin-left: -10px;
+}
+.intelliboard-support-links.initial-reports {
+    width: calc(100% - 690px);
+    margin-bottom: 0;
+}
+.intelliboard-support-links.initial-reports a {
+    margin-bottom: 25px;
 }
 .intelliboard-support-contacts{
 	margin-bottom: 25px;
@@ -800,42 +810,38 @@ position: relative;
 }
 .intelliboard-support-large-btn span{
 	background: url('../img/button-field.png') no-repeat top left;
-	background-size: auto 60px;
+	background-size: 260px 60px;
 	height: 60px;
-	width: 175px;
+	width: 260px;
 	display: block;
 	text-align: center;
 	line-height: 45px;
 	text-transform: uppercase;
 	color: #fff;
-	font-size: 12px;
 	margin: -15px -5px;
 	text-decoration: none;
 	font-size: 12px;
 }
 .intelliboard-support-large-btn{
 	background: url('../img/button-frame.png') no-repeat top left;
-	background-size: auto 31px;
+	background-size: 225px 31px;
 	height: 40px;
-	width: 155px;
+	width: 243px;
 	display: inline-block;
 }
 .intelliboard-support-btn{
 	background: url('../img/rectangle-2.png') no-repeat top left;
-	background-size: auto 36px;
+	background-size: 228px 36px;
 	height: 40px;
-	width: 155px;
+	width: 228px;
 	display: inline-block;
 	text-align: center;
 	line-height: 38px;
 	text-transform: uppercase;
-	color: #fff;
-	margin-left: 20px;
+	margin-right: 18px;
 	color: #528dce;
 	font-size: 12px;
-}
-.intelliboard-support-btn{
-	display: inline-block;
+    display: inline-block;
 }
 .intelliboard-support-menu a:hover{
 	text-decoration: none;
@@ -1024,8 +1030,8 @@ div[aria-label="A tabular representation of the data in the chart."] {
 }
 .competency-dashboard .cohort-filter-wrapper {
     position: absolute;
-    right: 10px;
-    top: 22px;
+    right: 0;
+    top: -40px;
 }
 
 .competency-dashboard .cohort-filter-wrapper .ms-parent .ms-drop.bottom {
@@ -1054,4 +1060,7 @@ div[aria-label="A tabular representation of the data in the chart."] {
 .competency-cohort-filter-wrapper.courses .ms-parent .ms-choice > span.placeholder {
     top: 3px;
     left: 0;
+}
+.intelliboard-page.intelliboard-instructor.competency-dashboard {
+    position: relative;
 }

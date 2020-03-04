@@ -23,14 +23,19 @@
  * @website    http://intelliboard.net/
  */
 
-namespace local_intelliboard;
+namespace local_intelliboard\repositories;
 
+use local_intelliboard\reports\entities\in_filter;
+use local_intelliboard\attendance\reports\report;
+use local_intelliboard\reports\report_trait;
 use moodle_url;
 use user_picture;
 use context_system;
 
-class attendance_api
+class attendance_repository
 {
+    use report_trait;
+
     /**
      * Get all courses
      *
@@ -39,15 +44,8 @@ class attendance_api
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public static function get_courses($params) {
+    public function get_courses($params) {
         global $DB;
-
-        $teacherroles = explode(
-            ',', get_config('local_intelliboard', 'filter10')
-        );
-        $studentroles = explode(
-            ',', get_config('local_intelliboard', 'filter11')
-        );
 
         if(isset($params['report_params'])) {
             $reportparams = json_decode($params['report_params'], true);
@@ -76,16 +74,9 @@ class attendance_api
         }
 
         if(intval($params['userid'])) {
-            if(!$teacherroles) {
-                $checkThatTeacherFilter = ['IN (-1)', []];
-            } else {
-                $checkThatTeacherFilter = $DB->get_in_or_equal(
-                    $teacherroles, SQL_PARAMS_NAMED, 'role'
-                );
-            }
+            $isteacherfilter = new in_filter($this->get_teacher_roles(), "role");
 
-
-            $select .= ", MAX(CASE WHEN ra.roleid {$checkThatTeacherFilter[0]}
+            $select .= ", MAX(CASE WHEN ra.roleid {$isteacherfilter->get_sql()}
                                THEN 1
                                ELSE 0
                            END) AS is_teacher";
@@ -95,22 +86,17 @@ class attendance_api
                                                      ra.contextid = cx.id";
             $sqlarguments['coursecx'] = CONTEXT_COURSE;
             $sqlarguments['userid'] = $params['userid'];
-            $sqlarguments += $checkThatTeacherFilter[1];
+            $sqlarguments = array_merge($sqlarguments, $isteacherfilter->get_params());
 
             if($params['role'] == 'student') {
-                $rolefilter = $DB->get_in_or_equal(
-                    $studentroles, SQL_PARAMS_NAMED, 'role'
-                );
+                $rolefilter = new in_filter($this->get_student_roles(), "studrole");
+                $from .= " AND ra.roleid {$rolefilter->get_sql()}";
+                $sqlarguments = array_merge($sqlarguments, $rolefilter->get_params());
             } else if($params['role'] == 'teacher') {
-                $rolefilter = $DB->get_in_or_equal(
-                    $teacherroles, SQL_PARAMS_NAMED, 'role'
-                );
-            } else {
-                $rolefilter = ['> 0', []];
+                $rolefilter = new in_filter($this->get_teacher_roles(), "trole");
+                $from .= " AND ra.roleid {$rolefilter->get_sql()}";
+                $sqlarguments = array_merge($sqlarguments, $rolefilter->get_params());
             }
-
-            $from .= " AND ra.roleid {$rolefilter[0]}";
-            $sqlarguments += $rolefilter[1];
         }
 
         return $DB->get_records_sql(
@@ -127,17 +113,12 @@ class attendance_api
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function get_course($params) {
+    public function get_course($params) {
         global $DB, $CFG;
 
         require_once($CFG->dirroot . '/local/intelliboard/locallib.php');
 
-        $teacherroles = explode(
-            ',', get_config('local_intelliboard', 'filter10')
-        );
-        $rolefilter = $DB->get_in_or_equal(
-            $teacherroles, SQL_PARAMS_NAMED, 'role'
-        );
+        $rolefilter = new in_filter($this->get_teacher_roles(), "trole");
         $teachersSelect = get_operator(
             'GROUP_CONCAT',
             "CONCAT(u.firstname, ' ', u.lastname)",
@@ -150,17 +131,17 @@ class attendance_api
                FROM {course} c
                JOIN {context} cx ON cx.instanceid = c.id AND
                                     cx.contextlevel = :coursecx
-          LEFT JOIN {role_assignments} ra ON ra.roleid {$rolefilter[0]} AND
+          LEFT JOIN {role_assignments} ra ON ra.roleid {$rolefilter->get_sql()} AND
                                              ra.contextid = cx.id
           LEFT JOIN {user} u ON u.id = ra.userid
               WHERE c.id = :courseid
            GROUP BY c.id",
-            ['courseid' => $params['courseid'], 'coursecx' => CONTEXT_COURSE] + $rolefilter[1]
+            array_merge(['courseid' => $params['courseid'], 'coursecx' => CONTEXT_COURSE], $rolefilter->get_params())
         );
 
         if($course) {
             $course->url = (
-                new moodle_url('/course/view.php', ['id' => $course->id])
+            new moodle_url('/course/view.php', ['id' => $course->id])
             )->out();
         } else {
             return new \stdClass();
@@ -177,34 +158,24 @@ class attendance_api
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public static function is_teacher($params) {
+    public function is_teacher($params) {
         global $DB;
 
-        $teacherroles = explode(
-            ',', get_config('local_intelliboard', 'filter10')
-        );
-
-        if(!$teacherroles) {
-            return false;
-        }
-
-        $rolefilter = $DB->get_in_or_equal(
-            $teacherroles, SQL_PARAMS_NAMED, 'role'
-        );
+        $rolefilter = new in_filter($this->get_teacher_roles(), "role");
 
         return $DB->record_exists_sql(
             "SELECT ra.*
                FROM {context} cx
                JOIN {role_assignments} ra ON ra.userid = :userid AND
                                              ra.contextid = cx.id AND
-                                             ra.roleid {$rolefilter[0]}
+                                             ra.roleid {$rolefilter->get_sql()}
               WHERE cx.instanceid = :courseid AND
                     cx.contextlevel = :coursecontext",
-            [
+            array_merge([
                 'courseid' => $params['courseid'],
                 'coursecontext' => CONTEXT_COURSE,
                 'userid' => $params['userid'],
-            ] + $rolefilter[1]
+            ], $rolefilter->get_params())
         );
 
     }
@@ -217,34 +188,24 @@ class attendance_api
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public static function is_student($params) {
+    public function is_student($params) {
         global $DB;
 
-        $studentroles = explode(
-            ',', get_config('local_intelliboard', 'filter11')
-        );
-
-        if(!$studentroles) {
-            return false;
-        }
-
-        $rolefilter = $DB->get_in_or_equal(
-            $studentroles, SQL_PARAMS_NAMED, 'role'
-        );
+        $rolefilter = new in_filter($this->get_student_roles(), "srole");
 
         return $DB->record_exists_sql(
             "SELECT ra.*
                FROM {context} cx
                JOIN {role_assignments} ra ON ra.userid = :userid AND
                                              ra.contextid = cx.id AND
-                                             ra.roleid {$rolefilter[0]}
+                                             ra.roleid {$rolefilter->get_sql()}
               WHERE cx.instanceid = :courseid AND
                     cx.contextlevel = :coursecontext",
-            [
+            array_merge([
                 'courseid' => $params['courseid'],
                 'coursecontext' => CONTEXT_COURSE,
                 'userid' => $params['userid'],
-            ] + $rolefilter[1]
+            ], $rolefilter->get_params())
         );
 
     }
@@ -256,7 +217,7 @@ class attendance_api
      * @return bool
      * @throws \dml_exception
      */
-    public static function is_course_participant($params) {
+    public function is_course_participant($params) {
         global $DB;
 
         return $DB->record_exists_sql(
@@ -283,35 +244,23 @@ class attendance_api
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public static function has_role($params) {
+    public function has_role($params) {
         global $DB;
 
         if($params['role'] == 'teacher') {
-            $roles = explode(
-                ',', get_config('local_intelliboard', 'filter10')
-            );
+            $roles = $this->get_teacher_roles();
         } elseif($params['role'] == 'student') {
-            $roles = explode(
-                ',', get_config('local_intelliboard', 'filter11')
-            );
+            $roles = $this->get_student_roles();
         }
 
-        if(!$roles) {
-            return false;
-        }
-
-        $rolefilter = $DB->get_in_or_equal(
-            $roles, SQL_PARAMS_NAMED, 'role'
-        );
+        $rolefilter = new in_filter($roles, "role");
 
         return $DB->record_exists_sql(
             "SELECT ra.*
                FROM {role_assignments} ra
               WHERE ra.userid = :userid AND
-                    ra.roleid {$rolefilter[0]}",
-            [
-                'userid' => $params['userid'],
-            ] + $rolefilter[1]
+                    ra.roleid {$rolefilter->get_sql()}",
+            array_merge(['userid' => $params['userid']],  $rolefilter->get_params())
         );
 
     }
@@ -324,7 +273,7 @@ class attendance_api
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public static function get_course_students($params) {
+    public function get_course_students($params) {
         global $DB, $PAGE;
 
         if(isset($params['report_params'])) {
@@ -340,19 +289,8 @@ class attendance_api
             'courseid' => $params['courseid'],
             'courselvl' => CONTEXT_COURSE
         ];
-        $studentrroles = explode(
-            ',', get_config('local_intelliboard', 'filter11')
-        );
 
-        /** Set student role filter */
-        if(!$studentrroles) {
-            return [];
-        }
-
-        $rolefilter = $DB->get_in_or_equal(
-            $studentrroles, SQL_PARAMS_NAMED, 'role'
-        );
-        $sqlarguments += $rolefilter[1];
+        $rolefilter = new in_filter($this->get_student_roles(), "srole");
 
         /** Limit and offset */
         if(isset($reportparams['limit'])) {
@@ -378,10 +316,10 @@ class attendance_api
             "SELECT DISTINCT u.*
                FROM {context} cx
                JOIN {role_assignments} ra ON ra.contextid = cx.id AND
-                                             ra.roleid {$rolefilter[0]}
+                                             ra.roleid {$rolefilter->get_sql()}
                JOIN {user} u ON u.id = ra.userid
               WHERE {$where}",
-            $sqlarguments, $offset, $limit
+            array_merge($sqlarguments, $rolefilter->get_params()), $offset, $limit
         );
 
         foreach($students as &$student) {
@@ -400,7 +338,7 @@ class attendance_api
      * @return array List of activities
      * @throws \dml_exception
      */
-    public static function get_course_activities($params) {
+    public function get_course_activities($params) {
         global $DB, $CFG;
 
         require_once($CFG->dirroot . '/local/intelliboard/locallib.php');
@@ -457,7 +395,7 @@ class attendance_api
      * @throws \dml_exception
      * @throws \moodle_exception
      */
-    public static function get_activity($params) {
+    public function get_activity($params) {
         global $DB, $CFG;
 
         require_once($CFG->dirroot . '/local/intelliboard/locallib.php');
@@ -495,7 +433,7 @@ class attendance_api
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public static function get_user($params) {
+    public function get_user($params) {
         global $DB, $PAGE;
 
         $user = $DB->get_record(
@@ -518,7 +456,7 @@ class attendance_api
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public static function is_admin($params) {
+    public function is_admin($params) {
         return has_capability(
             'local/intelliboard:attendanceadmin',
             context_system::instance(),
@@ -526,18 +464,19 @@ class attendance_api
         );
     }
 
-    public static function report_data($params) {
+    public function report_data($params) {
         $classname = '\local_intelliboard\attendance\reports\\' .
-                     $params['report_short_name'];
+            $params['report_short_name'];
 
-        return $classname::get_data(
-            json_decode($params['report_params'], true)
-        );
+        /** @var report $classObj */
+        $classObj = new $classname;
+
+        return $classObj->get_data(json_decode($params['report_params'], true));
     }
 
-    public static function number_of_courses() {
+    public function number_of_courses() {
         global $DB;
 
-        return ['number_of_courses' => $DB->count_records('course')]; 
+        return ['number_of_courses' => $DB->count_records('course')];
     }
 }

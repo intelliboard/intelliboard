@@ -8793,6 +8793,14 @@ class local_intelliboard_external extends external_api {
             $exportdata = array();
             $user = $userdata->user;
 
+            if (
+                !empty($params->filter) &&
+                stripos("{$user->firstname} {$user->lastname}", $params->filter) === false &&
+                stripos("{$user->lastname} {$user->firstname}", $params->filter) === false
+            ) {
+                continue;
+            }
+
             foreach ($profilefields as $field) {
                 $fieldvalue = grade_helper::get_user_field_value($user, $field);
                 $exportdata[] = $fieldvalue;
@@ -9938,12 +9946,12 @@ class local_intelliboard_external extends external_api {
                 $columns[] = "date_$module->id";
             }
         }
+        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
-        $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
 
         $data = $this->get_report_data("
@@ -11059,6 +11067,7 @@ class local_intelliboard_external extends external_api {
     function report181($params)
     {
         global $DB, $CFG;
+        require_once($CFG->libdir . "/adminlib.php");
 
         $columns = array_merge(array(
             "u.username",
@@ -11099,6 +11108,27 @@ class local_intelliboard_external extends external_api {
         $sql_inner_filter4 = $this->get_filter_in_sql($params->courseid, 'm.course');
         $sql_inner_filter5 = $this->get_filter_in_sql($params->courseid, 'm.course');
 
+        $sql_select = $sql_overal_submission_date = $sql_overal_submission_graded = $sql_overal_submission_grade = '';
+        if (get_component_version('mod_hsuforum')) {
+            $sql_inner_filter6 = $this->get_filter_in_sql($params->courseid, 'm.course');
+            $sql_select = "LEFT JOIN (SELECT
+                            fd.forum,
+                            fp.userid,
+                            MAX(fp.modified) AS posted,
+                            MAX(g.timemodified) AS graded,
+                            $grade_avg AS grade
+                        FROM {hsuforum_discussions} fd
+                            JOIN {hsuforum} m ON m.id=fd.forum $sql_inner_filter6
+                            LEFT JOIN {hsuforum_posts} fp ON fp.discussion=fd.id
+                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'hsuforum' AND gi.iteminstance = fd.forum
+                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = fp.userid
+                        GROUP BY fd.forum, fp.userid) hf ON hf.userid=u.id AND hf.forum=cm.instance AND m.name='hsuforum'";
+
+            $sql_overal_submission_date = ", COALESCE(hf.posted,0)";
+            $sql_overal_submission_graded = ", COALESCE(hf.graded,0)";
+            $sql_overal_submission_grade = ", COALESCE(hf.grade,'')";
+        }
+
         return $this->get_report_data("
               SELECT
                 CONCAT(u.id, '_', cm.id) AS id,
@@ -11120,9 +11150,9 @@ class local_intelliboard_external extends external_api {
                 ch.submitted AS choice_submission_date,
                 ch.graded AS choice_graded,
                 ul.timeaccess,
-                GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0)) AS overal_submission_date,
-                GREATEST(COALESCE(ass.graded,0), COALESCE(f.graded,0), COALESCE(q.graded,0), COALESCE(gl.graded,0), COALESCE(ch.graded,0)) AS overal_submission_graded,
-                GREATEST(COALESCE(ass.grade,''), COALESCE(f.grade,''), COALESCE(q.grade,''), COALESCE(gl.grade,''), COALESCE(ch.grade,'')) AS overal_submission_grade,
+                GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0) $sql_overal_submission_date) AS overal_submission_date,
+                GREATEST(COALESCE(ass.graded,0), COALESCE(f.graded,0), COALESCE(q.graded,0), COALESCE(gl.graded,0), COALESCE(ch.graded,0) $sql_overal_submission_graded) AS overal_submission_graded,
+                GREATEST(COALESCE(ass.grade,''), COALESCE(f.grade,''), COALESCE(q.grade,''), COALESCE(gl.grade,''), COALESCE(ch.grade,'') $sql_overal_submission_grade) AS overal_submission_grade,
                  (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
                             FROM {role_assignments} AS ra
                                 JOIN {user} u ON ra.userid = u.id
@@ -11199,6 +11229,8 @@ class local_intelliboard_external extends external_api {
                             LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'choice' AND gi.iteminstance = ca.choiceid
                             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ca.userid
                         GROUP BY ca.choiceid, ca.userid) ch ON ch.userid=u.id AND ch.choiceid=cm.instance AND m.name='choice'
+              
+                  $sql_select
 
                 WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
@@ -11337,8 +11369,8 @@ class local_intelliboard_external extends external_api {
         }
 
         return $this->get_report_data("
-                SELECT DISTINCT(concat_ws('_', cm.id, u.id, c.id)) as unique_id,
-                       gi.itemname AS activity_name,
+                SELECT DISTINCT(concat_ws('_', a.id, u.id, c.id)) as unique_id,
+                       a.name AS activity_name,
                        g.userid,
                        u.username,
                        u.firstname,
@@ -11351,26 +11383,30 @@ class local_intelliboard_external extends external_api {
                        $grade_single AS grade,
                        $grade_percent AS grade_percent,
                        gi.itemtype,
-                       CASE WHEN m.name='assign' THEN sg.timemodified ELSE 0 END AS need_grade_assignment,
+                       sg.timemodified AS need_grade_assignment,
                        lit.firstaccess,
                        ul.timeaccess AS course_lastaccess
                        $sql_columns
 
                 FROM {course} c
-           LEFT JOIN {course_categories} cc1 ON cc1.id = c.category
-                  JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
-                  JOIN {role_assignments} ra ON ra.contextid = ctx.id
-                  JOIN {user} u ON u.id=ra.userid
-                  JOIN {course_modules} cm ON cm.course = c.id
-                  JOIN {modules} m ON m.id = cm.module AND m.name = 'assign'
-                  LEFT JOIN {grade_items} gi ON gi.iteminstance = cm.instance AND gi.itemmodule = m.name
-                  LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
-                  LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
-                  LEFT JOIN {assign_submission} ass ON ass.userid=u.id AND ass.assignment=cm.instance AND ass.status='submitted' AND ass.latest = 1
-                  LEFT JOIN {assign_grades} sg ON ass.assignment = sg.assignment AND ass.userid = sg.userid AND sg.attemptnumber = ass.attemptnumber AND sg.grade > -1
-                  LEFT JOIN {user} gu ON gu.id=sg.grader
-                  LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND ((lit.param=c.id AND lit.page='course' AND gi.itemtype = 'course') OR (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod'))
-                  LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
+                    JOIN {course_categories} cc1 ON cc1.id = c.category
+                    JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
+                    JOIN {role_assignments} ra ON ra.contextid = ctx.id
+                    JOIN {user} u ON u.id=ra.userid
+                    
+                    JOIN {assign} a ON a.course=c.id
+                    LEFT JOIN {grade_items} gi ON gi.iteminstance = a.id AND gi.itemtype='mod' AND gi.itemmodule='assign'
+                    LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
+                    
+                    LEFT JOIN {assign_submission} ass ON ass.userid=u.id AND ass.assignment=a.id AND ass.status='submitted' AND ass.latest = 1
+                    LEFT JOIN {assign_grades} sg ON ass.assignment = sg.assignment AND ass.userid = sg.userid AND sg.attemptnumber = ass.attemptnumber AND sg.grade > -1
+                    LEFT JOIN {user} gu ON gu.id=sg.grader
+                    
+                    JOIN {modules} m ON m.name='assign'
+                    JOIN {course_modules} cm ON cm.course=c.id AND cm.instance=a.id AND cm.module=m.id
+                    LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND ((lit.param=c.id AND lit.page='course' AND gi.itemtype = 'course') OR (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod'))
+                    
+                    LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
                 WHERE c.id>0 $sql_filter $sql_having $sql_order", $params);
     }
 
@@ -13320,7 +13356,8 @@ class local_intelliboard_external extends external_api {
     }
 
     public function analytic6($params){
-        global $DB,$CFG;
+        global $DB;
+
         $params->custom = clean_param($params->custom,PARAM_INT);
 
         $sql_enabled_learner_roles = $this->get_filter_in_sql($params->learner_roles,'ra.roleid');
@@ -13336,181 +13373,163 @@ class local_intelliboard_external extends external_api {
         $this->params['courseid2'] = $params->courseid;
         $this->params['courseid3'] = $params->courseid;
 
-        if ($CFG->dbtype == 'pgsql') {
-            $interactions = $DB->get_records_sql("
-							  SELECT MAX(log.id) AS id,
-									 COUNT(log.id) AS all,
-									 SUM(CASE WHEN log.userid=:custom1 THEN 1 ELSE 0 END) AS user,
-									 (CASE WHEN extract(dow from to_timestamp(log.timecreated))=0 THEN 6 ELSE extract(dow from to_timestamp(log.timecreated))-1 END) AS day
-							  FROM {context} c
-								  LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-								  LEFT JOIN {logstore_standard_log} log ON c.instanceid=log.courseid AND ra.userid=log.userid
-								  $join_sql1
-							  WHERE c.instanceid=:courseid AND c.contextlevel=50 AND log.timecreated BETWEEN :timestart AND :timefinish
-							  GROUP BY day
-							  ORDER BY day DESC
-							 ", $this->params);
+        $interactions = $DB->get_records_sql(
+            "SELECT MAX(log.id) AS id,
+                    COUNT(log.id) AS all_interactions,
+                    SUM(CASE WHEN log.userid=:custom1 THEN 1 ELSE 0 END) AS user_interactions,
+                    " . DBHelper::group_by_date_val("monthdayyear", "log.timecreated") . " AS day_interactions
+               FROM {context} c
+          LEFT JOIN {role_assignments} ra ON ra.contextid=c.id {$sql_enabled_learner_roles}
+          LEFT JOIN {logstore_standard_log} log ON c.instanceid=log.courseid AND ra.userid = log.userid
+                    {$join_sql1}
+              WHERE c.instanceid = :courseid AND c.contextlevel = 50 AND log.timecreated BETWEEN :timestart AND :timefinish
+           GROUP BY day_interactions
+           ORDER BY MIN(log.timecreated) DESC",
+            $this->params
+        );
 
-            $access = $DB->get_records_sql("
-						SELECT MAX(log.id) AS id,
-							   COUNT(log.id) AS all,
-							   SUM(CASE WHEN log.userid=:custom1 THEN 1 ELSE 0 END) AS user,
-							   (CASE WHEN extract(dow from to_timestamp(log.timecreated))=0 THEN 6 ELSE extract(dow from to_timestamp(log.timecreated))-1 END) AS day
-						FROM {context} c
-							LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-							LEFT JOIN {logstore_standard_log} log ON c.instanceid=log.courseid AND ra.userid=log.userid
-							$join_sql1
-						WHERE c.instanceid=:courseid AND c.contextlevel=50 AND log.target='course' AND log.action='viewed' AND log.timecreated BETWEEN :timestart AND :timefinish
-						GROUP BY day
-						ORDER BY day DESC
-					  ", $this->params);
+        array_map(function(&$item) {
+            $item->all = $item->all_interactions;
+            $item->user = $item->user_interactions;
+            $item->day = $item->day_interactions;
+            unset($item->all_interactions);
+            unset($item->user_interactions);
+            unset($item->day_interactions);
+        }, $interactions);
 
-            $user_quiz = $DB->get_records_sql("
-						   SELECT MAX(qa.id) AS id,
-								 COUNT(qa.id) AS all,
-								 SUM(CASE WHEN qa.userid=:custom1 THEN 1 ELSE 0 END) AS user,
-								 (CASE WHEN extract(dow from to_timestamp(qa.timefinish))=0 THEN 6 ELSE extract(dow from to_timestamp(qa.timefinish))-1 END) AS day
-						   FROM {context} c
-								LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-								LEFT JOIN {quiz} q ON q.course=c.instanceid
-								LEFT JOIN {quiz_attempts} qa ON qa.quiz=q.id AND qa.userid=ra.userid AND qa.state='finished'
-								$join_sql2
-						   WHERE c.instanceid=:courseid AND c.contextlevel=50 AND qa.id IS NOT NULL AND qa.timefinish BETWEEN :timestart AND :timefinish
-						   GROUP BY day
-						  ", $this->params);
+        $access = $DB->get_records_sql(
+            "SELECT MAX(log.id) AS id,
+                    COUNT(log.id) AS all_interactions,
+                    SUM(CASE WHEN log.userid = :custom1 THEN 1 ELSE 0 END) AS user_interactions,
+                    " . DBHelper::group_by_date_val("monthdayyear", "log.timecreated") . " AS day_interactions
+               FROM {context} c
+          LEFT JOIN {role_assignments} ra ON ra.contextid = c.id {$sql_enabled_learner_roles}
+          LEFT JOIN {logstore_standard_log} log ON c.instanceid=log.courseid AND ra.userid=log.userid
+                    {$join_sql1}
+              WHERE c.instanceid = :courseid AND c.contextlevel = 50 AND log.target = 'course' AND log.action = 'viewed' AND
+                    log.timecreated BETWEEN :timestart AND :timefinish
+           GROUP BY day_interactions
+           ORDER BY MIN(log.timecreated) DESC",
+            $this->params
+        );
 
-            $user_assign = $DB->get_records_sql("
-							 SELECT MAX(asub.id) AS id,
-									COUNT(asub.id) as all,
-									SUM(CASE WHEN asub.userid=:custom1 THEN 1 ELSE 0 END) as user,
-									(CASE WHEN extract(dow from to_timestamp(asub.timemodified))=0 THEN 6 ELSE extract(dow from to_timestamp(asub.timemodified))-1 END) AS day
-							 FROM {context} c
-								LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-								LEFT JOIN {assign} a ON a.course=c.instanceid
-								LEFT JOIN {assign_submission} asub ON asub.assignment=a.id AND asub.userid=ra.userid AND asub.status='submitted'
-								$join_sql2
-							 WHERE c.instanceid=:courseid AND c.contextlevel=50 AND asub.id IS NOT NULL AND asub.timemodified BETWEEN :timestart AND :timefinish
-							 GROUP BY day
-							", $this->params);
-            $timespend = $DB->get_record_sql("
-                          SELECT SUM(t.timespend) AS all,
-                                 MAX(tu.timespend) AS user
-                          FROM {context} c
-                            LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-                            LEFT JOIN (SELECT lit.userid, SUM(lit.timespend) AS timespend
-                                          FROM {local_intelliboard_tracking} lit
-                                          WHERE lit.courseid=:courseid
-                                          GROUP BY lit.userid) t ON t.userid=ra.userid
-                            LEFT JOIN (SELECT MAX(lit.userid) AS userid, SUM(lit.timespend) AS timespend
-                                        FROM {local_intelliboard_tracking} lit
-                                        WHERE lit.courseid=:courseid2 AND lit.userid=:custom1) tu ON tu.userid=:custom2
-                            $join_sql2
-                          WHERE c.instanceid=:courseid3 AND c.contextlevel=50
-                        ", $this->params);
-        } else {
-            $interactions = $DB->get_records_sql("
-							  SELECT log.id,
-									 COUNT(log.id) AS `all`,
-									 SUM(IF(log.userid=:custom1 ,1,0)) AS user,
-									 FROM_UNIXTIME(log.timecreated,'%m/%d/%Y') AS `day`
-							  FROM {context} c
-								  LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-								  LEFT JOIN {logstore_standard_log} log ON c.instanceid=log.courseid AND ra.userid=log.userid
-								  $join_sql1
-							  WHERE c.instanceid=:courseid AND c.contextlevel=50 AND log.timecreated BETWEEN :timestart AND :timefinish
-							  GROUP BY `day`
-							  ORDER BY day DESC
-							 ", $this->params);
+        array_map(function(&$item) {
+            $item->all = $item->all_interactions;
+            $item->user = $item->user_interactions;
+            $item->day = $item->day_interactions;
+            unset($item->all_interactions);
+            unset($item->user_interactions);
+            unset($item->day_interactions);
+        }, $access);
 
-            $access = $DB->get_records_sql("
-						SELECT log.id,
-							   COUNT(log.id) AS `all`,
-							   SUM(IF(log.userid=:custom1 ,1,0)) AS user,
-							   FROM_UNIXTIME(log.timecreated,'%m/%d/%Y') AS `day`
-						FROM {context} c
-							LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-							LEFT JOIN {logstore_standard_log} log ON c.instanceid=log.courseid AND ra.userid=log.userid
-							$join_sql1
-						WHERE c.instanceid=:courseid AND c.contextlevel=50 AND log.target='course' AND log.action='viewed' AND log.timecreated BETWEEN :timestart AND :timefinish
-						GROUP BY `day`
-						ORDER BY day DESC
-					  ", $this->params);
+        $user_quiz = $DB->get_records_sql(
+            "SELECT MAX(qa.id) AS id,
+                    COUNT(qa.id) AS all_interactions,
+                    SUM(CASE WHEN qa.userid = :custom1 THEN 1 ELSE 0 END) AS user_interactions,
+                    " . DBHelper::group_by_date_val("monthdayyear", "qa.timefinish") . " AS day_interactions
+               FROM {context} c
+          LEFT JOIN {role_assignments} ra ON ra.contextid = c.id $sql_enabled_learner_roles
+          LEFT JOIN {quiz} q ON q.course = c.instanceid
+          LEFT JOIN {quiz_attempts} qa ON qa.quiz = q.id AND qa.userid = ra.userid AND qa.state = 'finished'
+                    {$join_sql2}
+              WHERE c.instanceid = :courseid AND c.contextlevel = 50 AND qa.id IS NOT NULL AND qa.timefinish BETWEEN :timestart AND :timefinish
+           GROUP BY day_interactions",
+            $this->params
+        );
 
-            $user_quiz = $DB->get_records_sql("
-						   SELECT qa.id,
-								 COUNT(qa.id) AS `all`,
-								 SUM(IF(qa.userid=:custom1,1,0)) AS `user`,
-								 FROM_UNIXTIME(qa.timefinish,'%m/%d/%Y') AS `day`
-						   FROM {context} c
-								LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-								LEFT JOIN {quiz} q ON q.course=c.instanceid
-								LEFT JOIN {quiz_attempts} qa ON qa.quiz=q.id AND qa.userid=ra.userid AND qa.state='finished'
-								$join_sql2
-						   WHERE c.instanceid=:courseid AND c.contextlevel=50 AND qa.id IS NOT NULL AND qa.timefinish BETWEEN :timestart AND :timefinish
-						   GROUP BY `day`
-						  ", $this->params);
+        array_map(function(&$item) {
+            $item->all = $item->all_interactions;
+            $item->user = $item->user_interactions;
+            $item->day = $item->day_interactions;
+            unset($item->all_interactions);
+            unset($item->user_interactions);
+            unset($item->day_interactions);
+        }, $user_quiz);
 
-            $user_assign = $DB->get_records_sql("
-							 SELECT asub.id,
-									COUNT(asub.id) as `all`,
-									SUM(IF(asub.userid=:custom1,1,0)) as `user`,
-									FROM_UNIXTIME(asub.timemodified,'%m/%d/%Y') as `day`
-							 FROM {context} c
-								LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-								LEFT JOIN {assign} a ON a.course=c.instanceid
-								LEFT JOIN {assign_submission} asub ON asub.assignment=a.id AND asub.userid=ra.userid AND asub.status='submitted'
-								$join_sql2
-							 WHERE c.instanceid=:courseid AND c.contextlevel=50 AND asub.id IS NOT NULL AND asub.timemodified BETWEEN :timestart AND :timefinish
-							 GROUP BY `day`
-							", $this->params);
-            $timespend = $DB->get_record_sql("
-                          SELECT SUM(t.timespend) AS `all`,
-                                 MAX(tu.timespend) AS user
-                          FROM {context} c
-                            LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-                            LEFT JOIN (SELECT lit.userid, SUM(lit.timespend) AS timespend
-                                          FROM {local_intelliboard_tracking} lit
-                                          WHERE lit.courseid=:courseid
-                                          GROUP BY lit.userid) t ON t.userid=ra.userid
-                            LEFT JOIN (SELECT MAX(lit.userid) AS userid, SUM(lit.timespend) AS timespend
-                                        FROM {local_intelliboard_tracking} lit
-                                        WHERE lit.courseid=:courseid2 AND lit.userid=:custom1) tu ON tu.userid=:custom2
-                            $join_sql2
-                          WHERE c.instanceid=:courseid3 AND c.contextlevel=50
-                        ", $this->params);
-        }
+        $user_assign = $DB->get_records_sql(
+            "SELECT MAX(asub.id) AS id,
+                    COUNT(asub.id) AS all_interactions,
+                    SUM(CASE WHEN asub.userid = :custom1 THEN 1 ELSE 0 END) AS user_interactions,
+                    " . DBHelper::group_by_date_val("monthdayyear", "asub.timemodified") . " AS day_interactions
+               FROM {context} c
+          LEFT JOIN {role_assignments} ra ON ra.contextid = c.id $sql_enabled_learner_roles
+          LEFT JOIN {assign} a ON a.course = c.instanceid
+          LEFT JOIN {assign_submission} asub ON asub.assignment = a.id AND asub.userid = ra.userid AND asub.status = 'submitted'
+                    {$join_sql2}
+              WHERE c.instanceid = :courseid AND c.contextlevel = 50 AND asub.id IS NOT NULL AND
+                    asub.timemodified BETWEEN :timestart AND :timefinish
+           GROUP BY day_interactions",
+            $this->params
+        );
 
-        $count_students = $DB->get_record_sql("
-                               SELECT COUNT(DISTINCT ra.userid) AS students
-                               FROM {context} c
-                                    LEFT JOIN {role_assignments} ra ON ra.contextid=c.id $sql_enabled_learner_roles
-                                    $join_sql2
-                               WHERE c.instanceid=:courseid AND c.contextlevel=50
-                              ", $this->params);
+        array_map(function(&$item) {
+            $item->all = $item->all_interactions;
+            $item->user = $item->user_interactions;
+            $item->day = $item->day_interactions;
+            unset($item->all_interactions);
+            unset($item->user_interactions);
+            unset($item->day_interactions);
+        }, $user_assign);
+
+        $timespend = $DB->get_record_sql(
+            "SELECT SUM(t.timespend) AS all_interactions,
+                    MAX(tu.timespend) AS user_interactions
+              FROM {context} c
+         LEFT JOIN {role_assignments} ra ON ra.contextid = c.id {$sql_enabled_learner_roles}
+         LEFT JOIN (SELECT lit.userid, SUM(lit.timespend) AS timespend
+                      FROM {local_intelliboard_tracking} lit
+                     WHERE lit.courseid = :courseid
+                  GROUP BY lit.userid
+                   ) t ON t.userid = ra.userid
+         LEFT JOIN (SELECT MAX(lit.userid) AS userid, SUM(lit.timespend) AS timespend
+                      FROM {local_intelliboard_tracking} lit
+                     WHERE lit.courseid = :courseid2 AND lit.userid = :custom1
+                   ) tu ON tu.userid = :custom2
+                   {$join_sql2}
+             WHERE c.instanceid = :courseid3 AND c.contextlevel = 50",
+            $this->params
+        );
+
+        $timespend->all = $timespend->all_interactions;
+        $timespend->user = $timespend->user_interactions;
+        unset($timespend->all_interactions);
+        unset($timespend->user_interactions);
+
+        $count_students = $DB->get_record_sql(
+            "SELECT COUNT(DISTINCT ra.userid) AS students
+               FROM {context} c
+          LEFT JOIN {role_assignments} ra ON ra.contextid = c.id $sql_enabled_learner_roles
+                    {$join_sql2}
+              WHERE c.instanceid = :courseid AND c.contextlevel = 50",
+            $this->params
+        );
 
         $grade_single = intelliboard_grade_sql(false, $params, 'g.', 0, 'gi.', true);
         $grade_avg = intelliboard_grade_sql(true, $params, 'g.', 0, 'gi.', true);
 
-        $score = $DB->get_record_sql("
-                    SELECT
-                      (SELECT $grade_avg
-                          FROM {grade_items} gi
-                            JOIN {grade_grades} g ON g.itemid = gi.id
-                            $join_sql3
-                          WHERE gi.itemtype = 'course' AND gi.courseid = :courseid
-                      ) AS avg,
-                      (SELECT $grade_single
-                          FROM {grade_items} gi, {grade_grades} g
-                          WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND gi.courseid = :courseid2 AND g.userid = :custom1
-                      ) AS user
-                ", $this->params);
-        return array("interactions"  => $interactions,
-            "access"        => $access,
-            "timespend"     => $timespend,
-            "user_quiz"     => $user_quiz,
-            "user_assign"   => $user_assign,
-            "score"         => $score,
-            "count_students"=> $count_students);
+        $score = $DB->get_record_sql(
+            "SELECT (SELECT $grade_avg
+                       FROM {grade_items} gi
+                       JOIN {grade_grades} g ON g.itemid = gi.id
+                            {$join_sql3}
+                      WHERE gi.itemtype = 'course' AND gi.courseid = :courseid
+                    ) AS avg,
+                    (SELECT {$grade_single}
+                       FROM {grade_items} gi, {grade_grades} g
+                      WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND gi.courseid = :courseid2 AND g.userid = :custom1
+                    ) AS user",
+            $this->params
+        );
+
+        return [
+            "interactions"   => $interactions,
+            "access"         => $access,
+            "timespend"      => $timespend,
+            "user_quiz"      => $user_quiz,
+            "user_assign"    => $user_assign,
+            "score"          => $score,
+            "count_students" => $count_students
+        ];
     }
 
     public function analytic7($params){
@@ -16742,6 +16761,144 @@ class local_intelliboard_external extends external_api {
               ORDER BY MAX(t.enrol_date)";
 
         return $DB->get_records_sql($sql, $this->params);
+    }
+
+    public function monitor71($params) {
+        global $DB;
+        
+        if (isset($params->courseid) && !$params->courseid) {
+            return [];
+        }
+
+        $this->params["courseid"] = $params->courseid;
+        $sql_filter = $this->get_teacher_sql($params, ["ue.userid" => "users", "e.courseid" => "courses"]);
+        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $datefilter = $this->get_filterdate_sql($params, "t.enrol_date");
+        $datestr = DBHelper::group_by_date_val('year', 't.enrol_date');
+        $rolefilter = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
+
+        $sql = "SELECT {$datestr} AS cdate,
+                       SUM(CASE WHEN t.compl = 1 THEN 1 ELSE 0 END) AS total_success,
+                       SUM(CASE WHEN t.compl = 0 THEN 1 ELSE 0 END) AS total_unsuccess,
+                       SUM(CASE WHEN (t.compl = 1 AND t.is_qatari = 1) THEN 1 ELSE 0 END) AS qatari_success,
+                       SUM(CASE WHEN (t.compl = 0 AND t.is_qatari = 1) THEN 1 ELSE 0 END) AS qatari_unsuccess
+                  FROM (SELECT ue.userid, e.courseid,
+                               CASE WHEN MIN(ue.timestart) > 0 THEN MIN(ue.timestart) ELSE MIN(ue.timecreated) END AS enrol_date,
+                               CASE WHEN MIN(cc.timecompleted) IS NOT NULL AND MIN(cc.timecompleted) > 0 THEN 1 ELSE 0 END AS compl,
+                               CASE WHEN (uid.data IS NOT NULL AND uid.data = 'Qatari') THEN 1 ELSE 0 END AS is_qatari
+                          FROM {user_enrolments} ue
+                          JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :courseid
+                          JOIN (SELECT ra.userid, cx.instanceid AS course_id
+                                  FROM {role_assignments} ra
+                                  JOIN {context} cx ON cx.id = ra.contextid AND cx.contextlevel = 50
+                                 WHERE ra.id > 0 {$rolefilter}
+                              GROUP BY ra.userid, cx.instanceid
+                               ) ras ON ras.userid = ue.userid AND ras.course_id = e.courseid
+                     LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid
+                     LEFT JOIN {user_info_field} uif ON uif.shortname = 'Qatari_NonQatari'
+                     LEFT JOIN {user_info_data} uid ON uid.fieldid = uif.id AND uid.userid = ue.userid
+                         WHERE ue.id > 0 {$sql_filter}
+                      GROUP BY ue.userid, e.courseid, uid.data
+                       ) t
+                 WHERE t.userid > 0 {$datefilter}
+              GROUP BY 1
+              ORDER BY MAX(t.enrol_date)";
+
+        return $DB->get_records_sql($sql, $this->params);
+    }
+
+    public function monitor72($params) {
+        global $DB;
+
+        $sql_filter = $this->get_teacher_sql($params, ["ue.userid" => "users", "ue.courseid" => "courses"]);
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filterdate_sql($params, "ue.enrol_date");
+        $rolefilter = $this->get_filter_in_sql($params->learner_roles, "ra1.roleid");
+        $sqlenrolfilter = $this->get_filter_enrol_sql($params, "ue1.");
+        $sqlenrolfilter .= $this->get_filter_enrol_sql($params, "e1.");
+        $datestr = DBHelper::group_by_date_val('year', 'ue.enrol_date');
+
+        $sql = "SELECT CONCAT(ccat.id, '_', {$datestr}), {$datestr} AS cdate, ccat.name, ccat.path,
+                       SUM(CASE WHEN cco.timecompleted IS NOT NULL AND cco.timecompleted > 0 THEN 1 ELSE 0 END) AS num_success
+                  FROM (SELECT cc.id, cc.path, cc.name, cc.depth
+                          FROM {course_categories} cc
+                         WHERE cc.path LIKE '%/5/%'
+                       ) ccat
+             LEFT JOIN {course} c ON c.category = ccat.id
+             LEFT JOIN (SELECT e1.courseid, ue1.userid AS userid,
+                               CASE WHEN MIN(ue1.timestart) > 0 THEN MIN(ue1.timestart) ELSE MIN(ue1.timecreated) END AS enrol_date
+                          FROM {enrol} e1
+                          JOIN {user_enrolments} ue1 ON  ue1.enrolid = e1.id
+                         WHERE e1.id > 0 {$sqlenrolfilter}  
+                      GROUP BY e1.courseid, ue1.userid
+                       ) ue ON c.id = ue.courseid
+             LEFT JOIN (SELECT ra1.userid, cx.instanceid AS course_id
+                          FROM {role_assignments} ra1
+                          JOIN {context} cx ON cx.id = ra1.contextid AND cx.contextlevel = 50
+                         WHERE ra1.id > 0 {$rolefilter}
+                      GROUP BY ra1.userid, cx.instanceid
+                       ) ra ON ra.userid = ue.userid AND ra.course_id = ue.courseid
+             LEFT JOIN {course_completions} cco ON cco.course = ra.course_id AND cco.userid = ra.userid
+                 WHERE ccat.id > 0 {$sql_filter}
+              GROUP BY ccat.id, ccat.name, ccat.path, ccat.depth, 2
+              ORDER BY ccat.depth";
+
+        $data = $DB->get_records_sql($sql, $this->params);
+        $result = [];
+
+        $firstlevelcategories = $DB->get_records_sql(
+            "SELECT cc1.id, cc1.name, cc1.path, 0 AS num_success
+               FROM {course_categories} cc
+               JOIN {course_categories} cc1 ON cc1.path LIKE '%/5/%' AND cc1.depth = cc.depth + 1
+              WHERE cc.id = 5"
+        );
+
+        // Create an array where a key is a year and a value is an array of first level categories
+        // in relation to the base category
+        for($i = strtotime("-10 years"); $i <= strtotime("+10 years"); $i+= YEARSECS) {
+            $categories = [];
+
+            foreach ($firstlevelcategories as $category) {
+                $categories[] = clone $category;
+            }
+
+            $result[date("Y", $i)] = $categories;
+        }
+
+        // data grouping. Here we summarize data for the first level categories.
+        // If a category has the path /a/b/c, we search for category /a and add a value to that category.
+        // A data is also grouped by year.
+        foreach ($data as $item) {
+            if (!isset($result[$item->cdate])) {
+                continue;
+            }
+
+            $yearcategories = &$result[$item->cdate];
+
+            foreach ($yearcategories as &$category) {
+                if (strpos($item->path, $category->path) !== false) {
+                    $category->num_success += $item->num_success;
+                    continue 2;
+                }
+            }
+        }
+
+        // delete year if all categories inside have no data
+        $result = array_filter($result, function($item) {
+            $isnotempty = false;
+
+            foreach ($item as $cat) {
+                if ($cat->num_success != 0) {
+                    $isnotempty = true;
+                    break;
+                }
+            }
+
+            return $isnotempty;
+        });
+
+        return ["data" => $result];
     }
 
     public function get_userinfo($params)

@@ -25,26 +25,24 @@
 
 namespace local_intelliboard\attendance\reports;
 
-class consecutive_absences implements attendance_report_interface {
-    public static function get_data($params) {
+use local_intelliboard\reports\entities\in_filter;
+use local_intelliboard\reports\report_trait;
+
+class consecutive_absences extends report {
+    use report_trait;
+
+    public function get_data($params) {
         global $DB;
 
-        $studentroles = explode(
-            ',', get_config('local_intelliboard', 'filter11')
-        );
         $order = '';
 
-        if(!$params['users'] or !$studentroles) {
+        if(!$params['users']) {
           return [];
         }
 
-        $studentrolefilter = $DB->get_in_or_equal(
-            $studentroles, SQL_PARAMS_NAMED, 'role'
-        );
+        $studentrolefilter = new in_filter($this->get_student_roles(), "role");
 
-        $userFilter = $DB->get_in_or_equal(
-          $params['users'], SQL_PARAMS_NAMED, 'user'
-        );
+        $userFilter = new in_filter($params['users'], "user");
 
         if($params['order']) {
             $order = "ORDER BY {$params['order']['field']} {$params['order']['dir']}";
@@ -62,12 +60,12 @@ class consecutive_absences implements attendance_report_interface {
                     ) as avg_grade
                FROM {user} u
                JOIN {role_assignments} ra ON ra.userid = u.id AND
-                                             ra.roleid {$studentrolefilter[0]}
+                                             ra.roleid {$studentrolefilter->get_sql()}
                JOIN {context} cx ON cx.id = ra.contextid AND
                                     cx.contextlevel = :cxcourse
-              WHERE u.id {$userFilter[0]}
+              WHERE u.id {$userFilter->get_sql()}
            GROUP BY u.id, fullname {$order}",
-            ['cxcourse' => CONTEXT_COURSE] + $userFilter[1] + $studentrolefilter[1],
+            array_merge(['cxcourse' => CONTEXT_COURSE], $userFilter->get_params(), $studentrolefilter->get_params()),
             $params['offset'], $params['limit']
         );
     }
