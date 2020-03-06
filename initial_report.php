@@ -25,6 +25,7 @@
  */
 
 require('../../config.php');
+require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 
 $reportid = required_param('id', PARAM_INT);
 $search = optional_param('q', '', PARAM_TEXT);
@@ -36,12 +37,19 @@ if (!class_exists('\local_intelliboard\output\tables\initial_reports\report' . $
     exit('report does not exists');
 }
 
+if (!is_siteadmin()) {
+    echo $OUTPUT->header();
+    echo '<div class="alert alert-error alert-block" role="alert">' . get_string('intelliboardaccess', 'local_intelliboard') . '</div>';
+    echo $OUTPUT->footer();
+    exit;
+}
+
 $title = get_string("report{$reportid}_name", "local_intelliboard");
 
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url("/local/intelliboard/initial_report.php", ["id" => $reportid, "q" => $search]);
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
-$PAGE->set_pagetype("courses");
+$PAGE->set_pagetype("initial-report");
 $PAGE->set_pagelayout("report");
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title($title);
@@ -60,11 +68,14 @@ if ($download) {
 }
 
 $renderer = $PAGE->get_renderer("local_intelliboard");
+$intelliboard = intelliboard(['task'=>'dashboard']);
 
 echo $OUTPUT->header();
+require_once($CFG->dirroot . '/local/intelliboard/views/menu.php');
 echo $renderer->render(new \local_intelliboard\output\initial_report([
     "search" => $search,
     "report_id" => $reportid,
-    "download" => $download
+    "download" => $download,
+    "intelliboard" => $intelliboard
 ]));
 echo $OUTPUT->footer();

@@ -1,7 +1,8 @@
-<div class="alert alert-warning">
-    {{#str}}initial_reports_warning, local_intelliboard{{/str}}
-</div>
-{{> local_intelliboard/initial_reports_menu}}
+{{#showalert}}
+    <div class="alert alert-warning">
+        {{#str}}initial_reports_warning, local_intelliboard, {{connect_url}} {{/str}}
+    </div>
+{{/showalert}}
 <div class="intelliboard-table-wrapper">
     <div class="table-panel">
         <div class="intelliboard-filters">

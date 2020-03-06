@@ -288,6 +288,12 @@
 .intelliboard-menu li ul li:hover{background:#f9f9f9}
 .intelliboard-menu li ul li{padding:10px 20px;}
 .intelliboard-menu li ul li a{line-height: 15px;font-size: 13px}
+.intelliboard-menu.admin-menu ul.reports-l li:nth-child(-n+3) {
+    background-color: #f9f9f9;
+}
+.intelliboard-menu.admin-menu ul {
+    padding-left: 0;
+}
 
 .reports-header h3{float:left;}
 .reports-header form{float:right;margin: 6px 0;}
@@ -755,7 +761,7 @@ position: relative;
     letter-spacing: .3px;
     z-index: 1;
     position: relative;
-    width: 100%;
+    width: calc(100% - 400px);
 }
 .intelliboard-support-info a{
 	text-decoration: underline;
@@ -789,6 +795,7 @@ position: relative;
 	margin-bottom: 25px;
 	z-index: 1;
 	position: relative;
+    width: calc(100% - 400px);
 }
 .intelliboard-support-contacts a{
 	margin-left: 0px;
@@ -1063,4 +1070,8 @@ div[aria-label="A tabular representation of the data in the chart."] {
 }
 .intelliboard-page.intelliboard-instructor.competency-dashboard {
     position: relative;
+}
+
+#page-initial-report .alert.alert-warning {
+    margin-top: 1rem;
 }

@@ -214,6 +214,9 @@ class intelliboard_activities_grades_table extends table_sql {
         $this->define_headers($headers);
         $this->define_columns($columns);
 
+        $hiddencoursemodules = $this->get_hidden_coursemodules($courseid, $userid);
+        $coursemodulesfilter = $DB->get_in_or_equal($hiddencoursemodules, SQL_PARAMS_NAMED, 'cmp1', false);
+
         $sql = "";
         $params = array();
         if ($mod) {
@@ -232,16 +235,18 @@ class intelliboard_activities_grades_table extends table_sql {
         $completion = intelliboard_compl_sql("cmc.");
 
         $fields = "gi.id, gi.itemname, cm.id as cmid, gi.itemmodule, cmc.timemodified as timecompleted, $grade_single AS grade,
-            CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS timepoint, lit.timespend";
-        $from = "{grade_items} gi
+                   CASE WHEN g.timemodified > 0 THEN g.timemodified ELSE g.timecreated END AS timepoint, lit.timespend";
+        $from = "     {grade_items} gi
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid1
             LEFT JOIN {modules} m ON m.name = gi.itemmodule
             LEFT JOIN {course_modules} cm ON cm.instance = gi.iteminstance AND cm.module = m.id
             LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :userid2
             LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=:userid3 AND lit.courseid=gi.courseid AND lit.page='module' AND lit.param=cm.id ";
-        $where = "gi.hidden = 0 AND gi.courseid = :courseid AND gi.itemtype = 'mod' AND cm.visible = 1 $sql";
 
-        $this->set_sql($fields, $from, $where, $params);
+        $where = "gi.hidden = 0 AND gi.courseid = :courseid AND gi.itemtype = 'mod' AND cm.visible = 1 AND
+                  cm.id {$coursemodulesfilter[0]} $sql";
+
+        $this->set_sql($fields, $from, $where, array_merge($params, $coursemodulesfilter[1]));
         $this->define_baseurl($PAGE->url);
         $this->scale_real = get_config('local_intelliboard', 'scale_real');
     }
@@ -278,6 +283,23 @@ class intelliboard_activities_grades_table extends table_sql {
     }
     function col_timespend($values) {
         return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
+    }
+
+    private function get_hidden_coursemodules($courseid, $userid) {
+        $hiddencoursemodules = [];
+        $modinfo = \get_fast_modinfo($courseid, $userid);
+
+        foreach ($modinfo->get_cms() as $cmobj) {
+            if (!$cmobj->uservisible && !$cmobj->availableinfo) {
+                $hiddencoursemodules[] = $cmobj->id;
+            }
+        }
+
+        if (!$hiddencoursemodules) {
+            return [-1];
+        }
+
+        return $hiddencoursemodules;
     }
 }
 

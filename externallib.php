@@ -9090,7 +9090,7 @@ class local_intelliboard_external extends external_api {
                           LEFT JOIN {local_intelliboard_tracking} lit ON lit.page='course' AND lit.param=c.id AND lit.userid=u.id
                           LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
 
-                        WHERE c.id > 0 $sql_filter {$sql_vendor_filter} 
+                        WHERE c.id > 0 $sql_filter {$sql_vendor_filter}
                         GROUP BY u.id, c.id, u.firstname, u.lastname, u.email, cohorts, ue.timecreated,
                               u.lastlogin, lit.firstaccess, ul.timeaccess, m.modules, cmc.completed, course_completion, course_id,
                               course_name, teacher {$this->groupAdditionalColumns}
@@ -11229,7 +11229,7 @@ class local_intelliboard_external extends external_api {
                             LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'choice' AND gi.iteminstance = ca.choiceid
                             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ca.userid
                         GROUP BY ca.choiceid, ca.userid) ch ON ch.userid=u.id AND ch.choiceid=cm.instance AND m.name='choice'
-              
+
                   $sql_select
 
                 WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
@@ -11393,19 +11393,19 @@ class local_intelliboard_external extends external_api {
                     JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
                     JOIN {role_assignments} ra ON ra.contextid = ctx.id
                     JOIN {user} u ON u.id=ra.userid
-                    
+
                     JOIN {assign} a ON a.course=c.id
                     LEFT JOIN {grade_items} gi ON gi.iteminstance = a.id AND gi.itemtype='mod' AND gi.itemmodule='assign'
                     LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
-                    
+
                     LEFT JOIN {assign_submission} ass ON ass.userid=u.id AND ass.assignment=a.id AND ass.status='submitted' AND ass.latest = 1
                     LEFT JOIN {assign_grades} sg ON ass.assignment = sg.assignment AND ass.userid = sg.userid AND sg.attemptnumber = ass.attemptnumber AND sg.grade > -1
                     LEFT JOIN {user} gu ON gu.id=sg.grader
-                    
+
                     JOIN {modules} m ON m.name='assign'
                     JOIN {course_modules} cm ON cm.course=c.id AND cm.instance=a.id AND cm.module=m.id
                     LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=u.id AND ((lit.param=c.id AND lit.page='course' AND gi.itemtype = 'course') OR (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod'))
-                    
+
                     LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
                 WHERE c.id>0 $sql_filter $sql_having $sql_order", $params);
     }
@@ -11964,7 +11964,7 @@ class local_intelliboard_external extends external_api {
     public function report198($params) {
         global $CFG;
 
-        if(empty($params->courseid) || empty($params->custom)) {
+        if(empty($params->courseid)) {
             return ['data' => []];
         }
 
@@ -16765,7 +16765,7 @@ class local_intelliboard_external extends external_api {
 
     public function monitor71($params) {
         global $DB;
-        
+
         if (isset($params->courseid) && !$params->courseid) {
             return [];
         }
@@ -16830,7 +16830,7 @@ class local_intelliboard_external extends external_api {
                                CASE WHEN MIN(ue1.timestart) > 0 THEN MIN(ue1.timestart) ELSE MIN(ue1.timecreated) END AS enrol_date
                           FROM {enrol} e1
                           JOIN {user_enrolments} ue1 ON  ue1.enrolid = e1.id
-                         WHERE e1.id > 0 {$sqlenrolfilter}  
+                         WHERE e1.id > 0 {$sqlenrolfilter}
                       GROUP BY e1.courseid, ue1.userid
                        ) ue ON c.id = ue.courseid
              LEFT JOIN (SELECT ra1.userid, cx.instanceid AS course_id
