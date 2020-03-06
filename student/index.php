@@ -317,7 +317,11 @@ echo $OUTPUT->header();
                                         <tr>
                                             <td  width="1%"><i class="intelliboard-icon <?php echo $class; ?>"></i></td>
                                             <td >
-                                                <a href="<?php echo $CFG->wwwroot; ?>/mod/assign/view.php?id=<?php echo s($item->cmid); ?>"><?php echo format_string($item->name); ?></a>
+                                                <?php if($item->availableinfo): ?>
+                                                    <?php echo format_string($item->name); ?>
+                                                <?php else: ?>
+                                                    <a href="<?php echo $CFG->wwwroot; ?>/mod/assign/view.php?id=<?php echo s($item->cmid); ?>"><?php echo format_string($item->name); ?></a>
+                                                <?php endif; ?>
                                                 <p class="intelliboard-fade60"><?php echo format_string($item->fullname); ?></p>
                                             </td>
                                             <?php if($t31): ?>

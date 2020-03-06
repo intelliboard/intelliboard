@@ -64,7 +64,7 @@ function intelliboard_data($type, $userid, $showing_user) {
         $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
 
         $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
-        $query = "SELECT a.id, a.name, a.duedate, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
+        $query = "SELECT a.id, a.name, a.duedate, c.id AS course_id, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
                     FROM {course} c, {assign} a
                         LEFT JOIN {modules} m ON m.name = 'assign'
                         LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = a.id
@@ -76,6 +76,18 @@ function intelliboard_data($type, $userid, $showing_user) {
         $params['userid3'] = $userid;
 
         $data = $DB->get_records_sql($query, $params, $start, $perpage);
+
+        $data = array_map(function ($item) use ($userid) {
+            $modinfo = get_fast_modinfo($item->course_id, $userid);
+            $cm = $modinfo->get_cm($item->cmid);
+            $item->hide = !$cm->uservisible && !$cm->availableinfo;
+            $item->availableinfo = (bool) $cm->availableinfo;
+            return $item;
+        }, $data);
+
+        $data = array_filter($data, function($item) {
+            return !$item->hide;
+        });
     }elseif ($type == 'quiz') {
         $sql = "";
         if($search and $t == 'quiz'){

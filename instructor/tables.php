@@ -809,7 +809,7 @@ class intelliboard_learners_grades_table extends table_sql {
         $params = array_merge($params,$sql_params);
         $grade_single = intelliboard_grade_sql();
         $completion = intelliboard_compl_sql("cmc.");
-        $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'e.instanceid');
+        $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ra.courseid');
         $join_group_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c1.id');
 
         $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
