@@ -66,8 +66,4 @@ if(get_config('local_intelliboard', 'intellicart') && file_exists($CFG->dirroot 
         </ul>
     </li>
     <?php endif; ?>
-
-    <?php if(!get_config('local_intelliboard', 'instructor_hide_need_help')):?>
-	    <li><a href="<?php echo $CFG->wwwroot ?>/local/intelliboard/help.php?event=instructor"><?php echo get_string('help', 'local_intelliboard');?></a></li>
-    <?php endif; ?>
 </ul>

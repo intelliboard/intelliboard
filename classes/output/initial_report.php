@@ -50,7 +50,7 @@ class initial_report implements renderable, templatable {
      * @throws \moodle_exception
      */
     public function export_for_template(renderer_base $output) {
-        global $PAGE;
+        global $PAGE, $CFG;
 
         $reportname = '\local_intelliboard\output\tables\initial_reports\report' . $this->params["report_id"];
         /** @var intelliboard_table $report */
@@ -63,12 +63,14 @@ class initial_report implements renderable, templatable {
         $baseurl->remove_params("q");
 
         return [
+            "showalert" => empty($this->params["intelliboard"]->token),
             "show_search_filter" => true,
             "report_table" => $report->export_for_template(10),
             "base_url" => $baseurl->out(),
             "search_val" => $this->params["search"],
             "dashboard_url" => new \moodle_url("/local/intelliboard"),
             "initial_reports" => intelli_initial_reports(),
+            "connect_url" => new \moodle_url("/local/intelliboard/setup.php")
         ];
     }
 }
