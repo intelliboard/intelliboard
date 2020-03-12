@@ -743,14 +743,15 @@ position: relative;
 	margin-bottom: 50px;
 }
 .intelliboard-support-text{
-	font-size: 13px;
-	max-width: 355px;
-  line-height: 1.53;
-  color: #536383;
-	margin-bottom: 30px;
-	letter-spacing: .3px;
-	z-index: 1;
-	position: relative;
+    font-size: 13px;
+    max-width: 40%;
+    color: #536383;
+    margin-bottom: 30px;
+    letter-spacing: .3px;
+    z-index: 1;
+    position: relative;
+    word-spacing: 3px;
+    line-height: 21px;
 }
 .intelliboard-support-terms{
     text-align: left;
@@ -762,6 +763,7 @@ position: relative;
     z-index: 1;
     position: relative;
     width: calc(100% - 400px);
+    margin: 25px;
 }
 .intelliboard-support-info a{
 	text-decoration: underline;
@@ -777,6 +779,7 @@ position: relative;
 	position: relative;
 }
 .intelliboard-support-links{
+  margin-top: 25px;
 	margin-bottom: 25px;
 	z-index: 1;
 	position: relative;
@@ -785,7 +788,6 @@ position: relative;
     margin-left: -10px;
 }
 .intelliboard-support-links.initial-reports {
-    width: calc(100% - 690px);
     margin-bottom: 0;
 }
 .intelliboard-support-links.initial-reports a {
@@ -855,9 +857,9 @@ position: relative;
 	opacity: 0.8;
 }
 .intelliboard-support-menu a{
-	color: #fff;
+	color: #FFD700;
 	background-color: transparent;
-	border: 2px solid #fff;
+	border: 2px solid #FFD700;
 	border-radius: 15px 0 15px 0;
 	line-height: 60px;
 	text-transform: uppercase;
@@ -1074,4 +1076,12 @@ div[aria-label="A tabular representation of the data in the chart."] {
 
 #page-initial-report .alert.alert-warning {
     margin-top: 1rem;
+}
+
+.intelliboard-support-links.initial-reports a {
+    height: 36px;
+    box-shadow: 0 0 19px 3px #507bdc99;
+    border-top-left-radius: 9px;
+    border-bottom-right-radius: 13px;
+    background-color: rgba(255,255,255,0.8);
 }
