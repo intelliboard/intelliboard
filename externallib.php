@@ -2468,7 +2468,7 @@ class local_intelliboard_external extends external_api {
                 JOIN {course} c ON c.id = e.courseid
                 JOIN {course_modules} cm ON cm.course = c.id
                 JOIN {modules} m ON m.id = cm.module
-                LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name
+                LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name AND gi.gradetype = 1
                 LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id
                 LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
                 LEFT JOIN (SELECT i.itemid, $rawname AS tags
@@ -8788,18 +8788,35 @@ class local_intelliboard_external extends external_api {
         $gui->allow_user_custom_fields();
         $gui->init();
         $data = array();
-        while ($userdata = $gui->next_user()) {
+        $filtercolumns = explode(',', $params->filter_columns);
 
-            $exportdata = array();
+        while ($userdata = $gui->next_user()) {
             $user = $userdata->user;
 
-            if (
-                !empty($params->filter) &&
-                stripos("{$user->firstname} {$user->lastname}", $params->filter) === false &&
-                stripos("{$user->lastname} {$user->firstname}", $params->filter) === false
-            ) {
+            // search filter (start)
+            $allowrow = false;
+
+            foreach ($filtercolumns as $col) {
+                if (empty($params->filter)) {
+                    $allowrow = true;
+                    break;
+                }
+
+                if ($col == 0 && (stripos($user->firstname, $params->filter) ==! false || stripos($user->firstname, $params->filter) === 0)) {
+                    $allowrow = true;
+                }
+
+                if ($col == 1 && (stripos($user->lastname, $params->filter) ==! false || stripos($user->lastname, $params->filter) === 0)) {
+                    $allowrow = true;
+                }
+            }
+
+            if ($filtercolumns && !$allowrow) {
                 continue;
             }
+            // search filter (end)
+
+            $exportdata = array();
 
             foreach ($profilefields as $field) {
                 $fieldvalue = grade_helper::get_user_field_value($user, $field);
@@ -10637,6 +10654,8 @@ class local_intelliboard_external extends external_api {
             $sql_having .= $this->get_filterdate_sql($params, 'MIN(fp.created)');
         }
 
+        $forum_table = ($params->custom3 == 1)?'hsuforum':'forum';
+
         if ($params->custom2 == 1) {
             $sql_filter_roles2 = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
             $sql_select = "MIN(log.students_accesed)";
@@ -10644,7 +10663,7 @@ class local_intelliboard_external extends external_api {
                                            COUNT(DISTINCT l.userid) AS students_accesed
                                     FROM {context} ctx
                                            JOIN {role_assignments} ra ON ra.contextid=ctx.id
-                                           LEFT JOIN {logstore_standard_log} l ON l.component='mod_forum' AND l.action='viewed' AND l.target='discussion' AND l.userid=ra.userid AND l.courseid=ctx.instanceid
+                                           LEFT JOIN {logstore_standard_log} l ON l.component='mod_".$forum_table."' AND l.action='viewed' AND l.target='discussion' AND l.userid=ra.userid AND l.courseid=ctx.instanceid
                                     WHERE ctx.contextlevel=50 $sql_filter_roles2
                                     GROUP BY l.objectid) log ON log.discussion=fd.id";
         } else {
@@ -10669,12 +10688,12 @@ class local_intelliboard_external extends external_api {
                           MIN(stat.timespend) AS timespend,
                           COUNT(DISTINCT CASE WHEN fp.parent>0 THEN fp.id ELSE NULL END) AS posts
                           {$sql_columns}
-                    FROM {forum} f
-                      JOIN {forum_discussions} fd ON fd.forum=f.id
+                    FROM {".$forum_table."} f
+                      JOIN {".$forum_table."_discussions} fd ON fd.forum=f.id
                       JOIN {user} u ON u.id=fd.userid
                       JOIN {course} c ON c.id=f.course
-                      LEFT JOIN {forum_posts} fp ON fp.discussion=fd.id
-                      JOIN {modules} m ON m.name='forum'
+                      LEFT JOIN {".$forum_table."_posts} fp ON fp.discussion=fd.id
+                      JOIN {modules} m ON m.name='".$forum_table."'
                       JOIN {course_modules} cm ON cm.instance=f.id AND cm.module=m.id
 
                       LEFT JOIN (SELECT lit.param AS module, COUNT(DISTINCT lit.userid) AS students_accesed, SUM(lit.timespend) AS timespend
@@ -11996,6 +12015,8 @@ class local_intelliboard_external extends external_api {
             $randomnumber = "FLOOR(RAND() * NOW())";
         }
 
+        $forum_table = ($params->custom3 == 1)?'hsuforum':'forum';
+
         return $this->get_report_data(
             "SELECT {$randomnumber} as id,
                     c.fullname AS course,
@@ -12013,16 +12034,16 @@ class local_intelliboard_external extends external_api {
                     u3.firstname AS response_immediatey_prior_first_name,
                     u3.lastname AS response_immediatey_prior_last_name
                     {$sqlcolumns}
-               FROM {forum} f
+               FROM {".$forum_table."} f
                JOIN {course} c ON c.id = f.course
-               JOIN {modules} m ON m.name = 'forum'
+               JOIN {modules} m ON m.name = '".$forum_table."'
                JOIN {course_modules} cm ON cm.course = c.id AND cm.module = m.id AND cm.instance = f.id
-               JOIN {forum_discussions} fd ON fd.forum = f.id AND fd.course = c.id
-               JOIN {forum_posts} fp ON fp.discussion = fd.id AND fp.parent = 0
+               JOIN {".$forum_table."_discussions} fd ON fd.forum = f.id AND fd.course = c.id
+               JOIN {".$forum_table."_posts} fp ON fp.discussion = fd.id AND fp.parent = 0
                JOIN {user} u1 ON u1.id = fp.userid
-          LEFT JOIN {forum_posts} fp2 ON fp2.discussion = fd.id AND fp2.parent <> 0
+          LEFT JOIN {".$forum_table."_posts} fp2 ON fp2.discussion = fd.id AND fp2.parent <> 0
           LEFT JOIN {user} u2 ON u2.id = fp2.userid
-          LEFT JOIN {forum_posts} fp3 ON fp3.discussion = fd.id AND fp3.id = fp2.parent AND fp3.parent <> 0
+          LEFT JOIN {".$forum_table."_posts} fp3 ON fp3.discussion = fd.id AND fp3.id = fp2.parent AND fp3.parent <> 0
           LEFT JOIN {user} u3 ON u3.id = fp3.userid
               WHERE c.id > 0 {$sqlfilter}
                     {$sqlhaving}
