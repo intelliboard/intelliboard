@@ -939,9 +939,13 @@ $string['department'] = 'Department';
 $string['address'] = 'Address';
 $string['city'] = 'City/Town';
 $string['enroled_on'] = 'Enrollment Date';
-$string['support_connect'] = 'Click <a href="{$a->connect_link}">“Connect & Upgrade”</a> to start your free trial. Experience the power of your own data.';
-$string['support_text3'] = 'Welcome to IntelliBoard. All of your Moodle data in easily retrievable, intuitive, shareable, understandable, and attractive reports and graphs. The IntelliBoard Moodle plugin informs your educational business decisions with data directly from your Moodle system, in real time. Institutions worldwide use IntelliBoard to monitor retention, progress, completion and engagement.';
-$string['support_text4'] = 'Welcome to IntelliBoard. All of your Moodle data in easily retrievable, intuitive, shareable, understandable, and attractive reports and graphs. The IntelliBoard Moodle plugin informs your educational business decisions with data directly from your Moodle system, in real time. Institutions worldwide use IntelliBoard to monitor retention, progress, completion and engagement.';
+
+$string['dashboard_link'] = 'Click to view Analytics';
+$string['support_connect'] = 'Click the report buttons within the rectangle below. Get a glimpse into the power of IntelliBoard: 1 button access to your LMS insights. Want more? Click "Click to view Analytics". Still want more? <a href="{$a->connect_link}">“Connect & Upgrade”</a> in the top right, or anywhere you see the link.';
+$string['support_text3'] = 'Welcome to IntelliBoard! Institutions worldwide use IntelliBoard to monitor retention, progress, completion and engagement. All your LMS data in easily retrievable, intuitive, shareable, understandable and attractive reports and graphs.';
+$string['support_text4'] = 'The IntelliBoard plugin informs your educational business decisions with data directly from your LMS, in real time.';
+$string['support_text6'] = 'Need more info? Click any of the blue buttons to connect with us.';
+
 $string['web_services_descr'] = 'IntelliBoard requires Web services to be enabled. Web services enables other systems (e.g., IntelliBoard) to access this LMS system and preform operations.  For security purposes, this should be disabled when not in use.   For additional review, go to Site Administration > Advanced features > Web services';
 $string['protocol_descr'] = 'IntelliBoard requires either REST or SOAP Protocol to be enabled.  For security purposes, only protocols that are in use should be enabled.  For additional review, go to Site Administration > Plugins > Web services > Manage protocols';
 $string['authorized_user_descr'] = 'IntelliBoard requires an Authorized user.  The Authorized user will likely be a Site Administrator and must have privileges to manage web services, protocols and tokens.  For additional review, go to Site Administration > Plugins > Web services > External Services > IntelliBoard service > Authorized user';

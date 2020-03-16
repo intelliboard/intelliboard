@@ -739,14 +739,18 @@ position: relative;
 	display: block;
 	width: 220px;
 }
+.intelliboard-support-text span{
+  display: block;
+  margin-bottom: 12px;
+}
 .intelliboard-support-logo {
-	margin-bottom: 50px;
+	margin-bottom: 20px;
 }
 .intelliboard-support-text{
     font-size: 13px;
-    max-width: 40%;
+    max-width: 50%;
     color: #536383;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
     letter-spacing: .3px;
     z-index: 1;
     position: relative;
@@ -779,8 +783,8 @@ position: relative;
 	position: relative;
 }
 .intelliboard-support-links{
-  margin-top: 25px;
-	margin-bottom: 25px;
+  margin-top: 20px;
+	margin-bottom: 20px;
 	z-index: 1;
 	position: relative;
 }
@@ -791,10 +795,21 @@ position: relative;
     margin-bottom: 0;
 }
 .intelliboard-support-links.initial-reports a {
-    margin-bottom: 25px;
+    margin-bottom: 15px;
 }
+.intelliboard-support-links-header {
+  font-size: 14px;
+  color: #545e7b;
+  font-weight: 600;
+  margin: 10px 0 20px;
+  z-index: 99999;
+position: relative;
+}
+
+
+
 .intelliboard-support-contacts{
-	margin-bottom: 25px;
+	margin: 25px;
 	z-index: 1;
 	position: relative;
     width: calc(100% - 400px);
@@ -857,13 +872,13 @@ position: relative;
 	opacity: 0.8;
 }
 .intelliboard-support-menu a{
-	color: #FFD700;
-	background-color: transparent;
-	border: 2px solid #FFD700;
+	color: #fff;
+	background-color: #BB5A5D;
+	border: 3px solid rgba(255,255,255,0.5);
 	border-radius: 15px 0 15px 0;
 	line-height: 60px;
 	text-transform: uppercase;
-	font-size: 12px;
+	font-size: 16px;
 	padding: 10px 30px;
 }
 .intelliboard-support-menu{
@@ -1078,10 +1093,18 @@ div[aria-label="A tabular representation of the data in the chart."] {
     margin-top: 1rem;
 }
 
+.intelliboard-support-links.initial-reports {
+  border: 1px solid #B3C6E8;
+  padding: 30px 10px 10px 30px;
+  display: inline-block;
+  background-color: rgba(255,255,255, 0.6);
+  margin-top: 0px;
+  margin-bottom: 20px;
+  border-radius: 30px 0px;
+}
 .intelliboard-support-links.initial-reports a {
     height: 36px;
-    box-shadow: 0 0 19px 3px #507bdc99;
-    border-top-left-radius: 9px;
-    border-bottom-right-radius: 13px;
+    border-top-left-radius: 13px;
+    border-bottom-right-radius: 14px;
     background-color: rgba(255,255,255,0.8);
 }
