@@ -89,14 +89,15 @@ echo $OUTPUT->header();
     <?php if (empty($intelliboard->token)): ?>
         <div class="intelliboard-support-text">
             <p>
-                <?php echo get_string('support_text3', 'local_intelliboard'); ?><br><br>
-                <?php echo get_string('support_connect', 'local_intelliboard', ["connect_link" => $connectlink->out()]); ?>
+                <span><?php echo get_string('support_text3', 'local_intelliboard'); ?></span>
+                <span><?php echo get_string('support_text4', 'local_intelliboard'); ?></span>
+                <span><?php echo get_string('support_connect', 'local_intelliboard', ["connect_link" => $connectlink->out()]); ?></span>
             </p>
         </div>
 
         <div class="intelliboard-support-links actions">
             <a class="intelliboard-support-large-btn" href="<?php echo $CFG->wwwroot ?>/local/intelliboard/<?php echo $event ?>/index.php?action=<?php echo ($event)?'':'dashboard' ?>">
-                <span><?php echo get_string('dashboard', 'local_intelliboard'); ?></span>
+                <span><?php echo get_string('dashboard_link', 'local_intelliboard'); ?></span>
             </a>
           </div>
 
@@ -108,6 +109,12 @@ echo $OUTPUT->header();
                 </a>
             <?php endforeach; ?>
         </div>
+
+        <div class="intelliboard-support-links-header">
+          <?php echo get_string('support_text6', 'local_intelliboard'); ?>
+        </div>
+
+
         <div class="intelliboard-support-links actions">
             <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.acuityscheduling.com/schedule.php">
                 <span><?php echo get_string('support_demo', 'local_intelliboard'); ?></span>
@@ -121,11 +128,14 @@ echo $OUTPUT->header();
             </a>
         </div>
     <?php else: ?>
-        <div class="intelliboard-support-text"><p><?php echo get_string('support_text4', 'local_intelliboard'); ?></p></div>
+        <div class="intelliboard-support-text"><p>
+          <span><?php echo get_string('support_text3', 'local_intelliboard'); ?></span>
+          <span><?php echo get_string('support_text4', 'local_intelliboard'); ?></span>
+        </p></div>
 
         <div class="intelliboard-support-links actions">
             <a class="intelliboard-support-large-btn" href="<?php echo $CFG->wwwroot ?>/local/intelliboard/<?php echo $event ?>/index.php?action=<?php echo ($event)?'':'dashboard' ?>">
-                <span><?php echo get_string('dashboard', 'local_intelliboard'); ?></span>
+                <span><?php echo get_string('dashboard_link', 'local_intelliboard'); ?></span>
             </a>
           </div>
 
@@ -137,6 +147,12 @@ echo $OUTPUT->header();
                 </a>
             <?php endforeach; ?>
         </div>
+
+        <div class="intelliboard-support-links-header">
+          <?php echo get_string('support_text6', 'local_intelliboard'); ?>
+        </div>
+
+
         <div class="intelliboard-support-links actions">
             <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.acuityscheduling.com/schedule.php">
                 <span><?php echo get_string('support_demo', 'local_intelliboard'); ?></span>
@@ -149,12 +165,7 @@ echo $OUTPUT->header();
             </a>
         </div>
     <?php endif; ?>
-    <div class="intelliboard-support-contacts">
-        <strong><a href="https://intelliboard.net/">IntelliBoard.net</a></strong>
-        <strong><a href="mailto:Info@IntelliBoard.net">Info@IntelliBoard.net</a></strong>
-        <br>
-        <br>
-    </div>
+
     <div class="intelliboard-support-play"></div>
     <div class="intelliboard-support-player">
         <div style="padding:56.25% 0 0 0;position:relative;">
@@ -170,6 +181,11 @@ echo $OUTPUT->header();
 
 
     <div class="intelliboard-support-bg"></div>
+</div>
+
+<div class="intelliboard-support-contacts">
+    <strong>For additional information, please visit us at <a href="https://intelliboard.net/">www.IntelliBoard.net</a></strong>
+    <strong>For questions, please contact us at <a href="mailto:Info@IntelliBoard.net">Info@IntelliBoard.net</a></strong>
 </div>
 <div class="intelliboard-support-terms">
     © 2014 - <?php echo date("Y") ?> IntelliBoard, Inc.<br>

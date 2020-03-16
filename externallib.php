@@ -10313,7 +10313,8 @@ class local_intelliboard_external extends external_api {
             JOIN {role_assignments} ra ON ctx.id = ra.contextid $sql
             JOIN {user} u ON u.id=ra.userid
             JOIN {course} c ON c.id=ctx.instanceid
-       LEFT JOIN (SELECT e1.courseid, ue1.userid, MIN(ue1.timestart) AS enrol_start_date
+       LEFT JOIN (SELECT e1.courseid, ue1.userid,
+                         CASE WHEN MIN(ue1.timestart) > 0 THEN MIN(ue1.timestart) ELSE MIN(ue1.timecreated) END AS enrol_start_date
                     FROM {enrol} e1
                     JOIN {user_enrolments} ue1 ON ue1.enrolid = e1.id
                    WHERE e1.id > 0 {$enrolfilter}
@@ -16729,16 +16730,19 @@ class local_intelliboard_external extends external_api {
     public function monitor62($params) {
         global $DB;
 
-        $sql_filter = $this->get_filterdate_sql($params, "lg.timecreated");
-        $sql_filter .= $this->get_teacher_sql($params, ["lg.userid" => "users"]);
+        $sql_time_filter = $this->get_filterdate_sql($params, "lg1.timecreated");
+        $sql_filter = $this->get_teacher_sql($params, ["lg.userid" => "users"]);
         $groupdate = DBHelper::group_by_date_val("daymonth", "lg.timecreated");
 
         $sql = "SELECT MIN(lg.id) AS id, {$groupdate} AS timepoint, COUNT(*) AS all_login,
-                       SUM(CASE WHEN origin = 'ws'
+                       SUM(CASE WHEN lg.action <> 'loggedin'
                                 THEN 1 ELSE 0 END
                        ) AS mobile_app_login
-                  FROM {logstore_standard_log} lg
-                 WHERE lg.userid <> 2 {$sql_filter}
+                  FROM (SELECT lg1.* 
+                          FROM {logstore_standard_log} lg1
+                         WHERE lg1.id > 0 {$sql_time_filter}
+                       ) lg
+                 WHERE lg.action = 'loggedin' OR lg.other LIKE '%\"tool_mobile_get_config\";}' {$sql_filter}
               GROUP BY 2
               ORDER BY MAX(lg.timecreated)";
 
