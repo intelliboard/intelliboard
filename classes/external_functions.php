@@ -384,6 +384,9 @@ class local_external_functions
             'get_hospital_info',
             'monitor71',
             'monitor72',
+            'monitor73',
+            'monitor74',
+            'monitor75',
         ];
     }
     public function get_function($params = null)

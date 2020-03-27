@@ -87,7 +87,9 @@ define([
                     terms.closeTab();
                     setup.authenticationHandler();
                 } else {
-                    terms.showErrorMessage(() => terms.loaderContainer.addClass("hidden"));
+                    terms.showErrorMessage(function() {
+                        terms.loaderContainer.addClass("hidden")
+                    });
                 }
             });
 
@@ -106,13 +108,13 @@ define([
             authentication.checkEmail(email, function (response) {
                 if (response.email_exists) {
                     authentication.showLoginForm();
-                    authentication.loginHandler(setup.serviceToken, setup.useRestProtocol, () => {
+                    authentication.loginHandler(setup.serviceToken, setup.useRestProtocol, function() {
                         authentication.closeTab();
                         $(".setup-wrapper .tab-item.congrats").removeClass("closed");
                     });
                 } else {
                     authentication.showRegisterForm();
-                    authentication.registerHandler(setup.serviceToken, setup.useRestProtocol, () => {
+                    authentication.registerHandler(setup.serviceToken, setup.useRestProtocol, function() {
                         authentication.closeTab();
                         $(".setup-wrapper .tab-item.congrats").removeClass("closed");
                     });
