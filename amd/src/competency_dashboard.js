@@ -36,7 +36,7 @@ define(['jquery', 'local_intelliboard/intb_multipleselect', 'core/str'], functio
                         selectAll: false,
                         filter: true,
                         single: true,
-                        onClick: (view) => {
+                        onClick: function(view) {
                             window.location.href = $("#competencyCohortFilter option:selected").data("href");
                         }
                     });
