@@ -66,10 +66,10 @@
             <?php echo get_string('reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i>
         </a>
         <ul class="reports-l">
-            <?php foreach(intelli_initial_reports() as $report): ?>
+            <?php foreach(intelli_initial_reports() as $ireport): ?>
                 <li>
-                    <a href="<?php echo $report["url"]; ?>">
-                        <?php echo $report["name"]; ?>
+                    <a href="<?php echo $ireport["url"]; ?>">
+                        <?php echo $ireport["name"]; ?>
                     </a>
                 </li>
             <?php endforeach; ?>

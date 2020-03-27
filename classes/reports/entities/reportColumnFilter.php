@@ -66,6 +66,6 @@ class reportColumnFilter
      */
     public function getFilterKey()
     {
-        return clean_param($this->column["sql_column"], PARAM_ALPHANUMEXT) . $this->filterPrefix;
+        return strtolower(clean_param($this->column["sql_column"], PARAM_ALPHANUMEXT) . $this->filterPrefix);
     }
 }

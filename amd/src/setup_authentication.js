@@ -133,7 +133,7 @@ define([
 
                         $.when(stringPromises).done(function(localizedEditString) {
                             authentication.loaderContainer.addClass("hidden");
-                            authentication.showErrors(`<p>${localizedEditString}</p>`);
+                            authentication.showErrors('<p>' + localizedEditString + '</p>');
                         });
                     });
                 }
@@ -187,7 +187,7 @@ define([
 
                         $.when(stringPromises).done(function(localizedEditString) {
                             authentication.loaderContainer.addClass("hidden");
-                            authentication.showErrors(`<p>${localizedEditString}</p>`);
+                            authentication.showErrors('<p>' + localizedEditString + '</p>');
                         });
                     });
                 }

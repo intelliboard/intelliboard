@@ -55,14 +55,14 @@ define([
                     var stringPromises = str.get_string('server_error', "local_intelliboard");
 
                     $.when(stringPromises).done(function(localizedEditString) {
-                        callback({status: "error", data: `<p>${localizedEditString}</p>`});
+                        callback({status: "error", data: '<p>' + localizedEditString + '</p>'});
                     });
                 });
             } else {
                 var stringPromises = str.get_string('invalid_email', "local_intelliboard");
 
                 $.when(stringPromises).done(function(localizedEditString) {
-                    callback({status: "error", data: `<p>${localizedEditString}</p>`});
+                    callback({status: "error", data: '<p>' + localizedEditString + '</p>'});
                 });
             }
         },
