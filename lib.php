@@ -358,25 +358,28 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 				}
 				if ($tracktotals) {
 					$sessions = false; $courses = false;
-					if ($trackpoint != $currentstamp) {
-						set_config("trackpoint", $currentstamp, "local_intelliboard");
 
-						$DB->delete_records('local_intelliboard_config');
-					}
-					if (!$DB->get_record('local_intelliboard_config', ['type'=>0, 'instanceid' => $USER->id])) {
-						$sessions = new stdClass();
-						$sessions->type = 0;
-						$sessions->instanceid = $USER->id;
-						$sessions->timecreated = $currentstamp;
-						$DB->insert_record('local_intelliboard_config', $sessions);
-					}
+					if (!$ajaxRequest) {
+						if ($trackpoint != $currentstamp) {
+							set_config("trackpoint", $currentstamp, "local_intelliboard");
 
-					if ($intelliboardPage == 'course' and !$DB->get_record('local_intelliboard_config', ['type'=>1, 'instanceid' => $intelliboardParam])) {
-						$courses = new stdClass();
-						$courses->type = 1;
-						$courses->instanceid = $intelliboardParam;
-						$courses->timecreated = $currentstamp;
-						$DB->insert_record('local_intelliboard_config', $courses);
+							$DB->delete_records('local_intelliboard_config');
+						}
+						if (!$DB->get_record('local_intelliboard_config', ['type'=>0, 'instanceid' => $USER->id])) {
+							$sessions = new stdClass();
+							$sessions->type = 0;
+							$sessions->instanceid = (int) $USER->id;
+							$sessions->timecreated = $currentstamp;
+							$DB->insert_record('local_intelliboard_config', $sessions);
+						}
+
+						if ($intelliboardPage == 'course' and !$DB->get_record('local_intelliboard_config', ['type'=>1, 'instanceid' => $intelliboardParam])) {
+							$courses = new stdClass();
+							$courses->type = 1;
+							$courses->instanceid = (int) $intelliboardParam;
+							$courses->timecreated = $currentstamp;
+							$DB->insert_record('local_intelliboard_config', $courses);
+						}
 					}
 
 					if ($data = $DB->get_record('local_intelliboard_totals', array('timepoint' => $currentstamp))) {
