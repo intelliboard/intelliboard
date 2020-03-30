@@ -25,10 +25,10 @@
  */
 
 // In versions before Moodle 2.9, the supported callbacks have _extends_ (not imperative mood) in their names. This was a consistency bug fixed in MDL-49643.
-function local_intelliboard_extends_navigation(global_navigation $nav){
+function local_intelliboard_extends_navigation(global_navigation $nav)
+{
 	global $CFG, $USER;
 
-	local_intelliboard_insert_tracking(false);
 	$context = context_system::instance();
 	if (isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)) {
 		$alt_name = get_config('local_intelliboard', 't0');
@@ -73,15 +73,14 @@ function local_intelliboard_extends_navigation(global_navigation $nav){
 	}
 }
 //call-back method to extend the navigation
-function local_intelliboard_extend_navigation(global_navigation $nav){
+function local_intelliboard_extend_navigation(global_navigation $nav)
+{
 	global $CFG, $DB, $USER, $PAGE;
 
 	try {
 		$mynode = $PAGE->navigation->find('myprofile', navigation_node::TYPE_ROOTNODE);
 		$mynode->collapse = true;
 		$mynode->make_inactive();
-
-		local_intelliboard_insert_tracking(false);
 		$context = context_system::instance();
 
     if(has_capability('local/intelliboard:view', $context) and get_config('local_intelliboard', 'ssomenu')){
@@ -182,7 +181,8 @@ function local_intelliboard_extend_navigation(global_navigation $nav){
         }
 	} catch (Exception $e) {}
 }
-function local_intelliboard_extend_settings_navigation(settings_navigation $settingsnav, context $context){
+function local_intelliboard_extend_settings_navigation(settings_navigation $settingsnav, context $context)
+{
     global $CFG;
     require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
     require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
@@ -272,7 +272,6 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 	if (strpos($path,'cron.php') !== false) {
 		return false;
 	}
-
 
 	if ($enabled and isloggedin() and !isguestuser()) {
 		if (is_siteadmin() and !$trackadmin) {
@@ -406,7 +405,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 		}
 
 		if ($ajaxRequest) {
-			die("time ".$intelliboardTime);
+			return ['time' => $intelliboardTime];
 		}
 		if (isset($PAGE->cm->id)) {
 			$intelliboardPage = 'module';
@@ -414,7 +413,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 		} elseif(isset($PAGE->course->id) and $SITE->id != $PAGE->course->id) {
 			$intelliboardPage = 'course';
 			$intelliboardParam = $PAGE->course->id;
-		} elseif(strpos($PAGE->url, '/profile/') !== false) {
+		} elseif(strpos($PAGE->url, '/user/') !== false) {
 			$intelliboardPage = 'user';
 			$intelliboardParam = $USER->id;
 		} elseif(strpos($PAGE->url, '/intelliboard/student/courses') !== false) {
@@ -455,15 +454,15 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 			$intelliboardParam = 12;
 		} elseif(strpos($PAGE->url, '/intelliboard/') !== false) {
 			$intelliboardPage = 'local_intelliboard';
-			$intelliboardParam = 0;
+			$intelliboardParam = 1;
 		}  elseif(strpos($PAGE->url, '/local/') !== false) {
 			$start = strpos($PAGE->url, '/', strpos($PAGE->url, '/local/') + 1) + 1;
 			$end = strpos($PAGE->url, '/', $start);
 			$intelliboardPage = 'local_' . substr($PAGE->url, $start, ($end - $start));
-			$intelliboardParam = 0;
+			$intelliboardParam = 1;
 		} else {
 			$intelliboardPage = 'site';
-			$intelliboardParam = 0;
+			$intelliboardParam = 1;
 		}
 		$params = new stdClass();
 		$params->intelliboardAjax = $ajax;
@@ -482,3 +481,11 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 		return true;
 	}
 }
+function local_intelliboard_init()
+{
+	$tracking = get_config('local_intelliboard', 'enabled');
+	if ($tracking && !CLI_SCRIPT && !AJAX_SCRIPT) {
+		local_intelliboard_insert_tracking();
+	}
+}
+local_intelliboard_init();

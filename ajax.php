@@ -169,6 +169,7 @@ if($action == 'user_courses_list'){
 		$html .= '<option value="'.$item->id.'">'.s($item->name).'</option>';
 	}
 	die($html);
-}else{
-	local_intelliboard_insert_tracking(true);
+} else {
+	$result = local_intelliboard_insert_tracking(true);
+	die(json_encode($result));
 }
