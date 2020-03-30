@@ -3466,7 +3466,10 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
         $columns = array_merge(array(
-            "u.firstname", "u.lastname", "u.email", "u.idnumber", "course", "assignment", "a.duedate", "s.status", "grade", "u.phone1", "u.phone2", "u.institution", "u.department", "u.address", "u.city", "u.country",""
+            "u.firstname", "u.lastname", "u.email", "u.idnumber", "c.fullname", "assignment",
+            "a.duedate", "s.status", "grade", "u.phone1", "u.phone2", "u.institution",
+            "u.department", "u.address", "u.city",
+            ["sql_column" => "u.country", "type" => "country"],""
         ), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, ["u.id"]);
@@ -9713,7 +9716,7 @@ class local_intelliboard_external extends external_api {
         global $CFG;
 
         $columns = array_merge(array(
-            "ra.id", "c.fullname", "c.shortname", "user_name", "u.email", "gr.groups", "ue.enrol_start_date"
+            "c.fullname", "c.shortname", "CONCAT(u.firstname,' ',u.lastname)", "u.email", "gr.groups", "ue.enrol_start_date"
         ), $this->get_filter_columns($params));
         $modules = $this->get_course_modules($params);
         $sql_select = '';
@@ -9760,6 +9763,8 @@ class local_intelliboard_external extends external_api {
         $data = $this->get_report_data(
             "SELECT ra.id,
                     u.email,
+                    u.firstname,
+                    u.lastname,
                     CONCAT(u.firstname,' ',u.lastname) AS user_name,
                     c.fullname,
                     c.shortname,
@@ -9785,7 +9790,7 @@ class local_intelliboard_external extends external_api {
                       WHERE m.groupid = g.id
                    GROUP BY m.userid, g.courseid
                     ) gr ON gr.userid = u.id AND gr.courseid = c.id
-          {$sql_join}
+                    {$sql_join}
               WHERE ctx.contextlevel = 50 AND u.id IS NOT NULL AND ue.enrol_start_date IS NOT NULL {$sql_filter}
               {$sql_having}
               {$sql_order}",
