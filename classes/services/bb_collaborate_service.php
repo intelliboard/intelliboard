@@ -163,35 +163,6 @@ class bb_collaborate_service {
     }
 
     /**
-     * Insert session video records
-     *
-     * @param string $sessionuid
-     * @param array $data
-     * @throws \dml_transaction_exception
-     */
-    public function insert_session_recordings($sessionuid, $data) {
-        global $DB;
-
-        try {
-            $transaction = $DB->start_delegated_transaction();
-
-            foreach($data as $record) {
-                $row = new \stdClass();
-                $row->sessionuid = $sessionuid;
-                $row->record_name = $record['name'];
-                $row->record_url = $record['url'];
-                $DB->insert_record('local_intelliboard_bb_rec', $row);
-            }
-
-            // Assuming the both inserts work, we get to the following line.
-            $transaction->allow_commit();
-
-        } catch(\Exception $e) {
-            $transaction->rollback($e);
-        }
-    }
-
-    /**
      * Cache BB collaborate access token
      *
      * @param $token

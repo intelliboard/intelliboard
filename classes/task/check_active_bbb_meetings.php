@@ -77,7 +77,10 @@ class check_active_bbb_meetings extends \core\task\scheduled_task {
             }
 
             $listofactivemeetingsids[] = $meeting->meetingID->__toString();
-            $bbbmeetings->check_meeting($meeting);
+
+            $meetinginfo = $bbb->getMeetingInfo($meeting->meetingID->__toString());
+
+            $bbbmeetings->check_meeting($meetinginfo);
         }
 
         /** Check stopped meetings */

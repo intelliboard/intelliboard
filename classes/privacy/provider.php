@@ -201,13 +201,6 @@ class provider implements
             'rejoins' => 'privacy:metadata:local_intelliboard_bb_partic:rejoins',
         ], 'privacy:metadata:local_intelliboard_bb_partic');
 
-        $items->add_database_table('local_intelliboard_bb_rec', [
-            'id' => 'privacy:metadata:local_intelliboard_bb_rec:id',
-            'sessionuid' => 'privacy:metadata:local_intelliboard_bb_rec:sessionuid',
-            'record_name' => 'privacy:metadata:local_intelliboard_bb_rec:record_name',
-            'record_url' => 'privacy:metadata:local_intelliboard_bb_rec:record_url',
-        ], 'privacy:metadata:local_intelliboard_bb_rec');
-
         $items->add_database_table('local_intelliboard_bb_trck_m', [
             'id' => 'privacy:metadata:local_intelliboard_bb_trck_m:id',
             'sessionuid' => 'privacy:metadata:local_intelliboard_bb_trck_m:sessionuid',

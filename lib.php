@@ -285,9 +285,13 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 			if ($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')) {
 				if (!$ajaxRequest) {
 					$data->visits = $data->visits + 1;
-					$data->lastaccess = time();
+          $data->lastaccess = time();
 				} else {
-					unset($data->lastaccess);
+				    if ($data->lastaccess < strtotime('today')) {
+                $data->lastaccess = time();
+            } else {
+                unset($data->lastaccess);
+            }
 					unset($data->visits);
 				}
 				$data->timespend = $data->timespend + $intelliboardTime;

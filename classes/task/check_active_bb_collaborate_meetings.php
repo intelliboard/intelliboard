@@ -77,7 +77,6 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
                 try {
                     $transaction = $DB->start_delegated_transaction();
 
-                    // insert session participants
                     $sesioninstances = $adapter->get_session_instances(
                         $session->sessionuid
                     );
@@ -107,22 +106,6 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
                             );
                         }
                     }
-
-                    // save links to session recordings
-                    $recordings = $adapter->get_session_recordings(
-                        $session->sessionuid
-                    );
-
-                    $sessionrecords = [];
-                    foreach($recordings as $record) {
-                        $sessionrecords[] = [
-                            'name' => $record['name'],
-                            'url' => $adapter->get_recording_url($record['id'])
-                        ];
-                    }
-                    $service->insert_session_recordings(
-                        $session->sessionuid, $sessionrecords
-                    );
 
                     $transaction->allow_commit();
                 } catch(\Exception $e) {

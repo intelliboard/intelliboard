@@ -474,12 +474,6 @@ $string['privacy:metadata:local_intelliboard_bb_partic:last_left_time'] = 'Derni
 $string['privacy:metadata:local_intelliboard_bb_partic:duration'] = 'temps passé en session';
 $string['privacy:metadata:local_intelliboard_bb_partic:rejoins'] = 'Nombre de rejoints à la session';
 
-$string['privacy:metadata:local_intelliboard_bb_rec'] = 'Liste des enregistrements de sessions bb collaborate';
-$string['privacy:metadata:local_intelliboard_bb_rec:id'] = 'ID d\'enregistrement';
-$string['privacy:metadata:local_intelliboard_bb_rec:sessionuid'] = 'Session UUID';
-$string['privacy:metadata:local_intelliboard_bb_rec:record_name'] = 'Nom de l\'enregistrement';
-$string['privacy:metadata:local_intelliboard_bb_rec:record_url'] = 'URL enregistrée';
-
 $string['privacy:metadata:local_intelliboard_bb_trck_m'] = 'Liste des sessions suivies';
 $string['privacy:metadata:local_intelliboard_bb_trck_m:id'] = 'ID du log de suivi';
 $string['privacy:metadata:local_intelliboard_bb_trck_m:sessionuid'] = 'Session UUID';
