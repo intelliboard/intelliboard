@@ -644,12 +644,6 @@ $string['intelliboard:browseallcohorts'] = 'IntelliBoard [Browse All Cohorts]';
  $string['privacy:metadata:local_intelliboard_bb_partic:duration'] = 'Tempo dispensado na sessão';
  $string['privacy:metadata:local_intelliboard_bb_partic:rejoins'] = 'Número de participantes na sessão';
 
- $string['privacy:metadata:local_intelliboard_bb_rec'] = 'Lista de registros de sessões de colaboração bb';
- $string['privacy:metadata:local_intelliboard_bb_rec:id'] = 'ID da gravação';
- $string['privacy:metadata:local_intelliboard_bb_rec:sessionuid'] = 'Session UUID';
- $string['privacy:metadata:local_intelliboard_bb_rec:record_name'] = 'Nome da gravação';
- $string['privacy:metadata:local_intelliboard_bb_rec:record_url'] = 'URL da gravação';
-
  $string['privacy:metadata:local_intelliboard_bb_trck_m'] = 'Lista de sessões rastreadas';
  $string['privacy:metadata:local_intelliboard_bb_trck_m:id'] = 'ID do log do rastreamento';
  $string['privacy:metadata:local_intelliboard_bb_trck_m:sessionuid'] = 'Session UUID';

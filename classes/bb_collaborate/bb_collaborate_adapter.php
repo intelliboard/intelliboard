@@ -129,6 +129,10 @@ class bb_collaborate_adapter {
      * @throws Exception
      */
     public function get_session_instances($sessionuid) {
+        if (!$sessionuid) {
+            return [];
+        }
+
         $headers = [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $this->access_token
@@ -181,10 +185,15 @@ class bb_collaborate_adapter {
      * Get recordings of session
      *
      * @param string $sessionuid
+     * @param array $options
      * @return array
-     * @throws \Exception
+     * @throws Exception
      */
-    public function get_session_recordings($sessionuid) {
+    public function get_session_recordings($sessionuid, $options = []) {
+        if (!$sessionuid) {
+            return [];
+        }
+
         $headers = [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $this->access_token
@@ -196,7 +205,7 @@ class bb_collaborate_adapter {
         );
 
         $response = json_decode(
-            $this->make_request('get', $url, $headers), true
+            $this->make_request('get', $url, $headers, [], $options), true
         );
 
         if(isset($response['results'])) {
@@ -210,10 +219,11 @@ class bb_collaborate_adapter {
      * Get URL of recording
      *
      * @param string $recordingid
+     * @param array $options
      * @return string
-     * @throws \Exception
+     * @throws Exception
      */
-    public function get_recording_url($recordingid) {
+    public function get_recording_url($recordingid, $options = []) {
         $headers = [
             'Content-Type: application/json',
             'Authorization: Bearer ' . $this->access_token
@@ -225,7 +235,7 @@ class bb_collaborate_adapter {
         );
 
         $response = json_decode(
-            $this->make_request('get', $url, $headers), true
+            $this->make_request('get', $url, $headers, [], $options), true
         );
 
         if(isset($response['url'])) {
@@ -284,17 +294,18 @@ class bb_collaborate_adapter {
      * @param string $url Request url
      * @param array $headers
      * @param array $params
+     * @param array $options
      * @return string Response
-     * @throws \Exception
+     * @throws Exception
      */
-    private function make_request($method, $url, $headers = [], $params = []) {
+    private function make_request($method, $url, $headers = [], $params = [], $options = []) {
         $this->httpclient->resetHeader();
         $this->httpclient->setHeader($headers);
 
         if(strtolower($method) === 'post') {
-            $response = $this->httpclient->post($url, implode($params, '&'));
+            $response = $this->httpclient->post($url, implode($params, '&'), $options);
         } elseif(strtolower($method) === 'get') {
-            $response = $this->httpclient->get($url);
+            $response = $this->httpclient->get($url, $params, $options);
         } else {
             throw new Exception('Method not allowed');
         }

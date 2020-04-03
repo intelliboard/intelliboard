@@ -30,8 +30,8 @@ class bbb_client {
     public function __construct() {
         global $CFG;
         require_once($CFG->dirroot . '/lib/filelib.php');
-        $this->apiendpoint = get_config('local_intelliboard', 'bbbapiendpoint');
-        $this->bbbserversecret = get_config('local_intelliboard', 'bbbserversecret');
+        $this->apiendpoint = rtrim(get_config('local_intelliboard', 'bbbapiendpoint'), '/');
+        $this->bbbserversecret = trim(get_config('local_intelliboard', 'bbbserversecret'));
 
         if(!$this->apiendpoint or !$this->bbbserversecret) {
             var_dump('Please set BBB server secret and endpoint');
@@ -52,13 +52,10 @@ class bbb_client {
         $checksum = sha1($requestaction . $requeststring . $this->bbbserversecret);
 
         $curl = new \curl();
-        $res = $curl->get(
-            $this->apiendpoint . "/{$requestaction}",
-            [
-                'meetingID' => $meetingid,
-                'checksum' => $checksum
-            ]
-        );
+        $res = $curl->get($this->apiendpoint . "/{$requestaction}", [
+            'meetingID' => $meetingid,
+            'checksum' => $checksum
+        ]);
 
         $xml = simplexml_load_string($res);
 
@@ -68,6 +65,7 @@ class bbb_client {
     /**
      * Return XML objects - list of active meetings
      * @return \SimpleXMLElement
+     * @throws \dml_exception
      */
     public function getActiveMeetings() {
         $requestaction = 'getMeetings';
@@ -86,12 +84,9 @@ class bbb_client {
             $curl = new \curl();
         }
 
-        $res = $curl->get(
-            $this->apiendpoint . "/{$requestaction}",
-            [
-                'checksum' => $checksum
-            ]
-        );
+        $res = $curl->get($this->apiendpoint . "/{$requestaction}", [
+            'checksum' => $checksum
+        ]);
 
         if(get_config('local_intelliboard', 'bbb_debug')) {
             fclose($out);
@@ -120,12 +115,9 @@ class bbb_client {
         if($meetingid) {
             $requestparams['meetingID'] = $meetingid;
         }
-        $res = $curl->get(
-            $this->apiendpoint . "/{$requestaction}",
-            [
-                'checksum' => $checksum
-            ]
-        );
+        $res = $curl->get($this->apiendpoint . "/{$requestaction}", [
+            'checksum' => $checksum
+        ]);
 
         $xml = simplexml_load_string($res);
 

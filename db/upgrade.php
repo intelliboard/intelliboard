@@ -660,5 +660,19 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 		  upgrade_plugin_savepoint(true, 2020021133, 'local', 'intelliboard');
 		}
 
+    if ($oldversion < 2020033123) {
+
+        // Define table local_intelliboard_bb_rec to be dropped.
+        $table = new xmldb_table('local_intelliboard_bb_rec');
+
+        // Conditionally launch drop table for local_intelliboard_bb_rec.
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        // Intelliboard savepoint reached.
+        upgrade_plugin_savepoint(true, 2020033123, 'local', 'intelliboard');
+    }
+
 	return true;
 }
