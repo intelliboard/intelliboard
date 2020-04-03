@@ -67,6 +67,9 @@ class FiltersContainer extends BaseContainer {
             12 => ">=",
             13 => "<=",
             14 => "IS NOT NULL",
+            15 => function($param) {
+                return "IS NULL";
+            },
         );
 
 

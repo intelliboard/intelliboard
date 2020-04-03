@@ -93,6 +93,7 @@ class bbb_meetings {
      * Create meeting data (row in table local_intelliboard_bbb_meet)
      * @param $meetingdata
      * @return bool|int
+     * @throws \dml_exception
      */
     public function create_meeting_log($meetingdata) {
         global $DB;
@@ -146,17 +147,19 @@ class bbb_meetings {
         $dataObj->moderatorcount = (int) $meetingdata->moderatorCount->__toString();
         $dataObj->ownerid = $ownerid;
 
-        $cmid = $DB->get_record(
-            'course_modules',
-            [
+        $cmid = $DB->get_record_sql(
+            "SELECT cm.*
+               FROM {course_modules} cm
+               JOIN {modules} m ON m.id = cm.module AND m.name = 'bigbluebuttonbn'
+              WHERE cm.course = :course AND cm.instance = :instance", [
                 'course' => $courseid,
                 'instance' => $activityonstanceid,
             ]
-        )->id;
+        );
 
         $dataObj->courseid = $courseid;
         $dataObj->bigbluebuttonbnid = $activityonstanceid;
-        $dataObj->cmid = $cmid;
+        $dataObj->cmid = $cmid ? $cmid->id : null;
 
         $res = $DB->insert_record('local_intelliboard_bbb_meet', $dataObj);
 
@@ -225,101 +228,105 @@ class bbb_meetings {
 
     /**
      * Create or update data for attendees and set 'endtime' for non active attendees
-     * @param SimpleXMLElement $attendees
+     *
+     * @param \SimpleXMLElement $attendees
      * @param string $meetingid
-     * @param field 'id' in table {local_intelliboard_bbb_meet} $localmeetingid
+     * @param $localmeetingid
+     * @throws \coding_exception
+     * @throws \dml_exception
      */
     public function check_attendees($attendees, $meetingid, $localmeetingid) {
         global $DB;
 
         $activeusersids = [];
 
-        foreach($attendees->attendee as $attendee) {
-            $sql = 'SELECT u.id 
-                      FROM {user} AS u 
-                     WHERE CONCAT(u.firstname, \' \', u.lastname) LIKE ? 
-                  ORDER BY u.id ASC 
-                     LIMIT 1';
-            $localuserid = $DB->get_record_sql($sql, [$attendee->fullName->__toString()])->id;
+        try {
+            $transaction = $DB->start_delegated_transaction();
 
-            $activeusersids[] = $localuserid;
+            foreach($attendees->attendee as $attendee) {
+                $userexists = $DB->record_exists('user', ["id" => $attendee->userID->__toString()]);
 
-            $sql = 'SELECT id
-                      FROM {local_intelliboard_bbb_atten} 
-                     WHERE userid = ? AND
-                           meetingid LIKE ? AND
-                           localmeetingid = ?';
+                if (!$userexists) {
+                    continue;
+                }
 
-            $attendeeexists = $DB->get_record_sql(
-                $sql,
-                [
-                    $localuserid,
-                    $meetingid,
-                    $localmeetingid
-                ]
-            );
+                $activeusersids[] = $attendee->userID->__toString();
 
-            /** Create or update attendee data */
-            if(!$attendeeexists) {
-                $attendeeObj = new \stdClass();
-                $attendeeObj->userid = $localuserid;
-                $attendeeObj->fullname = $attendee->fullName->__toString();
-                $attendeeObj->role = $attendee->role->__toString();
-                $attendeeObj->ispresenter = $attendee->isPresenter->__toString();
-                $attendeeObj->islisteningonly = $attendee->isListeningOnly->__toString();
-                $attendeeObj->hasjoinedvoice = $attendee->hasJoinedVoice->__toString();
-                $attendeeObj->hasvideo = $attendee->hasVideo->__toString();
-                $attendeeObj->meetingid = $meetingid;
-                $attendeeObj->localmeetingid = $localmeetingid;
-                $attendeeObj->arrivaltime = time();
+                $attendeeexists = $DB->get_record_sql(
+                    'SELECT id
+                   FROM {local_intelliboard_bbb_atten}
+                  WHERE userid = ? AND meetingid LIKE ? AND localmeetingid = ?',
+                    [$attendee->userID->__toString(), $meetingid, $localmeetingid]
+                );
 
-                $DB->insert_record('local_intelliboard_bbb_atten', $attendeeObj);
-            } else {
-                $attendeeObj = new \stdClass();
-                $attendeeObj->id = $attendeeexists->id;
-                $attendeeObj->localmeetingid = $localmeetingid;
-
-                if($attendee->hasJoinedVoice->__toString() == 'true') {
+                /** Create or update attendee data */
+                if(!$attendeeexists) {
+                    $attendeeObj = new \stdClass();
+                    $attendeeObj->userid = $attendee->userID->__toString();
+                    $attendeeObj->fullname = $attendee->fullName->__toString();
+                    $attendeeObj->role = $attendee->role->__toString();
+                    $attendeeObj->ispresenter = $attendee->isPresenter->__toString();
+                    $attendeeObj->islisteningonly = $attendee->isListeningOnly->__toString();
                     $attendeeObj->hasjoinedvoice = $attendee->hasJoinedVoice->__toString();
-                    $attendeeObj->islisteningonly = 'false';
-                }
-
-                if($attendee->hasVideo->__toString() == 'true') {
                     $attendeeObj->hasvideo = $attendee->hasVideo->__toString();
-                    $attendeeObj->islisteningonly = 'false';
+                    $attendeeObj->meetingid = $meetingid;
+                    $attendeeObj->localmeetingid = $localmeetingid;
+                    $attendeeObj->arrivaltime = time();
+
+                    $DB->insert_record('local_intelliboard_bbb_atten', $attendeeObj);
+                } else {
+                    $attendeeObj = new \stdClass();
+                    $attendeeObj->id = $attendeeexists->id;
+                    $attendeeObj->localmeetingid = $localmeetingid;
+
+                    if($attendee->hasJoinedVoice->__toString() == 'true') {
+                        $attendeeObj->hasjoinedvoice = $attendee->hasJoinedVoice->__toString();
+                        $attendeeObj->islisteningonly = 'false';
+                    }
+
+                    if($attendee->hasVideo->__toString() == 'true') {
+                        $attendeeObj->hasvideo = $attendee->hasVideo->__toString();
+                        $attendeeObj->islisteningonly = 'false';
+                    }
+                    $DB->update_record('local_intelliboard_bbb_atten', $attendeeObj);
                 }
-                $DB->update_record('local_intelliboard_bbb_atten', $attendeeObj);
             }
-        }
 
-        if($activeusersids) {
-            $activeusersin = $DB->get_in_or_equal(
-                $activeusersids, SQL_PARAMS_QM, 'param', false
-            );
-            $where = ' AND userid ' . $activeusersin[0];
-            $sqlargs = array_merge([$localmeetingid], $activeusersin[1]);
-        } else {
-            $where = '';
-            $sqlargs = [$localmeetingid];
-        }
+            if($activeusersids) {
+                $activeusersin = $DB->get_in_or_equal(
+                    $activeusersids, SQL_PARAMS_QM, 'param', false
+                );
+                $where = ' AND userid ' . $activeusersin[0];
+                $sqlargs = array_merge([$localmeetingid], $activeusersin[1]);
+            } else {
+                $where = '';
+                $sqlargs = [$localmeetingid];
+            }
 
-        // get non active users
-        $sql = "SELECT *
+            // get non active users
+            $sql = "SELECT *
                   FROM {local_intelliboard_bbb_atten}
                  WHERE departuretime IS NULL AND
                        localmeetingid = ? {$where}";
-        $nonactiveusers = $DB->get_records_sql(
-            $sql,
-            $sqlargs
-        );
+            $nonactiveusers = $DB->get_records_sql(
+                $sql,
+                $sqlargs
+            );
 
-        // set departure time for non active users
-        foreach($nonactiveusers as $user) {
-            $dataObj = new \stdClass();
-            $dataObj->id = $user->id;
-            $dataObj->departuretime = time();
+            // set departure time for non active users
+            foreach($nonactiveusers as $user) {
+                $dataObj = new \stdClass();
+                $dataObj->id = $user->id;
+                $dataObj->departuretime = time();
 
-            $DB->update_record('local_intelliboard_bbb_atten', $dataObj);
+                $DB->update_record('local_intelliboard_bbb_atten', $dataObj);
+            }
+
+            // Assuming the both inserts work, we get to the following line.
+            $transaction->allow_commit();
+
+        } catch(\Exception $e) {
+            $transaction->rollback($e);
         }
 
         echo 'checking attendees of ' . $meetingid . " - done\n";
@@ -327,7 +334,9 @@ class bbb_meetings {
 
     /**
      * Check active meetings (create or update log, check attendees)
-     * @param SimpleXMLElement $meeting
+     * @param \SimpleXMLElement $meeting
+     * @throws \coding_exception
+     * @throws \dml_exception
      */
     public function check_meeting($meeting) {
         global $DB;
@@ -357,9 +366,12 @@ class bbb_meetings {
     /**
      * Set end time for non active meetings
      * @param array $activemeetings
+     * @throws \coding_exception
+     * @throws \dml_exception
      */
     public function check_stopped_meetings($activemeetings) {
         global $DB;
+
         if($activemeetings) {
             $notin = $DB->get_in_or_equal($activemeetings, SQL_PARAMS_QM, 'param', false);
             $where = ' AND meetingid ' . $notin[0];
@@ -373,23 +385,32 @@ class bbb_meetings {
                   FROM {local_intelliboard_bbb_meet}
                  WHERE endtime IS NULL {$where}";
 
-        // stopped meetings - meetings, which do not in list of active meetings and
-        // they does not have value for field 'endtime'
-        $stoppedmeetings = $DB->get_records_sql($sql, $sqlargs);
+        try {
+            $transaction = $DB->start_delegated_transaction();
 
-        // set value for field 'endtime' of stopped meetings
-        foreach($stoppedmeetings as $meeting) {
-            $meetingobj = new \stdClass();
-            $meetingobj->id = $meeting->id;
-            $meetingobj->running = 'false';
-            $meetingobj->endtime = time();
+            // stopped meetings - meetings, which do not in list of active meetings and
+            // they does not have value for field 'endtime'
+            $stoppedmeetings = $DB->get_records_sql($sql, $sqlargs);
 
-            $res = $DB->update_record('local_intelliboard_bbb_meet', $meetingobj);
+            // set value for field 'endtime' of stopped meetings
+            foreach($stoppedmeetings as $meeting) {
+                $meetingobj = new \stdClass();
+                $meetingobj->id = $meeting->id;
+                $meetingobj->running = 'false';
+                $meetingobj->endtime = time();
 
-            $this->set_departuretime_for_users($meeting->id);
+                $res = $DB->update_record('local_intelliboard_bbb_meet', $meetingobj);
 
-            echo 'was set \'endtime\' for meeting ' . $meeting->meetingid;
-            echo $res ? " - done\n" : " - error\n";
+                $this->set_departuretime_for_users($meeting->id);
+
+                echo 'was set \'endtime\' for meeting ' . $meeting->meetingid;
+                echo $res ? " - done\n" : " - error\n";
+            }
+
+            $transaction->allow_commit();
+
+        } catch(\Exception $e) {
+            $transaction->rollback($e);
         }
     }
 
@@ -397,6 +418,7 @@ class bbb_meetings {
      * Set departure time for course users
      * @param int $localmeetingid
      * @return bool
+     * @throws \dml_exception
      */
     public function set_departuretime_for_users($localmeetingid) {
         global $DB;
