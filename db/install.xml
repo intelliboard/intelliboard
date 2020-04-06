@@ -9,7 +9,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="page" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="page" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="param" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="visits" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="timespend" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
@@ -93,12 +93,12 @@
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="type" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="150" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="externalid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="email" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="cc" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="subject" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="subject" TYPE="char" LENGTH="150" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="message" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="state" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="attachment" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
@@ -118,7 +118,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="notificationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="name" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="value" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="value" TYPE="char" LENGTH="150" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -133,7 +133,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="notificationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="notificationname" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="notificationname" TYPE="char" LENGTH="150" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="email" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="timesent" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
@@ -148,7 +148,7 @@
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="status" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="150" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="sqlcode" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="appid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -160,17 +160,17 @@
     <TABLE NAME="local_intelliboard_bbb_meet" COMMENT="BigBlueButton meetings">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="meetingname" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="meetingname" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="meetingid" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="internalmeetingid" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="createtime" TYPE="int" LENGTH="15" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="createdate" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="createdate" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="voicebridge" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="dialnumber" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="dialnumber" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="attendeepw" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="moderatorpw" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="running" TYPE="char" LENGTH="25" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="duration" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="duration" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="hasuserjoined" TYPE="char" LENGTH="25" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="recording" TYPE="char" LENGTH="25" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="hasbeenforciblyended" TYPE="char" LENGTH="25" NOTNULL="false" SEQUENCE="false"/>
@@ -194,7 +194,7 @@
     <TABLE NAME="local_intelliboard_bbb_atten" COMMENT="Attendees of BigBlueButton meetings">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="userid" TYPE="char" LENGTH="200" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="fullname" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="role" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="ispresenter" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false"/>
@@ -223,7 +223,7 @@
     <TABLE NAME="local_intelliboard_bb_trck_m" COMMENT="Default comment for the table, please edit me">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="sessionuid" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="sessionuid" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="track_time" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
@@ -236,11 +236,11 @@
     <TABLE NAME="local_intelliboard_bb_partic" COMMENT="Default comment for the table, please edit me">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="sessionuid" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="useruid" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="sessionuid" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="useruid" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="external_user_id" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="role" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="display_name" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="role" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="display_name" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="first_join_time" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="last_left_time" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="duration" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
@@ -258,7 +258,7 @@
     <TABLE NAME="local_intelliboard_att_sync" COMMENT="Default comment for the table, please edit me">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="type" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="150" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="instance" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="data" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
       </FIELDS>

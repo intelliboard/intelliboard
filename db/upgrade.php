@@ -36,7 +36,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 		$table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
 		$table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
 		$table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
-		$table->add_field('page', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+		$table->add_field('page', XMLDB_TYPE_CHAR, '50', null, null, null, null);
 		$table->add_field('param', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
 		$table->add_field('visits', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
 		$table->add_field('timespend', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
@@ -218,8 +218,8 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         $table->add_field('type', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('externalid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('email', XMLDB_TYPE_CHAR, '255', null, null, null, null);
-        $table->add_field('subject', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('email', XMLDB_TYPE_CHAR, '150', null, null, null, null);
+        $table->add_field('subject', XMLDB_TYPE_CHAR, '150', null, XMLDB_NOTNULL, null, null);
         $table->add_field('message', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
         $table->add_field('state', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('attachment', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
@@ -262,7 +262,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('notificationid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('name', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('value', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('value', XMLDB_TYPE_CHAR, '150', null, XMLDB_NOTNULL, null, null);
 
         $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
         if (!$dbman->table_exists($table)) {
@@ -297,7 +297,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         }
 
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('notificationname', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('notificationname', XMLDB_TYPE_CHAR, '150', null, XMLDB_NOTNULL, null, null);
         $table->add_field('notificationid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('email', XMLDB_TYPE_TEXT, null, null, null, null, null);
@@ -327,7 +327,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 
         $field = new xmldb_field('name');
         if (!$dbman->field_exists($table, $field)) {
-            $field->set_attributes(XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+            $field->set_attributes(XMLDB_TYPE_CHAR, '150', null, XMLDB_NOTNULL, null, null);
             $dbman->add_field($table, $field);
         }
 
@@ -396,7 +396,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2018091502, 'local', 'intelliboard');
     }
 
-    if ($oldversion < 2018092601) {
+    if ($oldversion < 2018092603) {
     	$table = new xmldb_table('local_intelliboard_reports');
         if ($dbman->table_exists($table)) {
             $dbman->drop_table($table);
@@ -405,7 +405,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         $table = new xmldb_table('local_intelliboard_reports');
 		$table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
 		$table->add_field('status', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
-		$table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+		$table->add_field('name', XMLDB_TYPE_CHAR, '150', null, XMLDB_NOTNULL, null, null);
 		$table->add_field('sqlcode', XMLDB_TYPE_TEXT, null, null, null, null, null);
 		$table->add_field('appid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
 		$table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
@@ -414,10 +414,10 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 		if (!$dbman->table_exists($table)) {
 			$dbman->create_table($table);
 		}
-		upgrade_plugin_savepoint(true, 2018092601, 'local', 'intelliboard');
+		upgrade_plugin_savepoint(true, 2018092603, 'local', 'intelliboard');
 	}
 
-    if ($oldversion < 2018092604) {
+    if ($oldversion < 2018092606) {
         $table = new xmldb_table('local_intelliboard_ntf');
 
         $field = new xmldb_field('cc');
@@ -427,10 +427,10 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
             $dbman->add_field($table, $field);
         }
 
-        upgrade_plugin_savepoint(true, 2018092604, 'local', 'intelliboard');
+        upgrade_plugin_savepoint(true, 2018092606, 'local', 'intelliboard');
     }
 
-		if ($oldversion < 2018100101) {
+		if ($oldversion < 2018100103) {
 			$data = [];
 				$table = new xmldb_table('local_intelliboard_assign');
 				if ($dbman->table_exists($table)) {
@@ -458,7 +458,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 			if ($data) {
 				$DB->insert_records('local_intelliboard_assign', $data);
 			}
-			upgrade_plugin_savepoint(true, 2018100101, 'local', 'intelliboard');
+			upgrade_plugin_savepoint(true, 2018100103, 'local', 'intelliboard');
     }
 
 
@@ -473,7 +473,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2019050603, 'local', 'intelliboard');
     }
 
-    if ($oldversion < 2019051001) {
+    if ($oldversion < 2019051003) {
         $table = new xmldb_table('local_intelliboard_dbconn');
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('connection_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
@@ -484,11 +484,11 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
             $dbman->create_table($table);
         }
 
-        upgrade_plugin_savepoint(true, 2019051001, 'local', 'intelliboard');
+        upgrade_plugin_savepoint(true, 2019051003, 'local', 'intelliboard');
     }
 
 
-		if ($oldversion < 2019051201) {
+		if ($oldversion < 2019051203) {
 			$table = new xmldb_table('local_intelliboard_reports');
 			$field = new xmldb_field('status');
 			$field->set_attributes(XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
@@ -498,30 +498,30 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 
 			$table = new xmldb_table('local_intelliboard_bbb_meet');
 			$field = new xmldb_field('meetingname');
-			$field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+			$field->set_attributes(XMLDB_TYPE_CHAR, '150', null, null, null, null);
 			try {
 				$dbman->change_field_type($table, $field);
 			} catch (moodle_exception $e) {}
 
 			$field = new xmldb_field('createdate');
-				$field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+				$field->set_attributes(XMLDB_TYPE_CHAR, '150', null, null, null, null);
 			try {
 				$dbman->change_field_type($table, $field);
 			} catch (moodle_exception $e) {}
 
 			$field = new xmldb_field('dialnumber');
-			$field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+			$field->set_attributes(XMLDB_TYPE_CHAR, '150', null, null, null, null);
 			try {
 				$dbman->change_field_type($table, $field);
 			} catch (moodle_exception $e) {}
 
 			$field = new xmldb_field('duration');
-			$field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+			$field->set_attributes(XMLDB_TYPE_CHAR, '150', null, null, null, null);
 			try {
 				$dbman->change_field_type($table, $field);
 			} catch (moodle_exception $e) {}
 
-			upgrade_plugin_savepoint(true, 2019051201, 'local', 'intelliboard');
+			upgrade_plugin_savepoint(true, 2019051203, 'local', 'intelliboard');
 		}
 
     if ($oldversion < 2019082804) {
@@ -531,11 +531,11 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 
         // Adding fields to table local_intelliboard_bb_partic.
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('sessionuid', XMLDB_TYPE_CHAR, '255', null, null, null, null);
-        $table->add_field('useruid', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('sessionuid', XMLDB_TYPE_CHAR, '150', null, null, null, null);
+        $table->add_field('useruid', XMLDB_TYPE_CHAR, '150', null, null, null, null);
         $table->add_field('external_user_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
-        $table->add_field('role', XMLDB_TYPE_CHAR, '255', null, null, null, null);
-        $table->add_field('display_name', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('role', XMLDB_TYPE_CHAR, '150', null, null, null, null);
+        $table->add_field('display_name', XMLDB_TYPE_CHAR, '150', null, null, null, null);
 
         // Adding keys to table local_intelliboard_bb_partic.
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
@@ -555,7 +555,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 
         // Adding fields to table local_intelliboard_bb_trck_m.
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('sessionuid', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('sessionuid', XMLDB_TYPE_CHAR, '150', null, null, null, null);
         $table->add_field('track_time', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
 
         // Adding keys to table local_intelliboard_bb_trck_m.
@@ -609,7 +609,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 
         // Adding fields to table local_intelliboard_bb_rec.
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('sessionuid', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('sessionuid', XMLDB_TYPE_CHAR, '150', null, null, null, null);
         $table->add_field('record_name', XMLDB_TYPE_TEXT, null, null, null, null, null);
         $table->add_field('record_url', XMLDB_TYPE_TEXT, null, null, null, null, null);
 
@@ -629,7 +629,7 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
 
         // Adding fields to table local_intelliboard_att_sync.
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('type', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('type', XMLDB_TYPE_CHAR, '150', null, null, null, null);
         $table->add_field('instance', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
         $table->add_field('data', XMLDB_TYPE_TEXT, null, null, null, null, null);
 
