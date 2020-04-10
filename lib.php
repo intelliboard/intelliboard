@@ -414,58 +414,60 @@ function local_intelliboard_insert_tracking($ajaxRequest = false) {
 		if ($ajaxRequest) {
 			return ['time' => $intelliboardTime];
 		}
+		$page_url = isset($PAGE->url) ? $PAGE->url : '';
+
 		if (isset($PAGE->cm->id)) {
 			$intelliboardPage = 'module';
 			$intelliboardParam = $PAGE->cm->id;
 		} elseif(isset($PAGE->course->id) and $SITE->id != $PAGE->course->id) {
 			$intelliboardPage = 'course';
 			$intelliboardParam = $PAGE->course->id;
-		} elseif(strpos($PAGE->url, '/user/') !== false) {
+		} elseif(strpos($page_url, '/user/') !== false) {
 			$intelliboardPage = 'user';
 			$intelliboardParam = $USER->id;
-		} elseif(strpos($PAGE->url, '/intelliboard/student/courses') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/student/courses') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 1;
-		} elseif(strpos($PAGE->url, '/intelliboard/student/grades') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/student/grades') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 2;
-		} elseif(strpos($PAGE->url, '/intelliboard/student/reports') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/student/reports') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 3;
-		} elseif(strpos($PAGE->url, '/intelliboard/student/monitors') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/student/monitors') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 4;
-		} elseif(strpos($PAGE->url, '/intelliboard/student/') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/student/') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 5;
-		} elseif(strpos($PAGE->url, '/intelliboard/instructor/monitors') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/instructor/monitors') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 6;
-		} elseif(strpos($PAGE->url, '/intelliboard/instructor/reports') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/instructor/reports') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 7;
-		} elseif(strpos($PAGE->url, '/intelliboard/instructor/courses') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/instructor/courses') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 8;
-		} elseif(strpos($PAGE->url, '/intelliboard/instructor/') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/instructor/') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 9;
-		} elseif(strpos($PAGE->url, '/intelliboard/competencies/') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/competencies/') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 10;
-		} elseif(strpos($PAGE->url, '/intelliboard/monitors') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/monitors') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 11;
-		} elseif(strpos($PAGE->url, '/intelliboard/reports') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/reports') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 12;
-		} elseif(strpos($PAGE->url, '/intelliboard/') !== false) {
+		} elseif(strpos($page_url, '/intelliboard/') !== false) {
 			$intelliboardPage = 'local_intelliboard';
 			$intelliboardParam = 1;
-		}  elseif(strpos($PAGE->url, '/local/') !== false) {
-			$start = strpos($PAGE->url, '/', strpos($PAGE->url, '/local/') + 1) + 1;
-			$end = strpos($PAGE->url, '/', $start);
-			$intelliboardPage = 'local_' . substr($PAGE->url, $start, ($end - $start));
+		}  elseif(strpos($page_url, '/local/') !== false) {
+			$start = strpos($page_url, '/', strpos($page_url, '/local/') + 1) + 1;
+			$end = strpos($page_url, '/', $start);
+			$intelliboardPage = 'local_' . substr($page_url, $start, ($end - $start));
 			$intelliboardParam = 1;
 		} else {
 			$intelliboardPage = 'site';

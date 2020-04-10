@@ -45,11 +45,11 @@ class perfect_attendance extends report {
             "SELECT u.id, u.firstname, u.lastname, COUNT(DISTINCT ra.contextid) AS student_courses,
                     AVG(CASE WHEN (gg.finalgrade / gg.rawgrademax) IS NULL THEN 0 ELSE ((gg.finalgrade / gg.rawgrademax) * 100) END) AS avg_grade
                FROM {user} u
-               JOIN {role_assignments} ra ON ra.userid = u.id AND ra.roleid {$studentrolefilter->get_sql()}
+               JOIN {role_assignments} ra ON ra.userid = u.id AND ra.roleid " . $studentrolefilter->get_sql() . "
                JOIN {context} cx ON cx.id = ra.contextid AND cx.contextlevel = :cxcourse
           LEFT JOIN {grade_items} gi ON gi.courseid = cx.instanceid AND gi.itemtype = 'course'
           LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = u.id
-              WHERE u.id {$userfilter->get_sql()}
+              WHERE u.id " . $userfilter->get_sql() . "
            GROUP BY u.id, u.firstname, u.lastname",
             array_merge(['cxcourse' => CONTEXT_COURSE], $userfilter->get_params(), $studentrolefilter->get_params())
         );

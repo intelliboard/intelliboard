@@ -93,6 +93,10 @@ class intelliboard_courses_table extends table_sql {
             $sql .= " AND c.id IN (SELECT ctx.instanceid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ra.roleid $sql1 AND ra.userid = :userid GROUP BY ctx.instanceid)";
         }
 
+        if ($cohortid) {
+            $sql .= " AND cl.cnt_learners > 0";
+        }
+
         $fields = "c.id, c.fullname AS course,
             cu.cnt_proficiency AS proficiency,
             (SELECT COUNT(DISTINCT cc.competencyid) FROM {competency_coursecomp} cc WHERE cc.courseid = c.id) AS competencies,

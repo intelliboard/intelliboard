@@ -43,7 +43,7 @@ class lateness_percent_table extends report {
         return $DB->get_records_sql(
             "SELECT u.*
                FROM {user} u
-              WHERE u.id {$userFilter->get_sql()}",
+              WHERE u.id " . $userFilter->get_sql(),
             $userFilter->get_params()
         );
     }

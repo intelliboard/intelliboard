@@ -387,6 +387,10 @@ class local_external_functions
             'monitor73',
             'monitor74',
             'monitor75',
+            'report212',
+            'report213',
+            'report213_header',
+            'get_course_scorms'
         ];
     }
     public function get_function($params = null)

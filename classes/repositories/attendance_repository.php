@@ -90,11 +90,11 @@ class attendance_repository
 
             if($params['role'] == 'student') {
                 $rolefilter = new in_filter($this->get_student_roles(), "studrole");
-                $from .= " AND ra.roleid {$rolefilter->get_sql()}";
+                $from .= " AND ra.roleid " . $rolefilter->get_sql();
                 $sqlarguments = array_merge($sqlarguments, $rolefilter->get_params());
             } else if($params['role'] == 'teacher') {
                 $rolefilter = new in_filter($this->get_teacher_roles(), "trole");
-                $from .= " AND ra.roleid {$rolefilter->get_sql()}";
+                $from .= " AND ra.roleid " . $rolefilter->get_sql();
                 $sqlarguments = array_merge($sqlarguments, $rolefilter->get_params());
             }
         }
@@ -103,6 +103,31 @@ class attendance_repository
             "SELECT {$select} FROM {$from} WHERE {$where} GROUP BY c.id", $sqlarguments,
             $offset, $limit
         );
+    }
+
+    /**
+     * Get categories
+     *
+     * @param $params
+     * @return array
+     * @throws \dml_exception
+     */
+    public function get_courses_categories($params) {
+        global $DB;
+
+        if(isset($params['report_params'])) {
+            $reportparams = json_decode($params['report_params'], true);
+        } else {
+            $reportparams = [];
+        }
+
+        $conditions = [];
+
+        if (isset($reportparams["onlyvisible"]) && $reportparams["onlyvisible"]) {
+            $conditions["visible"] = 1;
+        }
+
+        return $DB->get_records("course_categories", $conditions);
     }
 
     /**
@@ -131,7 +156,7 @@ class attendance_repository
                FROM {course} c
                JOIN {context} cx ON cx.instanceid = c.id AND
                                     cx.contextlevel = :coursecx
-          LEFT JOIN {role_assignments} ra ON ra.roleid {$rolefilter->get_sql()} AND
+          LEFT JOIN {role_assignments} ra ON ra.roleid " . $rolefilter->get_sql() . " AND
                                              ra.contextid = cx.id
           LEFT JOIN {user} u ON u.id = ra.userid
               WHERE c.id = :courseid
@@ -168,7 +193,7 @@ class attendance_repository
                FROM {context} cx
                JOIN {role_assignments} ra ON ra.userid = :userid AND
                                              ra.contextid = cx.id AND
-                                             ra.roleid {$rolefilter->get_sql()}
+                                             ra.roleid " . $rolefilter->get_sql() . "
               WHERE cx.instanceid = :courseid AND
                     cx.contextlevel = :coursecontext",
             array_merge([
@@ -198,7 +223,7 @@ class attendance_repository
                FROM {context} cx
                JOIN {role_assignments} ra ON ra.userid = :userid AND
                                              ra.contextid = cx.id AND
-                                             ra.roleid {$rolefilter->get_sql()}
+                                             ra.roleid " . $rolefilter->get_sql() . "
               WHERE cx.instanceid = :courseid AND
                     cx.contextlevel = :coursecontext",
             array_merge([
@@ -259,7 +284,7 @@ class attendance_repository
             "SELECT ra.*
                FROM {role_assignments} ra
               WHERE ra.userid = :userid AND
-                    ra.roleid {$rolefilter->get_sql()}",
+                    ra.roleid ". $rolefilter->get_sql(),
             array_merge(['userid' => $params['userid']],  $rolefilter->get_params())
         );
 
@@ -316,7 +341,7 @@ class attendance_repository
             "SELECT DISTINCT u.*
                FROM {context} cx
                JOIN {role_assignments} ra ON ra.contextid = cx.id AND
-                                             ra.roleid {$rolefilter->get_sql()}
+                                             ra.roleid " . $rolefilter->get_sql() . "
                JOIN {user} u ON u.id = ra.userid
               WHERE {$where}",
             array_merge($sqlarguments, $rolefilter->get_params()), $offset, $limit
