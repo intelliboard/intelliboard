@@ -505,3 +505,11 @@ input:checked + .slider:before {
 .intelliboard-table-wrapper .intelliboard-table-content .export form {
     margin: 0;
 }
+
+/* export icons*/
+
+.report-export-panel a img {
+    width: 36px;
+    height: 36px;
+    margin: 0 2px;
+}

@@ -684,6 +684,16 @@ class local_intelliboard_external extends external_api {
             $sql_filter .= ' AND cc.timecompleted IS NULL';
         }
 
+        if(!empty($params->custom2)){
+            $sql_roles_filter = $this->get_filter_in_sql($params->custom2, "ra.roleid");
+            $sql_roles_filter .= $this->get_filter_in_sql($params->courseid, "ctx.instanceid");
+            $sql_join .= " JOIN (SELECT DISTINCT ra.userid, ctx.instanceid
+                    FROM {role_assignments} AS ra
+                        JOIN {role} r ON r.id=ra.roleid
+                        JOIN {context} AS ctx ON ctx.id = ra.contextid
+                    WHERE ctx.contextlevel = 50 $sql_roles_filter) rl ON rl.userid=u.id AND rl.instanceid=c.id";
+        }
+
         return $this->get_report_data("
             SELECT ue.id,
                 (CASE WHEN ue.timestart > 0 THEN ue.timestart ELSE ue.timecreated END) AS enrolled,
@@ -2305,7 +2315,9 @@ class local_intelliboard_external extends external_api {
     }
     public function report25($params)
     {
-        $columns = array_merge(array("component", "files", "filesize"), $this->get_filter_columns($params));
+        $columns = array_merge([
+            ["sql_column" => "component", "type" => "file_component"], "files", "filesize"
+        ], $this->get_filter_columns($params));
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
 
@@ -7938,13 +7950,20 @@ class local_intelliboard_external extends external_api {
 
     function report118($params){
         global $CFG;
+
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg(DISTINCT CONCAT(ra.roleid),', ')";
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT ra.roleid)";
+        }
+
         $columns = array_merge(array(
             "c.fullname",
             "ch.name",
             "lil.timepoint",
             "timeaccess",
             "timespend",
-            "roles",
+            ["sql_column" => $group_concat, "type" => "rolename"],
             "u.firstname",
             "u.lastname",
             "visits"
@@ -7956,12 +7975,6 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter .= $this->get_filterdate_sql($params, 'lil.timepoint');
-
-        if ($CFG->dbtype == 'pgsql') {
-            $group_concat = "string_agg( DISTINCT CONCAT(ra.roleid), ', ') ";
-        } else {
-            $group_concat = "GROUP_CONCAT(DISTINCT ra.roleid)";
-        }
 
         $data = $this->get_report_data("
             SELECT
@@ -11229,6 +11242,12 @@ class local_intelliboard_external extends external_api {
         $sql_inner_filter4 = $this->get_filter_in_sql($params->courseid, 'm.course');
         $sql_inner_filter5 = $this->get_filter_in_sql($params->courseid, 'm.course');
 
+        if ($CFG->dbtype == 'pgsql') {
+            $typecast = '::TEXT';
+        } else {
+            $typecast = '';
+        }
+
         $sql_select = $sql_overal_submission_date = $sql_overal_submission_graded = $sql_overal_submission_grade = '';
         if (get_component_version('mod_hsuforum')) {
             $sql_inner_filter6 = $this->get_filter_in_sql($params->courseid, 'm.course');
@@ -11247,7 +11266,7 @@ class local_intelliboard_external extends external_api {
 
             $sql_overal_submission_date = ", COALESCE(hf.posted,0)";
             $sql_overal_submission_graded = ", COALESCE(hf.graded,0)";
-            $sql_overal_submission_grade = ", COALESCE(hf.grade,'')";
+            $sql_overal_submission_grade = ", COALESCE(hf.grade$typecast,'')";
         }
 
         return $this->get_report_data("
@@ -11273,7 +11292,7 @@ class local_intelliboard_external extends external_api {
                 ul.timeaccess,
                 GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0) $sql_overal_submission_date) AS overal_submission_date,
                 GREATEST(COALESCE(ass.graded,0), COALESCE(f.graded,0), COALESCE(q.graded,0), COALESCE(gl.graded,0), COALESCE(ch.graded,0) $sql_overal_submission_graded) AS overal_submission_graded,
-                GREATEST(COALESCE(ass.grade,''), COALESCE(f.grade,''), COALESCE(q.grade,''), COALESCE(gl.grade,''), COALESCE(ch.grade,'') $sql_overal_submission_grade) AS overal_submission_grade,
+                GREATEST(COALESCE(ass.grade$typecast,''), COALESCE(f.grade$typecast,''), COALESCE(q.grade$typecast,''), COALESCE(gl.grade$typecast,''), COALESCE(ch.grade$typecast,'') $sql_overal_submission_grade) AS overal_submission_grade,
                  (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
                             FROM {role_assignments} AS ra
                                 JOIN {user} u ON ra.userid = u.id
@@ -12576,6 +12595,147 @@ class local_intelliboard_external extends external_api {
                 JOIN {attendance_statuses} stg ON stg.id = atl.statusid AND stg.deleted = 0 AND stg.visible = 1 AND stg.attendanceid = ats.attendanceid
                 JOIN {user} u ON atl.studentid = u.id
             WHERE c.id > 0 $sql_filter $sql_having $sql_order", $params);
+    }
+
+    public function report212($params) {
+        global $DB;
+
+        if (!$DB->get_manager()->table_exists('local_intellicart')) {
+            return ["data" => []];
+        }
+
+        $columns = array_merge(array(
+            "icmp.companies",
+            "CONCAT(u.firstname, ' ', u.lastname)",
+            "u.email",
+            "p.name",
+            "l.timemodified",
+            "lis.expiration",
+            "ase.assignees",
+        ), $this->get_filter_columns($params));
+
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_having = $this->get_filter_sql($params, $columns, false);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_filterdate_sql($params, "l.timemodified");
+        $sql_manager_filter = $this->vendor_manager_filter("u.id", $params);
+
+        $assigneesfield = get_operator(
+            "GROUP_CONCAT", "CONCAT(u1.firstname, ' ', u1.lastname)", ["separator" => ", "]
+        );
+        $companiesfield = get_operator(
+            "GROUP_CONCAT", "liv.name", ["separator" => ", "]
+        );
+
+        return $this->get_report_data(
+            "SELECT l.id, icmp.companies, CONCAT(u.firstname, ' ', u.lastname) AS purchaser, u.email,
+                    u.firstname, u.lastname,
+                    p.name AS license, l.timemodified AS purchase_date,
+                    lis.expiration AS expiration_date, ase.assignees {$sql_columns}
+               FROM {local_intellicart_logs} l 
+               JOIN {user} u ON u.id = l.userid
+               JOIN {local_intellicart_products} p ON p.id = l.instanceid
+               JOIN {local_intellicart_seats} lis ON lis.userid = u.id AND
+                                                     lis.productid = p.id AND
+                                                     lis.checkoutid = l.checkoutid
+          LEFT JOIN (SELECT l1.instanceid,
+                            {$assigneesfield} AS assignees
+                       FROM {local_intellicart_logs} l1
+                       JOIN {user} u1 ON u1.id = l1.userid
+                      WHERE l1.type = 'usedseat'
+                   GROUP BY l1.instanceid
+                    ) ase ON ase.instanceid = lis.id
+          LEFT JOIN (SELECT liu.userid, {$companiesfield} AS companies
+                       FROM {local_intellicart_users} liu
+                       JOIN {local_intellicart_vendors} liv ON liv.id = liu.instanceid
+                      WHERE liu.type = 'vendor' AND liu.role = 'manager'
+                   GROUP BY liu.userid
+                    ) icmp ON icmp.userid = u.id
+              WHERE l.status = 'completed' AND l.type = 'seat' {$sql_manager_filter} {$sql_filter}
+                    {$sql_having}
+                    {$sql_order}",
+            $params
+        );
+    }
+
+    public function report213($params) {
+        global $DB;
+        if (!$params->custom) {
+            return [];
+        }
+
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.email",
+            "st.attempt",
+            "sa.startdate",
+            "sa.enddate",
+            "sc.score",
+            "status",
+        ), $this->get_filter_columns($params));
+
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_scorm_filter1 = $this->get_filter_in_sql($params->custom, "scormid");
+        $sql_scorm_filter2 = $this->get_filter_in_sql($params->custom, "scormid", false);
+        $sql_scorm_filter3 = $this->get_filter_in_sql($params->custom, "scormid", false);
+        $sql_scorm_filter4 = $this->get_filter_in_sql($params->custom, "scormid", false);
+        $sql_scorm_filter5 = $this->get_filter_in_sql($params->custom, "s.id", false);
+
+        if ($items = $DB->get_records_sql("SELECT DISTINCT SUBSTRING_INDEX(SUBSTRING_INDEX(element, '.', 2), '.', -1) AS element  FROM {scorm_scoes_track} WHERE element LIKE 'cmi.interactions_%.id' $sql_scorm_filter1", $this->params)) {
+            foreach($items as $item) {
+                $sql_columns .= ", (SELECT value FROM {scorm_scoes_track} WHERE userid=st.userid AND attempt=st.attempt AND element='cmi.".$item->element.".student_response') AS ".$item->element;
+                $columns[] = $item->element;
+            }
+        }
+
+        $sql_having = $this->get_filter_sql($params, $columns, false);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filterdate_sql($params, "sa.enddate");
+        $sql_manager_filter = $this->vendor_manager_filter("u.id", $params);
+
+        return $this->get_report_data("
+          SELECT DISTINCT CONCAT(u.id, '_', COALESCE(st.attempt, 0)) AS uniqueid,
+                    st.scormid AS scormid,
+                    st.attempt AS attempt,
+                    u.id AS userid,
+                    u.firstname,
+                    u.lastname,
+                    u.email,
+                    sa.startdate,
+                    sa.enddate,
+                    sc.score,
+                    CASE WHEN ss.status IS NULL THEN 'notattempted' ELSE ss.status END AS status
+                    $sql_columns
+            FROM {scorm} s
+                JOIN {enrol} e ON e.courseid=s.course
+                JOIN {user_enrolments} ue ON ue.enrolid=e.id
+                JOIN {user} u ON ue.userid=u.id
+                LEFT JOIN {scorm_scoes_track} st ON st.scormid=s.id AND st.element='x.start.time' AND u.id=st.userid
+                LEFT JOIN (SELECT userid, attempt, MIN(timemodified) AS startdate, MAX(timemodified) AS enddate FROM {scorm_scoes_track} WHERE $sql_scorm_filter2 GROUP BY userid, attempt) sa ON sa.userid=st.userid AND sa.attempt=st.attempt
+                LEFT JOIN (SELECT userid, attempt, MAX(value) AS score FROM {scorm_scoes_track} WHERE $sql_scorm_filter3 AND element='cmi.core.score.raw' GROUP BY userid, attempt) sc ON sc.userid=st.userid AND sc.attempt=st.attempt
+                LEFT JOIN (SELECT userid, attempt, MAX(value) AS status FROM {scorm_scoes_track} WHERE $sql_scorm_filter4 AND element='cmi.core.lesson_status' GROUP BY userid, attempt) ss ON ss.userid=st.userid AND ss.attempt=st.attempt
+            WHERE $sql_scorm_filter5 $sql_filter $sql_manager_filter $sql_having $sql_order", $params);
+    }
+
+    public function report213_header($params) {
+        global $DB;
+
+        if (!$params->custom) {
+            return [];
+        }
+        $sql_scorm_filter1 = $this->get_filter_in_sql($params->custom, "scormid");
+        $sql_scorm_filter2 = $this->get_filter_in_sql($params->custom, "id", false);
+
+        $data = [];
+        $data['questions'] = $DB->get_records_sql("SELECT DISTINCT SUBSTRING_INDEX(SUBSTRING_INDEX(element, '.', 2), '.', -1) AS question, value AS name FROM {scorm_scoes_track} WHERE element LIKE 'cmi.interactions_%.id' $sql_scorm_filter1", $this->params);
+        $data['scorm_name'] = $DB->get_record_sql("SELECT name FROM {scorm} WHERE $sql_scorm_filter2", $this->params);
+
+        return $data;
     }
 
     function get_cohort_stats($params)
@@ -15199,6 +15359,16 @@ class local_intelliboard_external extends external_api {
         );
     }
 
+    public function get_course_scorms($params)
+    {
+        global $DB;
+
+        $sql_filter = $this->get_teacher_sql($params, ["course" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->courseid,'course');
+
+        return $DB->get_records_sql("SELECT id, name FROM {scorm} WHERE id > 0 $sql_filter", $this->params);
+    }
+
     public function get_cohort_users($params){
         global $DB;
 
@@ -17330,7 +17500,7 @@ class local_intelliboard_external extends external_api {
     }
     public function get_site_activity($params)
     {
-        global $DB;
+        global $DB, $CFG;
 
         $sql = $this->get_teacher_sql($params, ["userid" => "users"]);
         $sql2 = $this->get_teacher_sql($params, ["userid" => "users"]);
@@ -17340,27 +17510,33 @@ class local_intelliboard_external extends external_api {
         $this->params['timefinish'] = $params->timefinish;
         $data = new stdClass();
 
+        if ($CFG->dbtype == 'mysqli' && !$params->sizemode) {
+            $sql_cache = ' SQL_NO_CACHE ';
+        } else {
+            $sql_cache = '';
+        }
+
         if ($params->externalid) {
             $data->sessions = $DB->get_records_sql("
-                SELECT floor(l.timepoint / $ext) * $ext AS timepointval, COUNT(DISTINCT t.userid) AS pointval
+                SELECT $sql_cache floor(l.timepoint / $ext) * $ext AS timepointval, COUNT(DISTINCT t.userid) AS pointval
                 FROM {local_intelliboard_logs} l, {local_intelliboard_tracking} t
                 WHERE l.trackid = t.id AND l.timepoint BETWEEN :timestart AND :timefinish $sql3
                 GROUP BY timepointval", $this->params);
         } else {
             $data->sessions = $DB->get_records_sql("
-                SELECT floor(timepoint / $ext) * $ext AS timepointval, SUM(sessions) AS pointval
+                SELECT $sql_cache floor(timepoint / $ext) * $ext AS timepointval, SUM(sessions) AS pointval
                 FROM {local_intelliboard_totals}
                 WHERE timepoint BETWEEN :timestart AND :timefinish
                 GROUP BY timepointval", $this->params);
         }
         $data->enrolments = $DB->get_records_sql("
-            SELECT floor(timecreated / $ext) * $ext AS timepointval, COUNT(DISTINCT (userid)) AS pointval
+            SELECT $sql_cache floor(timecreated / $ext) * $ext AS timepointval, COUNT(DISTINCT (userid)) AS pointval
             FROM {user_enrolments}
             WHERE timecreated BETWEEN :timestart AND :timefinish $sql
             GROUP BY timepointval", $this->params);
 
         $data->completions = $DB->get_records_sql("
-            SELECT floor(timecompleted / $ext) * $ext AS timepointval, COUNT(DISTINCT (userid)) AS pointval
+            SELECT $sql_cache floor(timecompleted / $ext) * $ext AS timepointval, COUNT(DISTINCT (userid)) AS pointval
             FROM {course_completions}
             WHERE timecompleted BETWEEN :timestart AND :timefinish $sql2
             GROUP BY timepointval", $this->params);
@@ -17478,12 +17654,39 @@ class local_intelliboard_external extends external_api {
 
             foreach($records as &$record){
                 $coursecat = coursecat::get($record->id);
-                $record->full_path = $coursecat->get_nested_name(false);
+                $record->full_path = $this->get_category_nested_name($coursecat, false);
             }
 
             return $records;
         }
     }
+
+    /**
+    * Get the nested name of this category, with all of it's parents.
+    *
+    * @param   bool    $includelinks Whether to wrap each name in the view link for that category.
+    * @param   string  $separator The string between each name.
+    * @param   array   $options Formatting options.
+    * @return  string
+    */
+    protected function get_category_nested_name($coursecat, $includelinks = true, $separator = ' / ', $options = []) {
+       // Get the name of hierarchical name of this category.
+       $parents = $coursecat->get_parents();
+       $categories = coursecat::get_many($parents);
+       $categories[] = $coursecat;
+
+       $names = array_map(function($category) use ($options, $includelinks) {
+           if ($includelinks) {
+               return html_writer::link($category->get_view_link(), $category->get_formatted_name($options));
+           } else {
+               return $category->get_formatted_name($options);
+           }
+
+       }, $categories);
+
+       return implode($separator, $names);
+   }
+
     public function get_assign_fields($params)
     {
         global $DB;
@@ -17910,6 +18113,28 @@ class local_intelliboard_external extends external_api {
         }
 
         return $sql;
+    }
+
+    public function vendor_manager_filter($useridcolumn, $params)
+    {
+        global $DB;
+
+        if (isset($params->vendor_user_id) && $params->vendor_user_id) {
+            $users = array_keys($DB->get_records_sql(
+                "SELECT DISTINCT liu1.userid
+                   FROM {local_intellicart_users} liu
+              LEFT JOIN {local_intellicart_users} liu1 ON liu1.instanceid = liu.instanceid AND
+                                                          liu1.type = 'vendor' AND liu1.role = 'manager'
+                 WHERE liu.type = 'vendor' AND liu.role = 'manager' AND liu.userid = :user",
+                ['user' => $params->vendor_user_id]
+            ));
+
+            $managersids = implode(',', $users);
+
+            return " AND {$useridcolumn} IN ({$managersids})";
+        }
+
+        return "";
     }
 
     public function get_info($params)

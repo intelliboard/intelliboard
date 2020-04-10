@@ -58,7 +58,7 @@ class attendance_report extends report {
                 $this->get_courses_students($this->get_teacher_courses($params["teacher_id"])), "st1"
             );
             $sqlparams = array_merge($sqlparams, $studentsfilter->get_params());
-            $where .= " AND u.id {$studentsfilter->get_sql()}";
+            $where .= " AND u.id " . $studentsfilter->get_sql();
         }
 
         $studentrolefilter = new in_filter($this->get_student_roles(), "strole");
@@ -69,7 +69,7 @@ class attendance_report extends report {
                     u.email
                FROM {user} u
                JOIN {context} cx ON cx.contextlevel = :coursecxlvl
-               JOIN {role_assignments} ra ON ra.roleid {$studentrolefilter->get_sql()} AND
+               JOIN {role_assignments} ra ON ra.roleid " . $studentrolefilter->get_sql() . " AND
                                              ra.userid = u.id AND
                                              ra.contextid = cx.id
               WHERE {$where} {$order}",

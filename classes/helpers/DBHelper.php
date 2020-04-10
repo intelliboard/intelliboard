@@ -60,7 +60,7 @@ class DBHelper
                     $format = get_string('postgremonthyearday', 'local_intelliboard');;
                     $result = "to_char(to_timestamp({$sqlfield} + {$offset}),'{$format}')";
                 } else {
-                    $format = get_string('monthyearday', 'local_intelliboard');
+                    $format = get_string('mysqlmonthyearday', 'local_intelliboard');
                     $result = "FROM_UNIXTIME({$sqlfield} + {$offset}, '{$format}')";
                 }
 
