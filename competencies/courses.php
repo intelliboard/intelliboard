@@ -60,7 +60,8 @@ $params = array(
     "action"=>$action,
     "search"=> $search,
     'competencyid'=> $competencyid,
-    "sesskey"=>sesskey()
+    "sesskey"=>sesskey(),
+    "cohortid" => $cohortid
 );
 
 if (!$action || in_array($action, ['proficient', 'learners', 'competencies'])) {

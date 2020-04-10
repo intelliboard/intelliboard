@@ -27,7 +27,6 @@
 namespace local_intelliboard\output\tables\initial_reports;
 
 use local_intelliboard\output\tables\intelliboard_table;
-use local_intelliboard\reports\entities\in_filter;
 use local_intelliboard\reports\report_trait;
 
 class report1 extends intelliboard_table

@@ -9,6 +9,8 @@ class reportColumnFilter
 {
     const TYPE_COUNTRY = "country";
     const TYPE_NORMAL = "normal";
+    const TYPE_FILECOMPONENT = "file_component";
+    const TYPE_ROLENAME = "rolename";
 
     private $column;
     private $filterVal;
@@ -31,17 +33,40 @@ class reportColumnFilter
 
     public function getFilterValue()
     {
-        switch ($this->column["type"]) {
-            case self::TYPE_COUNTRY:
-                $countryCode = CountryHelper::getCountryCodeByName($this->filterVal);
+        try {
+            switch ($this->column["type"]) {
+                case self::TYPE_COUNTRY:
+                    $countryCode = CountryHelper::getCountryCodeByName($this->filterVal);
 
-                if ($countryCode) {
-                    return "%{$countryCode}%";
-                }
+                    if ($countryCode) {
+                        return "%{$countryCode}%";
+                    }
 
-                return "%{$this->filterVal}%";
-            default:
-                return "%{$this->filterVal}%";
+                    return "%{$this->filterVal}%";
+                case self::TYPE_FILECOMPONENT:
+                    $formattedfilterval = strtolower(str_replace(" ", "_", $this->filterVal));
+                    return "%{$formattedfilterval}%";
+                case self::TYPE_ROLENAME:
+                    $roles = role_fix_names(get_all_roles());
+                    $roleid = 0;
+
+                    foreach ($roles as $role) {
+                        if (strtolower($role->localname) == strtolower($this->filterVal)) {
+                            $roleid = $role->id;
+                            break;
+                        }
+                    }
+
+                    if ($roleid) {
+                        return $roleid;
+                    }
+
+                    return $this->filterVal;
+                default:
+                    return "%{$this->filterVal}%";
+            }
+        } catch (\Exception $e) {
+            return "%{$this->filterVal}%";
         }
     }
 
@@ -66,6 +91,6 @@ class reportColumnFilter
      */
     public function getFilterKey()
     {
-        return strtolower(clean_param($this->column["sql_column"], PARAM_ALPHANUMEXT) . $this->filterPrefix);
+        return substr(strtolower(clean_param($this->column["sql_column"], PARAM_ALPHANUMEXT)), 0, 20) . $this->filterPrefix;
     }
 }

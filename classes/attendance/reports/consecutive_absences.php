@@ -60,10 +60,10 @@ class consecutive_absences extends report {
                     ) as avg_grade
                FROM {user} u
                JOIN {role_assignments} ra ON ra.userid = u.id AND
-                                             ra.roleid {$studentrolefilter->get_sql()}
+                                             ra.roleid " . $studentrolefilter->get_sql() . "
                JOIN {context} cx ON cx.id = ra.contextid AND
                                     cx.contextlevel = :cxcourse
-              WHERE u.id {$userFilter->get_sql()}
+              WHERE u.id " . $userFilter->get_sql() . "
            GROUP BY u.id, fullname {$order}",
             array_merge(['cxcourse' => CONTEXT_COURSE], $userFilter->get_params(), $studentrolefilter->get_params()),
             $params['offset'], $params['limit']

@@ -202,7 +202,7 @@
 
 .area:not(.custom-tooltip) .google-visualization-tooltip{ padding:5px; height:auto!important;}
 
-.intelli-instructor-header{	border-bottom: 1px solid #ddd;  margin-bottom: 40px;}
+.intelli-instructor-header{	border-bottom: 1px solid #ddd;  margin-bottom: 40px; display: flex; flex-wrap: wrap;}
 .intelli-instructor-header .instructor-head{width: 70%;float: left;box-sizing: border-box; border-right: 1px solid #ddd; box-sizing: border-box;padding-top: 10px}
 .intelli-instructor-header .instructor-head.full{width: 100%; border: 0px none;}
 .intelli-instructor-header .instructor-chart{ height: 250px }
@@ -483,6 +483,10 @@
 }
 #iframe{
 	position: relative;
+}
+div#iframe{
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
 }
 #iframe iframe{
 	position: relative;
@@ -1034,6 +1038,7 @@ div[aria-label="A tabular representation of the data in the chart."] {
 }
 .instructor-dashboard-settings-wrapper {
     margin-top: 15px;
+    width: 100%;
 }
 .instructor-courses-settings {
     min-width: 150px;
@@ -1107,4 +1112,32 @@ div[aria-label="A tabular representation of the data in the chart."] {
     border-top-left-radius: 13px;
     border-bottom-right-radius: 14px;
     background-color: rgba(255,255,255,0.8);
+}
+
+.intelliboard-nav {
+    display: flex;
+    margin-bottom: 0;
+    padding-left: 0;
+    list-style: none;
+    -webkit-flex-wrap: wrap;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+}
+
+.intelliboard-card-block {
+    padding: 1.429rem;
+    -webkit-box-flex: 1;
+    -webkit-flex: 1 1 auto;
+    -ms-flex: 1 1 auto;
+    flex: 1 1 auto;
+}
+
+.instr-dashb-mainchartform {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+.chart8-filter-box {
+    display: flex;
+    justify-content: space-between;
 }

@@ -202,6 +202,10 @@ if(get_config('local_intelliboard', 'last_year')){
     $menu[5] = get_string('last_year','local_intelliboard');
 }
 
+$PAGE->requires->js_call_amd(
+    'local_intelliboard/intelliboard', 'circleProgress', [chart_options()->GradesCalculationJSON]
+);
+
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
@@ -443,7 +447,7 @@ echo $OUTPUT->header();
 
                 <?php if($t11): ?>
                     <div class="<?php echo (!$t9 and !$t10)?'box100':'box50'; ?>  pull-left">
-                        <ul class="nav nav-tabs clearfix">
+                        <ul class="nav nav-tabs">
                             <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('course_progress', 'local_intelliboard'); ?></a></li>
 
                             <span>
@@ -602,7 +606,7 @@ echo $OUTPUT->header();
         <?php endif; ?>
         <?php include("../views/footer.php"); ?>
     </div>
-    <script type="text/javascript"
+    <!-- <script type="text/javascript"
             src="https://www.google.com/jsapi?autoload={
             'modules':[{
               'name':'visualization',
@@ -610,10 +614,13 @@ echo $OUTPUT->header();
               'packages':['corechart'],
               'language': '<?php echo current_language(); ?>'
             }]
-          }"></script>
+          }"></script> -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
+        google.charts.load('current', {'name':'visualization', 'version': 1, 'packages':['corechart'], 'language': '<?php echo current_language(); ?>'});
+        
         jQuery(document).ready(function(){
-            jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesCalculation); ?>);
             jQuery('.intelliboard-dropdown:not(.students) ul li').click(function(e){
                 var stext = jQuery(this).parent().parent().find('span').text();
                 var svalue = jQuery(this).parent().parent().find('span').attr('value');
@@ -693,7 +700,7 @@ echo $OUTPUT->header();
 
         });
         <?php if($t14): ?>
-        google.setOnLoadCallback(CourseSuccess);
+        google.charts.setOnLoadCallback(CourseSuccess);
         function CourseSuccess() {
             var data = google.visualization.arrayToDataTable([
                 ['<?php echo intellitext(get_string('status', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('courses', 'local_intelliboard')); ?>'],
@@ -708,7 +715,7 @@ echo $OUTPUT->header();
         <?php endif; ?>
 
         <?php if($t15): ?>
-        google.setOnLoadCallback(Correlations);
+        google.charts.setOnLoadCallback(Correlations);
         function Correlations() {
             var data = new google.visualization.DataTable();
             data.addColumn('number', '<?php echo intellitext(get_string('grade', 'local_intelliboard')); ?>');
@@ -722,7 +729,7 @@ echo $OUTPUT->header();
         <?php endif; ?>
 
         <?php if($t12): ?>
-        google.setOnLoadCallback(ActivityParticipation);
+        google.charts.setOnLoadCallback(ActivityParticipation);
         function ActivityParticipation() {
             var data = google.visualization.arrayToDataTable([
                 ['<?php echo intellitext(get_string('modulename', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('total', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('viewed', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('completed', 'local_intelliboard')); ?>'],
@@ -737,7 +744,7 @@ echo $OUTPUT->header();
         <?php endif; ?>
 
         <?php if($t13): ?>
-        google.setOnLoadCallback(LearningProgress);
+        google.charts.setOnLoadCallback(LearningProgress);
         function LearningProgress() {
 
             var data = google.visualization.arrayToDataTable([
@@ -753,7 +760,7 @@ echo $OUTPUT->header();
         <?php endif; ?>
 
         <?php if($t6): ?>
-        google.setOnLoadCallback(drawCourseProgress);
+        google.charts.setOnLoadCallback(drawCourseProgress);
         function drawCourseProgress() {
             var data = google.visualization.arrayToDataTable([
                 ['<?php echo intellitext(get_string('course', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('courseaverage', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('mygrade', 'local_intelliboard')); ?>'],
@@ -770,7 +777,7 @@ echo $OUTPUT->header();
         <?php endif; ?>
 
         <?php if($t5): ?>
-        google.setOnLoadCallback(drawActivityProgress);
+        google.charts.setOnLoadCallback(drawActivityProgress);
         function drawActivityProgress() {
             var data = new google.visualization.DataTable();
             data.addColumn('date', '<?php echo intellitext(get_string('time', 'local_intelliboard')); ?>');
