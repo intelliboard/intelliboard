@@ -45,7 +45,13 @@ class attendance_ytd_table extends report {
         if ($params["teacher_id"]) {
             $coursefilter = new in_filter($this->get_teacher_courses($params["teacher_id"]), "cr1");
             $sqlparams = array_merge($sqlparams, $coursefilter->get_params());
-            $where .= " AND c.id {$coursefilter->get_sql()}";
+            $where .= " AND c.id " . $coursefilter->get_sql();
+        }
+
+        if (!empty($params["courses"])) {
+            $coursefilter = new in_filter($params["courses"], "cr2");
+            $sqlparams = array_merge($sqlparams, $coursefilter->get_params());
+            $where .= " AND c.id " . $coursefilter->get_sql();
         }
 
         $studentrolefilter = new in_filter($this->get_student_roles(), "role");
@@ -58,7 +64,7 @@ class attendance_ytd_table extends report {
                JOIN {context} cx ON cx.instanceid = c.id AND
                                     cx.contextlevel = :coursecx
           LEFT JOIN {role_assignments} ra ON ra.contextid = cx.id AND
-                                             ra.roleid {$studentrolefilter->get_sql()}
+                                             ra.roleid " . $studentrolefilter->get_sql() . "
               WHERE {$where}
            GROUP BY c.id {$order}",
             $sqlparams,

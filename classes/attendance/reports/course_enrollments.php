@@ -44,7 +44,7 @@ class course_enrollments extends report {
 
         if ($params["teacher_id"]) {
             $coursefilter = new in_filter($this->get_teacher_courses($params["teacher_id"]), "teacher");
-            $where .= " AND c.id {$coursefilter->get_sql()}";
+            $where .= " AND c.id " . $coursefilter->get_sql();
             $sqlparams = array_merge($sqlparams, $coursefilter->get_params());
         }
 
@@ -58,7 +58,7 @@ class course_enrollments extends report {
                JOIN {context} cx ON cx.instanceid = c.id AND
                                     cx.contextlevel = :coursecx
           LEFT JOIN {role_assignments} ra ON ra.contextid = cx.id AND
-                                             ra.roleid {$studentrolefilter->get_sql()}
+                                             ra.roleid " . $studentrolefilter->get_sql() . "
           LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND 
                                         gi.itemtype = 'course'
           LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id

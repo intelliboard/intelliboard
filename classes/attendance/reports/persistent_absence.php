@@ -45,10 +45,10 @@ class persistent_absence extends report {
             "SELECT u.id, u.firstname, u.lastname, COUNT(DISTINCT ra.contextid) as student_courses
                FROM {user} u
                JOIN {role_assignments} ra ON ra.userid = u.id AND
-                                             ra.roleid {$studentrolefilter->get_sql()}
+                                             ra.roleid " . $studentrolefilter->get_sql() . "
                JOIN {context} cx ON cx.id = ra.contextid AND
                                     cx.contextlevel = :cxcourse 
-              WHERE u.id {$userfilter->get_sql()}
+              WHERE u.id " . $userfilter->get_sql() . "
            GROUP BY u.id, u.firstname, u.lastname",
             array_merge(['cxcourse' => CONTEXT_COURSE], $userfilter->get_params(), $studentrolefilter->get_params())
         );

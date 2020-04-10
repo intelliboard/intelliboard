@@ -259,6 +259,10 @@ if($action == 'get_total_students'){
         $modules[] = array($item->activity, $item->students_attempt/$enrolled_users->users, $tooltip);
     }
 
+    if (!$data) {
+        $modules[] = ['', 0, ''];
+    }
+
     die(json_encode($modules));
 }elseif($action == 'get_module_utilization'){
     if(!$course){
@@ -661,8 +665,9 @@ if($action == 'get_total_students'){
         ['course' => $courseid]
     );
 
-    if(!$activities) {
-        return [];
+    if(!$activities && !$export) {
+        $data[] = ['', 0];
+        exit(json_encode($data));
     }
 
     foreach($activities as $activity) {

@@ -84,4 +84,19 @@ class renderer extends plugin_renderer_base {
             'local_intelliboard/initial_report', $report->export_for_template($this)
         );
     }
+
+    /**
+     * Return content of "Instructor dashboard" page
+     *
+     * @param instructor_index $report
+     * @return string HTML string
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    public function render_instructor_index(\local_intelliboard\output\instructor_index $page) {
+        return $this->render_from_template(
+            'local_intelliboard/instructor_index', $page->export_for_template($this)
+        );
+    }
 }

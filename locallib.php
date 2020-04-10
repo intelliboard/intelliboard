@@ -287,6 +287,17 @@ function chart_options()
     $res['CourseSuccessCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:{ position:'bottom',alignment:'center' },title: '',height:'350',chartArea:{width:'95%',height: '85%',right:10,top:10},backgroundColor:{fill:'transparent'}}";
 
     $res['GradesCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:40,guage:1,coverBg: '#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'11px',percentWeight:'normal'}";
+    $res['GradesCalculationJSON'] = json_encode([
+        "factor" => md5("#FGS$%FGH245$".rand(0,1000)),
+        "animate" => true,
+        "diameter" => 40,
+        "guage" => 1,
+        "coverBg" => "#fff",
+        "bgColor" => "#efefef",
+        "fillColor" => "#5c93c8",
+        "percentSize" => "11px",
+        "percentWeight" => "normal",
+    ]);
 
     $res['GradesFCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:80,guage:2,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'15px',percentWeight:'normal'}";
 
