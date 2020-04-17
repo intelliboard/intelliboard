@@ -49,7 +49,7 @@
 .intelliboard-filterform button{  margin: 30px 0 0;}
 
 .intelliboard-search{margin: 30px 0 20px;width: 100%;}
-.intelliboard-search form{margin: 0;}
+.intelliboard-search form{margin: 0; float: left; width: calc(100% - 150px)}
 .intelliboard-search form input{float: left; margin: 0}
 .intelliboard-search form button{float: left; margin: 0 10px 0}
 .intelliboard-search form span{float: right}
@@ -58,6 +58,7 @@
 .intelliboard-search form span a.active,
 .intelliboard-search form span a:hover{color:#666;}
 .intelliboard-search > form > select {width: 25%; margin-right: 10px;}
+.intelliboard-search .report-export-panel {float: right; padding: 0;}
 
 .intelliboard-overflow{width:100%;overflow: hidden;}
 .intelliboard-overflow .no-overflow{width:100%;}

@@ -941,3 +941,9 @@ $string['enable_sso_descr'] = 'Enable Single Sign On Link for one click access f
 $string['join_a_webinar'] = 'Join a Webinar';
 $string['review_support_doc'] = 'Review Support Documentation';
 $string['setup_subheading'] = 'Connect to experience the power of your data. No credit card. No obligation. Just 15 free days of data bliss.';
+
+$string['instructor_courses_table_name'] = 'Course Grades';
+$string['instructor_courses_table_name_learner'] = 'Course {$a->course}, Learner {$a->learner}, Grades';
+$string['instructor_courses_table_name_activity'] = 'Course {$a->course}, Activity {$a->name}, Grades';
+$string['instructor_courses_table_name_learners'] = 'Course {$a->fullname}, Learners';
+$string['instructor_courses_table_name_activities'] = 'Course {$a->fullname}, Activities';

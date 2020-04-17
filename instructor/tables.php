@@ -30,7 +30,7 @@ require_once($CFG->libdir . '/gradelib.php');
 class intelliboard_courses_grades_table extends table_sql {
     public $scale_real;
 
-    function __construct($uniqueid, $search = '') {
+    function __construct($uniqueid, $search = '', $download = 0) {
         global $CFG, $PAGE, $DB, $USER;
 
         parent::__construct($uniqueid);
@@ -111,10 +111,7 @@ class intelliboard_courses_grades_table extends table_sql {
             $headers[] =  get_string('avg_time_spent_per_stud', 'local_intelliboard');
         }
 
-        if(
-            get_config('local_intelliboard', 'table_set_icg_c11') or
-            get_config('local_intelliboard', 'table_set_icg_c12')
-        ) {
+        if((get_config('local_intelliboard', 'table_set_icg_c11') or get_config('local_intelliboard', 'table_set_icg_c12')) && !$download) {
             $columns[] =  'actions';
             $headers[] =  get_string('actions', 'local_intelliboard');
         }
@@ -221,7 +218,7 @@ class intelliboard_courses_grades_table extends table_sql {
         $this->scale_real = get_config('local_intelliboard', 'scale_real');
     }
     function col_visits($values) {
-        return html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
+        return ($this->is_downloading()) ? $values->visits : html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
     }
     function col_timespend($values) {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
@@ -230,7 +227,7 @@ class intelliboard_courses_grades_table extends table_sql {
         return ($values->avg_timespend) ? seconds_to_time($values->avg_timespend) : '-';
     }
     function col_avg_visits($values) {
-        return html_writer::tag("span", intval($values->avg_visits), array("class"=>"info-average"));
+        return ($this->is_downloading()) ? $values->avg_visits : html_writer::tag("span", intval($values->avg_visits), array("class"=>"info-average"));
     }
     function col_learners($values) {
         $learners = intval($values->learners);
@@ -239,6 +236,10 @@ class intelliboard_courses_grades_table extends table_sql {
         $progress = round($progress, 0);
         $learnersstr = get_string('learners', 'local_intelliboard');
         $completedstr = get_string('completed', 'local_intelliboard');
+
+        if($this->is_downloading()){
+            return intval($values->learners)."/".intval($values->completed);
+        }
 
         $html = html_writer::start_tag(
             "div",array("class"=>"intelliboard-tooltip","title"=>"{$learnersstr}: $learners | {$completedstr}: $completed")
@@ -258,6 +259,10 @@ class intelliboard_courses_grades_table extends table_sql {
         $progress = ($learners and $completed)?(($completed/$learners) * 100): 0;
         $progress = round($progress, 0);
 
+        if($this->is_downloading()){
+            return $progress;
+        }
+
         $html = html_writer::start_tag("div", array("class" => "grade"));
         $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => $progress));
         $html .= html_writer::end_tag("div");
@@ -268,6 +273,10 @@ class intelliboard_courses_grades_table extends table_sql {
         if($this->scale_real>0){
             return $values->grade;
         }else{
+            if($this->is_downloading()){
+                return (int)$values->grade;
+            }
+
             $html = html_writer::start_tag("div", array("class" => "grade"));
             $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
             $html .= html_writer::end_tag("div");
@@ -281,7 +290,7 @@ class intelliboard_courses_grades_table extends table_sql {
     function col_course($values) {
         global $CFG;
 
-        return html_writer::link(new moodle_url($CFG->wwwroot.'/course/view.php', array('id'=>$values->id)), $values->course, array("target"=>"_blank"));
+        return ($this->is_downloading()) ? $values->course : html_writer::link(new moodle_url($CFG->wwwroot.'/course/view.php', array('id'=>$values->id)), $values->course, array("target"=>"_blank"));
     }
     function col_actions($values) {
         global  $PAGE;
@@ -318,7 +327,7 @@ class intelliboard_courses_grades_table extends table_sql {
 class intelliboard_activities_grades_table extends table_sql {
     public $scale_real;
 
-    function __construct($uniqueid, $courseid = 0, $search = '', $mod = 0, $module = 0) {
+    function __construct($uniqueid, $courseid = 0, $search = '', $mod = 0, $module = 0, $download = 0) {
         global $CFG, $PAGE, $DB, $USER;
 
         parent::__construct($uniqueid);
@@ -356,7 +365,7 @@ class intelliboard_activities_grades_table extends table_sql {
             $headers[] =  get_string('time_spent','local_intelliboard');
         }
 
-        if(get_config('local_intelliboard', 'table_set_iag_c7')) {
+        if(get_config('local_intelliboard', 'table_set_iag_c7') && !$download) {
             $columns[] =  'actions';
             $headers[] =  get_string('actions','local_intelliboard');
         }
@@ -471,6 +480,9 @@ class intelliboard_activities_grades_table extends table_sql {
         if($this->scale_real>0){
             return $values->grade;
         }else{
+            if($this->is_downloading()){
+                return (int)$values->grade;
+            }
             $html = html_writer::start_tag("div", array("class" => "grade"));
             $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
             $html .= html_writer::end_tag("div");
@@ -484,7 +496,7 @@ class intelliboard_activities_grades_table extends table_sql {
       return intval($values->completed);
     }
     function col_visits($values) {
-        return html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
+        return ($this->is_downloading()) ? intval($values->visits) : html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
     }
     function col_timespend($values) {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
@@ -492,7 +504,7 @@ class intelliboard_activities_grades_table extends table_sql {
     function col_activity($values) {
         global $CFG, $PAGE;
 
-        return html_writer::link(new moodle_url("$CFG->wwwroot/mod/$values->module/view.php", array('id'=>$values->id)), $values->activity, array("target"=>"_blank"));
+        return ($this->is_downloading()) ? $values->activity : html_writer::link(new moodle_url("$CFG->wwwroot/mod/$values->module/view.php", array('id'=>$values->id)), $values->activity, array("target"=>"_blank"));
     }
     function col_actions($values) {
         global  $PAGE;
@@ -671,6 +683,9 @@ class intelliboard_activity_grades_table extends table_sql {
         if($this->scale_real>0){
             return $values->grade;
         }else{
+            if($this->is_downloading()){
+                return (int)$values->grade;
+            }
             $html = html_writer::start_tag("div", array("class" => "grade"));
             $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
             $html .= html_writer::end_tag("div");
@@ -689,7 +704,7 @@ class intelliboard_activity_grades_table extends table_sql {
         }
     }
     function col_visits($values) {
-        return html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
+        return ($this->is_downloading()) ? intval($values->visits) : html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
     }
     function col_timespend($values) {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
@@ -700,7 +715,7 @@ class intelliboard_activity_grades_table extends table_sql {
     function col_learner($values) {
         global $CFG, $PAGE;
 
-        return html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), $values->learner);
+        return ($this->is_downloading()) ? $values->learner : html_writer::link(new moodle_url($PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)), $values->learner);
     }
     function col_actions($values) {
         global  $PAGE;
@@ -715,7 +730,7 @@ class intelliboard_learners_grades_table extends table_sql {
     private $course_avg_visits;
     private $course_avg_timespent;
 
-    function __construct($uniqueid, $courseid = 0, $search = '') {
+    function __construct($uniqueid, $courseid = 0, $search = '', $download = 0) {
         global $CFG, $PAGE, $DB, $USER;
 
         parent::__construct($uniqueid);
@@ -780,7 +795,7 @@ class intelliboard_learners_grades_table extends table_sql {
             $headers[] =  get_string('avg_time_spent_per_stud','local_intelliboard');
         }
 
-        if(get_config('local_intelliboard', 'table_set_ilg_c10')) {
+        if(get_config('local_intelliboard', 'table_set_ilg_c10') && !$download) {
             $columns[] =  'actions';
             $headers[] =  get_string('actions','local_intelliboard');
         }
@@ -933,6 +948,9 @@ class intelliboard_learners_grades_table extends table_sql {
         if($this->scale_real>0){
             return $values->grade;
         }else{
+            if($this->is_downloading()){
+                return (int)$values->grade;
+            }
             $html = html_writer::start_tag("div",array("class"=>"grade"));
             $html .= html_writer::tag("div", "", array("class"=>"circle-progress", "data-percent"=>(int)$values->grade));
             $html .= html_writer::end_tag("div");
@@ -943,7 +961,7 @@ class intelliboard_learners_grades_table extends table_sql {
         return intval($values->progress);
     }
     function col_visits($values) {
-        return html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
+        return ($this->is_downloading()) ? intval($values->visits) : html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
     }
     function col_timespend($values) {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
@@ -952,7 +970,7 @@ class intelliboard_learners_grades_table extends table_sql {
         return ($this->course_avg_timespent) ? seconds_to_time($this->course_avg_timespent) : '-';
     }
     function col_avg_visits($values) {
-        return html_writer::tag("span", intval($this->course_avg_visits), array("class"=>"info-average"));
+        return ($this->is_downloading()) ? intval($this->course_avg_visits) : html_writer::tag("span", intval($this->course_avg_visits), array("class"=>"info-average"));
     }
     function col_timecompleted($values) {
       return ($values->timecompleted) ? get_string('completed_on','local_intelliboard', intelli_date($values->timecompleted)) : get_string('incomplete','local_intelliboard');
@@ -965,6 +983,10 @@ class intelliboard_learners_grades_table extends table_sql {
     }
     function col_learner($values) {
         global $CFG, $PAGE;
+
+        if($this->is_downloading()){
+            return fullname($values);
+        }
 
         return html_writer::link(new moodle_url(
             $PAGE->url, array('action'=>'learner', 'userid'=>$values->userid, 'id'=>$values->courseid)
@@ -1160,6 +1182,9 @@ class intelliboard_learner_grades_table extends table_sql {
         if($this->scale_real>0){
             return $values->grade;
         }else{
+            if($this->is_downloading()){
+                return (int)$values->grade;
+            }
             $html = html_writer::start_tag("div", array("class" => "grade"));
             $html .= html_writer::tag("div", "", array("class" => "circle-progress", "data-percent" => (int)$values->grade));
             $html .= html_writer::end_tag("div");
@@ -1168,7 +1193,7 @@ class intelliboard_learner_grades_table extends table_sql {
     }
 
     function col_visits($values) {
-        return html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
+        return ($this->is_downloading()) ? intval($values->visits) : html_writer::tag("span", intval($values->visits), array("class"=>"info-average"));
     }
     function col_timespend($values) {
       return ($values->timespend) ? seconds_to_time($values->timespend) : '-';
