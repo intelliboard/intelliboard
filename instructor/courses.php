@@ -39,6 +39,7 @@ $cmid = optional_param('cmid', 0, PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHA);
 $search = clean_raw(optional_param('search', '', PARAM_TEXT));
 $pagesize = optional_param('pagesize', 10, PARAM_INT);
+$download = optional_param('download', 0, PARAM_ALPHA);
 
 require_login();
 intelliboard_instructor_access();
@@ -54,13 +55,14 @@ $params = array(
 $intelliboard = intelliboard($params);
 $factorInfo = chart_options();
 $scale_real = get_config('local_intelliboard', 'scale_real');
-
-$PAGE->set_url(new moodle_url(
+$page_url = new moodle_url(
     "/local/intelliboard/instructor/courses.php", [
         "search"=>$search, "action"=>$action, "id"=>$courseid, "userid"=>$userid,
         "cmid"=>$cmid, "mod"=>$mod, "sesskey"=> sesskey(), 'pagesize' => $pagesize
     ]
-));
+);
+
+$PAGE->set_url($page_url);
 $PAGE->set_pagetype('courses');
 $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
@@ -74,17 +76,22 @@ if($action === 'learner'){
 	$table = new intelliboard_learner_grades_table('table', $userid, $courseid, $search, $mod, $modulep);
 	$data = intelliboard_learner_data($userid, $courseid);
 	$user = $DB->get_record('user', array('id'=>$userid));
+    $export_file_name = get_string('instructor_courses_table_name_learner', 'local_intelliboard', $data);
 }elseif($action === 'activity'){
 	$table = new intelliboard_activity_grades_table('table', $cmid, $courseid, $search);
 	$data = intelliboard_activity_data($cmid, $courseid);
+    $export_file_name = get_string('instructor_courses_table_name_activity', 'local_intelliboard', $data);
 }elseif($action === 'learners'){
-	$table = new intelliboard_learners_grades_table('table', $courseid, $search);
+	$table = new intelliboard_learners_grades_table('table', $courseid, $search, $download);
 	$course = intelliboard_course_learners_total($courseid);
+    $export_file_name = get_string('instructor_courses_table_name_learners', 'local_intelliboard', $course);
 }elseif($action == 'activities'){
-	$table = new intelliboard_activities_grades_table('table', $courseid, $search, $mod, $modulep);
+	$table = new intelliboard_activities_grades_table('table', $courseid, $search, $mod, $modulep, $download);
 	$course = intelliboard_activities_data($courseid);
+    $export_file_name = get_string('instructor_courses_table_name_activities', 'local_intelliboard', $course);
 }else{
-	$table = new intelliboard_courses_grades_table('table', $search);
+	$table = new intelliboard_courses_grades_table('table', $search, $download);
+	$export_file_name = get_string('instructor_courses_table_name', 'local_intelliboard');
 }
 
 if (in_array($action, ['learner', 'activities'])) {
@@ -97,9 +104,19 @@ if (in_array($action, ['learner', 'activities'])) {
         $modules
     );
 }
+if($table->is_downloading($download, $export_file_name)){
+    $table->out(($action == 'learners' || $action = 'activities') ? $pagesize : 10, true);
+    exit;
+}
+
+$export_urls = array();
+$formats = array('excel', 'csv', 'pdf');
+foreach ($formats as $format){
+    $page_url->param('download', $format);
+    $export_urls[$format] = $page_url->out();
+}
 
 $table->show_download_buttons_at(array());
-$table->is_downloading('', '', '');
 
 echo $OUTPUT->header();
 ?>
@@ -251,6 +268,13 @@ echo $OUTPUT->header();
 					<i class="ion-android-arrow-back"></i> <?php echo get_string('return_to_courses','local_intelliboard'); ?></a>
 					<?php endif; ?>
 				</form>
+                <div class="report-export-panel">
+                    <?php foreach($export_urls as $format => $url): ?>
+                        <a href="<?php echo $url;?>" title="<?php echo strtoupper($format); ?>">
+                            <i class="eicon-<?php echo $format;?>"></i>
+                        </a>
+                    <?php endforeach;?>
+                </div>
 			</div>
 			<div class="clear"></div>
 			<div class="progress-table">
