@@ -212,6 +212,7 @@ class ColumnsContainer extends BaseContainer {
 
                 return "REPLACE({$params['string']}, {$params['needle']}, {$params['replace']})";
             },
+            33 => "COALESCE",
         );
 
         $columns = array(
@@ -462,6 +463,8 @@ class ColumnsContainer extends BaseContainer {
             232 => array("name" => "productid", "sql" => "productid"),
             233 => array("name" => "expiration", "sql" => "expiration"),
             234 => array("name" => "role", "sql" => "role"),
+            235 => array("name" => "modified", "sql" => "modified"),
+            236 => array("name" => "enrolment_date", "sql" => "CASE WHEN MIN(ue.timestart) > 0 THEN MIN(ue.timestart) ELSE MIN(ue.timecreated) END"),
         );
 
         static::$modifiers = array_map(function($modifier) use ($mode) {
