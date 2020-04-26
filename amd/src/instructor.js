@@ -24,13 +24,13 @@
  */
 
 define(['jquery', 'core/ajax', 'local_intelliboard/intb_multipleselect'], function($, ajax, multipleselect) {
-    let Instructor = {
+    return {
         /**
          * Modal window for settings of instructor dashboard
          */
         dashboardSettings: function(selectCoursesString) {
-            let select = $('.instructor-courses-settings');
-            let wrapper = $('.instructor-dashboard-settings-wrapper');
+            var select = $('.instructor-courses-settings');
+            var wrapper = $('.instructor-dashboard-settings-wrapper');
 
             select.multipleSelect({
                 multiple: true,
@@ -44,13 +44,13 @@ define(['jquery', 'core/ajax', 'local_intelliboard/intb_multipleselect'], functi
             );
 
             wrapper.find('.ms-drop.bottom button').on('click', function() {
-                let selectedCourses = select.val();
+                var selectedCourses = select.val();
 
                 if(selectedCourses == null) {
                     selectedCourses = [];
                 }
 
-                let saveCoursesPromises = ajax.call([
+                var saveCoursesPromises = ajax.call([
                     {
                         methodname: 'local_intelliboard_save_instructor_courses', args: {
                             data: JSON.stringify({courses: selectedCourses})
@@ -64,6 +64,4 @@ define(['jquery', 'core/ajax', 'local_intelliboard/intb_multipleselect'], functi
             });
         }
     };
-
-    return Instructor;
 });
