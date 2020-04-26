@@ -24,7 +24,7 @@
  */
 
 define(['jquery', 'local_intelliboard/intb_circlechart'], function($, circleChart) {
-    let Intelliboard = {
+    return {
         circleProgress: function(options) {
             options = JSON.parse(options);
             $(document).ready(function(){
@@ -32,6 +32,4 @@ define(['jquery', 'local_intelliboard/intb_circlechart'], function($, circleChar
             });
         }
     };
-
-    return Intelliboard;
 });

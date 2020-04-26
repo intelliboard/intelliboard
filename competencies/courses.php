@@ -257,7 +257,7 @@ echo $OUTPUT->header();
                 selectAll: false,
                 filter: true,
                 single: true,
-                onClick: (view) => {
+                onClick: function(view) {
                     window.location.href = $("#cohortFilter option:selected").data("href");
                 }
             });

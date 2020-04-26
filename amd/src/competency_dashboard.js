@@ -24,12 +24,12 @@
  */
 
 define(['jquery', 'local_intelliboard/intb_multipleselect', 'core/str'], function($, multipleselect, str) {
-    let competencyDashboard = {
+    return {
         cohortFilter: function() {
-            let elem = $("#competencyCohortFilter");
+            var elem = $("#competencyCohortFilter");
 
             if (elem.length) {
-                let allCohortsStr = str.get_string("all_cohorts", "local_intelliboard");
+                var allCohortsStr = str.get_string("all_cohorts", "local_intelliboard");
                 $.when(allCohortsStr).done(function(localizedEditString) {
                     elem.multipleSelect({
                         placeholder: localizedEditString,
@@ -45,6 +45,4 @@ define(['jquery', 'local_intelliboard/intb_multipleselect', 'core/str'], functio
 
         }
     };
-
-    return competencyDashboard;
 });

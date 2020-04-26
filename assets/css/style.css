@@ -1052,6 +1052,9 @@ div[aria-label="A tabular representation of the data in the chart."] {
 .summary-chart-wrap {
     z-index: 1;
 }
+.competency-cohort-filter-wrapper .ms-parent {
+    width: 200px !important;
+}
 .competency-cohort-filter-wrapper select[name="cohort_filter"] {
     height: 36px;
     background: #fff;
