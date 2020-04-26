@@ -394,6 +394,8 @@ class local_external_functions
             'monitor76',
             'monitor77',
             'monitor78',
+            'get_tracking_logs',
+            'get_tracking_details',
         ];
     }
     public function get_function($params = null)

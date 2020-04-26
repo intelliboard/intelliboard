@@ -636,6 +636,9 @@ class local_intelliboard_external extends external_api {
         if(isset($params->custom) and  strrpos($params->custom, ',') !== false){
             $sql_filter .= $this->get_filter_in_sql($params->custom, "u.id");
             $sql_filter_column = "ue.timecreated";
+        }elseif(isset($params->custom) and $params->custom == 3){
+            $sql_filter .= " AND (cc.timecompleted IS NULL OR (1 ".$this->get_filterdate_sql($params, "cc.timecompleted")."))";
+            $sql_mode = 2;
         }elseif(isset($params->custom) and $params->custom == 2 and !$params->sizemode){
             $sql_filter_column = "l.timepoint";
             $sql_mode = 1;
@@ -644,7 +647,9 @@ class local_intelliboard_external extends external_api {
         }else{
             $sql_filter_column = "ue.timecreated";
         }
-        if($sql_mode){
+        if($sql_mode == 2){
+            // do nothing, it is for obix
+        }elseif($sql_mode){
             $sql_join_filter .= $this->get_filterdate_sql($params, "$sql_filter_column");
         }else{
             $sql_filter .= $this->get_filterdate_sql($params, "$sql_filter_column");
@@ -672,7 +677,7 @@ class local_intelliboard_external extends external_api {
 
         if($params->sizemode){
             $sql_columns .= ", '0' AS timespend, '0' AS visits";
-        }elseif($sql_mode){
+        }elseif($sql_mode == 1){
             $sql_columns .= ", l.timespend, l.visits";
             $sql_join .= " LEFT JOIN (SELECT t.id,t.userid,t.courseid, SUM(l.timespend) AS timespend, SUM(l.visits) AS visits FROM
                                 {local_intelliboard_tracking} t,
@@ -8550,7 +8555,7 @@ class local_intelliboard_external extends external_api {
                        FROM {questionnaire} q
                        JOIN {questionnaire_survey} qs ON qs.id = q.sid
                        JOIN {questionnaire_question} qq ON qs.id = qq.{$responce_survey_id} AND qq.deleted = 'n'
-                       JOIN {questionnaire_question_type} t ON qq.type_id = t.typeid 
+                       JOIN {questionnaire_question_type} t ON qq.type_id = t.typeid
                       WHERE q.id > 0 {$sql}
                    ORDER BY qq.position
                     ) q
@@ -10220,7 +10225,7 @@ class local_intelliboard_external extends external_api {
                             GROUP BY t.attendanceid,t.studentid) stm ON stm.studentid=u.id AND stm.attendanceid = a.id
             $sql_join
             WHERE u.id > 0 $sql_filter
-            GROUP BY u.id, c.id, a.id, ra.id, ue.id $sql_having $sql_order", $params);
+            GROUP BY u.id, c.id, a.id, ra.id, ue.id, r.name, r.shortname $sql_having $sql_order", $params);
     }
 
     public function report162($params) {
@@ -10519,6 +10524,9 @@ class local_intelliboard_external extends external_api {
                    u.firstname,
                    u.lastname,
                    m.name,
+                   cm.id as cmid,
+                   0 AS slot,
+                   0 AS attempt,
                    MAX(cmc.completionstate) AS status,
                    MAX(cmc.timemodified) AS status_modified,
                    $grade_single AS grade,
@@ -12648,7 +12656,7 @@ class local_intelliboard_external extends external_api {
                     u.firstname, u.lastname,
                     p.name AS license, l.timemodified AS purchase_date,
                     lis.expiration AS expiration_date, ase.assignees {$sql_columns}
-               FROM {local_intellicart_logs} l 
+               FROM {local_intellicart_logs} l
                JOIN {user} u ON u.id = l.userid
                JOIN {local_intellicart_products} p ON p.id = l.instanceid
                JOIN {local_intellicart_seats} lis ON lis.userid = u.id AND
@@ -15306,6 +15314,24 @@ class local_intelliboard_external extends external_api {
                                 WHERE qua.questionid IS NOT NULL AND q.id=:custom", $this->params);
     }
 
+    public function get_tracking_logs($params)
+    {
+        global $DB;
+
+        $this->params['custom'] = (int)$params->custom;
+        $datefilter = $this->get_filterdate_sql($params, 'timepoint');
+
+        return $DB->get_records_sql("SELECT * FROM {local_intelliboard_logs} WHERE trackid=:custom $datefilter ORDER BY timepoint ASC", $this->params);
+    }
+    public function get_tracking_details($params)
+    {
+        global $DB;
+
+        $this->params['custom'] = (int)$params->custom;
+
+        return $DB->get_records_sql("SELECT * FROM {local_intelliboard_details} WHERE logid=:custom", $this->params);
+    }
+
     public function get_course_sections($params)
     {
         global $CFG;
@@ -17068,7 +17094,7 @@ class local_intelliboard_external extends external_api {
                        SUM(CASE WHEN lg.action <> 'loggedin'
                                 THEN 1 ELSE 0 END
                        ) AS mobile_app_login
-                  FROM (SELECT lg1.* 
+                  FROM (SELECT lg1.*
                           FROM {logstore_standard_log} lg1
                          WHERE lg1.id > 0 {$sql_time_filter}
                        ) lg
@@ -17372,7 +17398,7 @@ class local_intelliboard_external extends external_api {
 
         $sql = "SELECT ccat.id, ccat.name, ccat.path,
                        SUM(CASE WHEN cco.timecompleted IS NOT NULL AND
-                                     cco.timecompleted > 0 AND 
+                                     cco.timecompleted > 0 AND
                                      uid.data = 'Qatar Petroleum'
                                 THEN 1 ELSE 0 END
                        ) AS success_qp,
@@ -17449,7 +17475,7 @@ class local_intelliboard_external extends external_api {
                        ) ccat
              LEFT JOIN {course} c ON c.category = ccat.id
              LEFT JOIN (SELECT e1.courseid,
-                               {$datestr} AS cdate,             
+                               {$datestr} AS cdate,
                                COUNT(ra.userid) AS number_enroll
                           FROM {enrol} e1
                           JOIN {user_enrolments} ue1 ON  ue1.enrolid = e1.id
