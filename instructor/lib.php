@@ -359,11 +359,11 @@ function intelliboard_instructor_stats()
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
     $sql = intelliboard_instructor_getcourses('c.id', false, 'ra.userid');
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", []);
-
-    $sql .= get_filter_usersql("u.");
+    $sqluserfilter = get_filter_usersql("u.");
+    $sqlenrolfilter = "";
 
     if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
-        $sql .= ' AND enr.status = 0';
+        $sqlenrolfilter .= ' AND enr.status = 0';
     }
 
     return $DB->get_record_sql(
@@ -372,20 +372,20 @@ function intelliboard_instructor_stats()
                 COUNT(DISTINCT cc.userid) as completed,
                 COUNT(DISTINCT g.id) as grades,
                 {$grade_avg} AS grade
-           FROM {role_assignments} ra
-           JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-           JOIN {course} c ON c.id = ctx.instanceid
-           JOIN {user} u ON u.id = ra.userid
+           FROM {course} c
+           JOIN {context} ctx ON ctx.contextlevel = 50 AND c.id = ctx.instanceid
+      LEFT JOIN {role_assignments} ra ON ctx.id = ra.contextid {$sql2}
+      LEFT JOIN {user} u ON u.id = ra.userid {$sqluserfilter}
       LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
                    FROM {user_enrolments} ue
                    JOIN {enrol} e ON ue.enrolid = e.id
                GROUP BY ue.userid, e.courseid
-                ) enr ON enr.userid = u.id AND enr.courseid = c.id
+                ) enr ON enr.userid = u.id AND enr.courseid = c.id {$sqlenrolfilter}
       LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.timecompleted > 0 AND cc.userid = ra.userid
       LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
       LEFT JOIN {grade_grades} g ON g.userid = ra.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
                 {$join_sql1}
-          WHERE c.id > 0 {$sql} {$sql2}",
+          WHERE c.id > 0 {$sql}",
         $params
     );
 }

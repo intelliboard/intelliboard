@@ -162,7 +162,7 @@ class instructor_index implements renderable, templatable {
         }, $this->params["courses"]));
 
         return [
-            "show_content" => !empty($stats->courses) && !empty($stats->enrolled),
+            "show_content" => !empty($stats->courses),
             "instructorAllCourses" => $instructorAllCourses,
             "instructorheadfull" => !$this->params["pluginsettings"]->n5 && !$this->params["pluginsettings"]->n13,
             "showmainchart" => $this->params["pluginsettings"]->n1 || $this->params["pluginsettings"]->n2 ||
@@ -181,7 +181,7 @@ class instructor_index implements renderable, templatable {
             "showsummarychart" => $this->params["pluginsettings"]->n5 || $this->params["pluginsettings"]->n13,
             "stats" => $stats,
             "summarymenu" => $summarymenu,
-            "summarychartlabel" => intval(($stats->completed / $stats->enrolled) * 100),
+            "summarychartlabel" => !$stats->enrolled ? 0 : intval(($stats->completed / $stats->enrolled) * 100),
             "showintelliboardbox1" => $this->params["pluginsettings"]->n6 || $this->params["pluginsettings"]->n14 ||
                                      $this->params["pluginsettings"]->n18,
             "showintelliboardbox2" => $this->params["pluginsettings"]->n7 || $this->params["pluginsettings"]->n15 ||

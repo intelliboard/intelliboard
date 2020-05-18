@@ -63,6 +63,32 @@ class bbb_client {
     }
 
     /**
+     * Returns Connection status
+     * @return bool
+     */
+    public function checkConnection() {
+        if(get_config('local_intelliboard', 'bbbapiendpoint') && get_config('local_intelliboard', 'bbbserversecret')){
+            $requestaction = 'getDefaultConfigXML';
+
+            $requeststring = "";
+
+            $checksum = sha1($requestaction . $requeststring . $this->bbbserversecret);
+
+            $curl = new \curl();
+            $res = $curl->get($this->apiendpoint . "/{$requestaction}", [
+                'checksum' => $checksum
+            ]);
+
+            $xml = @simplexml_load_string($res);
+
+            return ($xml && $xml->returncode != 'FAILED');
+        }else{
+            return false;
+        }
+
+    }
+
+    /**
      * Return XML objects - list of active meetings
      * @return \SimpleXMLElement
      * @throws \dml_exception

@@ -27,7 +27,44 @@
 require_once($CFG->libdir . '/tablelib.php');
 require_once($CFG->libdir . '/gradelib.php');
 
-class intelliboard_courses_grades_table extends table_sql {
+class local_intelliboard_intelli_table extends table_sql {
+    /**
+     * Call this to pass the download type. Use :
+     *         $download = optional_param('download', '', PARAM_ALPHA);
+     * To get the download type. We assume that if you call this function with
+     * params that this table's data is downloadable, so we call is_downloadable
+     * for you (even if the param is '', which means no download this time.
+     * Also you can call this method with no params to get the current set
+     * download type.
+     * @param string $download dataformat type. One of csv, xhtml, ods, etc
+     * @param string $filename filename for downloads without file extension.
+     * @param string $sheettitle title for downloaded data.
+     */
+    function is_downloading($download = null, $filename='', $sheettitle='', $action = '', $pagesize = 10) {
+        if ($download === 'pdf') {
+            $this->setup();
+            $this->query_db(($action == 'learners' || $action = 'activities') ? $pagesize : 10, true);
+            $this->download = $download;
+            $header = array_map(function($item) {
+                return (object) ["name" => $item];
+            }, $this->headers);
+            $body = array_map(function($item) {
+                return array_values($this->format_row($item));
+            }, $this->rawdata);
+
+            $exportitem = (object) [
+                "header" => $header, "body" => $body
+            ];
+            intelliboard_export_report(
+                $exportitem, $filename, 'pdf', 1
+            );
+        } else {
+            return parent::is_downloading($download, $filename, $sheettitle);
+        }
+    }
+}
+
+class intelliboard_courses_grades_table extends local_intelliboard_intelli_table {
     public $scale_real;
 
     function __construct($uniqueid, $search = '', $download = 0) {
@@ -324,7 +361,7 @@ class intelliboard_courses_grades_table extends table_sql {
     }
 }
 
-class intelliboard_activities_grades_table extends table_sql {
+class intelliboard_activities_grades_table extends local_intelliboard_intelli_table {
     public $scale_real;
 
     function __construct($uniqueid, $courseid = 0, $search = '', $mod = 0, $module = 0, $download = 0) {
@@ -571,7 +608,7 @@ class intelliboard_activities_grades_table extends table_sql {
     }
 }
 
-class intelliboard_activity_grades_table extends table_sql {
+class intelliboard_activity_grades_table extends local_intelliboard_intelli_table {
     public $scale_real;
 
     function __construct($uniqueid, $cmid = 0, $courseid = 0, $search = '') {
@@ -725,7 +762,7 @@ class intelliboard_activity_grades_table extends table_sql {
 }
 
 
-class intelliboard_learners_grades_table extends table_sql {
+class intelliboard_learners_grades_table extends local_intelliboard_intelli_table {
     public $scale_real;
     private $course_avg_visits;
     private $course_avg_timespent;
@@ -1053,7 +1090,7 @@ class intelliboard_learners_grades_table extends table_sql {
         }
     }
 }
-class intelliboard_learner_grades_table extends table_sql {
+class intelliboard_learner_grades_table extends local_intelliboard_intelli_table {
     public $scale_real;
 
     function __construct($uniqueid, $userid = 0, $courseid = 0, $search = '', $mod = 0, $module = 0) {
@@ -1206,7 +1243,7 @@ class intelliboard_learner_grades_table extends table_sql {
     }
 }
 
-class intelliboard_sessions_grades_table extends table_sql {
+class intelliboard_sessions_grades_table extends local_intelliboard_intelli_table {
     public $scale_real;
 
     function __construct($uniqueid, $search = '') {
@@ -1369,7 +1406,7 @@ class intelliboard_sessions_grades_table extends table_sql {
     }
 }
 
-class intelliboard_sessions_activities_grades_table extends table_sql {
+class intelliboard_sessions_activities_grades_table extends local_intelliboard_intelli_table {
     public $scale_real;
 
     function __construct($uniqueid, $sessionid = 0, $courseid = 0, $search = '', $mod = 0) {
@@ -1502,7 +1539,7 @@ class intelliboard_sessions_activities_grades_table extends table_sql {
     }
 }
 
-class intelliboard_sessions_learners_grades_table extends table_sql {
+class intelliboard_sessions_learners_grades_table extends local_intelliboard_intelli_table {
     public $scale_real;
 
     function __construct($uniqueid, $sessionid = 0, $courseid = 0, $search = '') {
@@ -1623,7 +1660,7 @@ class intelliboard_sessions_learners_grades_table extends table_sql {
     }
 }
 
-class intelliboard_sessions_activity_grades_table extends table_sql {
+class intelliboard_sessions_activity_grades_table extends local_intelliboard_intelli_table {
     public $scale_real;
 
     function __construct($uniqueid, $cmid = 0, $sessionid = 0, $courseid = 0, $search = '') {
