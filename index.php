@@ -278,90 +278,96 @@ echo $OUTPUT->header();
 <?php include("views/footer.php"); ?>
 </div>
 
-<script type="text/javascript"
-          src="https://www.google.com/jsapi?autoload={
-            'modules':[{
-              'name':'visualization',
-							'language': '<?php echo current_language(); ?>',
-              'version':'1',
-              'packages':['corechart','geochart']
-            }]
-          }"></script>
+<!--<script type="text/javascript"-->
+<!--          src="https://www.google.com/jsapi?autoload={-->
+<!--            'modules':[{-->
+<!--              'name':'visualization',-->
+<!--							'language': '--><?php //echo current_language(); ?><!--',-->
+<!--              'version':'1',-->
+<!--              'packages':['corechart','geochart']-->
+<!--            }]-->
+<!--          }"></script>-->
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 <script type="text/javascript">
-    <?php if($settingUserEnrollmentsSession) :?>
-    	google.setOnLoadCallback(drawChart);
-    	function drawChart() {
-    		var data = new google.visualization.DataTable();
-    		data.addColumn('date', '<?php echo intellitext(get_string('time', 'local_intelliboard'));?>');
-    		data.addColumn('number', '<?php echo intellitext(get_string('number_of_sessions', 'local_intelliboard'));?>');
-    		data.addColumn('number', '<?php echo intellitext(get_string('course_completions', 'local_intelliboard'));?>');
-    		data.addColumn('number', '<?php echo intellitext(get_string('user_enrolments', 'local_intelliboard'));?>');
-    		data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
+    google.charts.load('current', {'callback': googleChartsCallback, 'name':'visualization', 'version': 1, 'packages':['corechart', 'geochart'], 'language': '<?php echo current_language(); ?>'});
 
-            let oneDay = (24 * 60 * 60 * 1000);
-            let dateRange = data.getColumnRange(0);
-            if (data.getNumberOfRows() === 1) {
-                dateRange.min = new Date(dateRange.min.getTime() - oneDay);
-                dateRange.max = new Date(dateRange.max.getTime() + oneDay);
+    function googleChartsCallback() {
+        <?php if($settingUserEnrollmentsSession) :?>
+            function drawChart() {
+                var data = new google.visualization.DataTable();
+                data.addColumn('date', '<?php echo intellitext(get_string('time', 'local_intelliboard'));?>');
+                data.addColumn('number', '<?php echo intellitext(get_string('number_of_sessions', 'local_intelliboard'));?>');
+                data.addColumn('number', '<?php echo intellitext(get_string('course_completions', 'local_intelliboard'));?>');
+                data.addColumn('number', '<?php echo intellitext(get_string('user_enrolments', 'local_intelliboard'));?>');
+                data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
+
+                let oneDay = (24 * 60 * 60 * 1000);
+                let dateRange = data.getColumnRange(0);
+                if (data.getNumberOfRows() === 1) {
+                    dateRange.min = new Date(dateRange.min.getTime() - oneDay);
+                    dateRange.max = new Date(dateRange.max.getTime() + oneDay);
+                }
+
+                var options = {
+                    chartArea: {
+                        width: '90%',
+                        right:0,
+                        top:10
+                    },
+                    height: 280,
+                    hAxis: {
+                        format: '<?php echo $mainChartFormat; ?>',
+                        gridlines: {color: 'none'},
+                        viewWindow: dateRange
+                    },
+                    vAxis: {
+                        gridlines: {count: 5},
+                        minValue: 0
+                    },
+                    backgroundColor:{fill:'transparent'},
+                    legend: { position: 'bottom' }
+                };
+                var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
+                chart.draw(data, options);
             }
+            drawChart();
+        <?php endif; ?>
 
-    		var options = {
-    			chartArea: {
-    				width: '90%',
-    				right:0,
-    				top:10
-    			},
-    			height: 280,
-    			hAxis: {
-                    format: '<?php echo $mainChartFormat; ?>',
-    				gridlines: {color: 'none'},
-                    viewWindow: dateRange
-    			},
-    			vAxis: {
-    				gridlines: {count: 5},
-    				minValue: 0
-    			},
-    			backgroundColor:{fill:'transparent'},
-    			legend: { position: 'bottom' }
-    		};
-    		var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
-    		chart.draw(data, options);
-    	}
-    <?php endif; ?>
+        <?php if($settingUserMap): ?>
+            function drawRegionsMap() {
+                var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('country'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_countries) ? implode(",", $json_countries):"";?>]);
+                var chart = new google.visualization.GeoChart(document.getElementById('countries'));
+                chart.draw(data, {backgroundColor:{fill:'transparent'}});
+            }
+            drawRegionsMap();
+        <?php endif; ?>
 
-    <?php if($settingUserMap): ?>
-    	google.setOnLoadCallback(drawRegionsMap);
-    	function drawRegionsMap() {
-    		var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('country'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_countries) ? implode(",", $json_countries):"";?>]);
-    		var chart = new google.visualization.GeoChart(document.getElementById('countries'));
-    		chart.draw(data, {backgroundColor:{fill:'transparent'}});
-    	}
-    <?php endif; ?>
-
-    <?php if($settingCourseEnrollmentsTypes): ?>
-    	google.setOnLoadCallback(drawEnrolments);
-    	function drawEnrolments() {
-    		var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('enrolment_method', 'local_intelliboard'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_enrols) ? implode(",", $json_enrols):"";?> ]);
-    		var options = {
-    			backgroundColor:{fill:"transparent"},
-    			title: '',
-    			pieHole: 0.4,
-    			chartArea: {
-    				width: '100%'
-    			}
-    		};
-    		var chart = new google.visualization.PieChart(document.getElementById('enrolments'));
-    		chart.draw(data, options);
-    	}
-    <?php endif; ?>
-	jQuery(document).ready(function(){
-        <?php if($settingUserSiteSummary): ?>
+        <?php if($settingCourseEnrollmentsTypes): ?>
+            function drawEnrolments() {
+                var data = google.visualization.arrayToDataTable([['<?php echo intellitext(get_string('enrolment_method', 'local_intelliboard'));?>', '<?php echo intellitext(get_string('users', 'local_intelliboard'));?>'], <?php echo ($json_enrols) ? implode(",", $json_enrols):"";?> ]);
+                var options = {
+                    backgroundColor:{fill:"transparent"},
+                    title: '',
+                    pieHole: 0.4,
+                    chartArea: {
+                        width: '100%'
+                    }
+                };
+                var chart = new google.visualization.PieChart(document.getElementById('enrolments'));
+                chart.draw(data, options);
+            }
+            drawEnrolments()
+        <?php endif; ?>
+        jQuery(document).ready(function(){
+            <?php if($settingUserSiteSummary): ?>
             jQuery('#report43').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report43&type=users&page=<?php echo $page; ?>&type=<?php echo $type; ?>');
-        <?php endif; ?>
-        <?php if($settingEnrolComplOverview): ?>
+            <?php endif; ?>
+            <?php if($settingEnrolComplOverview): ?>
             jQuery('#report44').load('<?php echo $CFG->wwwroot; ?>/local/intelliboard/index.php?action=report44&type=users&page=<?php echo $page; ?>&type=<?php echo $type; ?>');
-        <?php endif; ?>
-    });
+            <?php endif; ?>
+        });
+    }
 </script>
 <?php
 echo $OUTPUT->footer();

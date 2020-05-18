@@ -104,16 +104,20 @@ if (in_array($action, ['learner', 'activities'])) {
         $modules
     );
 }
-if($table->is_downloading($download, $export_file_name)){
+if($table->is_downloading($download, $export_file_name, $action, $pagesize)){
     $table->out(($action == 'learners' || $action = 'activities') ? $pagesize : 10, true);
     exit;
 }
 
-$export_urls = array();
+$exporturls = array();
 $formats = array('excel', 'csv', 'pdf');
+
 foreach ($formats as $format){
     $page_url->param('download', $format);
-    $export_urls[$format] = $page_url->out();
+    $exporturls[] = [
+        "type" => $format == 'excel' ? 'xls' : $format,
+        "url" => $page_url->out(),
+    ];
 }
 
 $table->show_download_buttons_at(array());
@@ -269,11 +273,7 @@ echo $OUTPUT->header();
 					<?php endif; ?>
 				</form>
                 <div class="report-export-panel">
-                    <?php foreach($export_urls as $format => $url): ?>
-                        <a href="<?php echo $url;?>" title="<?php echo strtoupper($format); ?>">
-                            <i class="eicon-<?php echo $format;?>"></i>
-                        </a>
-                    <?php endforeach;?>
+                    <?php echo $OUTPUT->render_from_template('local_intelliboard/instructor_export_buttons', ["items" => $exporturls]); ?>
                 </div>
 			</div>
 			<div class="clear"></div>

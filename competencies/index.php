@@ -85,7 +85,7 @@ echo $OUTPUT->header();
 <?php else: ?>
         <?php include("views/menu.php"); ?>
     <div class="intelliboard-page intelliboard-instructor competency-dashboard">
-    <span class="cohort-filter-wrapper">
+    <span class="cohort-filter-wrapper competency-cohort-filter-wrapper">
         <select id="competencyCohortFilter">
             <option value="0"
                     data-href="<?php echo new moodle_url($PAGE->url, ['cohortid' => 0]) ;?>"
@@ -178,114 +178,111 @@ echo $OUTPUT->header();
                     </div>
                 <?php endif; ?>
             </div>
-            <script type="text/javascript"
-                    src="https://www.google.com/jsapi?autoload={
-                    'modules':[{
-                      'name':'visualization',
-                      'language': '<?php echo current_language(); ?>',
-                      'version':'1',
-                      'packages':['corechart']
-                    }]
-                  }"></script>
+            <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+            <script type="text/javascript" src="https://www.google.com/jsapi"></script>
             <script type="text/javascript">
-                <?php if($n7): ?>
-                    google.setOnLoadCallback(function() {
-                        var data = google.visualization.arrayToDataTable([
-                            [
-                                '<?php echo addslashes(get_string('a13', 'local_intelliboard')); ?>',
-                                '<?php echo addslashes(get_string('a33', 'local_intelliboard')); ?>',
-                            ],
-                            <?php foreach($compcourses as $row):  ?>
-                            [
-                                '<?php echo intellitext(format_string($row->shortname, true, ['escape' => true])); ?>',
-                                {v:<?php echo (int)$row->courses; ?>, f:'<?php echo addslashes(get_string('a40', 'local_intelliboard')) . ": " .addslashes($row->courses); ?>'},
-                            ],
-                            <?php endforeach; ?>
-                        ]);
-                        var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
-                        options.pieSliceText = 'label';
-                        var chart = new google.visualization.PieChart(document.getElementById('chart4'));
-                        chart.draw(data, options);
-                    });
-                <?php endif; ?>
+                google.charts.load('current', {'callback': googleChartsCallback, 'name':'visualization', 'version': 1, 'packages':['corechart'], 'language': '<?php echo current_language(); ?>'});
 
-                <?php if($n6): ?>
-                    google.setOnLoadCallback(function() {
-                        var data = google.visualization.arrayToDataTable([
-                            [
-                                '<?php echo addslashes(get_string('a31', 'local_intelliboard')); ?>',
-                                '<?php echo addslashes(get_string('a1', 'local_intelliboard')); ?>',
-                            ],
-                            <?php foreach($frameworks as $row):  ?>
-                            [
-                                '<?php echo intellitext(format_string($row->shortname)); ?>',
-                                <?php echo (int)$row->competencies; ?>,
-                            ],
-                            <?php endforeach; ?>
-                        ]);
-                        var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
-                        var chart = new google.visualization.BarChart(document.getElementById('chart2'));
-                        chart.draw(data, options);
-                    });
-                <?php endif; ?>
+                function googleChartsCallback() {
+                    <?php if($n7): ?>
+                        (function() {
+                            var data = google.visualization.arrayToDataTable([
+                                [
+                                    '<?php echo addslashes(get_string('a13', 'local_intelliboard')); ?>',
+                                    '<?php echo addslashes(get_string('a33', 'local_intelliboard')); ?>',
+                                ],
+                                <?php foreach($compcourses as $row):  ?>
+                                [
+                                    '<?php echo intellitext(format_string($row->shortname, true, ['escape' => true])); ?>',
+                                    {v:<?php echo (int)$row->courses; ?>, f:'<?php echo addslashes(get_string('a40', 'local_intelliboard')) . ": " .addslashes($row->courses); ?>'},
+                                ],
+                                <?php endforeach; ?>
+                            ]);
+                            var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
+                            options.pieSliceText = 'label';
+                            var chart = new google.visualization.PieChart(document.getElementById('chart4'));
+                            chart.draw(data, options);
+                        })();
+                    <?php endif; ?>
 
-                /** Chart "Proficiency Progress" */
-                <?php if($n5): ?>
-                    google.setOnLoadCallback(function() {
-                        var data = google.visualization.arrayToDataTable([
-                            [
-                                '<?php echo addslashes(get_string('learners', 'local_intelliboard')); ?>',
-                                '<?php echo addslashes(get_string('a8', 'local_intelliboard')); ?>'
-                            ],
-                            ['<?php echo addslashes(get_string('a33', 'local_intelliboard')); ?>', <?php echo (int)$totals->proficient; ?>],
-                            ['<?php echo addslashes(get_string('a34', 'local_intelliboard')); ?>', <?php echo (int)$totals->unproficient; ?>],
-                            ['<?php echo addslashes(get_string('a35', 'local_intelliboard')); ?>', <?php echo (int)$totals->unrated; ?>]
-                        ]);
-                        var options = {
-                            chartArea: {width: '100%',height: '90%',},
-                            pieHole: 0.8,
-                            pieSliceTextStyle: {
-                                color: 'transparent',
-                            },
-                            colors:['#1db34f', '#1d7fb3', '#dddddd'],
-                            legend: 'none'
-                        };
-                        var chart = new google.visualization.PieChart(document.getElementById('summary-chart'));
-                        chart.draw(data, options);
-                    });
-                <?php endif; ?>
-                /** Chart "Proficiency Progress" */
+                    <?php if($n6): ?>
+                        (function() {
+                            var data = google.visualization.arrayToDataTable([
+                                [
+                                    '<?php echo addslashes(get_string('a31', 'local_intelliboard')); ?>',
+                                    '<?php echo addslashes(get_string('a1', 'local_intelliboard')); ?>',
+                                ],
+                                <?php foreach($frameworks as $row):  ?>
+                                [
+                                    '<?php echo intellitext(format_string($row->shortname)); ?>',
+                                    <?php echo (int)$row->competencies; ?>,
+                                ],
+                                <?php endforeach; ?>
+                            ]);
+                            var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
+                            var chart = new google.visualization.BarChart(document.getElementById('chart2'));
+                            chart.draw(data, options);
+                        })();
+                    <?php endif; ?>
 
-                /** Chart "Competency Overview" **/
-                google.setOnLoadCallback(function() {
-                    var options = {
-                        title:'',
-                        legend:{position: 'top', alignment: 'end'},
-                        seriesType:'bars',
-                        chartArea:{width:'90%',height: '76%' },
-                        colors:['#1db34f', '#1d7fb3', '#dddddd'],
-                        backgroundColor:{fill:'transparent'}
-                    };
-                    var data = google.visualization.arrayToDataTable([
-                        [
-                            '<?php echo addslashes(get_string('a13', 'local_intelliboard')); ?>',
-                            '<?php echo addslashes(get_string('a33', 'local_intelliboard')); ?>',
-                            '<?php echo addslashes(get_string('a34', 'local_intelliboard')); ?>',
-                            '<?php echo addslashes(get_string('a35', 'local_intelliboard')); ?>'
-                        ],
-                        <?php foreach($competencies as $row):  ?>
-                        [
-                            '<?php echo intellitext(format_string($row->shortname)); ?>',
-                            <?php echo (int)$row->proficient; ?>,
-                            <?php echo (int)$row->unproficient; ?>,
-                            <?php echo (int)$row->unrated; ?>
-                        ],
-                        <?php endforeach; ?>
-                    ]);
-                    var chart = new google.visualization.ColumnChart(document.getElementById('instructor-chart<?php echo ($view)?"-".$view:""; ?>'));
-                    chart.draw(data, options);
-                });
-                /** Chart "Competency Overview" **/
+                    /** Chart "Proficiency Progress" */
+                    <?php if($n5): ?>
+                        (function() {
+                            var data = google.visualization.arrayToDataTable([
+                                [
+                                    '<?php echo addslashes(get_string('learners', 'local_intelliboard')); ?>',
+                                    '<?php echo addslashes(get_string('a8', 'local_intelliboard')); ?>'
+                                ],
+                                ['<?php echo addslashes(get_string('a33', 'local_intelliboard')); ?>', <?php echo (int)$totals->proficient; ?>],
+                                ['<?php echo addslashes(get_string('a34', 'local_intelliboard')); ?>', <?php echo (int)$totals->unproficient; ?>],
+                                ['<?php echo addslashes(get_string('a35', 'local_intelliboard')); ?>', <?php echo (int)$totals->unrated; ?>]
+                            ]);
+                            var options = {
+                                chartArea: {width: '100%',height: '90%',},
+                                pieHole: 0.8,
+                                pieSliceTextStyle: {
+                                    color: 'transparent',
+                                },
+                                colors:['#1db34f', '#1d7fb3', '#dddddd'],
+                                legend: 'none'
+                            };
+                            var chart = new google.visualization.PieChart(document.getElementById('summary-chart'));
+                            chart.draw(data, options);
+                        })();
+                    <?php endif; ?>
+                    /** Chart "Proficiency Progress" */
+
+                    /** Chart "Competency Overview" **/
+                        (function() {
+                            var options = {
+                                title:'',
+                                legend:{position: 'top', alignment: 'end'},
+                                seriesType:'bars',
+                                chartArea:{width:'90%',height: '76%' },
+                                colors:['#1db34f', '#1d7fb3', '#dddddd'],
+                                backgroundColor:{fill:'transparent'}
+                            };
+                            var data = google.visualization.arrayToDataTable([
+                                [
+                                    '<?php echo addslashes(get_string('a13', 'local_intelliboard')); ?>',
+                                    '<?php echo addslashes(get_string('a33', 'local_intelliboard')); ?>',
+                                    '<?php echo addslashes(get_string('a34', 'local_intelliboard')); ?>',
+                                    '<?php echo addslashes(get_string('a35', 'local_intelliboard')); ?>'
+                                ],
+                                <?php foreach($competencies as $row):  ?>
+                                [
+                                    '<?php echo intellitext(format_string($row->shortname)); ?>',
+                                    <?php echo (int)$row->proficient; ?>,
+                                    <?php echo (int)$row->unproficient; ?>,
+                                    <?php echo (int)$row->unrated; ?>
+                                ],
+                                <?php endforeach; ?>
+                            ]);
+                            var chart = new google.visualization.ColumnChart(document.getElementById('instructor-chart<?php echo ($view)?"-".$view:""; ?>'));
+                            chart.draw(data, options);
+                        })();
+                    /** Chart "Competency Overview" **/
+                }
             </script>
         <?php else: ?>
             <br>

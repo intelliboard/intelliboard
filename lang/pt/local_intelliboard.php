@@ -880,8 +880,10 @@ $string['mysqlhour'] = '%h:%i %p';
 $string['mysqlquarter'] = 'quarter';
 $string['mysqldayshortmonthyear'] = '%d %b, %Y';
 $string['mysqltimedate'] = '%h:%i%p, %d %b %Y';
-$string['mysqlmonthyearday'] = '%M %Y, %d';
 $string['mysqldaymonth'] = '%d %b %Y';
+$string['mysqlmonthyearday'] = '%M %Y, %d';
+$string['mysqlmonthdayyear'] = '%m/%d/%Y';
+$string['mysqltimemonthdayyear'] = '%H %m/%d/%Y';
 
 $string['postgreweek'] = 'YYYY, "week" WW';
 $string['postgremonthyear'] = 'Month YYYY';
@@ -891,9 +893,11 @@ $string['postgrehour'] = 'HH12:MI AM';
 $string['postgrequarter'] = 'quarter';
 $string['postgredayshortmonthyear'] = 'DD Mon, YYYY';
 $string['postgretimedate'] = 'HH12:MIAM, DD Mon YYYY';
+$string['postgredaymonth'] = 'DD Mon YYYY';
 $string['postgremonthyearday'] = 'Month YYYY, DD';
 $string['postgrequarteryear'] = 'Q YYYY';
-$string['postgredaymonth'] = 'DD Mon YYYY';
+$string['postgremonthdayyear'] = 'MM/DD/YYYY';
+$string['postgretimemonthdayyear'] = 'HH24 MM/DD/YYYY';
 
 // new strings
 $string['report1_name'] = 'User Status';
@@ -958,3 +962,6 @@ $string['instructor_courses_table_name_learner'] = 'Course {$a->course}, Learner
 $string['instructor_courses_table_name_activity'] = 'Course {$a->course}, Activity {$a->name}, Grades';
 $string['instructor_courses_table_name_learners'] = 'Course {$a->fullname}, Learners';
 $string['instructor_courses_table_name_activities'] = 'Course {$a->fullname}, Activities';
+
+$string['successfull_connected'] = 'Sucessfully connected';
+$string['not_connected'] = 'Not connected';

@@ -68,24 +68,34 @@ class ColumnsContainer extends BaseContainer {
             10 => 'LOWER',
             11 => array(
                 DataExtractor::MYSQL_MODE => function($value, $params = array('separator' => ', '), DataExtractor $extractor) {
-
                     if (!empty($params['order'])) {
                         $params['order'] = OrdersContainer::release($params['order'], $extractor);
                     } else {
                         $params['order'] = '';
                     }
 
-                    return "GROUP_CONCAT({$value} SEPARATOR '{$params['separator']}')";
+                    if (!empty($params['distinct'])) {
+                        $distinct = 'DISTINCT ';
+                    } else {
+                        $distinct = '';
+                    }
+
+                    return "GROUP_CONCAT({$distinct}{$value} SEPARATOR '{$params['separator']}')";
                 },
                 DataExtractor::POSTGRES_MODE => function($value, $params = array('separator' => ', '), DataExtractor $extractor) {
-
                     if (!empty($params['order'])) {
                         $params['order'] = OrdersContainer::release($params['order'], $extractor);
                     } else {
                         $params['order'] = '';
                     }
 
-                    return "string_agg($value::character varying, '" . $params['separator'] . "')";
+                    if (!empty($params['distinct'])) {
+                        $distinct = 'DISTINCT ';
+                    } else {
+                        $distinct = '';
+                    }
+
+                    return "string_agg({$distinct}$value::character varying, '" . $params['separator'] . "')";
                 }
             ),
             12 => array(

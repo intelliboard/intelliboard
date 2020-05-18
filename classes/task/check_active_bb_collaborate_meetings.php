@@ -63,27 +63,26 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
         $repository = bb_collaborate_tool::repository();
         $adapter = bb_collaborate_tool::adapter();
 
-        foreach($repository->getNonTrackedSessions() as $session) {
-            // skip session tracking if enabled synchronization with attendance
-            // but session not be synchronized with attendance service
-            if(
-                get_config('local_intelliboard', 'enablesyncattendance') &&
-                !$session->sync_data
-            ) {
-                continue;
-            }
+        try {
+            $transaction = $DB->start_delegated_transaction();
 
-            try {
+            foreach($repository->getNonTrackedSessions() as $session) {
+                // skip session tracking if enabled synchronization with attendance
+                // but session not be synchronized with attendance service
+                if (
+                    get_config('local_intelliboard', 'enablesyncattendance') &&
+                    !$session->sync_data
+                ) {
+                    continue;
+                }
+
                 try {
-                    $transaction = $DB->start_delegated_transaction();
-
                     $sesioninstances = $adapter->get_session_instances(
                         $session->sessionuid
                     );
 
                     // 172800 - seconds in 2 days
-                    if(!$sesioninstances && (time() - $session->timestart) < 172800) {
-                        $transaction->allow_commit();
+                    if (!$sesioninstances && (time() - $session->timestart) < 172800) {
                         continue;
                     }
 
@@ -99,24 +98,21 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
                         $service->insert_session_attendees(
                             $session->sessionuid, $sessionattendees->get_attendances()
                         );
-                        
-                        if(get_config('local_intelliboard', 'enablesyncattendance')) {
+
+                        if (get_config('local_intelliboard', 'enablesyncattendance')) {
                             $service->synchronize_attendances(
                                 $session, $sessionattendees
                             );
                         }
                     }
-
-                    $transaction->allow_commit();
-                } catch(\Exception $e) {
-                    $transaction->rollback($e);
+                } catch (\Exception $e) {
+                    continue;
                 }
-            } catch (\Exception $e) {
-                if(get_config('local_intelliboard', 'bb_col_debug')) {
-                    var_dump($e);
-                }
-                continue;
             }
+
+            $transaction->allow_commit();
+        } catch(\Exception $e) {
+            $transaction->rollback($e);
         }
 
         return true;
