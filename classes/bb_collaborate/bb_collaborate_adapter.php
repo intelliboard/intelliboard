@@ -252,7 +252,7 @@ class bb_collaborate_adapter {
      * @throws Exception
      * @throws \coding_exception
      */
-    private function get_access_token() {
+    protected function get_access_token() {
         $token = $this->repository->cached_access_token();
 
         if(!$token) {
@@ -264,6 +264,28 @@ class bb_collaborate_adapter {
     }
 
     /**
+     * Get connection status
+     *
+     * @return bool
+     * @throws Exception
+     */
+    public function checkConnection() {
+        if(get_config('local_intelliboard', 'bb_col_api_endpoint') &&
+            get_config('local_intelliboard', 'bb_col_consumer_key') &&
+            get_config('local_intelliboard', 'bb_col_secret')){
+
+            try {
+                $token = $this->get_access_token();
+            } catch (Exception $e) {
+                $token = '';
+            }
+            return $token != '';
+        }else{
+            return false;
+        }
+    }
+
+    /**
      * Get access token from BB collaborate server
      *
      * @return string Access token
@@ -271,7 +293,7 @@ class bb_collaborate_adapter {
      */
     private function ask_for_token() {
         $headers = ['Content-Type: application/x-www-form-urlencoded'];
-        $url = $this->url . '/token';
+        $url = $this->get_access_token_url();
         $params = [
             'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer',
             'assertion=' . $this->jwt_token
@@ -285,6 +307,16 @@ class bb_collaborate_adapter {
         }
 
         throw new Exception('Request error. ' . json_encode($response));
+    }
+
+    /**
+     * Get access token url
+     *
+     * @return string Access token
+     * @throws Exception
+     */
+    private function get_access_token_url() {
+        return $this->url . '/token';
     }
 
     /**
@@ -310,7 +342,8 @@ class bb_collaborate_adapter {
             throw new Exception('Method not allowed');
         }
 
-        if($this->httpclient->get_info()['http_code'] === 401) {
+        $tokenurl = $this->get_access_token_url();
+        if($this->httpclient->get_info()['http_code'] === 401 && $url != $tokenurl) {
             $token = $this->ask_for_token();
             $this->access_token = $token;
             $this->service->remember_access_token($token);
