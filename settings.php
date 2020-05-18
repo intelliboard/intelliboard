@@ -1231,6 +1231,22 @@ if($ADMIN->fulltree){
         $name = 'local_intelliboard/bbbserversecret';
         $title = get_string('bbbserversecret', 'local_intelliboard');
         $description = '';
+        if ($PAGE->url->get_param('section') == 'local_intelliboard' &&
+            strpos($PAGE->url->get_path(), '/admin/settings.php') !== false &&
+            get_config('local_intelliboard', 'bbbapiendpoint') &&
+            get_config('local_intelliboard', 'bbbserversecret')) {
+            $bbb = new \local_intelliboard\bbb_client();
+
+            if ($bbb->checkConnection()) {
+                $conn_description = new lang_string('successfull_connected', 'local_intelliboard');
+                $icon = $OUTPUT->pix_icon('i/valid', $conn_description->out());
+                $description = $icon.$conn_description->out();
+            } else {
+                $conn_description = new lang_string('not_connected', 'local_intelliboard');
+                $icon = $OUTPUT->pix_icon('i/invalid', $conn_description->out());
+                $description = $icon.$conn_description->out();
+            }
+        }
         $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
         $settings->add($setting);
 
@@ -1340,6 +1356,25 @@ if($ADMIN->fulltree){
     $name = 'local_intelliboard/bb_col_secret';
     $title = get_string('bb_col_secret', 'local_intelliboard');
     $description = '';
+
+    if ($PAGE->url->get_param('section') == 'local_intelliboard' &&
+        strpos($PAGE->url->get_path(), '/admin/settings.php') !== false &&
+        get_config('local_intelliboard', 'bb_col_api_endpoint') &&
+        get_config('local_intelliboard', 'bb_col_consumer_key') &&
+        get_config('local_intelliboard', 'bb_col_secret')) {
+
+        $adapter = \local_intelliboard\tools\bb_collaborate_tool::adapter();
+        if ($adapter->checkConnection()) {
+            $conn_description = new lang_string('successfull_connected', 'local_intelliboard');
+            $icon = $OUTPUT->pix_icon('i/valid', $conn_description->out());
+            $description = $icon.$conn_description->out();
+        } else {
+            $conn_description = new lang_string('not_connected', 'local_intelliboard');
+            $icon = $OUTPUT->pix_icon('i/invalid', $conn_description->out());
+            $description = $icon.$conn_description->out();
+        }
+    }
+
     $setting = new admin_setting_configpasswordunmask(
         $name, $title, $description, ''
     );

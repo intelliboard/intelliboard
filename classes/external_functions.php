@@ -57,6 +57,9 @@ class local_external_functions
                    WHERE c2ti.component = 'core' AND c2ti.itemtype = 'course_modules' AND
                          c2ti.itemid = cm_alias_.id
                    GROUP BY c2ti.itemid)", // activity tags
+          11 => "creator.name", // user created by
+          12 => "course_roles.roles", // user course roles
+          13 => "system_roles.roles" // user system roles
         ];
         $this->functions = [
             'report1',
@@ -361,6 +364,7 @@ class local_external_functions
             'get_cohort_items',
             'get_relation_users_per_day',
             'report198',
+            'report199',
             'report200',
             'report201',
             'report202',
@@ -396,6 +400,16 @@ class local_external_functions
             'monitor78',
             'get_tracking_logs',
             'get_tracking_details',
+            'report217',
+            'report219',
+            'report222',
+            'report223',
+            'monitor84',
+            'monitor85',
+            'report224',
+            'report225',
+            'get_template_competencies',
+            'report226',
         ];
     }
     public function get_function($params = null)
