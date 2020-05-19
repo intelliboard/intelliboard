@@ -18426,6 +18426,7 @@ class local_intelliboard_external extends external_api {
         $datesqlstring = DBHelper::group_by_date_val('monthdayyear', 'lil.timepoint');
         $sqlfilter = $this->get_teacher_sql($params, ["lit.userid" => "users", "lit.courseid" => "courses"]);
         $sqlfilter .= $this->get_filterdate_sql($params, "lil.timepoint");
+        $sqlfilter .= $this->get_filter_in_sql($params->courseid, "lit.courseid");
         $sqlrolefilter = $this->get_filter_in_sql($roles, 'r.id');
 
         $data = $DB->get_records_sql(
