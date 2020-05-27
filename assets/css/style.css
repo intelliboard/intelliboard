@@ -241,7 +241,7 @@
 .intelliboard-origin-head a.active,
 .intelliboard-origin-head a:hover{background-color: #eee; opacity: 1}
 
-.intelliboard-dropdown{position: relative;float: right;width: 135px;}
+.intelliboard-dropdown{position: relative;float: right;width: 135px;font-size: 14px;}
 .intelliboard-dropdown.disabled button{opacity: 0.4;}
 .intelliboard-dropdown button{color: #333!important;font-weight:normal; width:100%;box-sizing: border-box; padding: 8px 15px;border: 1px solid #ddd; border-radius: 3px; cursor: pointer;margin: 0;background: #fff none repeat scroll 0 0;}
 .intelliboard-dropdown button:hover{border: 1px solid #ccc;background: #fff none repeat scroll 0 0;}
@@ -464,7 +464,7 @@
 .intelliboard-course-header ul.totals li:first-child{padding-left: 0}
 .intelliboard-course-header ul.totals li span{display: block; font-size: 13px; opacity: 0.8; font-weight: 400;margin-top: 5px;}
 
-.intelliboard-additional-form .switcher{ float: right;margin-bottom: 10px;margin-right: 10px;}
+.intelliboard-additional-form .switcher{ float: right;margin-bottom: 10px;margin-right: 10px;min-width: 170px;}
 .intelliboard-additional-form .switcher a {border: 1px solid #ddd;box-sizing: border-box;color: #333;display: block;float: left;height: 100%;transition: all 0.3s ease-out 0s; width: 50%; padding:8px 15px;text-decoration: none;box-shadow:0 1px 2px rgba(0, 0, 0, 0.05);}
 .intelliboard-additional-form .switcher a:first-child {border-radius: 3px 0 0 3px;}
 .intelliboard-additional-form .switcher a:last-child {border-radius: 0 3px 3px 0;}
@@ -932,7 +932,7 @@ position: relative;
 @media screen and (max-width: 800px) {
 
 }
-@media screen and (max-width: 1000px) {
+@media screen and (max-width: 1200px) {
 
 	body .intelliboard-courses-grid{width: 100%; margin-right: 0;}
 	body .intelliboard-courses-grid li{width: 100%; margin-right: 0;}
@@ -1144,4 +1144,25 @@ div[aria-label="A tabular representation of the data in the chart."] {
 .chart8-filter-box {
     display: flex;
     justify-content: space-between;
+}
+
+/* General */
+.intelliboard-page .nav-item, .intelliboard-data-table, .intelliboard-box .filter-box,
+.intelliboard-origin-head, .intelliboard-box .filter-box input[type="text"] {
+    font-size: 14px;
+}
+.ib-table-wrapper {
+    overflow: auto;
+}
+
+@media screen and (max-width: 1200px) {
+    .intelliboard-page .nav-item .nav-link {
+        padding: 4px 7px;
+    }
+    .intelliboard-dropdown button, .filter-box input[type="text"] {
+        padding: 5px;
+    }
+    .intelliboard-card-block.card-block {
+        padding: 5px 0;
+    }
 }

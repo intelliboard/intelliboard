@@ -100,7 +100,9 @@ class local_intelliboard_external extends external_api {
                             'scale_total' => new external_value(PARAM_FLOAT, 'custom scale_total', VALUE_OPTIONAL, 0),
                             'scale_value' => new external_value(PARAM_FLOAT, 'custom scale_value', VALUE_OPTIONAL, 0),
                             'scale_percentage' => new external_value(PARAM_INT, 'custom scale_percentage', VALUE_OPTIONAL, 0),
-                            'count_report_rows' => new external_value(PARAM_INT, 'custom scale_percentage', VALUE_OPTIONAL, 0)
+                            'count_report_rows' => new external_value(PARAM_INT, 'custom scale_percentage', VALUE_OPTIONAL, 0),
+                            'cupf_filter' => new external_value(PARAM_TEXT, 'CUPF filter', VALUE_OPTIONAL, ''),
+                            'timezone' => new external_value(PARAM_INT, 'Timezone from Intelliboard User Settings', VALUE_OPTIONAL, 24)
                         )
                     )
                 )
@@ -166,6 +168,8 @@ class local_intelliboard_external extends external_api {
         $params->scale_value = (isset($params->scale_value)) ? $params->scale_value : 0;
         $params->scale_percentage = (isset($params->scale_percentage)) ? $params->scale_percentage : 0;
         $params->count_report_rows = (isset($params->count_report_rows)) ? $params->count_report_rows : 0;
+        $params->cupf_filter = (isset($params->cupf_filter)) ? $params->cupf_filter : '';
+        $params->timezone = (isset($params->timezone)) ? $params->timezone : 24;
 
         if ($params->debug) {
             $CFG->debug = (E_ALL | E_STRICT);
@@ -185,7 +189,17 @@ class local_intelliboard_external extends external_api {
             }
         }
 
-
+        if ($params->timezone > -24 && $params->timezone < 24) {
+            try {
+                if ($CFG->dbtype == 'pgsql') {
+                    $DB->execute("SET TIME ZONE " . $params->timezone);
+                } else {
+                    $timezone = $params->timezone > -1? '+' . $params->timezone : $params->timezone;
+                    $timezone .= ':00';
+                    $DB->execute("SET @@session.time_zone = :timezone", compact('timezone'));
+                }
+            } catch(Exception $e) {}
+        }
 
         $transaction = $DB->start_delegated_transaction();
         $obj = new local_intelliboard_external();
@@ -413,6 +427,7 @@ class local_intelliboard_external extends external_api {
         global $DB, $CFG;
 
         $texttypecast = DBHelper::get_typecast("text");
+        $params->filter = str_replace(array("&apos;", "&quot;", "&grave;"), array("'", '"', '`'), $params->filter);
 
         $filter = "";
 
@@ -464,32 +479,56 @@ class local_intelliboard_external extends external_api {
 
         //Filter by User profile fields
         if ($params->filter_profile){
-            $params->custom3 = clean_param($params->custom3, PARAM_SEQUENCE);
+            if (!empty($params->cupf_filter)) {
+                $cols = $params->columns ? explode(",", $params->columns) : [];
+                $cupfvalues = $params->cupf_filter ? explode('|', base64_decode($params->cupf_filter)) : [];
 
-            if ($params->custom3 and !empty($params->columns)) {
-                $cols = explode(",", $params->columns);
-                $fields = $DB->get_records_sql("SELECT id, fieldid, data FROM {user_info_data} WHERE id IN ($params->custom3)");
-                $fields_filter = array();
-
-                foreach($fields as $i => $field){
-                    if (in_array($field->fieldid, $cols)){
+                if ($cupfvalues and !empty($params->columns) && in_array($params->filter_profile, $cols)) {
+                    foreach($cupfvalues as $i => $cupfvalue) {
                         $this->prfx = $this->prfx + 1;
-                        $field->fieldid = (int)$field->fieldid; //fieldid -> int
 
                         if ($CFG->dbtype == 'pgsql') {
-                            $key = "(SELECT data FROM {user_info_data} WHERE fieldid = $field->fieldid AND userid = u.id)";
+                            $key = "(SELECT data FROM {user_info_data} WHERE fieldid = {$params->filter_profile} AND userid = u.id)";
                         } else {
-                            $key = "field$field->fieldid";
+                            $key = "field{$params->filter_profile}";
                         }
 
-                        $unickey = "field{$this->prfx}_{$field->fieldid}_{$i}";
+                        $unickey = "field{$this->prfx}_{$params->filter_profile}_{$i}";
                         $fields_filter[] = $DB->sql_like($key . $texttypecast, ":$unickey", false, false);
-                        $this->params[$unickey] = "%{$field->data}%";
+                        $this->params[$unickey] = "%{$cupfvalue}%";
                     }
-                }
 
-                $filter = ($fields_filter and $filter) ? "($filter) AND " : $filter;
-                $filter .= ($fields_filter) ? " (" . implode(" OR ", $fields_filter) .") " : "";
+                    $filter = ($fields_filter and $filter) ? "($filter) AND " : $filter;
+                    $filter .= ($fields_filter) ? " (" . implode(" OR ", $fields_filter) .") " : "";
+                }
+            } else {
+                $params->custom3 = clean_param($params->custom3, PARAM_SEQUENCE);
+
+                if ($params->custom3 and !empty($params->columns)) {
+                    $cols = explode(",", $params->columns);
+                    $fields = $DB->get_records_sql("SELECT id, fieldid, data FROM {user_info_data} WHERE id IN ($params->custom3)");
+                    $fields_filter = array();
+
+                    foreach($fields as $i => $field){
+                        if (in_array($field->fieldid, $cols)){
+                            $this->prfx = $this->prfx + 1;
+                            $field->fieldid = (int)$field->fieldid; //fieldid -> int
+
+                            if ($CFG->dbtype == 'pgsql') {
+                                $key = "(SELECT data FROM {user_info_data} WHERE fieldid = $field->fieldid AND userid = u.id)";
+                            } else {
+                                $key = "field$field->fieldid";
+                            }
+
+                            $unickey = "field{$this->prfx}_{$field->fieldid}_{$i}";
+                            $fields_filter[] = $DB->sql_like($key . $texttypecast, ":$unickey", false, false);
+                            $this->params[$unickey] = "%{$field->data}%";
+                        }
+                    }
+
+                    $filter = ($fields_filter and $filter) ? "($filter) AND " : $filter;
+                    $filter .= ($fields_filter) ? " (" . implode(" OR ", $fields_filter) .") " : "";
+                }
             }
         }
 
@@ -847,8 +886,8 @@ class local_intelliboard_external extends external_api {
     {
         $columns = array_merge(
             array(
-                "activity", "m.name", "completed", "l.visits", "l.timespend",
-                "grade", "cm.added", "l.firstaccess", "c.fullname"
+                "activity", "m.name", "cmc.num_compl", "l.visits", "l.timespend",
+                "grd.grade", "cm.added", "l.firstaccess", "c.fullname"
             ),
             $this->get_filter_columns($params, [null])
         );
@@ -879,8 +918,8 @@ class local_intelliboard_external extends external_api {
                     l.timespend AS timespend,
                     l.visits AS visits,
                     l.firstaccess AS firstaccess,
-                    (SELECT COUNT(id) FROM {course_modules_completion} WHERE coursemoduleid = cm.id $completion) AS completed,
-                    (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'mod' AND gi.itemmodule = m.name AND gi.iteminstance = cm.instance AND g.itemid = gi.id AND g.finalgrade IS NOT NULL) AS grade
+                    cmc.num_compl AS completed,
+                    grd.grade
                     {$sql_columns}
                FROM {course_modules} cm
                JOIN {modules} m ON m.id = cm.module
@@ -893,6 +932,17 @@ class local_intelliboard_external extends external_api {
                       WHERE page='module'
                    GROUP BY param
                     ) l ON l.param = cm.id
+          LEFT JOIN (SELECT coursemoduleid, COUNT(id) AS num_compl
+                       FROM {course_modules_completion}
+                      WHERE id > 0 {$completion}
+                   GROUP BY coursemoduleid
+                    ) cmc ON cmc.coursemoduleid = cm.id
+          LEFT JOIN (SELECT gi.iteminstance, gi.itemmodule, {$grade_avg} AS grade
+                       FROM {grade_items} gi
+                       JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                      WHERE gi.itemtype = 'mod'
+                   GROUP BY gi.iteminstance, gi.itemmodule
+                    ) grd ON grd.itemmodule = m.name AND grd.iteminstance = cm.instance
               WHERE cm.id > 0 $sql_filter $sql_having $sql_order",
             $params
         );
@@ -11451,6 +11501,17 @@ class local_intelliboard_external extends external_api {
             "ul.timeaccess"),
             $this->get_filter_columns($params)
         );
+        $sqldf = "GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0)";
+
+        if (get_component_version('mod_hsuforum')) {
+            $sqldf .= ', COALESCE(hf.posted,0)';
+        }
+
+        if (get_component_version('mod_questionnaire')) {
+            $sqldf .= ', COALESCE(qra.submitted,0)';
+        }
+
+        $sqldf .= ')';
 
         $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns, false);
@@ -11459,7 +11520,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
-        $sql_filter .= $this->get_filterdate_sql($params, "GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0))");
+        $sql_filter .= $this->get_filterdate_sql($params, $sqldf);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, 'c.id');
         $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_filter .= $this->get_filter_in_sql($params->custom2, "cm.id");
@@ -11501,6 +11562,25 @@ class local_intelliboard_external extends external_api {
             $sql_overal_submission_grade = ", COALESCE(hf.grade$typecast,'')";
         }
 
+        if (get_component_version('mod_questionnaire')) {
+            $sql_inner_filter7 = $this->get_filter_in_sql($params->courseid, 'q.course');
+            $sql_select .= "LEFT JOIN (SELECT qr.questionnaireid,
+                                    qr.userid,
+                                    MAX(qr.submitted) AS submitted,
+                                    MAX(g.timemodified) AS graded,
+                                    {$grade_avg} AS grade
+                               FROM {questionnaire_response} qr
+                               JOIN {questionnaire} q ON q.id = qr.questionnaireid {$sql_inner_filter7}
+                          LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'questionnaire' AND gi.iteminstance = qr.questionnaireid
+                          LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = qr.userid
+                           GROUP BY qr.questionnaireid, qr.userid
+                            ) qra ON qra.userid = u.id AND qra.questionnaireid = cm.instance AND m.name = 'questionnaire'";
+
+            $sqlqasubmissiondate = ", COALESCE(qra.submitted,0)";
+            $sqlqasubmissiongraded = ", COALESCE(qra.graded,0)";
+            $sqlqasubmissiongrade = ", COALESCE(qra.grade$typecast,'')";
+        }
+
         return $this->get_report_data("
               SELECT
                 CONCAT(u.id, '_', cm.id) AS id,
@@ -11523,9 +11603,19 @@ class local_intelliboard_external extends external_api {
                 ch.submitted AS choice_submission_date,
                 ch.graded AS choice_graded,
                 ul.timeaccess,
-                GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0) $sql_overal_submission_date) AS overal_submission_date,
-                GREATEST(COALESCE(ass.graded,0), COALESCE(f.graded,0), COALESCE(q.graded,0), COALESCE(gl.graded,0), COALESCE(ch.graded,0) $sql_overal_submission_graded) AS overal_submission_graded,
-                GREATEST(COALESCE(ass.grade$typecast,''), COALESCE(f.grade$typecast,''), COALESCE(q.grade$typecast,''), COALESCE(gl.grade$typecast,''), COALESCE(ch.grade$typecast,'') $sql_overal_submission_grade) AS overal_submission_grade,
+                GREATEST(
+                    COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0),
+                    COALESCE(ch.submitted,0) $sql_overal_submission_date {$sqlqasubmissiondate}
+                ) AS overal_submission_date,
+                GREATEST(
+                    COALESCE(ass.graded,0), COALESCE(f.graded,0), COALESCE(q.graded,0), COALESCE(gl.graded,0),
+                    COALESCE(ch.graded,0) $sql_overal_submission_graded {$sqlqasubmissiongraded}
+                ) AS overal_submission_graded,
+                GREATEST(
+                    COALESCE(ass.grade$typecast,''), COALESCE(f.grade$typecast,''), COALESCE(q.grade$typecast,''),
+                    COALESCE(gl.grade$typecast,''), COALESCE(ch.grade$typecast,'')
+                    $sql_overal_submission_grade {$sqlqasubmissiongrade}
+                ) AS overal_submission_grade,
                  (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
                             FROM {role_assignments} AS ra
                                 JOIN {user} u ON ra.userid = u.id
@@ -12545,7 +12635,7 @@ class local_intelliboard_external extends external_api {
       $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
       $sql_filter .= $this->get_filter_user_sql($params, "u.");
       $sql_filter .= $this->get_filterdate_sql($params, "u.firstaccess");
-      $sql_filter .= $this->get_filter_in_sql($this->params['courseid'], "cm.cohortid");
+      $sql_filter .= $this->get_filter_in_sql($this->params['cohortid'], "cm.cohortid");
 
       return $this->get_report_data("
           SELECT
@@ -12561,7 +12651,7 @@ class local_intelliboard_external extends external_api {
 
     function report201($params)
     {
-      global $DB;
+      global $DB, $CFG;
 
       $this->params['hospitalid'] = (int) $params->custom;
       $this->params['cohortid'] = (int) $params->custom2;
@@ -12586,6 +12676,12 @@ class local_intelliboard_external extends external_api {
       $sql_cohort = $this->get_filter_in_sql($this->params['cohortid'], "cm.cohortid");
       $sql_cohort .= $this->get_filter_user_sql($params, "u.");
 
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg( DISTINCT v.value, ', ')";
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT v.value SEPARATOR ', ')";
+        }
+
       return $this->get_report_data(
         "SELECT
           DISTINCT i.id,
@@ -12599,7 +12695,9 @@ class local_intelliboard_external extends external_api {
           v.value_2,
           v.value_3,
           v.value_4,
-          v.value_5
+          v.value_5,
+          v.text_value,
+          i.typ
         FROM {feedback_item} i
         LEFT JOIN {feedback} f ON f.id = i.feedback
         LEFT JOIN (
@@ -12610,7 +12708,8 @@ class local_intelliboard_external extends external_api {
             SUM(CASE WHEN v.value = '2' THEN 1 ELSE 0 END) as value_2,
             SUM(CASE WHEN v.value = '3' THEN 1 ELSE 0 END) as value_3,
             SUM(CASE WHEN v.value = '4' THEN 1 ELSE 0 END) as value_4,
-            SUM(CASE WHEN v.value = '5' THEN 1 ELSE 0 END) as value_5
+            SUM(CASE WHEN v.value = '5' THEN 1 ELSE 0 END) as value_5,
+            $group_concat as text_value
           FROM
             {feedback_value} v,
             {feedback_completed} c
@@ -13120,10 +13219,11 @@ class local_intelliboard_external extends external_api {
                                               THEN 'not_set'
                                               WHEN gg.finalgrade IS NULL
                                               THEN 'fail'
+                                              ELSE 'fail'
                                               END
                                     FROM {grade_items} gi
-                               LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = u.id
-                                   WHERE gi.itemtype = 'mod' AND gi.iteminstance = {$module->instance} AND gi.itemmodule = 'quiz'
+                               LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id
+                                   WHERE gg.userid = u.id AND gi.itemtype = 'mod' AND gi.iteminstance = {$module->instance} AND gi.itemmodule = 'quiz'
                                    LIMIT 1) AS module_status_{$module->id}";
                 $columns[] = "module_status_{$module->id}";
             } else {
@@ -13180,7 +13280,7 @@ class local_intelliboard_external extends external_api {
                     ca.name AS category,
                     ra.timemodified AS enrolled,
                     ue.status AS enrol_status,
-                    CASE WHEN {$gradesingle} IS NULL THEN 0 ELSE {$gradesingle} END AS grade
+                    {$gradesingle} AS grade
                     {$sqlselect}
                     {$sqlcolumns}
                FROM {role_assignments} ra
@@ -13451,7 +13551,7 @@ class local_intelliboard_external extends external_api {
             JOIN {questionnaire_question} qq ON qq.{$responce_survey_id} = q.sid AND qq.deleted = 'n'
             JOIN {questionnaire_question_type} t ON qq.type_id = t.typeid AND t.response_table IN ('resp_multiple', 'resp_single')
             JOIN {course} c ON c.id=q.course
-            
+
        LEFT JOIN {questionnaire_response} r ON r.{$responce_questionnaireid} = q.sid
        LEFT JOIN {questionnaire_resp_multiple} a1 ON a1.response_id = r.id AND a1.question_id = qq.id AND t.response_table='resp_multiple'
        LEFT JOIN {questionnaire_resp_single} a2 ON a2.response_id = r.id AND a2.question_id = qq.id AND t.response_table='resp_single'
@@ -13596,7 +13696,7 @@ class local_intelliboard_external extends external_api {
 
         return $DB->get_records_sql("SELECT DISTINCT i.id, i.name, i.label
           FROM {feedback} f, {feedback_item} i
-          WHERE i.feedback = f.id AND f.course = :course", ['course' => $params->courseid]);
+          WHERE i.feedback = f.id AND f.course = :course AND i.hasvalue=1", ['course' => $params->courseid]);
     }
 
 
@@ -18497,6 +18597,23 @@ class local_intelliboard_external extends external_api {
                     $this->params["fieldid{$i}"] = $rawitem[0];
                     $this->params["dataval{$i}"] = $rawitem[1];
                 }
+            }
+        }
+
+        if ($params->custom4) {
+            $items = explode(',', $params->custom4);
+            $cupffilter = [];
+
+            for ($i = 0; $i < count($items); $i++) {
+                $rawitem = explode('|', $items[$i]);
+
+                if (count($rawitem) === 2) {
+                    $cupffilter[] = $rawitem[1];
+                }
+            }
+
+            if ($cupffilter) {
+                $sql .= $this->get_filter_in_sql($cupffilter, 'data');
             }
         }
 

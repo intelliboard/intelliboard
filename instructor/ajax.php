@@ -383,36 +383,41 @@ if($action == 'get_total_students'){
         }
     }
 
-    $learner_roles = get_config('local_intelliboard', 'filter11');
-    $params = array('course'=>$course,'timestart'=>$timestart, 'timefinish'=>$timefinish);
-    list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+    $params = array('course' => $course, 'course1' => $course, 'timestart' => $timestart, 'timefinish' => $timefinish);
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
+    $learner_roles = get_config('local_intelliboard', 'filter11');
+    list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
 
+    $enrolfilter = '';
     if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
-        $sql1 .= ' AND enr.status = 0';
+        $enrolfilter = ' AND enr.status = 0';
     }
 
-    $data = $DB->get_records_sql("
-                SELECT
-                  cs.id,
-                  MAX(cs.section) AS section,
-                  SUM(lil.timespend) as timespend
-                FROM {role_assignments} ra
-                    LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                    LEFT JOIN {course} c ON c.id = ctx.instanceid
-                    LEFT JOIN {course_modules} cm ON cm.course = c.id
-                    LEFT JOIN {course_sections} cs ON cs.id = cm.section
-                    LEFT JOIN {modules} m ON m.id = cm.module
-                    LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = ra.userid AND l.param = cm.id
-                    LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=l.id AND lil.timepoint BETWEEN :timestart AND :timefinish
-                    LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
-                                 FROM {user_enrolments} ue
-                                 JOIN {enrol} e ON ue.enrolid = e.id
-                             GROUP BY ue.userid, e.courseid
-                              ) enr ON enr.userid = ra.userid AND enr.courseid = c.id
-                    $join_sql1
-                WHERE c.id = :course $sql1
-                GROUP BY cs.id",$params);
+    $data = $DB->get_records_sql(
+        "SELECT cs.id,
+                MAX(cs.section) AS section,
+                SUM(lil.timespend) as timespend
+           FROM {course_modules} cm
+           JOIN {course_sections} cs ON cs.id = cm.section
+           JOIN {modules} m ON m.id = cm.module
+      LEFT JOIN (SELECT ctx.instanceid AS course_id, ra.userid
+                       FROM {role_assignments} ra
+                       JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.instanceid = :course AND ctx.contextlevel = 50
+                            {$join_sql1}
+                      WHERE ctx.contextlevel = 50 {$sql1}
+                   GROUP BY ctx.instanceid, ra.userid
+                ) stud ON cm.course = stud.course_id
+      LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = stud.userid AND l.param = cm.id
+      LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid = l.id AND lil.timepoint BETWEEN :timestart AND :timefinish
+      LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                   FROM {user_enrolments} ue
+                   JOIN {enrol} e ON ue.enrolid = e.id
+               GROUP BY ue.userid, e.courseid
+                ) enr ON enr.userid = stud.userid AND enr.courseid = stud.course_id
+          WHERE cm.course = :course1 {$enrolfilter}
+       GROUP BY cs.id",
+        $params
+    );
 
     $tooltip = new stdClass();
     $tooltip->type = 'string';
@@ -442,11 +447,8 @@ if($action == 'get_total_students'){
     }
 }elseif($action == 'get_course_overview'){
 
-
-    if($view == 'topic'){
-
+    if ($view == 'topic') {
         $params = array(
-            'courseid1' => $course,
             'courseid2' => $course,
             'courseid3' => $course
         );
@@ -454,24 +456,25 @@ if($action == 'get_total_students'){
         list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
         $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
-        $courses = $DB->get_records_sql("
-                SELECT
-                  cs.id,
-                  MAX(cs.section) AS section,
-                  SUM(lit.timespend) AS timespend
-                FROM {course_modules} cm
-                  LEFT JOIN {modules} m ON m.id = cm.module
-                  LEFT JOIN {course_sections} cs ON cs.id = cm.section
-				  LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid=:courseid1
-				                                                  AND lit.param=cm.id
-				                                                  AND lit.page='module'
-				                                                  AND lit.userid IN (SELECT DISTINCT ra.userid
-                                                                                        FROM {role_assignments} ra
-                                                                                            JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50
-                                                                                            $join_sql1
-                                                                                        WHERE ctx.contextlevel = 50 $sql1)
-                WHERE cm.course=:courseid2
-                GROUP BY cs.id", $params);
+        $courses = $DB->get_records_sql(
+            "SELECT cs.id,
+                    MAX(cs.section) AS section,
+                    SUM(lit.timespend) AS timespend
+               FROM {course_modules} cm
+          LEFT JOIN {modules} m ON m.id = cm.module
+          LEFT JOIN {course_sections} cs ON cs.id = cm.section
+          LEFT JOIN (SELECT ctx.instanceid AS course_id, ra.userid
+                       FROM {role_assignments} ra
+                       JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.instanceid = :courseid3 AND ctx.contextlevel = 50
+                            {$join_sql1}
+                      WHERE ctx.contextlevel = 50 {$sql1}
+                   GROUP BY ctx.instanceid, ra.userid
+                    ) stud ON stud.course_id = cm.course
+          LEFT JOIN {local_intelliboard_tracking} lit ON lit.param = cm.id AND lit.page = 'module' AND lit.userid = stud.userid
+              WHERE cm.course = :courseid2
+           GROUP BY cs.id",
+            $params
+        );
 
         $tooltip = new stdClass();
         $tooltip->type = 'string';
