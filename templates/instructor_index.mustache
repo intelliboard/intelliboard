@@ -38,7 +38,7 @@
                             {{/selectedmycourse}}
                             <ul>
                                 {{#othermycourses}}
-                                    <li><a href="{{url}}">{{value}}</a></li>
+                                    <li><a href="{{{url}}}">{{value}}</a></li>
                                 {{/othermycourses}}
                             </ul>
                         </div>
@@ -717,6 +717,14 @@
                         let data = google.visualization.arrayToDataTable(response);
                         let options = {{{gradeactivitiesoverviewoptions}}};
                         options.title = '{{jsstrings.gradeactivitiesoverview}}';
+
+                        if (options.hAxis) {
+                            options.hAxis.direction = -1;
+                            options.hAxis.slantedText = true;
+                            options.hAxis.slantedTextAngle = 90;
+                        } else {
+                            options.hAxis = {slantedText:true, slantedTextAngle:60 };
+                        }
                         let chart = new google.visualization.ColumnChart(
                             document.getElementById('chart8_area')
                         );
@@ -735,6 +743,7 @@
                         var options = {{{correlationsoptions}}};
                         options.vAxis.format = '#%';
                         options.vAxis.title = '{{jsstrings.s46}}';
+                        options.height = 290;
                         var chart = new google.visualization.AreaChart(document.getElementById('chart5_area'));
                         chart.draw(data, options);
                     });
