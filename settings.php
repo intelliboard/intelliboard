@@ -1231,7 +1231,7 @@ if($ADMIN->fulltree){
         $name = 'local_intelliboard/bbbserversecret';
         $title = get_string('bbbserversecret', 'local_intelliboard');
         $description = '';
-        if ($PAGE->url->get_param('section') == 'local_intelliboard' &&
+        if (!CLI_SCRIPT && $PAGE->url->get_param('section') == 'local_intelliboard' &&
             strpos($PAGE->url->get_path(), '/admin/settings.php') !== false &&
             get_config('local_intelliboard', 'bbbapiendpoint') &&
             get_config('local_intelliboard', 'bbbserversecret')) {
@@ -1357,7 +1357,7 @@ if($ADMIN->fulltree){
     $title = get_string('bb_col_secret', 'local_intelliboard');
     $description = '';
 
-    if ($PAGE->url->get_param('section') == 'local_intelliboard' &&
+    if (!CLI_SCRIPT && $PAGE->url->get_param('section') == 'local_intelliboard' &&
         strpos($PAGE->url->get_path(), '/admin/settings.php') !== false &&
         get_config('local_intelliboard', 'bb_col_api_endpoint') &&
         get_config('local_intelliboard', 'bb_col_consumer_key') &&
