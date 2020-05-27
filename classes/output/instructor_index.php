@@ -98,7 +98,7 @@ class instructor_index implements renderable, templatable {
                 "key" => $index,
                 "value" => format_string($item),
                 "selected" => $course == $index,
-                "url" => $PAGE->url . "&view={$view}&course={$course}",
+                "url" => $PAGE->url . "&view={$view}&course={$index}",
             ];
         });
         
@@ -146,7 +146,7 @@ class instructor_index implements renderable, templatable {
         }
 
         if ($this->params["pluginsettings"]->n6 || $this->params["pluginsettings"]->n14) {
-            $intelliboardbox2class = "40";
+            $intelliboardbox2class = "45";
         } else {
             $intelliboardbox2class = "100";
         }

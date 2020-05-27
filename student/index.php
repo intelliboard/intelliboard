@@ -261,7 +261,7 @@ echo $OUTPUT->header();
         <?php if($t9 or $t10 or $t11): ?>
             <div class="intelliboard-box">
                 <?php if($t9 or $t10): ?>
-                    <div class="<?php echo (!$t11)?'box100':'box45'; ?> pull-right">
+                    <div class="<?php echo (!$t11)?'box100':'box45'; ?> pull-right ib-table-wrapper">
                         <ul class="nav nav-tabs">
                             <?php if($t9): ?>
                                 <li role="presentation" class="nav-item active"><a class="nav-link active" href="assignment"><?php echo get_string('assignments', 'local_intelliboard'); ?></a></li>
@@ -446,7 +446,7 @@ echo $OUTPUT->header();
 
 
                 <?php if($t11): ?>
-                    <div class="<?php echo (!$t9 and !$t10)?'box100':'box50'; ?>  pull-left">
+                    <div class="<?php echo (!$t9 and !$t10)?'box100':'box50'; ?>  pull-left ib-table-wrapper">
                         <ul class="nav nav-tabs">
                             <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('course_progress', 'local_intelliboard'); ?></a></li>
 
@@ -561,7 +561,7 @@ echo $OUTPUT->header();
         <?php if($t12 or $t13 or $t14 or $t15): ?>
             <div class="intelliboard-box">
                 <?php if($t12 or $t13): ?>
-                    <div class="<?php echo (!$t14 and !$t15)?'box100':'box40'; ?> pull-right h410">
+                    <div class="<?php echo (!$t14 and !$t15)?'box100':'box45'; ?> pull-right h410">
                         <ul class="nav nav-tabs chart-tabs">
                             <?php if($t12): ?>
                                 <li role="presentation" class="nav-item active"><a class="nav-link active" href="#"><?php echo get_string('activity_participation', 'local_intelliboard'); ?></a></li>
