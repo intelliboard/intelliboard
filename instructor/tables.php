@@ -184,7 +184,7 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $sql1 = intelliboard_instructor_getcourses('c.id');
+        $sql1 = intelliboard_instructor_getcourses('c.id', false, '', false, false);
         $sql2 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
         $rolefilter = "";
 
