@@ -309,13 +309,6 @@ class attendance_repository
 
         $limit = 0;
         $offset = 0;
-        $where = "cx.contextlevel = :courselvl AND cx.instanceid = :courseid";
-        $sqlarguments = [
-            'courseid' => $params['courseid'],
-            'courselvl' => CONTEXT_COURSE
-        ];
-
-        $rolefilter = new in_filter($this->get_student_roles(), "srole");
 
         /** Limit and offset */
         if(isset($reportparams['limit'])) {
@@ -326,26 +319,32 @@ class attendance_repository
             $offset = $reportparams['offset'];
         }
 
-        /** Search */
-        if(isset($reportparams['search'])) {
-            $where .= sprintf(
-                ' AND (%s OR %s)',
-                $DB->sql_like('CONCAT(u.firstname, \' \', u.lastname)', ':search1', false),
-                $DB->sql_like('CONCAT(u.lastname, \' \', u.firstname)', ':search2', false)
-            );
-            $sqlarguments['search1'] = "%{$reportparams['search']}%";
-            $sqlarguments['search2'] = "%{$reportparams['search']}%";
+        $where = "cx.contextlevel = :courselvl AND cx.instanceid > 1";
+        $sqlparams = ['courselvl' => CONTEXT_COURSE];
+
+        if (!empty($reportparams['courses'])) {
+            $coursesfilter = new in_filter($reportparams['courses'], "crsc");
+            $where .= ' AND cx.instanceid ' . $coursesfilter->get_sql();
+            $sqlparams = array_merge($coursesfilter->get_params(), $sqlparams);
         }
 
-        $students = $DB->get_records_sql(
-            "SELECT DISTINCT u.*
+        $rolefilter = new in_filter($this->get_student_roles(), "srole");
+
+        list($sql, $sqlparams) = $this->buildSqlRequest(
+            "SELECT CONCAT(u.id, '_', c.id) AS unique_f, u.*, c.id AS course_id,
+                    c.shortname AS course_short_name, c.fullname AS course_full_name
                FROM {context} cx
                JOIN {role_assignments} ra ON ra.contextid = cx.id AND
                                              ra.roleid " . $rolefilter->get_sql() . "
                JOIN {user} u ON u.id = ra.userid
-              WHERE {$where}",
-            array_merge($sqlarguments, $rolefilter->get_params()), $offset, $limit
+               JOIN {course} c ON c.id = cx.instanceid
+              WHERE {$where}
+           GROUP BY u.id, c.id",
+            array_merge($sqlparams, $rolefilter->get_params()),
+            $reportparams
         );
+
+        $students = $DB->get_records_sql($sql, $sqlparams, $offset, $limit);
 
         foreach($students as &$student) {
             $user_picture = new user_picture($student);
@@ -503,5 +502,38 @@ class attendance_repository
         global $DB;
 
         return ['number_of_courses' => $DB->count_records('course')];
+    }
+
+    private function buildSqlRequest($sql, $sqlparams, $requestparams) {
+        global $DB;
+
+        $sql = "SELECT t.* FROM ({$sql}) t ";
+        $where = [];
+
+        // search
+        if (!empty($requestparams['search'])) {
+            foreach ($requestparams['search']['fields'] as $field) {
+                if (is_array($requestparams['search']['value'])) {
+                    $fieldsearch = [];
+
+                    for ($i = 0; $i < count($requestparams['search']['value']); $i++) {
+                        $fieldsearch[] = $DB->sql_like("t.{$field}", ":sf{$i}_{$field}", false);
+                        $sqlparams["sf{$i}_{$field}"] = "%{$requestparams['search']['value'][$i]}%";
+                    }
+
+                    $where[] = '(' . implode(' OR ', $fieldsearch) . ')';
+                } else {
+                    $where[] = $DB->sql_like("t.{$field}", ":sf_{$field}", false);
+                    $sqlparams["sf_{$field}"] = "%{$requestparams['search']['value']}%";
+                }
+            }
+            $where = implode(" OR ", $where);
+        }
+
+        if ($where) {
+            $sql .= "WHERE {$where}";
+        }
+
+        return [$sql, $sqlparams];
     }
 }
