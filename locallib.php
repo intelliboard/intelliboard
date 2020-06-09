@@ -808,3 +808,7 @@ function intelli_initial_reports() {
 
     return $reports;
 }
+
+function intelli_additional_query_params() {
+    return ['lang' => current_language()];
+}
