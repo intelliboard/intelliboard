@@ -33,7 +33,7 @@ $set = optional_param('id', 0, PARAM_RAW);
 
 require_login();
 intelliboard_instructor_access();
-$params = http_build_query(['userid'=>$USER->id ]);
+$params = http_build_query(array_merge(['userid'=>$USER->id], intelli_additional_query_params()));
 
 
 $intelliboard = intelliboard(['task'=>'monitors', 'mode'=> 2]);

@@ -5997,7 +5997,8 @@ class local_intelliboard_external extends external_api {
             "cp.name",
             "cp.timecreated",
             "cp.status",
-            "progress"
+            "progress",
+            "completion_date"
         ), $this->get_filter_columns($params));
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"], true);
@@ -6016,6 +6017,7 @@ class local_intelliboard_external extends external_api {
                     cp.name,
                     cp.timecreated,
                     cp.status,
+                    CASE WHEN ROUND((SUM(cu.proficiency)/COUNT(ctc.id))*100,2) >= 100 THEN MAX(cu.timecreated) ELSE 0 END AS completion_date,
                     ROUND((SUM(cu.proficiency)/COUNT(ctc.id))*100,2) AS progress,
                     cp.templateid
                     {$sql_columns}
@@ -18788,29 +18790,28 @@ class local_intelliboard_external extends external_api {
     {
         global $DB, $CFG;
 
-        $sql = $this->get_teacher_sql($params, ["userid" => "users"]);
+        $sql = $this->get_teacher_sql($params, ["ue.userid" => "users"]);
+        $sql .= $this->get_filter_in_sql($params->courseid, "e.courseid");
         $sql2 = $this->get_teacher_sql($params, ["userid" => "users"]);
+        $sql2 .= $this->get_filter_in_sql($params->courseid, "course");
         $sql3 = $this->get_teacher_sql($params, ["t.userid" => "users", "t.courseid" => "courses"]);
+        $sql3 .= $this->get_filter_in_sql($params->courseid, "t.courseid");
 
         $daysdiff = floor(($params->timefinish - $params->timestart)/(3600 * 24));
 
         if ($daysdiff <= 45) {
-            $groupfield = DBHelper::group_by_date_val('monthyearday', 'l.timepoint');
-            $groupfield1 = DBHelper::group_by_date_val('monthyearday', 'timecreated');
-            $groupfield2 = DBHelper::group_by_date_val('monthyearday', 'timecompleted');
+            $groupkey = 'monthyearday';
         } elseif ($daysdiff <= 80){
-            $groupfield = DBHelper::group_by_date_val('week', 'l.timepoint');
-            $groupfield1 = DBHelper::group_by_date_val('week', 'timecreated');
-            $groupfield2 = DBHelper::group_by_date_val('week', 'timecompleted');
+            $groupkey = 'week';
         } elseif ($daysdiff <= 368){
-            $groupfield = DBHelper::group_by_date_val('monthyear', 'l.timepoint');
-            $groupfield1 = DBHelper::group_by_date_val('monthyear', 'timecreated');
-            $groupfield2 = DBHelper::group_by_date_val('monthyear', 'timecompleted');
+            $groupkey = 'monthyear';
         } else {
-            $groupfield = DBHelper::group_by_date_val('year', 'l.timepoint');
-            $groupfield1 = DBHelper::group_by_date_val('year', 'timecreated');
-            $groupfield2 = DBHelper::group_by_date_val('year', 'timecompleted');
+            $groupkey = 'year';
         }
+
+        $groupfield = DBHelper::group_by_date_val($groupkey, 'l.timepoint');
+        $groupfield1 = DBHelper::group_by_date_val($groupkey, 'ue.timecreated');
+        $groupfield2 = DBHelper::group_by_date_val($groupkey, 'timecompleted');
 
         $this->params['timestart'] = $params->timestart;
         $this->params['timefinish'] = $params->timefinish;
@@ -18822,31 +18823,21 @@ class local_intelliboard_external extends external_api {
             $sql_cache = '';
         }
 
-        if ($params->externalid) {
-            $data->sessions = $DB->get_records_sql(
-                "SELECT {$sql_cache} MIN(l.timepoint) AS timepointval, {$groupfield} AS group_time,
-                        COUNT(DISTINCT t.userid) AS pointval
-                   FROM {local_intelliboard_logs} l, {local_intelliboard_tracking} t
-                  WHERE l.trackid = t.id AND l.timepoint BETWEEN :timestart AND :timefinish $sql3
-               GROUP BY 2",
-                $this->params
-            );
-        } else {
-            $data->sessions = $DB->get_records_sql(
-                "SELECT {$sql_cache} MIN(l.timepoint) AS timepointval, {$groupfield} AS group_time,
-                        SUM(l.sessions) AS pointval
-                   FROM {local_intelliboard_totals} l
-                  WHERE l.timepoint BETWEEN :timestart AND :timefinish
-               GROUP BY 2",
-                $this->params
-            );
-        }
+        $data->sessions = $DB->get_records_sql(
+            "SELECT {$sql_cache} MIN(l.timepoint) AS timepointval, {$groupfield} AS group_time,
+                    COUNT(DISTINCT t.userid) AS pointval
+               FROM {local_intelliboard_logs} l, {local_intelliboard_tracking} t
+              WHERE l.trackid = t.id AND l.timepoint BETWEEN :timestart AND :timefinish $sql3
+           GROUP BY 2",
+            $this->params
+        );
 
         $data->enrolments = $DB->get_records_sql(
-            "SELECT {$sql_cache} MIN(timecreated) AS timepointval, {$groupfield1} AS group_time,
-                    COUNT(DISTINCT (userid)) AS pointval
-               FROM {user_enrolments}
-              WHERE timecreated BETWEEN :timestart AND :timefinish $sql
+            "SELECT {$sql_cache} MIN(ue.timecreated) AS timepointval, {$groupfield1} AS group_time,
+                    COUNT(DISTINCT (ue.userid)) AS pointval
+               FROM {user_enrolments} ue
+               JOIN {enrol} e ON e.id = ue.enrolid
+              WHERE ue.timecreated BETWEEN :timestart AND :timefinish $sql
            GROUP BY 2",
             $this->params
         );
