@@ -159,7 +159,7 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configtext($name, $title, $description, '');
         $settings->add($setting);
 
-        $options = array("AUTO","AU","CA","EU","US");
+        $options = array("AUTO","AU","CA","EU","US","CN");
         $name = 'local_intelliboard/server';
         $title = new lang_string('server', 'local_intelliboard');
         $setting = new admin_setting_configselect($name, $title,'',0,$options);
