@@ -679,6 +679,9 @@
  $string['session_name'] = "Session Name";
  $string['session_time'] = "Session Time";
  $string['return_to_sessions'] = "Return to Sessions";
+ $string['intellicart_student_integration'] = 'Integration with Student Dashboard';
+ $string['intellicart_instructor_integration'] = 'Integration with Instructor Dashboard';
+ $string['intellicart_app_reports_integration'] = 'Integration with IntelliBoard Reports';
  /* IntelliCart END*/
  $string['allmod'] = "All activities";
  $string['customod'] = "Custom activities";

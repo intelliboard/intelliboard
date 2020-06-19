@@ -39,8 +39,8 @@ define([
         },
 
         moodleSettingsHandler: function() {
-            $(".moodle-settings .tab-header-button button.next").unbind("click");
-            $(".moodle-settings .tab-header-button button.next").on("click", function() {
+            $(".moodle-settings .tab-header-button button.next, .moodle-settings .tab-body-button button.next").unbind("click");
+            $(".moodle-settings .tab-header-button button.next, .moodle-settings .tab-body-button button.next").on("click", function() {
                 if (setup.activeRequest) {
                     return;
                 }
@@ -73,8 +73,8 @@ define([
         },
 
         termsHandler: function() {
-            $(".tab-item.terms .tab-header-button button.next").unbind("click");
-            $(".tab-item.terms .tab-header-button button.next").on("click", function() {
+            $(".tab-item.terms .tab-header-button button.next, .tab-item.terms .tab-body-button button.next").unbind("click");
+            $(".tab-item.terms .tab-header-button button.next, .tab-item.terms .tab-body-button button.next").on("click", function() {
                 if (setup.activeRequest) {
                     return;
                 }
@@ -93,7 +93,7 @@ define([
                 }
             });
 
-            $(".tab-item.terms .tab-header-button button.back").on("click", function() {
+            $(".tab-item.terms .tab-header-button button.back, .tab-item.terms .tab-body-button button.back").on("click", function() {
                 terms.closeTab();
                 moodleSettings.openTab();
             });
@@ -121,7 +121,7 @@ define([
                 }
             });
 
-            $(".tab-item.authentication .tab-header-button button.back").on("click", function() {
+            $(".tab-item.authentication .tab-header-button button.back, .tab-item.authentication .tab-body-button button.back").on("click", function() {
                 authentication.closeTab();
                 authentication.hideLoginForm();
                 authentication.hideRegisterForm();
