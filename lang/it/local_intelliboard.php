@@ -711,6 +711,9 @@ $string['coursessessions'] = 'Sessioni dei corsi';
 $string['session_name'] = 'Nome della sessione';
 $string['session_time'] = 'Tempo di sessione';
 $string['return_to_sessions'] = 'Ritorna alle Sessioni';
+$string['intellicart_student_integration'] = 'Integration with Student Dashboard';
+$string['intellicart_instructor_integration'] = 'Integration with Instructor Dashboard';
+$string['intellicart_app_reports_integration'] = 'Integration with IntelliBoard Reports';
 /* IntelliCart END*/
 
 $string['allmod'] = 'Tutte le attività';

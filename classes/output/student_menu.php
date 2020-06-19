@@ -56,7 +56,7 @@ class student_menu implements renderable, templatable {
         $id = optional_param('id', 0, PARAM_RAW);
         $mentor_role = get_config('local_intelliboard', 't09');
         $def_name = get_string('grades', 'local_intelliboard');
-        $intellicart = get_config('local_intelliboard', 'intellicart');
+        $intellicart = get_config('local_intelliboard', 'intellicart_student_integration');
         $alt_name = get_config('local_intelliboard', 'grades_alt_text');
         $other_user = optional_param('user', 0, PARAM_INT);
         $show_students = false;

@@ -2673,8 +2673,7 @@ class local_intelliboard_external extends external_api {
                          THEN (CASE WHEN asbm.first_completed_date IS NULL THEN 0 ELSE asbm.first_completed_date END)
                          {$sql_completed_date}
                          ELSE 0
-                    END AS first_completed_date,
-                    gi.itemname
+                    END AS first_completed_date
                     {$sql_columns}
                FROM (SELECT MIN(ue1.id) AS id, ue1.userid, e1.courseid, MIN(ue1.status) AS enrol_status
                        FROM {user_enrolments} ue1
@@ -3573,7 +3572,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter    .= $this->get_filter_enrol_sql($params, "", "ue.enrolstatus");
         $role_filter    = $this->get_filter_in_sql($params->learner_roles,'roleid');
         $grade_avg      = intelliboard_grade_sql(true, $params, 'g.', 2, 'gi.',true);
-        $grade_single   = intelliboard_grade_sql(false, $params, 'g.', 2, 'gi.',true);
+        $grade_single   = intelliboard_grade_sql(false, $params, 'g.', 2, 'gi.');
         $grade_single_raw   = intelliboard_grade_sql(false, $params, 'g.', 2, 'gi.');
         $completion     = $this->get_completion($params, "cmc.");
         $grades         = [];
@@ -12179,7 +12178,7 @@ class local_intelliboard_external extends external_api {
         // return empty data if IntelliCart is not installed or if IntelliCart is disabled in IntelliBoard plugin
         if(
             !file_exists($CFG->dirroot . '/local/intellicart/lib.php') ||
-            !get_config('local_intelliboard', 'intellicart')
+            !get_config('local_intelliboard', 'intellicart_app_reports_integration')
         ) {
             return ['data' => []];
         }

@@ -674,6 +674,9 @@ $string['intelliboard:browseallcohorts'] = 'IntelliBoard [Browse All Cohorts]';
  $string['session_name'] = "Nome da sessão";
  $string['session_time'] = "Tempo de sessão";
  $string['return_to_sessions'] = "Voltar para Sessões";
+ $string['intellicart_student_integration'] = 'Integration with Student Dashboard';
+ $string['intellicart_instructor_integration'] = 'Integration with Instructor Dashboard';
+ $string['intellicart_app_reports_integration'] = 'Integration with IntelliBoard Reports';
  /* IntelliCart END*/
  $string['allmod'] = "Todas as atividades";
  $string['customod'] = "Atividades personalizadas";

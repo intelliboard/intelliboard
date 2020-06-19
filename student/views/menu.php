@@ -32,7 +32,7 @@ $alt_name = get_config('local_intelliboard', 'grades_alt_text');
 $def_name = get_string('grades', 'local_intelliboard');
 $grade_name = ($alt_name) ? $alt_name : $def_name;
 $scale_real = get_config('local_intelliboard', 'scale_real');
-$intellicart = get_config('local_intelliboard', 'intellicart');
+$intellicart = get_config('local_intelliboard', 'intellicart_student_integration');
 $other_user = optional_param('user', 0, PARAM_INT);
 
 
