@@ -117,12 +117,6 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
-        $name = 'local_intelliboard/intellicart';
-        $title = new lang_string('intellicart', 'local_intelliboard');
-        $description = new lang_string('intellicart_desc', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-        $settings->add($setting);
-
         $name = 'local_intelliboard/api';
         $title = new lang_string('api', 'local_intelliboard');
         $description = new lang_string('api_desc', 'local_intelliboard');
@@ -159,7 +153,7 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configtext($name, $title, $description, '');
         $settings->add($setting);
 
-        $options = array("AUTO","AU","CA","EU","US");
+        $options = array("AUTO","AU","CA","EU","US","CN");
         $name = 'local_intelliboard/server';
         $title = new lang_string('server', 'local_intelliboard');
         $setting = new admin_setting_configselect($name, $title,'',0,$options);
@@ -198,6 +192,30 @@ if($ADMIN->fulltree){
         $name = 'local_intelliboard/sizemode';
         $title = new lang_string('sizemode', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
+        $settings->add(new admin_setting_heading(
+            'local_intelliboard/intellicart_integration',
+            new lang_string('intellicart', 'local_intelliboard'),
+            '')
+        );
+
+        $name = 'local_intelliboard/intellicart_student_integration';
+        $title = new lang_string('intellicart_student_integration', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/intellicart_instructor_integration';
+        $title = new lang_string('intellicart_instructor_integration', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/intellicart_app_reports_integration';
+        $title = new lang_string('intellicart_app_reports_integration', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configcheckbox($name, $title, $description, true, true, false);
         $settings->add($setting);
 
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));

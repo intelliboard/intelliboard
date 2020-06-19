@@ -38,7 +38,7 @@
     font-weight: 500;
 }
 
-.setup-wrapper .tab-item .tab-header .tab-header-button button {
+.setup-wrapper .tab-item .tab-header .tab-header-button button{
     margin: 0;
     border: none;
     line-height: 30px;
@@ -59,6 +59,26 @@
     padding: 30px 30px 30px 70px;
     position: relative;
     min-height: 150px;
+}
+
+.setup-wrapper .tab-item .tab-body .tab-body-button{
+    text-align: right;
+}
+.setup-wrapper .tab-item .tab-body .tab-body-button button {
+    margin: 0;
+    border: none;
+    line-height: 30px;
+    cursor: pointer;
+    display: inline-block;
+    border-radius: 2px;
+    background: #0083d0;
+    padding: 0 10px;
+    height: 30px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 100px;
+    color: #fff;
 }
 
 .setup-wrapper .tab-item .tab-body .tab-body-item + .tab-body-item {

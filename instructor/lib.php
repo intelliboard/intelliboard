@@ -581,13 +581,20 @@ function intelliboard_instructor_getcourses(
               WHERE d.fieldid = f.id AND d.userid = ? and f.shortname= 'codea'",
             [$USER->id]
         );
-        $result = $DB->get_records_sql(
+        $result = (isset($data->codea)) ? $DB->get_records_sql(
             "SELECT DISTINCT d.userid
                FROM {user_info_field} f, {user_info_data} d, {user} u
               WHERE d.fieldid = f.id AND d.data = ? AND u.id = d.userid $sql_data AND
                     f.shortname IN ('codsm', 'coddm', 'codam')",
             [$data->codea]
-        );
+        ) : false;
+
+        $debug = get_config('local_intelliboard', 'debug');
+      	$debugmode = optional_param('debug', '', PARAM_RAW);
+        if ($debug and $debugmode) {
+          var_dump([$data, $result]);
+          die();
+        }
 
         if ($result) {
             $users = [];

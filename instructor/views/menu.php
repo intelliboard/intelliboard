@@ -27,7 +27,7 @@
 $id = optional_param('id', 0, PARAM_RAW);
 
 $intellicartenabled = false;
-if(get_config('local_intelliboard', 'intellicart') && file_exists($CFG->dirroot . '/local/intellicart/locallib.php')) {
+if(get_config('local_intelliboard', 'intellicart_instructor_integration') && file_exists($CFG->dirroot . '/local/intellicart/locallib.php')) {
     require_once($CFG->dirroot . '/local/intellicart/locallib.php');
     $intellicartenabled = local_intellicart_enable('', true);
 }

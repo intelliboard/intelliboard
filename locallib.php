@@ -145,6 +145,8 @@ function intelliboard_url($api = false)
 			return $config['app_url_au'];
 		} elseif ($server == 2) {
 			return $config['app_url_ca'];
+		} elseif ($server == 5) {
+			return $config['app_url_cn'];
 		} elseif ($server == 3) {
 			return $config['app_url_eu'];
 		} elseif ($server == 4) {
@@ -807,4 +809,8 @@ function intelli_initial_reports() {
     }
 
     return $reports;
+}
+
+function intelli_additional_query_params() {
+    return ['lang' => current_language()];
 }
