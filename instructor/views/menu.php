@@ -25,6 +25,8 @@
  */
 
 $id = optional_param('id', 0, PARAM_RAW);
+$debug = get_config('local_intelliboard', 'debug');
+$debugmode = optional_param('debug', '', PARAM_RAW);
 
 $intellicartenabled = false;
 if(get_config('local_intelliboard', 'intellicart_instructor_integration') && file_exists($CFG->dirroot . '/local/intellicart/locallib.php')) {
@@ -33,6 +35,15 @@ if(get_config('local_intelliboard', 'intellicart_instructor_integration') && fil
 }
 
 ?>
+
+<?php if ($debug and $debugmode and isset($intelliboard->debugging)): ?>
+	<pre>
+		<code>[reports_status]: <?php echo (get_config('local_intelliboard', 'n9')) ? 1 : 0; ?></code>
+		<code>[count_reports]: <?php echo count($intelliboard->reports); ?></code>
+		<code><?php echo $intelliboard->debugging; ?></code>
+	</pre>
+<?php endif; ?>
+
 <ul class="intelliboard-menu">
     <?php if(get_config('local_intelliboard', 'show_dashboard_tab')): ?>
 	    <li><a href="index.php" <?php echo ($PAGE->pagetype == 'home')?'class="active"':''; ?>><i class="ion-ios-pulse"></i> <?php echo get_string('dashboard', 'local_intelliboard');?></a></li>
