@@ -170,6 +170,20 @@ if($action == 'user_courses_list'){
 	}
 	die($html);
 } else {
-	$result = local_intelliboard_insert_tracking(true);
-	die(json_encode($result));
+    $page = optional_param('page', '', PARAM_TEXT);
+    $param = optional_param('param', 0, PARAM_INT);
+    $time = optional_param('time', '', PARAM_INT);
+
+    if (!empty($page) && !empty($param) && !empty($time)) {
+        $trackingParams = [
+            'page' => $page,
+            'param' => $param,
+            'time' => $time,
+        ];
+        $result = local_intelliboard_insert_tracking(false, $trackingParams);
+    } else {
+        $result = local_intelliboard_insert_tracking(true);
+    }
+
+    die(json_encode($result));
 }

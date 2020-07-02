@@ -410,7 +410,13 @@ class local_external_functions
             'report225',
             'get_template_competencies',
             'report226',
-            'monitor21'
+            'monitor21',
+            'report229',
+            'get_students',
+            'report230',
+            'report231',
+            'get_courses_transcripts',
+            'get_modules_transcripts'
         ];
     }
     public function get_function($params = null)

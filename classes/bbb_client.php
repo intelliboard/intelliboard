@@ -68,7 +68,7 @@ class bbb_client {
      */
     public function checkConnection() {
         if(get_config('local_intelliboard', 'bbbapiendpoint') && get_config('local_intelliboard', 'bbbserversecret')){
-            $requestaction = 'getDefaultConfigXML';
+            $requestaction = 'getMeetings';
 
             $requeststring = "";
 

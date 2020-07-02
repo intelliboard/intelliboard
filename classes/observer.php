@@ -27,6 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/local/intelliboard/locallib.php');
+require_once($CFG->dirroot .'/local/intelliboard/lib.php');
 
 class local_intelliboard_observer
 {
@@ -192,5 +193,15 @@ class local_intelliboard_observer
 
         self::process_event(30, $event, $filters,
             array('users' => $eventData['userid'], 'courses' => $eventData['courseid']));
+    }
+
+    public static function resource_viewed(\mod_resource\event\course_module_viewed $event) {
+        if (get_config('local_intelliboard', 'enabled')) {
+            local_intelliboard_insert_tracking(false, [
+                'page' => 'module',
+                'param' => $event->contextinstanceid,
+                'time' => 1
+            ]);
+        }
     }
 }
