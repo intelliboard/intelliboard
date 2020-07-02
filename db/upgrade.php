@@ -674,5 +674,89 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2020033123, 'local', 'intelliboard');
     }
 
+    if ($oldversion < 2020062500) {
+        // Define table local_intelliboard_trns_c to be created.
+        $table = new xmldb_table('local_intelliboard_trns_c');
+        // Adding fields to table local_intelliboard_trns_c.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('useremail', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('firstname', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('lastname', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('userenrolid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('enrolid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('enroltype', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('coursename', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('enroldate', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('unenroldate', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('completeddate', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('status', XMLDB_TYPE_INTEGER, '1', null, null, null, '0');
+        $table->add_field('gradeitemid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('gradeid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('grademax', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, '100');
+        $table->add_field('grademin', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, '0');
+        $table->add_field('finalgrade', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, '0');
+        $table->add_field('formattedgrade', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('rolesids', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('groupsids', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+
+        // Adding keys to table local_intelliboard_trns_c.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('courseid', XMLDB_KEY_FOREIGN, ['courseid'], 'course', ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $table->add_key('enrolid', XMLDB_KEY_FOREIGN, ['enrolid'], 'enrol', ['id']);
+        $table->add_key('userenrolid', XMLDB_KEY_FOREIGN, ['userenrolid'], 'user_enrolments', ['id']);
+        $table->add_key('gradeitemid', XMLDB_KEY_FOREIGN, ['gradeitemid'], 'grade_items', ['id']);
+        $table->add_key('gradeid', XMLDB_KEY_FOREIGN, ['gradeid'], 'grade_grades', ['id']);
+
+        // Conditionally launch create table for local_intelliboard_trns_c.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table local_intelliboard_trns_m to be created.
+        $table = new xmldb_table('local_intelliboard_trns_m');
+        // Adding fields to table local_intelliboard_trns_m.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userenrolid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('cmid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('moduleid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('modulename', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('moduletype', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('startdate', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('completeddate', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('status', XMLDB_TYPE_INTEGER, '1', null, null, null, '0');
+        $table->add_field('gradeitemid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('gradeid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('grademax', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, '100');
+        $table->add_field('grademin', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, '0');
+        $table->add_field('finalgrade', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, '0');
+        $table->add_field('formattedgrade', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+
+        // Adding keys to table local_intelliboard_trns_m.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('courseid', XMLDB_KEY_FOREIGN, ['courseid'], 'course', ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $table->add_key('userenrolid', XMLDB_KEY_FOREIGN, ['userenrolid'], 'user_enrolments', ['id']);
+        $table->add_key('cmid', XMLDB_KEY_FOREIGN, ['cmid'], 'course_modules', ['id']);
+        $table->add_key('moduleid', XMLDB_KEY_FOREIGN, ['moduleid'], 'modules', ['id']);
+        $table->add_key('gradeitemid', XMLDB_KEY_FOREIGN, ['gradeitemid'], 'grade_items', ['id']);
+        $table->add_key('gradeid', XMLDB_KEY_FOREIGN, ['gradeid'], 'grade_grades', ['id']);
+
+        // Conditionally launch create table for local_intelliboard_trns_m.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2020062500, 'local', 'intelliboard');
+    }
+
 	return true;
 }

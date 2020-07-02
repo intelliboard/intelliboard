@@ -329,7 +329,6 @@ class attendance_repository
         }
 
         $rolefilter = new in_filter($this->get_student_roles(), "srole");
-
         list($sql, $sqlparams) = $this->buildSqlRequest(
             "SELECT CONCAT(u.id, '_', c.id) AS unique_f, u.*, c.id AS course_id,
                     c.shortname AS course_short_name, c.fullname AS course_full_name
@@ -532,6 +531,21 @@ class attendance_repository
 
         if ($where) {
             $sql .= "WHERE {$where}";
+        }
+
+        // order
+        if (!empty($requestparams['order'])) {
+            $order = array_map(function ($item) {
+                if (isset($item['field']) && isset($item['dir'])) {
+                    return $item['field'] . ' ' . $item['dir'];
+                }
+                return "";
+            }, $requestparams['order']);
+            $orderSql = implode(", ", $order);
+        }
+
+        if ($orderSql) {
+            $sql .= " ORDER BY {$orderSql}";
         }
 
         return [$sql, $sqlparams];

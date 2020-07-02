@@ -155,4 +155,21 @@ class DBHelper
                 throw new \Exception('Invalid type');
         }
     }
+
+    /**
+     * @param $paramname
+     * @param $separator
+     * @return string
+     */
+    public static function get_group_concat($paramname, $separator) {
+        global $CFG;
+
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg($paramname::character, '$separator')";
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT $paramname SEPARATOR '$separator')";
+        }
+
+        return $group_concat;
+    }
 }

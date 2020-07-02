@@ -110,20 +110,31 @@ $t53 = get_config('local_intelliboard', 't53');
 $scale_real = get_config('local_intelliboard', 'scale_real');
 $scale_percentage_round = get_config('local_intelliboard', 'scale_percentage_round');
 
-$courses = intelliboard_learner_courses($showing_user->id);
+$courses = intelliboard_learner_courses($showing_user->id, null);
+$coursesprogress = intelliboard_learner_courses($showing_user->id, $time);
 $totals = intelliboard_learner_totals($showing_user->id);
+$active_tab = '';
 
 if($t12 or $t13){
     $modules_progress = intelliboard_learner_modules($showing_user->id);
 }
-if($t9){
+if ($t9) {
     $assignments = intelliboard_data('assignment', $showing_user->id, $showing_user);
+    if (optional_param('assignment_page', 0, PARAM_INT) > 0) {
+        $active_tab = 'assignment';
+    }
 }
-if($t10){
+if ($t10) {
     $quizes = intelliboard_data('quiz', $showing_user->id, $showing_user);
+    if (optional_param('quiz_page', 0, PARAM_INT) > 0) {
+        $active_tab = 'quiz';
+    }
 }
-if($t11){
+if ($t11) {
     $courses_report = intelliboard_data('course', $showing_user->id, $showing_user);
+    if (optional_param('course_page', 0, PARAM_INT) > 0) {
+        $active_tab = 'course';
+    }
 }
 
 if($t5){
@@ -644,7 +655,7 @@ echo $OUTPUT->header();
 
             jQuery('.closesettings').click(function(e){
                 e.preventDefault();
-                jQuery(this).parent().parent().parent().parent().find('.nav-tabs li:first a').trigger("click");
+                jQuery(this).parent().parent().parent().parent().find('.nav-tabs li:first a')[0].click();
             });
 
             jQuery('.intsettings').click(function(e){
@@ -691,13 +702,11 @@ echo $OUTPUT->header();
                 jQuery(this).parent().find('a').removeClass("active");
                 jQuery(this).addClass("active");
                 jQuery(this).parent().parent().find('.intelliboard-chart-dash').hide().eq(jQuery(this).index()).show();
-                if(jQuery(this).hasClass('nofilter')){
-                    jQuery('.intelliboard-dropdown:not(.students)').addClass('disabled');
-                }else{
-                    jQuery('.intelliboard-dropdown:not(.students)').removeClass('disabled');
-                }
             });
 
+            <?php if($active_tab != ''):?>
+            jQuery('.nav-tabs li a[href="<?php echo $active_tab;?>"]')[0].click();
+            <?php endif;?>
         });
 
         function googleChartsCallback() {
@@ -765,7 +774,7 @@ echo $OUTPUT->header();
                 function drawCourseProgress() {
                     var data = google.visualization.arrayToDataTable([
                         ['<?php echo intellitext(get_string('course', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('courseaverage', 'local_intelliboard')); ?>', '<?php echo intellitext(get_string('mygrade', 'local_intelliboard')); ?>'],
-                        <?php foreach($courses as $row):  ?>
+                        <?php foreach($coursesprogress as $row):  ?>
                         ['<?php echo intellitext(format_string($row->fullname)); ?>', <?php echo ($scale_real)?"{v: ".(int)$row->average.", f: '".$row->average_real."'}":(int)$row->average; ?>, <?php echo ($scale_real)?"{v: ".(int)$row->grade.", f: '".$row->grade_real."'}":(int)$row->grade; ?>],
                         <?php endforeach; ?>
                     ]);
@@ -773,7 +782,9 @@ echo $OUTPUT->header();
                     var options = <?php echo format_string($factorInfo->CourseProgressCalculation); ?>;
                     var chart = new google.visualization.ComboChart(document.getElementById('intelliboard-chart-combo'));
                     chart.draw(data, options);
-                    jQuery('.intelliboard-origin-head a:first-child')[0].click();
+                    setTimeout(function () {
+                        jQuery('.intelliboard-origin-head a:first-child')[0].click();
+                    }, 200);
                 }
                 drawCourseProgress();
             <?php endif; ?>
@@ -794,7 +805,9 @@ echo $OUTPUT->header();
                     options.hAxis.maxValue = <?php echo $hAxis_max; ?>;
                     var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
                     chart.draw(data, options);
-                    jQuery('.intelliboard-origin-head a:first-child')[0].click();
+                    setTimeout(function () {
+                        jQuery('.intelliboard-origin-head a:first-child')[0].click();
+                    }, 200);
                 }
                 drawActivityProgress();
             <?php endif; ?>
