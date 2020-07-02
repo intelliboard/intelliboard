@@ -1398,4 +1398,24 @@ if($ADMIN->fulltree){
     );
     $settings->add($setting);
 
+    // Transcripts section.
+    $settings->add(new admin_setting_heading(
+        'local_intelliboard/transcripts',
+        get_string('transcripts', 'local_intelliboard'),
+        ''
+    ));
+
+    $name = 'local_intelliboard/enable_transcripts';
+    $title = get_string('enable_transcripts', 'local_intelliboard');
+    $description = '';
+    $setting = new admin_setting_configcheckbox(
+        $name, $title, $description, false, true, false
+    );
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/transcriptssyncrecordsnum';
+    $title = new lang_string('transcriptssyncrecordsnum', 'local_intelliboard');
+    $description = new lang_string('transcriptssyncrecordsnum_desc', 'local_intelliboard');
+    $setting = new admin_setting_configtext($name, $title, $description, '1000');
+    $settings->add($setting);
 }

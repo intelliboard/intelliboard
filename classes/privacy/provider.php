@@ -33,6 +33,12 @@ use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\transform;
 use core_privacy\local\request\writer;
 
+if (interface_exists('\core_privacy\local\request\core_userlist_provider')) {
+    interface ib_userlist_provider extends \core_privacy\local\request\core_userlist_provider{}
+} else {
+    interface ib_userlist_provider {};
+}
+
 /**
  * Privacy class for requesting user data.
  *
@@ -208,6 +214,55 @@ class provider implements
             'data' => 'privacy:metadata:local_intelliboard_att_sync:data',
         ], 'privacy:metadata:local_intelliboard_att_sync');
 
+        // The 'local_intelliboard_trns_c' table stores the metadata about course actions.
+        $collection->add_database_table('local_intelliboard_trns_c', [
+            'userid' => 'privacy:metadata:local_intelliboard_trns_c:userid',
+            'useremail' => 'privacy:metadata:local_intelliboard_trns_c:useremail',
+            'firstname' => 'privacy:metadata:local_intelliboard_trns_c:firstname',
+            'lastname' => 'privacy:metadata:local_intelliboard_trns_c:lastname',
+            'userenrolid' => 'privacy:metadata:local_intelliboard_trns_c:userenrolid',
+            'enrolid' => 'privacy:metadata:local_intelliboard_trns_c:enrolid',
+            'enroltype' => 'privacy:metadata:local_intelliboard_trns_c:enroltype',
+            'courseid' => 'privacy:metadata:local_intelliboard_trns_c:courseid',
+            'coursename' => 'privacy:metadata:local_intelliboard_trns_c:coursename',
+            'enroldate' => 'privacy:metadata:local_intelliboard_trns_c:enroldate',
+            'unenroldate' => 'privacy:metadata:local_intelliboard_trns_c:unenroldate',
+            'completeddate' => 'privacy:metadata:local_intelliboard_trns_c:completeddate',
+            'status' => 'privacy:metadata:local_intelliboard_trns_c:status',
+            'gradeitemid' => 'privacy:metadata:local_intelliboard_trns_c:gradeitemid',
+            'gradeid' => 'privacy:metadata:local_intelliboard_trns_c:gradeid',
+            'grademax' => 'privacy:metadata:local_intelliboard_trns_c:grademax',
+            'grademin' => 'privacy:metadata:local_intelliboard_trns_c:grademin',
+            'finalgrade' => 'privacy:metadata:local_intelliboard_trns_c:finalgrade',
+            'formattedgrade' => 'privacy:metadata:local_intelliboard_trns_c:formattedgrade',
+            'rolesids' => 'privacy:metadata:local_intelliboard_trns_c:rolesids',
+            'groupsids' => 'privacy:metadata:local_intelliboard_trns_c:groupsids',
+            'timecreated' => 'privacy:metadata:local_intelliboard_trns_c:timecreated',
+            'timemodified' => 'privacy:metadata:local_intelliboard_trns_c:timemodified',
+        ], 'privacy:metadata:local_intelliboard_trns_c');
+
+        // The 'local_intelliboard_trns_c' table stores the metadata about course actions.
+        $collection->add_database_table('local_intelliboard_trns_m', [
+            'userenrolid' => 'privacy:metadata:local_intelliboard_trns_m:userenrolid',
+            'courseid' => 'privacy:metadata:local_intelliboard_trns_m:courseid',
+            'userid' => 'privacy:metadata:local_intelliboard_trns_m:userid',
+            'cmid' => 'privacy:metadata:local_intelliboard_trns_m:cmid',
+            'moduleid' => 'privacy:metadata:local_intelliboard_trns_m:moduleid',
+            'modulename' => 'privacy:metadata:local_intelliboard_trns_m:modulename',
+            'moduletype' => 'privacy:metadata:local_intelliboard_trns_m:moduletype',
+            'startdate' => 'privacy:metadata:local_intelliboard_trns_m:startdate',
+            'completeddate' => 'privacy:metadata:local_intelliboard_trns_m:completeddate',
+            'status' => 'privacy:metadata:local_intelliboard_trns_m:status',
+            'gradeitemid' => 'privacy:metadata:local_intelliboard_trns_m:gradeitemid',
+            'gradeid' => 'privacy:metadata:local_intelliboard_trns_m:gradeid',
+            'grademax' => 'privacy:metadata:local_intelliboard_trns_m:grademax',
+            'grademin' => 'privacy:metadata:local_intelliboard_trns_m:grademin',
+            'finalgrade' => 'privacy:metadata:local_intelliboard_trns_m:finalgrade',
+            'formattedgrade' => 'privacy:metadata:local_intelliboard_trns_m:formattedgrade',
+            'timecreated' => 'privacy:metadata:local_intelliboard_trns_m:timecreated',
+            'timemodified' => 'privacy:metadata:local_intelliboard_trns_m:timemodified',
+        ], 'privacy:metadata:local_intelliboard_trns_m');
+
         return $collection;
     }
 
@@ -319,6 +374,12 @@ class provider implements
             ]);
         }
         $DB->delete_records('local_intelliboard_tracking', [
+            'userid' => $userid,
+        ]);
+        $DB->delete_records('local_intelliboard_trns_c', [
+            'userid' => $userid,
+        ]);
+        $DB->delete_records('local_intelliboard_trns_m', [
             'userid' => $userid,
         ]);
     }

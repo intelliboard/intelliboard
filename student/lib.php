@@ -394,13 +394,20 @@ function intelliboard_learner_progress($time, $userid){
     return $data;
 }
 
-function intelliboard_learner_courses($userid){
+function intelliboard_learner_courses($userid, $time = null){
     global $DB;
 
     $params = array();
     $params['userid1'] = $userid;
     $params['userid2'] = $userid;
     $params['userid3'] = $userid;
+
+    if ($time !== null) {
+        list($timestart, $timefinish) = get_timerange($time);
+    } else {
+        $timestart = 0;
+        $timefinish = strtotime('+1 year');
+    }
 
     $grade_single = intelliboard_grade_sql(false);
     $grade_avg = intelliboard_grade_sql(true);
@@ -413,23 +420,90 @@ function intelliboard_learner_courses($userid){
 
     if($scale_real){
         $params['userid4'] = $userid;
-        $data = $DB->get_records_sql("
-        SELECT c.id, c.fullname, '0' AS duration_calc,
-            (SELECT $grade_single_percent FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid3) AS grade,
-            (SELECT $grade_avg_percent FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
-            (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid4) AS grade_real,
-            (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average_real,
-            (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
-        FROM {user_enrolments} ue, {enrol} e, {course} c
-        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND ue.status = 0 $sql GROUP BY c.id ORDER BY c.sortorder ASC", $params);
+        $params = array_merge([
+            'timestart1' => $timestart,
+            'timefinish1' => $timefinish,
+            'timestart2' => $timestart,
+            'timefinish2' => $timefinish,
+            'timestart3' => $timestart,
+            'timefinish3' => $timefinish,
+            'timestart4' => $timestart,
+            'timefinish4' => $timefinish,
+            'timestart5' => $timestart,
+            'timefinish5' => $timefinish,
+        ], $params);
+        $data = $DB->get_records_sql(
+            "SELECT c.id, c.fullname, '0' AS duration_calc,
+                    (SELECT $grade_single_percent
+                       FROM {grade_items} gi, {grade_grades} g
+                      WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND
+                            gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
+                            gi.courseid = c.id AND g.userid = :userid3 AND g.timemodified BETWEEN :timestart1 AND :timefinish1
+                    ) AS grade,
+                    (SELECT $grade_avg_percent
+                       FROM {grade_items} gi, {grade_grades} g
+                      WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND
+                            gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
+                            gi.courseid = c.id AND g.timemodified BETWEEN :timestart2 AND :timefinish2
+                    ) AS average,
+                    (SELECT $grade_single
+                       FROM {grade_items} gi, {grade_grades} g
+                      WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND
+                            gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND
+                            g.userid = :userid4 AND g.timemodified BETWEEN :timestart3 AND :timefinish3
+                    ) AS grade_real,
+                    (SELECT $grade_avg
+                       FROM {grade_items} gi, {grade_grades} g
+                      WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND
+                            gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
+                            gi.courseid = c.id AND g.timemodified BETWEEN :timestart4 AND :timefinish4
+                    ) AS average_real,
+                    (SELECT SUM(lol.timespend)
+                       FROM {local_intelliboard_tracking} lit
+                       JOIN {local_intelliboard_logs} lol ON lol.trackid = lit.id AND lol.timepoint BETWEEN :timestart5 AND :timefinish5
+                      WHERE lit.userid = :userid1 AND lit.courseid = c.id
+                   GROUP BY lit.courseid
+                    ) AS duration
+               FROM {user_enrolments} ue, {enrol} e, {course} c
+              WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND ue.status = 0 $sql
+           GROUP BY c.id
+           ORDER BY c.sortorder ASC",
+           $params
+        );
     }else{
-        $data = $DB->get_records_sql("
-        SELECT c.id, c.fullname, '0' AS duration_calc,
-            (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid3) AS grade,
-            (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id) AS average,
-            (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid1 AND courseid = c.id) AS duration
-        FROM {user_enrolments} ue, {enrol} e, {course} c
-        WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND ue.status = 0 $sql GROUP BY c.id ORDER BY c.sortorder ASC", $params);
+        $params = array_merge([
+            'timestart1' => $timestart,
+            'timefinish1' => $timefinish,
+            'timestart2' => $timestart,
+            'timefinish2' => $timefinish,
+            'timestart3' => $timestart,
+            'timefinish3' => $timefinish,
+        ], $params);
+        $data = $DB->get_records_sql(
+            "SELECT c.id, c.fullname, '0' AS duration_calc,
+                    (SELECT $grade_single
+                       FROM {grade_items} gi, {grade_grades} g
+                      WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND
+                            gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
+                            gi.courseid = c.id AND g.userid = :userid3 AND g.timemodified BETWEEN :timestart1 AND :timefinish1
+                    ) AS grade,
+                    (SELECT $grade_avg
+                       FROM {grade_items} gi, {grade_grades} g
+                      WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND
+                            gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
+                            gi.courseid = c.id AND g.timemodified BETWEEN :timestart2 AND :timefinish2
+                    ) AS average,
+                    (SELECT SUM(lol.timespend)
+                       FROM {local_intelliboard_tracking} lit
+                       JOIN {local_intelliboard_logs} lol ON lol.trackid = lit.id AND lol.timepoint BETWEEN :timestart3 AND :timefinish3
+                      WHERE lit.userid = :userid1 AND lit.courseid = c.id
+                    ) AS duration
+               FROM {user_enrolments} ue, {enrol} e, {course} c
+              WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND ue.status = 0 $sql
+           GROUP BY c.id
+           ORDER BY c.sortorder ASC",
+           $params
+        );
     }
 
     $d = 0;
