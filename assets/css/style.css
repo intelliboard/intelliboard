@@ -115,7 +115,7 @@
 
 
 .intelliboard-origin .avg{margin:20px 0; box-sizing: border-box;border: 1px solid #ddd;border-radius: 5px;}
-.intelliboard-origin p{font-size:17px;font-weight:600; margin:0;padding:15px; display: inline-block;width: calc(50% - 2px); box-sizing: border-box; text-align: center;}
+.intelliboard-origin p{font-size:17px;font-weight:600; margin:0;padding:15px; display: inline-block;width: calc(50% - 3px); box-sizing: border-box; text-align: center;}
 .intelliboard-origin p span{font-size:13px;font-weight:400; color: #999; display: block;margin-top: 3px;}
 .intelliboard-origin p.site{color: #1d7fb3; border-left: 1px solid #ddd;}
 .intelliboard-origin p.user{color: #1db34f;}

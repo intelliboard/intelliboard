@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -19,13 +18,34 @@
  *
  *
  * @package    local_intelliboard
- * @copyright  2017 IntelliBoard, Inc
+ * @copyright  2019 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    https://intelliboard.net/
  */
 
-$plugin->version = 2020070102;
-$plugin->requires = 2011120500;
-$plugin->release = '7.0.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+define(['jquery'], function($) {
+    return {
+        trackActivityLabelClicks: function(ajaxUrl) {
+            $('.intelliboardLabelTracking').on('submit', function(e) {
+                if (!$(this).data('allowsubmit')) {
+                    e.preventDefault();
+
+                    var cmId = $(this).parents('li.activity').attr('id').replace('module-', '');
+
+                    if (cmId) {
+                        $.ajax(ajaxUrl, {
+                            data: {
+                                page: 'module',
+                                param: cmId,
+                                time: 1
+                            }
+                        });
+                    }
+
+                    $(this).attr('data-allowsubmit', 1);
+                    $(this).submit();
+                }
+            });
+        }
+    };
+});
