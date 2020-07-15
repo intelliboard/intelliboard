@@ -48,11 +48,6 @@
                         </div>
                     </div>
                 {{/iscourseview}}
-                <div class="intelliboard-additional-form">
-                    <input type="text" id="chart-daterange" class="daterange flatpickr-input form-control"
-                           name="daterange" title="{{#str}}filter_dates, local_intelliboard{{/str}}" readonly="readonly"
-                           placeholder="{{#str}}select_date, local_intelliboard{{/str}}">
-                </div>
                 <div class="clearfix"></div>
 	            <div id="instructor-chart-{{view}}" class="instructor-chart area"></div>
             {{/showmainchart}}
@@ -117,11 +112,6 @@
                     <div class="summary-item total_student" style="display: none;">
                         <h3>{{#str}}in27, local_intelliboard{{/str}}</h3>
 
-                        <div class="filter-box">
-                            <input type="text" id="summary-student-daterange" class="daterange flatpickr-input form-control" name="daterange"
-                                title="{{#str}}filter_dates, local_intelliboard{{/str}}" readonly="readonly"
-                                placeholder="{{#str}}select_date, local_intelliboard{{/str}}">
-                        </div>
                         <div class="summary-chart-wrap">
                             <span class="summary-chart-label"><span id="summary-chart-label">0</span>
                                 <i>{{#str}}in29, local_intelliboard{{/str}}</i>
@@ -177,10 +167,6 @@
                     {{#pluginsettings.n14}}
                         <div id="chart5" class="chart-tab" style="display: none;">
                             <div class="filter-box clearfix">
-                                <input type="text" class="form-control daterange flatpickr-input" name="daterange"
-                                    title="{{#str}}filter_dates, local_intelliboard{{/str}}" readonly="readonly"
-                                    placeholder="{{#str}}select_date, local_intelliboard{{/str}}">
-
                                 <div class="intelliboard-dropdown">
                                     {{#selectedmycourse}}
                                         <button value="{{key}}">
@@ -264,9 +250,6 @@
                     {{#pluginsettings.n15}}
                         <div id="chart3" class="chart-tab" style="display: none;">
                             <div class="filter-box clearfix">
-                                <input type="text" class="daterange form-control flatpickr-input" name="daterange"
-                                    title="{{#str}}filter_dates, local_intelliboard{{/str}}" readonly="readonly"
-                                    placeholder="{{#str}}select_date , local_intelliboard{{/str}}">
 
                                 <div class="intelliboard-dropdown">
                                     {{#selectedmycourse}}
@@ -289,10 +272,6 @@
                     {{#pluginsettings.n16}}
                         <div id="chart6" class="chart-tab" style="display: none;">
                             <div class="filter-box clearfix">
-                                <input type="text" class="daterange form-control flatpickr-input" name="daterange"
-                                    title="{{#str}}filter_dates, local_intelliboard{{/str}}" readonly="readonly"
-                                    placeholder="{{#str}}select_date, local_intelliboard{{/str}}">
-
                                 <div class="intelliboard-dropdown">
                                     {{#selectedmycourse}}
                                         <button value="{{key}}">
@@ -377,14 +356,25 @@
                     $('#'+tab).show();
                 });
 
-                $("#summary-student-daterange").flatpickr({
+                $("#general-daterange").flatpickr({
                     mode: "range",
                     dateFormat: "{{dateformat}}",
                     locale: '{{currentlanguage}}',
                     static: true,
                     defaultDate: ["{{timestartdate}}", "{{timefinishdate}}"],
                     onClose: function(selectedDates, dateStr, instance) {
-                        summary_student_daterange_change();
+                        if($('#general-daterange').val() == ''){
+                        return;
+                        }
+                        var href = removeParam('daterange', window.location.search);
+                        if(href == '?'){
+                            href = '';
+                        }
+                        if(href != ''){
+                            href = href+'&';
+                        }
+                        href = href+'daterange='+$('#general-daterange').val();
+                        window.location = window.location.pathname+'?'+href;
                     }
                 });
 
@@ -399,15 +389,6 @@
                 });
                 $('.summary .intelliboard-dropdown ul li:first-child a').click();
 
-                $("#chart5 .daterange").flatpickr({
-                    mode: "range",
-                    dateFormat: "{{dateformat}}",
-                    locale: '{{currentlanguage}}',
-                    defaultDate: ["{{timestartdate}}", "{{timefinishdate}}"],
-                    onClose: function(selectedDates, dateStr, instance) {
-                        load_engagement_chart();
-                    }
-                });
                 $('#chart5 .intelliboard-dropdown a').click(function (e) {
                     e.preventDefault();
                     $('#chart5 .intelliboard-dropdown button span').html($(this).html());
@@ -469,16 +450,6 @@
                         }
                     });
                 });
-
-                $("#chart3 .daterange").flatpickr({
-                    mode: "range",
-                    dateFormat: "{{dateformat}}",
-                    locale: '{{currentlanguage}}',
-                    defaultDate: ["{{timestartdate}}", "{{timefinishdate}}"],
-                    onClose: function(selectedDates, dateStr, instance) {
-                        load_module_utilization_chart();
-                    }
-                });
                 $('#chart3 .intelliboard-dropdown a').click(function (e) {
                     e.preventDefault();
                     $('#chart3 .intelliboard-dropdown button span').html($(this).html());
@@ -488,16 +459,6 @@
                 });
                 $('.nav-item[data-tab="chart3"]').click(function (e) {
                     load_module_utilization_chart();
-                });
-
-                $("#chart6 .daterange").flatpickr({
-                    mode: "range",
-                    dateFormat: "{{dateformat}}",
-                    locale: '{{currentlanguage}}',
-                    defaultDate: ["{{timestartdate}}", "{{timefinishdate}}"],
-                    onClose: function(selectedDates, dateStr, instance) {
-                        load_topic_utilization_chart();
-                    }
                 });
                 $('#chart6 .intelliboard-dropdown a').click(function (e) {
                     e.preventDefault();
@@ -522,32 +483,6 @@
                         drawInsructorChart();
                     });
                 {{/iscourseview}}
-
-                $("#chart-daterange").flatpickr({
-                    mode: "range",
-                    dateFormat: "{{dateformat}}",
-                    locale: '{{currentlanguage}}',
-                    defaultDate: ["{{timestartdate}}", "{{timefinishdate}}"],
-                    onClose: function(selectedDates, dateStr, instance) {
-                        if($('#chart-daterange').val() == ''){
-                            return;
-                        }
-                        {{#iscourseview}}
-                            drawInsructorChart();
-                        {{/iscourseview}}
-                        {{^iscourseview}}
-                            var href = removeParam('daterange', window.location.search);
-                            if(href == '?'){
-                                href = '';
-                            }
-                            if(href != ''){
-                                href = href+'&';
-                            }
-                            href = href+'daterange='+$('#chart-daterange').val();
-                            window.location = window.location.pathname+'?'+href;
-                        {{/iscourseview}}
-                    }
-                });
 
                 function removeParam(key, sourceURL) {
                     var rtn = sourceURL.split("?")[0],
@@ -675,7 +610,7 @@
                         //var course = $('#chart5 .intelliboard-dropdown button').val();
                         var chart = new google.visualization.ComboChart(document.getElementById('instructor-chart-{{view}}'));
                         var view = $('.intelliboard-additional-form .switcher a.active').attr('data-view');
-                        var daterange = $('#chart-daterange').val();
+                        var daterange = $('#general-daterange').val();
                         $.ajax({
                             url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_course_overview&view="+view+"&course={{course}}&daterange="+daterange,
                             dataType: "json"
@@ -733,7 +668,7 @@
                 }
 
                 function load_engagement_chart() {
-                    var daterange = $('#chart5 .daterange').val();
+                    var daterange = $('#general-daterange').val();
                     var course = $('#chart5 .intelliboard-dropdown button').val();
                     $.ajax({
                         url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_learner_engagement&daterange="+daterange+"&course="+course,
@@ -750,7 +685,7 @@
                 }
 
                 function load_module_utilization_chart() {
-                    var daterange = $('#chart3 .daterange').val();
+                    var daterange = $('#general-daterange').val();
                     var course = $('#chart3 .intelliboard-dropdown button').val();
                     $.ajax({
                         url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_module_utilization&daterange="+daterange+"&course="+course,
@@ -770,7 +705,7 @@
                 }
 
                 function load_topic_utilization_chart() {
-                    var daterange = $('#chart6 .daterange').val();
+                    var daterange = $('#general-daterange').val();
                     var course = $('#chart6 .intelliboard-dropdown button').val();
                     $.ajax({
                         url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_topic_utilization&daterange="+daterange+"&course="+course,
@@ -790,7 +725,7 @@
                 }
 
                 function summary_student_daterange_change() {
-                    var daterange = $('#summary-student-daterange').val();
+                    var daterange = $('#general-daterange').val();
                     $.ajax({
                         url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_total_students&daterange="+daterange,
                         dataType: "json"

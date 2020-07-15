@@ -143,7 +143,7 @@ function sendIntelliboardTime(time){
 		}
 	}
 	resetIntelliboardParams();
-	xmlhttp.open("GET", intelliboardAjaxUrl, false);
+	xmlhttp.open("GET", intelliboardAjaxUrl, true);
 	xmlhttp.send();
 }
 function resetIntelliboardParams() {

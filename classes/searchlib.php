@@ -110,7 +110,7 @@ class local_intelliboard_search extends external_api {
         $response = $extractor->extract();
 
         $response['response'] = json_encode($response['response']);
-        $response['debug'] = json_encode($response['debug']);
+        $response['debug'] = !empty($response['debug']) ? json_encode($response['debug']) : '';
 
         return $response;
     }
