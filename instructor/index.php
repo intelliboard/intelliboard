@@ -172,7 +172,14 @@ echo $OUTPUT->header();
 	<div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
 <div class="intelliboard-page intelliboard-instructor">
-    <?php include("views/menu.php"); ?>
+    <div class="additional_header clearfix">
+        <?php include("views/menu.php"); ?>
+        <div class="additional-form clearfix">
+            <input type="text" id="general-daterange" class="daterange flatpickr-input form-control"
+                   name="daterange" title="<?php echo get_string('filter_dates', 'local_intelliboard'); ?>" readonly="readonly"
+                   placeholder="<?php echo get_string('select_date', 'local_intelliboard'); ?>">
+        </div>
+    </div>
     
     <?php
         echo $renderer->render(new \local_intelliboard\output\instructor_index([

@@ -59,7 +59,8 @@ class local_external_functions
                    GROUP BY c2ti.itemid)", // activity tags
           11 => "creator.name", // user created by
           12 => "course_roles.roles", // user course roles
-          13 => "system_roles.roles" // user system roles
+          13 => "system_roles.roles", // user system roles
+          14 => "CONCAT(enrol_by.firstname, ' ', enrol_by.lastname)" // Enrolled by
         ];
         $this->functions = [
             'report1',
