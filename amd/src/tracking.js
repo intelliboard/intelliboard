@@ -31,6 +31,7 @@ define(['jquery'], function($) {
                     e.preventDefault();
 
                     var cmId = $(this).parents('li.activity').attr('id').replace('module-', '');
+                    var form = $(this);
 
                     if (cmId) {
                         $.ajax(ajaxUrl, {
@@ -38,12 +39,13 @@ define(['jquery'], function($) {
                                 page: 'module',
                                 param: cmId,
                                 time: 1
+                            },
+                            complete: function() {
+                                form.attr('data-allowsubmit', 1);
+                                form.submit();
                             }
                         });
                     }
-
-                    $(this).attr('data-allowsubmit', 1);
-                    $(this).submit();
                 }
             });
         }
