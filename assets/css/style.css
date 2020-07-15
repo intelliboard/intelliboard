@@ -296,6 +296,12 @@
     padding-left: 0;
 }
 
+.intelliboard-page .additional_header {border-bottom: 1px solid #e8e8e8;}
+.intelliboard-page .additional_header .intelliboard-menu{float: left; border-bottom: none;}
+.intelliboard-page .additional_header .additional-form{float: right;}
+.intelliboard-page .additional_header .additional-form .flatpickr-wrapper{min-width: 205px;}
+.intelliboard-page .additional_header .additional-form .flatpickr-calendar{right: 0;}
+
 .reports-header h3{float:left;}
 .reports-header form{float:right;margin: 6px 0;}
 .reports-header form select{margin-left: 5px; margin-right: 3px;}

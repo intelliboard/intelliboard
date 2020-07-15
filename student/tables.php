@@ -102,7 +102,7 @@ class intelliboard_courses_grades_table extends table_sql {
        LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = c.userid
        LEFT JOIN (SELECT gi.courseid, {$grade_avg} AS average
                     FROM {grade_items} gi, {grade_grades} g
-                   WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1) AND
+                   WHERE gi.hidden = 0 AND
                          gi.itemtype = 'course' AND g.itemid = gi.id AND
                          g.finalgrade IS NOT NULL GROUP BY gi.courseid
                  ) as gc ON gc.courseid = c.id";
@@ -116,17 +116,24 @@ class intelliboard_courses_grades_table extends table_sql {
         $goal = intval($values->gradepass);
 
         if (!optional_param('download', '', PARAM_ALPHA)) {
-          $html = html_writer::start_tag("div",array("class"=>"info-progress","title"=>"Current grade:$gade | Class avg:$average | Goal Grade:$goal"));
-          $html .= html_writer::tag("span", "Current grade:$gade |", array("class"=>"current","style"=>"width:$gade%"));
-          if($average and get_config('local_intelliboard', 't40')){
-              $html .= html_writer::tag("span", "Class avg:$average |", array("class"=>"average","style"=>"width:$average%"));
+          $title = get_string('current_grade', 'local_intelliboard') . ":$gade";
+          if (get_config('local_intelliboard', 't40')) {
+              $title .= " | " . get_string('class_average', 'local_intelliboard') . ":$average";
           }
-          if($goal and get_config('local_intelliboard', 't40')){
-              $html .= html_writer::tag("span", "Goal Grade:$goal", array("class"=>"goal","style"=>"width:$goal%"));
+          if(get_config('local_intelliboard', 't39')) {
+              $title .= " | " . get_string('goal_grade', 'local_intelliboard') . ":$goal";
+          }
+          $html = html_writer::start_tag("div",array("class"=>"info-progress","title"=>$title));
+          $html .= html_writer::tag("span", get_string('current_grade', 'local_intelliboard') . ":$gade |", array("class"=>"current","style"=>"width:$gade%"));
+          if($average and get_config('local_intelliboard', 't40')){
+              $html .= html_writer::tag("span", get_string('class_average', 'local_intelliboard') . ":$average |", array("class"=>"average","style"=>"width:$average%"));
+          }
+          if($goal and get_config('local_intelliboard', 't39')){
+              $html .= html_writer::tag("span", get_string('goal_grade', 'local_intelliboard') . ":$goal", array("class"=>"goal","style"=>"width:$goal%"));
           }
           $html .= html_writer::end_tag("div");
         } else {
-          $html = "Current grade:$gade | Class avg:$average | Goal Grade:$goal";
+          $html = get_string('current_grade', 'local_intelliboard') . ":$gade | " . get_string('class_average', 'local_intelliboard') . ":$average | " . get_string('goal_grade', 'local_intelliboard') . ":$goal";
         }
         return $html;
     }

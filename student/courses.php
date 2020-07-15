@@ -223,17 +223,12 @@ echo $OUTPUT->header();
         </div>
         <?php include("../views/footer.php"); ?>
     </div>
-    <script type="text/javascript"
-            src="https://www.google.com/jsapi?autoload={
-            'modules':[{
-              'name':'visualization',
-              'version':'1',
-                'language': '<?php echo current_language(); ?>',
-              'packages':['corechart']
-            }]
-          }"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
-        jQuery(document).ready(function(){
+        google.charts.load('current', {'name':'visualization', 'version': 1, 'packages':['corechart'], 'language': '<?php echo current_language(); ?>'});
+        google.charts.setOnLoadCallback(initChartHandler);
+
+        function initChartHandler() {
             jQuery('.course-details').click(function(e){
                 e.preventDefault();
                 var id = jQuery(this).attr('value');
@@ -278,7 +273,9 @@ echo $OUTPUT->header();
                     });
                 }
             });
+        }
 
+        $(document).ready(function() {
             jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesFCalculation); ?>);
             jQuery('.intelliboard-search span a').click(function(e){
                 e.preventDefault();
