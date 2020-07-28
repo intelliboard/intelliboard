@@ -550,4 +550,94 @@ class attendance_repository
 
         return [$sql, $sqlparams];
     }
+
+    public function get_course_student_stat($params)
+    {
+        global $DB, $CFG;
+
+        if ($CFG->dbtype == 'pgsql') {
+            $db_current_timestamp = "date_part('epoch', timestamp 'now')";
+        } else {
+            $db_current_timestamp = "UNIX_TIMESTAMP()";
+        }
+        return $DB->get_record_sql(
+            "SELECT
+                    ue.userid,
+                    ue.courseid,
+                    gg.finalgrade AS grade,
+                    lt.timespend as time_spent,
+                    lt.lastaccess as last_access,
+                    CEIL((" . $db_current_timestamp . " - ue.timestart) / 604800) as weeks_enrolled,
+                    last_submission_at,
+                    last_submission,
+                    last_submission_grade,
+                    CASE WHEN course_modules_total > 0 THEN
+                             ROUND(user_modules_completed / course_modules_total * 100, 2)
+                         ELSE 0
+                    END AS percent_complete
+             FROM (
+                  SELECT
+                         MIN(ue1.id) AS id,
+                         ue1.userid,
+                         e1.courseid,
+                         MIN(ue1.status) AS enrol_status,
+                         timestart
+                  FROM {user_enrolments} ue1
+                  JOIN {enrol} e1 ON e1.id = ue1.enrolid
+                  WHERE ue1.userid = :userid AND e1.courseid = :courseid
+                  GROUP BY ue1.userid, e1.courseid, timestart
+             ) ue
+             LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = ue.courseid
+             LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = ue.userid
+             LEFT JOIN {local_intelliboard_tracking} lt
+                 ON lt.userid = ue.userid AND lt.courseid = ue.courseid  AND page = 'course'
+             LEFT JOIN (
+                       SELECT
+                               asm.userid,
+                               a.course as courseid,
+                               asm.timemodified as last_submission_at,
+                               a.name AS last_submission,
+                               ag.grade as last_submission_grade
+                       FROM {assign_submission} asm
+                       JOIN (
+                              SELECT MAX(timemodified) as timemodified, userid
+                              FROM {assign_submission}
+                              WHERE userid = :userids
+                              GROUP BY userid
+                             ) asm1 ON asm1.timemodified = asm.timemodified AND asm.userid = asm1.userid
+                             JOIN {assign} a ON a.id = asm.assignment AND a.course = :courseida
+                             LEFT JOIN {assign_grades} ag
+                                    ON ag.assignment = asm.assignment AND ag.userid = asm.userid
+                       ) ls ON ls.courseid = ue.courseid AND ls.userid = ue.userid
+             LEFT JOIN (
+                       SELECT
+                           COUNT(*) as course_modules_total,
+                           course as courseid
+                       FROM {course_modules} cs
+                       WHERE course = :courseidm
+                       GROUP BY course
+                       ) tcm ON tcm.courseid = ue.courseid
+             LEFT JOIN (
+                        SELECT
+                          cm.course as courseid,
+                          cmc.userid,
+                          COUNT(*) as user_modules_completed
+                       FROM {course_modules} cm
+                       JOIN {course_modules_completion} cmc
+                             ON cmc.coursemoduleid = cm.id AND cmc.completionstate = 1
+                       WHERE cm.course = :courseidcm AND cmc.userid = :useridcm
+                       GROUP BY cm.course, cmc.userid
+                       ) umc ON umc.courseid = ue.courseid AND umc.userid = ue.userid
+            ",
+            [
+                'courseid' => $params['courseid'],
+                'userid' => $params['userid'],
+                'userids' => $params['userid'],
+                'courseida' => $params['courseid'],
+                'courseidm' => $params['courseid'],
+                'courseidcm' => $params['courseid'],
+                'useridcm' => $params['userid']
+            ]
+        );
+    }
 }

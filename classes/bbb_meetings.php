@@ -26,27 +26,6 @@
 namespace local_intelliboard;
 
 class bbb_meetings {
-    /** @var array list of local meetings (meetings, which created from activity BugBlueButtonBN) */
-    private $localmoodlemeetings = [];
-
-    public function __construct() {
-        global $DB;
-
-        /** @Get list of local meetings (meetings, which created from activity BugBlueButtonBN) */
-        $localmeetingsids = $DB->get_records_sql('SELECT meetingid FROM {bigbluebuttonbn}');
-        $this->localmoodlemeetings = array_map(function($meeting) {
-            return $meeting->meetingid;
-        }, $localmeetingsids);
-    }
-
-    /**
-     * Get list of meetings which created from activity BugBlueButtonBN
-     * @return array
-     */
-    public function get_local_moodle_meetings() {
-        return $this->localmoodlemeetings;
-    }
-
     /**
      * @param string $meetingid
      * @param int $localmeetingid
@@ -99,6 +78,11 @@ class bbb_meetings {
         global $DB;
 
         $meetingid = $meetingdata->meetingID->__toString();
+
+        if (empty($meetingid)) {
+            return false;
+        }
+
         $courseid = explode('-', $meetingid)[1];
         $activityonstanceid = explode('-', $meetingid)[2];
 
