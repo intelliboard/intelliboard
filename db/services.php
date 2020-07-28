@@ -31,7 +31,7 @@ $functions = array(
                 'methodname'  => 'database_query',
                 'classpath'   => 'local/intelliboard/externallib.php',
                 'description' => 'Return JSON db records',
-                'type'        => 'read',
+                'type'        => 'write',
         ),
         'local_intelliboard_save_assigns' => array(
                 'classname'   => 'local_intelliboard_assign',
@@ -52,7 +52,7 @@ $functions = array(
                 'methodname'  => 'run_report',
                 'classpath'   => 'local/intelliboard/classes/reportlib.php',
                 'description' => 'Run intelliboard custom report',
-                'type'        => 'write',
+                'type'        => 'read',
         ),
         'local_intelliboard_save_report' => array(
                 'classname'   => 'local_intelliboard_report',
