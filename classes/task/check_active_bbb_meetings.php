@@ -47,16 +47,17 @@ class check_active_bbb_meetings extends \core\task\scheduled_task {
      * Throw exceptions on errors (the job will be retried).
      */
     public function execute() {
-        global $CFG;
+        global $DB;
 
         if(!get_config('local_intelliboard', 'enablebbbmeetings')) {
             return false;
         }
 
+        // delete broken logs
+        $DB->execute("DELETE FROM {local_intelliboard_bbb_meet} WHERE meetingid = null OR meetingid = ''");
+
         $bbb = new \local_intelliboard\bbb_client();
         $bbbmeetings = new \local_intelliboard\bbb_meetings();
-        // local meeting - meeting, which created from activity BugBlueButtonBN
-        $localmeetings = $bbbmeetings->get_local_moodle_meetings();
 
         $activemeetings = $bbb->getActiveMeetings();
         /**
@@ -68,11 +69,14 @@ class check_active_bbb_meetings extends \core\task\scheduled_task {
 
         /** Check active meetings */
         foreach($activemeetings as $meeting) {
+            $transaction = $DB->start_delegated_transaction();
+
             // meeting ID without course id and cmid
             $puremeetingid = explode('-', $meeting->meetingID->__toString())[0];
 
             // Skip if meeting not created from Moodle system
-            if(!in_array($puremeetingid, $localmeetings)) {
+            if(!$DB->record_exists('bigbluebuttonbn', ['meetingid' => $puremeetingid])) {
+                $DB->commit_delegated_transaction($transaction);
                 continue;
             }
 
@@ -81,6 +85,8 @@ class check_active_bbb_meetings extends \core\task\scheduled_task {
             $meetinginfo = $bbb->getMeetingInfo($meeting->meetingID->__toString());
 
             $bbbmeetings->check_meeting($meetinginfo);
+
+            $DB->commit_delegated_transaction($transaction);
         }
 
         /** Check stopped meetings */
