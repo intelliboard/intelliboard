@@ -87,54 +87,55 @@ class local_intelliboard_report extends external_api {
 
                 $filters = [];
                 if (strrpos($query, ':sorting') !== false) {
-                  $params->sortcol = $params->sortcol + 1;
-                  if ($params->sortdir and $params->sortcol) {
-                    $sorting = " ORDER BY {$params->sortcol} {$params->sortdir}";
-                    $query = str_replace(":sorting", $sorting, $query);
-                  } else {
-                    $query = str_replace(":sorting", "", $query);
-                  }
-                }
-
-                if (strrpos($query, ':filter') !== false) {
-                  if ($params->filterval and $params->filtercol) {
-                    $filters[$params->filtercol] = "%".$params->filterval."%";
-                    $like = " AND " . $DB->sql_like($params->filtercol, ":" . $params->filtercol, false, false);
-                    $query = str_replace(":filter", $like, $query);
-                  } else {
-                    $query = str_replace(":filter", "", $query);
-                  }
+                    $params->sortcol = $params->sortcol + 1;
+                    if ($params->sortdir and $params->sortcol) {
+                        $sorting = " ORDER BY {$params->sortcol} {$params->sortdir}";
+                        $query = str_replace(":sorting", $sorting, $query);
+                    } else {
+                        $query = str_replace(":sorting", "", $query);
+                    }
                 }
 
                 if ($datefilter = strpos($query, ':datefilter[')) {
-                  $start =  $datefilter+12;
-                  $end =  strpos($query, ']', $datefilter) - $start;
-                  $col = substr($query, $start, $end);
-                  $val = ":datefilter[$col]";
+                    $start =  $datefilter+12;
+                    $end =  strpos($query, ']', $datefilter) - $start;
+                    $col = substr($query, $start, $end);
+                    $val = ":datefilter[$col]";
 
-                  if ($params->timestart and $params->timefinish and $col) {
-                    $filters['timestart'] = $params->timestart;
-                    $filters['timefinish'] = $params->timefinish;
-                    $like = " AND $col BETWEEN :timestart AND :timefinish ";
-                    $query = str_replace($val, $like, $query);
-                  } else {
-                    $query = str_replace($val, "", $query);
-                  }
+                    if ($params->timestart and $params->timefinish and $col) {
+                        $filters['timestart'] = $params->timestart;
+                        $filters['timefinish'] = $params->timefinish;
+                        $like = " AND $col BETWEEN :timestart AND :timefinish ";
+                        $query = str_replace($val, $like, $query);
+                    } else {
+                        $query = str_replace($val, "", $query);
+                    }
                 }
                 if ($coursefilter = strpos($query, ':coursefilter[')) {
-                  $start =  $coursefilter+14;
-                  $end =  strpos($query, ']', $coursefilter) - $start;
-                  $col = substr($query, $start, $end);
-                  $val = ":coursefilter[$col]";
+                    $start =  $coursefilter+14;
+                    $end =  strpos($query, ']', $coursefilter) - $start;
+                    $col = substr($query, $start, $end);
+                    $val = ":coursefilter[$col]";
 
-                  if ($params->courses and $col) {
-                    list($sql, $params) = $DB->get_in_or_equal(explode(",", $params->courses), SQL_PARAMS_NAMED, 'courses', true);
-                    $filters = array_merge($filters, $params);
-                    $like = " AND $col $sql ";
-                    $query = str_replace($val, $like, $query);
-                  } else {
-                    $query = str_replace($val, "", $query);
-                  }
+                    if ($params->courses and $col) {
+                        list($sql, $params) = $DB->get_in_or_equal(explode(",", $params->courses), SQL_PARAMS_NAMED, 'courses', true);
+                        $filters = array_merge($filters, $params);
+                        $like = " AND $col $sql ";
+                        $query = str_replace($val, $like, $query);
+                    } else {
+                        $query = str_replace($val, "", $query);
+                    }
+                }
+
+                if (strrpos($query, ':filter') !== false) {
+                    $query = str_replace(":filter", "", $query);
+
+                    if ($params->filterval and $params->filtercol) {
+                        $query = "SELECT t.*
+                                    FROM ({$query}) t
+                                   WHERE t." . $DB->sql_like($params->filtercol, ":" . $params->filtercol, false, false);
+                        $filters[$params->filtercol] = "%".$params->filterval."%";
+                    }
                 }
 
                 if ($params->debug === 1) {

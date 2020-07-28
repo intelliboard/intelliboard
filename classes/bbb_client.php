@@ -47,7 +47,7 @@ class bbb_client {
     public function getMeetingInfo($meetingid) {
         $requestaction = 'getMeetingInfo';
 
-        $requeststring = "meetingID={$meetingid}";
+        $requeststring = "meetingID=" . urlencode($meetingid);
 
         $checksum = sha1($requestaction . $requeststring . $this->bbbserversecret);
 

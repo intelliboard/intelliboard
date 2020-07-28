@@ -4400,8 +4400,22 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
-        $sql1 = $this->get_filterdate_sql($params, "lit.lastaccess");
         $sql_join = $this->get_suspended_sql($params);
+        if ($params->custom == 1) {
+              $sql_join .= "
+                    LEFT JOIN (
+                              SELECT lit1.id, lit1.param, lit1.userid,
+                                     lit1.firstaccess, lit1.lastaccess,
+                                     SUM(lil.timespend) AS timespend,
+                                     SUM(lil.visits) AS visits
+                                FROM {local_intelliboard_tracking} lit1
+                                JOIN {local_intelliboard_logs} lil ON lil.trackid=lit1.id AND lil.id>0
+                               WHERE lit1.page = 'module' " . $this->get_filterdate_sql($params, "lil.timepoint") ."
+                               GROUP BY lit1.userid, lit1.param, lit1.firstaccess, lit1.lastaccess, lit1.id
+                    ) lit ON lit.userid = u.id AND lit.param = cm.id";
+        } else {
+              $sql_join .= "LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid = u.id AND lit.param = cm.id and lit.page = 'module' " . $this->get_filterdate_sql($params, "lit.lastaccess");
+        }
 
         return $this->get_report_data("
             SELECT CONCAT(ra.id, '-', cm.id) as id,
@@ -4412,7 +4426,6 @@ class local_intelliboard_external extends external_api {
                 JOIN {course} c ON c.id = ctx.instanceid
                 LEFT JOIN {course_modules} cm ON cm.course = c.id
                 LEFT JOIN {modules} m ON m.id = cm.module
-                LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid = u.id AND lit.param = cm.id and lit.page = 'module' $sql1
                 $sql_join
             WHERE ctx.contextlevel = 50 $sql_filter $sql_having $sql_order", $params);
     }
@@ -16892,8 +16905,7 @@ class local_intelliboard_external extends external_api {
         );
     }
 
-    public function get_system_courses($params)
-    {
+    public function get_system_courses($params) {
         global $DB;
 
         $sql1 = $this->get_teacher_sql($params, ["userid" => "users", "course" => "courses"]);
@@ -16914,33 +16926,30 @@ class local_intelliboard_external extends external_api {
         $sql7 .= $this->vendor_filter("userid", null, $params);
         $sql8 = $this->get_teacher_sql($params, ["userid" => "users", "courseid" => "courses"]);
         $sql8 .= $this->vendor_filter("userid", "courseid", $params);
-        $sql9 = $this->get_teacher_sql($params, ["cm.course" => "courses"]);
-        $sql9 .= $this->vendor_filter(null, "cm.course", $params);
         $sql10 = $this->get_teacher_sql($params, ["cmc.userid" => "users", "cm.course" => "courses"]);
         $sql10 .= $this->get_completion($params, "cmc.");
         $sql10 .= $this->get_filter_module_sql($params, "cm.");
         $sql10 .= $this->vendor_filter("cmc.userid", "cm.course", $params);
 
-        $data = $DB->get_record_sql(
-            "SELECT (SELECT COUNT(*) FROM {course_completions} WHERE timecompleted > 0 {$sql1}) AS completed_courses,
-                    (SELECT COUNT(*) FROM {course_modules} WHERE visible = 1 {$sql2}) AS modules,
-                    (SELECT COUNT(*) FROM {course} WHERE visible = 1 AND category > 0 {$sql3}) AS visible,
-                    (SELECT COUNT(*) FROM {course} WHERE visible = 0 AND category > 0 {$sql4}) AS hidden,
-                    (SELECT COUNT(DISTINCT ue.userid) FROM {enrol} e, {user_enrolments} ue WHERE e.id = ue.enrolid AND ue.status = 1 {$sql5}) AS expired,
-                    (SELECT COUNT(DISTINCT (userid)) FROM {role_assignments} WHERE {$sql6}) AS learners,
-                    (SELECT COUNT(DISTINCT (userid)) FROM {role_assignments} WHERE {$sql7}) AS teachers,
-                    (SELECT COUNT(DISTINCT (param)) FROM {local_intelliboard_tracking} WHERE page = 'module' {$sql8}) AS reviewed,
-                    (SELECT COUNT(cmc.id) FROM {course_modules_completion} cmc, {course_modules} cm WHERE cmc.coursemoduleid = cm.id {$sql10}) AS completed_activities,
-                    (SELECT COUNT(cm.id) FROM {course_modules} cm, {modules} m WHERE m.name = 'certificate' AND cm.module = m.id {$sql9}) AS certificates",
-            $this->params
-        );
+        $sql = "SELECT (SELECT COUNT(*) FROM {course_completions} WHERE timecompleted > 0 {$sql1}) AS completed_courses,
+                       (SELECT COUNT(*) FROM {course_modules} WHERE visible = 1 {$sql2}) AS modules,
+                       (SELECT COUNT(*) FROM {course} WHERE visible = 1 AND category > 0 {$sql3}) AS visible,
+                       (SELECT COUNT(*) FROM {course} WHERE visible = 0 AND category > 0 {$sql4}) AS hidden,
+                       (SELECT COUNT(DISTINCT ue.userid) FROM {enrol} e, {user_enrolments} ue WHERE e.id = ue.enrolid AND ue.status = 1 {$sql5}) AS expired,
+                       (SELECT COUNT(DISTINCT (userid)) FROM {role_assignments} WHERE {$sql6}) AS learners,
+                       (SELECT COUNT(DISTINCT (userid)) FROM {role_assignments} WHERE {$sql7}) AS teachers,
+                       (SELECT COUNT(DISTINCT (param)) FROM {local_intelliboard_tracking} WHERE page = 'module' {$sql8}) AS reviewed,
+                       (SELECT COUNT(cmc.id) FROM {course_modules_completion} cmc, {course_modules} cm WHERE cmc.coursemoduleid = cm.id {$sql10}) AS completed_activities";
 
-        if ($data->certificates) {
-            $data->certificates_issued = $DB->count_records('certificate_issues');
+        if ($DB->get_manager()->table_exists('certificate_issues') && $DB->get_manager()->table_exists('certificate')) {
+            $sql9 = $this->get_teacher_sql($params, ["c.course" => "courses", "ci.userid" => "users"]);
+            $sql9 .= $this->vendor_filter(null, "c.course", $params);
+            $sql .= ", (SELECT COUNT(ci.id) FROM {certificate_issues} ci JOIN {certificate} c ON c.id = ci.certificateid WHERE ci.id > 0 {$sql9}) AS certificates_issued";
         } else {
-            $data->certificates_issued = 0;
+            $sql .= ", '0' AS certificates_issued";
         }
-        return $data;
+
+        return $DB->get_record_sql($sql, $this->params);
     }
 
     public function get_system_load($params){
