@@ -1475,7 +1475,7 @@ class local_intelliboard_external extends external_api {
         $sql_join .= $this->extra_columns_joins($params);
 
         return $this->get_report_data(
-            "SELECT CONCAT(u.id, '_', q.id, '_', CASE WHEN qa.id IS NULL THEN '' ELSE qa.id END) AS uniqueidentif,
+            "SELECT CONCAT(u.id, '_', q.id, '_', CASE WHEN qa.id IS NULL THEN 0 ELSE qa.id END) AS uniqueidentif,
                     qa.id,
                     q.name,
                     u.email,
@@ -3086,19 +3086,18 @@ class local_intelliboard_external extends external_api {
     {
         //deleted
     }
-    public function report38($params)
-    {
+
+    public function report38($params) {
         global $CFG;
 
         $columns = array_merge(array(
-            "c.startdate", "ccc.timeend", "course", "u.firstname","u.lastname", "u.email", "enrols", "ue.status", "ra.roles", "enrolstart",
-            "enrolend", "complete", "complete", "CONCAT(u1.firstname, ' ', u1.lastname)"
+            "c.startdate", "ccc.timeend", "course", "u.firstname","u.lastname", "u.email", "enrols", "ue.status",
+            "ra.roles", "enrolstart", "enrolend", "complete", "complete", "CONCAT(u1.firstname, ' ', u1.lastname)"
         ), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sqlrolefilter = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
@@ -3115,41 +3114,45 @@ class local_intelliboard_external extends external_api {
 
         $courseroles = get_operator('GROUP_CONCAT', 'DISTINCT(r.shortname)', ['separator' => ', ']);
 
-        return $this->get_report_data("
-            SELECT ue.id,
-                ue.timecreated as enrolstart,
-                ue.timeend as enrolend,
-                ccc.timeend,
-                c.enablecompletion,
-                cc.timecompleted as complete,
-                u.firstname,
-                u.lastname,
-                u.email,
-                ue.userid,
-                e.courseid,
-                e.enrol AS enrols,
-                CONCAT(u1.firstname, ' ', u1.lastname) AS endrolled_by,
-                ue.status AS enrol_status,
-                ra.roles AS course_roles,
-                c.fullname as course
-                $sql_columns
-            FROM
-                {user_enrolments} ue
-                JOIN {enrol} e ON e.id = ue.enrolid
-                JOIN {user} u ON u.id = ue.userid
-                JOIN (SELECT ctx.instanceid, ra.userid, MIN(ra.modifierid) AS modifierid, {$courseroles} AS roles
-                        FROM {context} ctx
-                        JOIN {role_assignments} ra ON ra.contextid = ctx.id {$sqlrolefilter}
-                        JOIN {role} r ON r.id = ra.roleid
-                       WHERE ctx.contextlevel = 50
-                    GROUP BY ctx.instanceid, ra.userid
-                     ) ra ON ra.instanceid = e.courseid AND ra.userid = ue.userid
-                JOIN {course} c ON c.id = e.courseid
-                LEFT JOIN {user} u1 ON u1.id = ra.modifierid
-                LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid
-                LEFT JOIN {course_completion_criteria} ccc ON ccc.course = e.courseid AND ccc.criteriatype = 2
-            WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
+        return $this->get_report_data(
+            "SELECT ue.id,
+                    ue.timecreated AS enrolstart,
+                    ue.timeend AS enrolend,
+                    ccc.timeend,
+                    c.enablecompletion,
+                    cc.timecompleted AS complete,
+                    u.firstname,
+                    u.lastname,
+                    u.email,
+                    ue.userid,
+                    e.courseid,
+                    e.enrol AS enrols,
+                    CONCAT(u1.firstname, ' ', u1.lastname) AS endrolled_by,
+                    ue.status AS enrol_status,
+                    ra.roles AS course_roles,
+                    c.fullname AS course
+                    {$sql_columns}
+               FROM {user_enrolments} ue
+               JOIN {enrol} e ON e.id = ue.enrolid
+               JOIN {user} u ON u.id = ue.userid
+               JOIN (SELECT ctx.instanceid, ra.userid, MIN(ra.modifierid) AS modifierid, {$courseroles} AS roles
+                       FROM {context} ctx
+                       JOIN {role_assignments} ra ON ra.contextid = ctx.id
+                       JOIN {role} r ON r.id = ra.roleid
+                      WHERE ctx.contextlevel = 50
+                   GROUP BY ctx.instanceid, ra.userid
+                    ) ra ON ra.instanceid = e.courseid AND ra.userid = ue.userid
+               JOIN {course} c ON c.id = e.courseid
+          LEFT JOIN {user} u1 ON u1.id = ra.modifierid
+          LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid
+          LEFT JOIN {course_completion_criteria} ccc ON ccc.course = e.courseid AND ccc.criteriatype = 2
+              WHERE ue.id > 0 {$sql_filter}
+                    {$sql_having}
+                    {$sql_order}",
+            $params
+        );
     }
+
     public function report39($params)
     {
         global $CFG;
@@ -3601,6 +3604,9 @@ class local_intelliboard_external extends external_api {
         $sql_having     = $this->get_filter_sql($params, $columns, false);
         $sql_order      = $this->get_order_sql($params, $columns);
         $course_filter  = $this->get_filter_in_sql($params->courseid, "e1.courseid");
+        $course_filter2  = $this->get_filter_in_sql($params->courseid, "lit.courseid");
+        $course_filter3  = $this->get_filter_in_sql($params->courseid, "gi.courseid");
+        $course_filter4  = $this->get_filter_in_sql($params->courseid, "cm.course");
         $sql_filter     = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter    .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter    .= $this->get_filter_user_sql($params, "u.");
@@ -3688,17 +3694,17 @@ class local_intelliboard_external extends external_api {
           LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid =u.id
           LEFT JOIN (SELECT lit.userid, lit.courseid, SUM(lit.timespend) as timespend, SUM(lit.visits) as visits
                        FROM {local_intelliboard_tracking} lit
-                      WHERE lit.courseid > 0
+                      WHERE lit.courseid > 0 {$course_filter2}
                    GROUP BY lit.courseid, lit.userid
                     ) lit ON lit.courseid = c.id AND lit.userid = u.id
           LEFT JOIN (SELECT gi.courseid, {$grade_avg} AS average
                        FROM {grade_items} gi, {grade_grades} g
-                      WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                      WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL {$course_filter3}
                    GROUP BY gi.courseid
                     ) git ON git.courseid=c.id
           LEFT JOIN (SELECT cmc.userid, cm.course, COUNT(cmc.id) as completed
                        FROM {course_modules_completion} cmc, {course_modules} cm
-                      WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id {$completion}
+                      WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id {$completion} {$course_filter4}
                    GROUP BY cm.course, cmc.userid
                     ) cmc ON cmc.course = c.id AND cmc.userid = u.id
               WHERE u.id > 0 {$sql_filter}
@@ -13470,7 +13476,7 @@ class local_intelliboard_external extends external_api {
         $sql_join = $this->get_suspended_sql($params, 'q.course', 'u.id', false);
 
         return $this->get_report_data(
-            "SELECT CONCAT(u.id, '_', q.course, '_', CASE WHEN qa.id IS NULL THEN '' ELSE qa.id END) AS unique_f,
+            "SELECT CONCAT(u.id, '_', q.course, '_', CASE WHEN qa.id IS NULL THEN 0 ELSE qa.id END) AS unique_f,
                     qa.id as quiz_attempt_id,
                     u.id,
                     u.firstname,
