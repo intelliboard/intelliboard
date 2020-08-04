@@ -119,7 +119,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                     LEFT JOIN {modules} m ON m.name = 'quiz'
                     LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = a.id
                     LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid2
-                    LEFT JOIN {grade_items} gi ON gi.itemmodule = m.name AND gi.iteminstance = a.id AND gi.hidden = 0
+                    LEFT JOIN {grade_items} gi ON gi.itemmodule = m.name AND gi.iteminstance = a.id AND gi.hidden <> 1
                     LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid3
                   WHERE c.id = a.course AND cm.visible = 1 $sql ORDER BY cm.added ASC";
         $params['userid2'] = $userid;
@@ -263,8 +263,8 @@ function intelliboard_data($type, $userid, $showing_user) {
         $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
 
         $query = "SELECT c.id, c.fullname, MIN(ue.timemodified) AS timemodified,
-                (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid6 AND gi.hidden = 0) AS grade,
-                (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND gi.hidden = 0) AS average,
+                (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid6 AND gi.hidden <> 1) AS grade,
+                (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND gi.hidden <> 1) AS average,
                 (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid2 AND courseid = c.id) AS duration,
                 (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
                 (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
@@ -352,7 +352,7 @@ function intelliboard_learner_course_progress($courseid, $userid){
 
     $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 as timepoint, $grade_avg AS grade, $grade_avg_percent AS grade_percent
                                     FROM {grade_items} gi, {grade_grades} g
-                                    WHERE gi.id = g.itemid AND g.userid != :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid
+                                    WHERE gi.id = g.itemid AND g.userid <> :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish AND gi.courseid = :courseid
                                     GROUP BY timepoint ORDER BY timepoint", $params);
     return $data;
 }
@@ -383,7 +383,7 @@ function intelliboard_learner_progress($time, $userid){
                                       gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1 AND gi.itemtype = 'course')
                                       AND gi.courseid IN (SELECT DISTINCT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE ue.enrolid=e.id AND ue.status=0 AND ue.userid=:userid2 AND ue.status = 0)
                                       AND gi.id = g.itemid
-                                      AND g.userid != :userid
+                                      AND g.userid <> :userid
                                       AND gi.itemtype = 'mod'
                                       AND g.finalgrade IS NOT NULL
                                       AND g.timemodified BETWEEN :timestart AND :timefinish
@@ -436,25 +436,25 @@ function intelliboard_learner_courses($userid, $time = null){
             "SELECT c.id, c.fullname, '0' AS duration_calc,
                     (SELECT $grade_single_percent
                        FROM {grade_items} gi, {grade_grades} g
-                      WHERE gi.hidden = 0 AND
+                      WHERE gi.hidden <> 1 AND
                             gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
                             gi.courseid = c.id AND g.userid = :userid3 AND g.timemodified BETWEEN :timestart1 AND :timefinish1
                     ) AS grade,
                     (SELECT $grade_avg_percent
                        FROM {grade_items} gi, {grade_grades} g
-                      WHERE gi.hidden = 0 AND
+                      WHERE gi.hidden <> 1 AND
                             gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
                             gi.courseid = c.id AND g.timemodified BETWEEN :timestart2 AND :timefinish2
                     ) AS average,
                     (SELECT $grade_single
                        FROM {grade_items} gi, {grade_grades} g
-                      WHERE gi.hidden = 0 AND
+                      WHERE gi.hidden <> 1 AND
                             gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND
                             g.userid = :userid4 AND g.timemodified BETWEEN :timestart3 AND :timefinish3
                     ) AS grade_real,
                     (SELECT $grade_avg
                        FROM {grade_items} gi, {grade_grades} g
-                      WHERE gi.hidden = 0 AND
+                      WHERE gi.hidden <> 1 AND
                             gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
                             gi.courseid = c.id AND g.timemodified BETWEEN :timestart4 AND :timefinish4
                     ) AS average_real,
@@ -483,13 +483,13 @@ function intelliboard_learner_courses($userid, $time = null){
             "SELECT c.id, c.fullname, '0' AS duration_calc,
                     (SELECT $grade_single
                        FROM {grade_items} gi, {grade_grades} g
-                      WHERE gi.hidden = 0 AND
+                      WHERE gi.hidden <> 1 AND
                             gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
                             gi.courseid = c.id AND g.userid = :userid3 AND g.timemodified BETWEEN :timestart1 AND :timefinish1
                     ) AS grade,
                     (SELECT $grade_avg
                        FROM {grade_items} gi, {grade_grades} g
-                      WHERE gi.hidden = 0 AND
+                      WHERE gi.hidden <> 1 AND
                             gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND
                             gi.courseid = c.id AND g.timemodified BETWEEN :timestart2 AND :timefinish2
                     ) AS average,
@@ -550,9 +550,9 @@ function intelliboard_learner_totals($userid){
                                        JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid
                                       WHERE ue.status = 0 AND ue.userid = :userid4 AND cc.timecompleted IS NULL
                                     ) as inprogress,
-                                    (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.hidden = 0 AND gi.itemtype = 'course' AND g.userid != :userid8 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid AND gi.courseid IN (
+                                    (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.hidden <> 1 AND gi.itemtype = 'course' AND g.userid <> :userid8 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid AND gi.courseid IN (
                                         SELECT e.courseid FROM {user_enrolments} ue, {enrol} e WHERE e.status = 0 AND ue.status = 0 AND ue.userid = :userid9 AND e.id = ue.enrolid)) as average,
-                                    (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.hidden = 0 AND gi.itemtype = 'course' AND g.userid = :userid10 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid) as grade", $params);
+                                    (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.hidden <> 1 AND gi.itemtype = 'course' AND g.userid = :userid10 AND g.finalgrade IS NOT NULL AND gi.id = g.itemid) as grade", $params);
 
     if(get_config('local_intelliboard', 't08')){
         if ($CFG->dbtype == 'pgsql') {
@@ -710,7 +710,7 @@ function intelliboard_learner_totals($userid){
                         FROM {user_enrolments} ue
                           JOIN {enrol} e ON e.id = ue.enrolid
                           JOIN {course} c ON c.id = e.courseid
-                          JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='course' AND gi.hidden = 0
+                          JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype='course' AND gi.hidden <> 1
                           JOIN {grade_grades} g ON g.itemid=gi.id AND g.userid=ue.userid
                         WHERE ue.status = 0 AND ue.userid = :userid1 $where", $params);
 
@@ -734,7 +734,7 @@ function intelliboard_learner_course($userid, $courseid){
                                 FROM {course} c
                                   LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = :userid1
                                   LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = :userid2
-                                  LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course' AND gi.hidden = 0
+                                  LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course' AND gi.hidden <> 1
                                   LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid3
                                 WHERE c.id = :courseid ORDER BY c.sortorder ASC", $params);
 }

@@ -102,7 +102,7 @@ class intelliboard_courses_grades_table extends table_sql {
        LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = c.userid
        LEFT JOIN (SELECT gi.courseid, {$grade_avg} AS average
                     FROM {grade_items} gi, {grade_grades} g
-                   WHERE gi.hidden = 0 AND
+                   WHERE gi.hidden <> 1 AND
                          gi.itemtype = 'course' AND g.itemid = gi.id AND
                          g.finalgrade IS NOT NULL GROUP BY gi.courseid
                  ) as gc ON gc.courseid = c.id";
@@ -250,7 +250,7 @@ class intelliboard_activities_grades_table extends table_sql {
             LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :userid2
             LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=:userid3 AND lit.courseid=gi.courseid AND lit.page='module' AND lit.param=cm.id ";
 
-        $where = "gi.hidden = 0 AND gi.courseid = :courseid AND gi.itemtype = 'mod' AND cm.visible = 1 AND
+        $where = "gi.hidden <> 1 AND gi.courseid = :courseid AND gi.itemtype = 'mod' AND cm.visible = 1 AND
                   cm.id {$coursemodulesfilter[0]} $sql";
 
         $this->set_sql($fields, $from, $where, array_merge($params, $coursemodulesfilter[1]));
@@ -297,7 +297,7 @@ class intelliboard_activities_grades_table extends table_sql {
         $modinfo = \get_fast_modinfo($courseid, $userid);
 
         foreach ($modinfo->get_cms() as $cmobj) {
-            if (!$cmobj->uservisible && !$cmobj->availableinfo) {
+            if ((!$cmobj->uservisible && !$cmobj->availableinfo) || !empty($cmobj->availableinfo)) {
                 $hiddencoursemodules[] = $cmobj->id;
             }
         }
