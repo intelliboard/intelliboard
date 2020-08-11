@@ -2583,18 +2583,15 @@ class local_intelliboard_external extends external_api {
         global $CFG;
         require_once($CFG->libdir . "/adminlib.php");
 
-        $sql_completed_date = $sql_attempts_number = '';
+        $sql_attempts_number = '';
         if (get_component_version('mod_questionnaire')) {
-            $sql_completed_date = "WHEN m.name = 'questionnaire'
-                         THEN (CASE WHEN qra.first_completed_date IS NULL THEN 0 ELSE qra.first_completed_date END)";
-
             $sql_attempts_number = "WHEN m.name = 'questionnaire'
                          THEN (CASE WHEN qra.num_of_attempts IS NULL THEN 0 ELSE qra.num_of_attempts END)";
         }
 
         $columns = array_merge(array(
             "c.fullname","gi.itemname", "m.name", "u.firstname", "u.lastname", "u.email", "ue.enrol_status", "graduated",
-            "grade", "grade_course", "completionstate",
+            "grade", "grade", "grade_course", "completionstate",
             "CASE WHEN m.name = 'quiz'
                   THEN (CASE WHEN qat.num_of_attempts IS NULL THEN 0 ELSE qat.num_of_attempts END)
                   WHEN m.name = 'assign'
@@ -2604,13 +2601,7 @@ class local_intelliboard_external extends external_api {
             END",
             "visits", "timespend",  "", "ta.tags","u.phone1", "u.phone2", "u.institution",
             "u.department", "u.address", "u.city", "u.country", "l.firstaccess", "l.lastaccess",
-            "CASE WHEN m.name = 'quiz'
-                  THEN (CASE WHEN qat.first_completed_date IS NULL THEN 0 ELSE qat.first_completed_date END)
-                  WHEN m.name = 'assign'
-                  THEN (CASE WHEN asbm.first_completed_date IS NULL THEN 0 ELSE asbm.first_completed_date END)
-                  {$sql_completed_date}
-                  ELSE 0
-            END",
+            "cmc.timemodified",
         ), $this->get_filter_columns($params));
         $sql_columns = $this->get_columns($params);
         $sql_columns .= $this->get_modules_sql(null, false, 'itemname');
@@ -2624,6 +2615,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $grade_single = intelliboard_grade_sql(false, $params);
         $grade_course_single = intelliboard_grade_sql(false, $params, 'g_c.', 0, 'gi_c.');
+        $sql_completion_states = $this->get_completion($params, "cmc.");
 
         if ($params->custom2 == 1) {
             $sql_filter .= $this->get_filterdate_sql($params, "cmc.timemodified");
@@ -2707,13 +2699,7 @@ class local_intelliboard_external extends external_api {
                          {$sql_attempts_number}
                          ELSE 0
                     END AS number_of_attempts,
-                    CASE WHEN m.name = 'quiz'
-                         THEN (CASE WHEN qat.first_completed_date IS NULL THEN 0 ELSE qat.first_completed_date END)
-                         WHEN m.name = 'assign'
-                         THEN (CASE WHEN asbm.first_completed_date IS NULL THEN 0 ELSE asbm.first_completed_date END)
-                         {$sql_completed_date}
-                         ELSE 0
-                    END AS first_completed_date
+                    CASE WHEN 1 $sql_completion_states THEN cmc.timemodified ELSE NULL END AS completed_date
                     {$sql_columns}
                FROM (SELECT MIN(ue1.id) AS id, ue1.userid, e1.courseid, MIN(ue1.status) AS enrol_status
                        FROM {user_enrolments} ue1
@@ -13168,12 +13154,14 @@ class local_intelliboard_external extends external_api {
     }
 
     public function report213($params) {
-        global $DB, $CFG;
-        if (!$params->custom) {
+        global $CFG;
+        if (!$params->custom2) {
             return [];
         }
 
         $columns = array_merge(array(
+            "c.fullname",
+            "s.name",
             "u.firstname",
             "u.lastname",
             "u.email",
@@ -13181,15 +13169,16 @@ class local_intelliboard_external extends external_api {
             "sa.startdate",
             "sa.enddate",
             "sc.score",
-            "status"
+            "status",
+            "question",
+            "sq.value"
         ), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, ["u.id"]);
-        $sql_scorm_filter1 = $this->get_filter_in_sql($params->custom, "scormid");
-        $sql_scorm_filter2 = $this->get_filter_in_sql($params->custom, "scormid", false);
-        $sql_scorm_filter3 = $this->get_filter_in_sql($params->custom, "scormid", false);
-        $sql_scorm_filter4 = $this->get_filter_in_sql($params->custom, "scormid", false);
-        $sql_scorm_filter5 = $this->get_filter_in_sql($params->custom, "s.id", false);
+        $sql_scorm_filter2 = $this->get_filter_in_sql($params->custom2, "scormid", false);
+        $sql_scorm_filter3 = $this->get_filter_in_sql($params->custom2, "scormid", false);
+        $sql_scorm_filter4 = $this->get_filter_in_sql($params->custom2, "scormid", false);
+        $sql_scorm_filter5 = $this->get_filter_in_sql($params->custom2, "s.id", false);
 
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
@@ -13201,14 +13190,15 @@ class local_intelliboard_external extends external_api {
         $sql_manager_filter = $this->vendor_manager_filter("u.id", $params);
 
         if ($CFG->dbtype == 'pgsql') {
-            $group_concat = "string_agg( CONCAT(element, '[=[question]=]', value), '[=[answer]=]')";
+            $sql_question = "sq.element";
         } else {
-            $DB->execute("SET SESSION group_concat_max_len = 1000000");
-            $group_concat = "GROUP_CONCAT(CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(element, '.', 2), '.', -1), '[=[question]=]', value) SEPARATOR '[=[answer]=]')";
+            $sql_question = "SUBSTRING_INDEX(SUBSTRING_INDEX(sq.element, '.', 2), '.', -1)";
         }
 
         return $this->get_report_data("
-          SELECT DISTINCT CONCAT(u.id, '_', COALESCE(st.attempt, 0)) AS uniqueid,
+          SELECT DISTINCT CONCAT(u.id, '_', COALESCE(st.attempt, 0), '_', COALESCE(sq.id, 0)) AS uniqueid,
+                    c.fullname AS course,
+                    s.name AS scorm,
                     st.scormid AS scormid,
                     st.attempt AS attempt,
                     u.id AS userid,
@@ -13219,41 +13209,20 @@ class local_intelliboard_external extends external_api {
                     sa.enddate,
                     sc.score,
                     CASE WHEN ss.status IS NULL THEN 'notattempted' ELSE ss.status END AS status,
-                    sst1.answers
+                    $sql_question AS question,
+                    sq.value AS answer
                     $sql_columns
             FROM {scorm} s
                 JOIN {enrol} e ON e.courseid=s.course
                 JOIN {user_enrolments} ue ON ue.enrolid=e.id
                 JOIN {user} u ON ue.userid=u.id
+                JOIN {course} c ON c.id=s.course
                 JOIN {scorm_scoes_track} st ON st.scormid=s.id AND st.element='x.start.time' AND u.id=st.userid
                 LEFT JOIN (SELECT userid, attempt, MIN(timemodified) AS startdate, MAX(timemodified) AS enddate FROM {scorm_scoes_track} WHERE $sql_scorm_filter2 GROUP BY userid, attempt) sa ON sa.userid=st.userid AND sa.attempt=st.attempt
                 LEFT JOIN (SELECT userid, attempt, MAX(value) AS score FROM {scorm_scoes_track} WHERE $sql_scorm_filter3 AND element='cmi.core.score.raw' GROUP BY userid, attempt) sc ON sc.userid=st.userid AND sc.attempt=st.attempt
                 LEFT JOIN (SELECT userid, attempt, MAX(value) AS status FROM {scorm_scoes_track} WHERE $sql_scorm_filter4 AND element='cmi.core.lesson_status' GROUP BY userid, attempt) ss ON ss.userid=st.userid AND ss.attempt=st.attempt
-                LEFT JOIN (SELECT
-                            userid,
-                            attempt,
-                            scormid,
-                            $group_concat as answers
-                        FROM {scorm_scoes_track}
-                        WHERE element LIKE 'cmi.interactions_%.student_response' $sql_scorm_filter1
-                        GROUP BY userid, attempt, scormid) sst1 ON sst1.userid = st.userid AND sst1.attempt = st.attempt AND sst1.scormid = st.scormid
+                LEFT JOIN {scorm_scoes_track} sq ON sq.element LIKE 'cmi.interactions_%.student_response' AND sq.scormid=s.id AND sq.userid = st.userid AND sq.attempt = st.attempt AND sq.scormid = st.scormid
             WHERE $sql_scorm_filter5 $sql_filter $sql_manager_filter $sql_having $sql_order", $params);
-    }
-
-    public function report213_header($params) {
-        global $DB;
-
-        if (!$params->custom) {
-            return [];
-        }
-        $sql_scorm_filter1 = $this->get_filter_in_sql($params->custom, "scormid");
-        $sql_scorm_filter2 = $this->get_filter_in_sql($params->custom, "id", false);
-
-        $data = [];
-        $data['questions'] = $DB->get_records_sql("SELECT DISTINCT SUBSTRING_INDEX(SUBSTRING_INDEX(element, '.', 2), '.', -1) AS question, value AS name FROM {scorm_scoes_track} WHERE element LIKE 'cmi.interactions_%.id' AND element NOT LIKE 'cmi.interactions_%.%.id' $sql_scorm_filter1", $this->params);
-        $data['scorm_name'] = $DB->get_record_sql("SELECT name FROM {scorm} WHERE $sql_scorm_filter2", $this->params);
-
-        return $data;
     }
 
     public function report217($params) {
