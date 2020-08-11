@@ -74,7 +74,7 @@ function intelliboardProgress(){
 	}
 
 
-	if(intelliboardCounter <= intelliboardInactivity){
+	if(!document.hidden && intelliboardCounter <= intelliboardInactivity){
 		intelliboardTime++;
 		intelliboardCounter++;
 		intelliboardAjaxCounter++;
