@@ -440,6 +440,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
         );
     }elseif($view == 'activities'){
         $sql = intelliboard_instructor_getcourses('ctx.instanceid', false, 'ra.userid');
+        $sql0 = intelliboard_instructor_getcourses('ctx.instanceid', false);
 
         if (!empty($daterange)) {
             $range = preg_split("/ (.)+ /", $daterange);
@@ -478,7 +479,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
           LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id {$completion}
           LEFT JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = 50
                     {$join_sql2}
-              WHERE c.id > 0 {$sql}
+              WHERE c.id > 0 {$sql0}
            GROUP BY c.id",
             $params, $page, $length
         );

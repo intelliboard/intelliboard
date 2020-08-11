@@ -87,6 +87,9 @@ class local_intelliboard_report extends external_api {
 
                 $filters = [];
                 if (strrpos($query, ':sorting') !== false) {
+                    $params->sortdir = isset($params->sortdir)? $params->sortdir : false;
+                    $params->sortcol = isset($params->sortcol)? $params->sortcol : 0;
+
                     $params->sortcol = $params->sortcol + 1;
                     if ($params->sortdir and $params->sortcol) {
                         $sorting = " ORDER BY {$params->sortcol} {$params->sortdir}";
@@ -101,6 +104,9 @@ class local_intelliboard_report extends external_api {
                     $end =  strpos($query, ']', $datefilter) - $start;
                     $col = substr($query, $start, $end);
                     $val = ":datefilter[$col]";
+
+                    $params->timestart = isset($params->timestart)? $params->timestart : false;
+                    $params->timefinish = isset($params->timefinish)? $params->timefinish : false;
 
                     if ($params->timestart and $params->timefinish and $col) {
                         $filters['timestart'] = $params->timestart;
@@ -117,6 +123,8 @@ class local_intelliboard_report extends external_api {
                     $col = substr($query, $start, $end);
                     $val = ":coursefilter[$col]";
 
+                    $params->courses = isset($params->courses)? $params->courses : false;
+
                     if ($params->courses and $col) {
                         list($sql, $params) = $DB->get_in_or_equal(explode(",", $params->courses), SQL_PARAMS_NAMED, 'courses', true);
                         $filters = array_merge($filters, $params);
@@ -129,6 +137,9 @@ class local_intelliboard_report extends external_api {
 
                 if (strrpos($query, ':filter') !== false) {
                     $query = str_replace(":filter", "", $query);
+
+                    $params->filterval = isset($params->filterval)? $params->filterval : false;
+                    $params->filtercol = isset($params->filtercol)? $params->filtercol : false;
 
                     if ($params->filterval and $params->filtercol) {
                         $query = "SELECT t.*

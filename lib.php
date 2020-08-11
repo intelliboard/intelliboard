@@ -290,19 +290,29 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
 
         if (!empty($intelliboardPage) and !empty($intelliboardParam) and !empty($intelliboardTime)) {
             if ($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')) {
-                if (!$ajaxRequest) {
-                    $data->visits = $data->visits + 1;
-                    $data->lastaccess = time();
-                } else {
-                    if ($data->lastaccess < strtotime('today')) {
-                        $data->lastaccess = time();
-                    } else {
-                        unset($data->lastaccess);
-                    }
-                    unset($data->visits);
-                }
-                $data->timespend = $data->timespend + $intelliboardTime;
-                $DB->update_record('local_intelliboard_tracking', $data);
+								if ($intelliboardMediaTrack) {
+									if ($data->lastaccess <= (time() - $intelliboardTime)) {
+										$data->lastaccess = time();
+									} else {
+										$intelliboardTime = 0;
+									}
+								} else {
+									if (!$ajaxRequest) {
+	                    $data->visits = $data->visits + 1;
+	                    $data->lastaccess = time();
+	                } else {
+	                    if ($data->lastaccess < strtotime('today')) {
+	                        $data->lastaccess = time();
+	                    } else {
+	                        unset($data->lastaccess);
+	                    }
+	                    unset($data->visits);
+	                }
+								}
+								if ($intelliboardTime) {
+									$data->timespend = $data->timespend + $intelliboardTime;
+	                $DB->update_record('local_intelliboard_tracking', $data);
+								}
             } else {
                 $userDetails = (object)local_intelliboard_user_details();
                 $courseid = 0;
