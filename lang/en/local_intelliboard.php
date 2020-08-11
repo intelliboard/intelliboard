@@ -1010,3 +1010,4 @@ $string['privacy:metadata:local_intelliboard_trns_m:formattedgrade'] = 'Formatte
 $string['privacy:metadata:local_intelliboard_trns_m:timecreated'] = 'Timestamp when record created';
 $string['privacy:metadata:local_intelliboard_trns_m:timemodified'] = 'Timestamp when record was updated last time';
 $string['goal_grade'] = 'Goal Grade';
+$string['cachedef_reports_list'] = 'Intelliboard Reports List';
