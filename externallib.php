@@ -4016,8 +4016,9 @@ class local_intelliboard_external extends external_api {
             $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
             $sql_filter .= $this->get_filterdate_sql($params, "ci.timecreated");
 
-            return $this->get_report_data(
-                "SELECT DISTINCT ci.id,
+            if ($DB->get_manager()->table_exists('local_transcripts_courses')) {
+                return $this->get_report_data(
+                    "SELECT DISTINCT ci.id,
                         c.id AS mc_course,
                         c.fullname AS mco_name,
                         ce.name AS mc_name,
@@ -4036,6 +4037,33 @@ class local_intelliboard_external extends external_api {
                    LEFT JOIN (SELECT en.courseid, e.userid, MAX(enrolldate) AS enrolldate FROM {local_transcripts_courses} e, {enrol} en WHERE en.id = e.enrolid GROUP BY en.courseid, e.userid ) e ON e.courseid = c.id AND e.userid = u.id
                         {$customfieldfilter}
                   WHERE ce.id > 0 $sql_filter $sql_having $sql_order", $params);
+            } else {
+                return $this->get_report_data(
+                    "SELECT DISTINCT ci.id,
+                            c.id AS mc_course,
+                            c.fullname AS mco_name,
+                            ce.name AS mc_name,
+                            ci.userid AS mci_userid,
+                            ce.id AS mci_certid,
+                            u.firstname AS mu_firstname,
+                            u.lastname AS mu_lastname,
+                            u.email AS mu_email,
+                            e.enrolldate AS enrol_date,
+                            ci.timecreated AS issue_date
+                            $sql_columns
+                       FROM {local_certificate} ce
+                       JOIN {local_certificate_issues} ci ON ci.certificateid = ce.id
+                       JOIN {course} c ON c.id IN (ce.courses)
+                       JOIN {user} u ON u.id = ci.userid
+                  LEFT JOIN (SELECT en.courseid, e.userid, MAX(enrolldate) AS enrolldate
+                               FROM {local_transcripts} e
+                               JOIN {enrol} en ON en.id = e.enrolid
+                              WHERE en.id = e.enrolid AND e.type = 'course'
+                           GROUP BY en.courseid, e.userid
+                            ) e ON e.courseid = c.id AND e.userid = u.id
+                            {$customfieldfilter}
+                      WHERE ce.id > 0 $sql_filter $sql_having $sql_order", $params);
+            }
 
         } elseif($params->custom2 == 1){
             $certificate_table = 'customcert';
