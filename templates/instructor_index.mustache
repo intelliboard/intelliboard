@@ -176,8 +176,11 @@
                                     {{/selectedmycourse}}
 
                                     <ul>
+                                        {{#selectedmycourse}}
+                                            <li><a href="#" data-value="{{key}}">{{value}}</a></li>
+                                        {{/selectedmycourse}}
                                         {{#othermycourses}}
-                                            <li><a href="#" dava-value="{{key}}">{{value}}</a></li>
+                                            <li><a href="#" data-value="{{key}}">{{value}}</a></li>
                                         {{/othermycourses}}
                                     </ul>
                                 </div>
@@ -198,8 +201,11 @@
                                     {{/selectedmycourse}}
 
                                     <ul>
+                                        {{#selectedmycourse}}
+                                            <li><a href="#" data-value="{{key}}">{{value}}</a></li>
+                                        {{/selectedmycourse}}
                                         {{#othermycourses}}
-                                            <li><a href="#" dava-value="{{key}}">{{value}}</a></li>
+                                            <li><a href="#" data-value="{{key}}">{{value}}</a></li>
                                         {{/othermycourses}}
                                     </ul>
                                 </div>
@@ -210,7 +216,7 @@
                                     </button>
                                     <ul>
                                         {{#enrolledusers}}
-                                            <li><a href="#" dava-value="{{key}}">{{value}}</a></li>
+                                            <li><a href="#" data-value="{{key}}">{{value}}</a></li>
                                         {{/enrolledusers}}
                                     </ul>
                                 </div>
@@ -260,8 +266,11 @@
                                     {{/selectedmycourse}}
 
                                     <ul>
+                                        {{#selectedmycourse}}
+                                            <li><a href="#" data-value="{{key}}">{{value}}</a></li>
+                                        {{/selectedmycourse}}
                                         {{#othermycourses}}
-                                            <li><a href="#" dava-value="{{key}}">{{value}}</a></li>
+                                            <li><a href="#" data-value="{{key}}">{{value}}</a></li>
                                         {{/othermycourses}}
                                     </ul>
                                 </div>
@@ -281,8 +290,11 @@
                                     {{/selectedmycourse}}
 
                                     <ul>
+                                        {{#selectedmycourse}}
+                                            <li><a href="#" data-value="{{key}}">{{value}}</a></li>
+                                        {{/selectedmycourse}}
                                         {{#othermycourses}}
-                                            <li><a href="#" dava-value="{{key}}">{{value}}</a></li>
+                                            <li><a href="#" data-value="{{key}}">{{value}}</a></li>
                                         {{/othermycourses}}
                                     </ul>
                                 </div>
@@ -306,8 +318,11 @@
                                 {{/selectedmycourse}}
 
                                 <ul>
+                                    {{#selectedmycourse}}
+                                        <li><a href="#" data-value="{{key}}">{{value}}</a></li>
+                                    {{/selectedmycourse}}
                                     {{#othermycourses}}
-                                        <li><a href="#" dava-value="{{key}}">{{value}}</a></li>
+                                        <li><a href="#" data-value="{{key}}">{{value}}</a></li>
                                     {{/othermycourses}}
                                 </ul>
                             </div>
@@ -392,7 +407,7 @@
                 $('#chart5 .intelliboard-dropdown a').click(function (e) {
                     e.preventDefault();
                     $('#chart5 .intelliboard-dropdown button span').html($(this).html());
-                    $('#chart5 .intelliboard-dropdown button').val($(this).attr('dava-value'));
+                    $('#chart5 .intelliboard-dropdown button').val($(this).attr('data-value'));
                     $('#chart5 .intelliboard-dropdown ul').hide();
                     load_engagement_chart();
                 });
@@ -403,14 +418,14 @@
                 $('#chart8 .intelliboard-dropdown a').click(function (e) {
                     e.preventDefault();
                     $('#chart8 .intelliboard-dropdown button span').html($(this).html());
-                    $('#chart8 .intelliboard-dropdown button').val($(this).attr('dava-value'));
+                    $('#chart8 .intelliboard-dropdown button').val($(this).attr('data-value'));
                     $('#chart8 .intelliboard-dropdown ul').hide();
                     load_graded_activities_overview_chart();
                 });
 
                 $('#chart7 .intelliboard-dropdown.courses a').click(function (e) {
                     e.preventDefault();
-                    var course = $(this).attr('dava-value');
+                    var course = $(this).attr('data-value');
                     $('#chart7 .intelliboard-dropdown.courses button span').html($(this).html());
                     $('#chart7 .intelliboard-dropdown.courses button').val(course);
                     $('#chart7 .intelliboard-dropdown.courses ul').hide();
@@ -423,7 +438,7 @@
 
                 $("#chart7 .intelliboard-dropdown.users").on("click", "a", function(e){
                     e.preventDefault();
-                    var user = $(this).attr('dava-value');
+                    var user = $(this).attr('data-value');
                     var course = $('#chart7 .intelliboard-dropdown.courses button').val();
 
                     $('#chart7 .intelliboard-dropdown.users button span').html($(this).html());
@@ -453,7 +468,7 @@
                 $('#chart3 .intelliboard-dropdown a').click(function (e) {
                     e.preventDefault();
                     $('#chart3 .intelliboard-dropdown button span').html($(this).html());
-                    $('#chart3 .intelliboard-dropdown button').val($(this).attr('dava-value'));
+                    $('#chart3 .intelliboard-dropdown button').val($(this).attr('data-value'));
                     $('#chart3 .intelliboard-dropdown ul').hide();
                     load_module_utilization_chart();
                 });
@@ -463,7 +478,7 @@
                 $('#chart6 .intelliboard-dropdown a').click(function (e) {
                     e.preventDefault();
                     $('#chart6 .intelliboard-dropdown button span').html($(this).html());
-                    $('#chart6 .intelliboard-dropdown button').val($(this).attr('dava-value'));
+                    $('#chart6 .intelliboard-dropdown button').val($(this).attr('data-value'));
                     $('#chart6 .intelliboard-dropdown ul').hide();
                     load_topic_utilization_chart();
                 });

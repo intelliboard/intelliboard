@@ -294,6 +294,8 @@ function intelliboard_data($type, $userid, $showing_user) {
 }
 
 function get_timerange($time){
+    global $DB;
+
     if($time == 0){
         $timestart = strtotime('-1 week');
         $timefinish = time();
@@ -312,6 +314,9 @@ function get_timerange($time){
     }elseif($time == 5){
         $timestart = strtotime(date('01/01/Y', strtotime('-1 year')));
         $timefinish = strtotime(date('01/01/Y'));
+    }elseif($time == 6){
+        $timestart = strtotime(date('01/01/Y', strtotime('-10 year')));
+        $timefinish = time();
     }else{
         $timestart = strtotime('-14 days');
         $timefinish = strtotime('+14 days');
@@ -371,10 +376,15 @@ function intelliboard_learner_progress($time, $userid){
     $grade_avg = intelliboard_grade_sql(true);
     $grade_avg_percent = intelliboard_grade_sql(true, null, 'g.', 0, 'gi.', true);
 
-    $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade, $grade_avg_percent AS grade_percent
-                                    FROM {grade_items} gi, {grade_grades} g
-                                    WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1 AND gi.itemtype = 'course') AND gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND g.timemodified BETWEEN :timestart AND :timefinish
-                                    GROUP BY timepoint ORDER BY timepoint", $params);
+    $data[] = $DB->get_records_sql(
+        "SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade, $grade_avg_percent AS grade_percent
+               FROM {grade_items} gi, {grade_grades} g
+              WHERE gi.courseid NOT IN (SELECT DISTINCT courseid FROM {grade_items} WHERE hidden = 1 AND gi.itemtype = 'course') AND
+                    gi.id = g.itemid AND g.userid = :userid AND gi.itemtype = 'mod' AND g.finalgrade IS NOT NULL AND
+                    g.timemodified BETWEEN :timestart AND :timefinish
+           GROUP BY timepoint ORDER BY timepoint",
+        $params
+    );
 
     if(get_config('local_intelliboard', 't53')){
         $data[] = $DB->get_records_sql("SELECT floor(g.timemodified / 86400) * 86400 AS timepoint, $grade_avg as grade, $grade_avg_percent AS grade_percent
@@ -468,7 +478,7 @@ function intelliboard_learner_courses($userid, $time = null){
               WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND ue.status = 0 $sql
            GROUP BY c.id
            ORDER BY c.sortorder ASC",
-           $params
+            $params
         );
     }else{
         $params = array_merge([
@@ -502,7 +512,7 @@ function intelliboard_learner_courses($userid, $time = null){
               WHERE e.id = ue.enrolid AND c.id = e.courseid AND ue.userid = :userid2 AND ue.status = 0 $sql
            GROUP BY c.id
            ORDER BY c.sortorder ASC",
-           $params
+            $params
         );
     }
 

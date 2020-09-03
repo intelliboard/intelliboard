@@ -96,7 +96,8 @@ class local_intelliboard_attendancelib extends external_api {
             'get_courses', 'get_course', 'is_teacher', 'is_student', 'get_user',
             'has_role', 'is_course_participant', 'get_course_students', 'is_admin',
             'number_of_courses', 'report_data', 'get_course_activities',
-            'get_activity', 'get_courses_categories', 'get_course_student_stat'
+            'get_activity', 'get_courses_categories', 'get_course_student_stat',
+            'get_user_by_email'
         ];
 
         return in_array($methodname, $methods);
