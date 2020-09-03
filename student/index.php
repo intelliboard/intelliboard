@@ -142,18 +142,19 @@ if($t5){
     $json_data = array();
     list($timestart, $timefinish) = get_timerange($time);
 
-    $timestart_y = date('Y', $timestart);
-    $timestart_m = date('m', $timestart)-1;
-    $timestart_d = date('d', $timestart);
-    $hAxis_min = "new Date($timestart_y, $timestart_m, $timestart_d)";
-
     $timefinish_y = date('Y', $timefinish);
     $timefinish_m = date('m', $timefinish)-1;
     $timefinish_d = date('d', $timefinish);
     $hAxis_max = "new Date($timefinish_y, $timefinish_m, $timefinish_d)";
 
+    $mintimepoint = $timefinish;
 
     foreach($progress[0] as $item){
+        if ($item->timepoint < $mintimepoint) {
+            $mintimepoint = $item->timepoint;
+        }
+
+
         $l = '';
         $lp = 0;
         if(isset($progress[1][$item->timepoint])){
@@ -177,6 +178,11 @@ if($t5){
         $d = date('d', $item->timepoint);
         $json_data[] = ($t53)?"[new Date($y, $m, $d), ".round((($scale_real)?$item->grade_percent:$item->grade), 2).", '$tooltip', $lp, '$tooltip']":"[new Date($y, $m, $d), ".round((($scale_real)?$item->grade_percent:$item->grade), 2).", '$tooltip']";
     }
+
+    $timestart_y = date('Y', $mintimepoint);
+    $timestart_m = date('m', $mintimepoint)-1;
+    $timestart_d = date('d', $mintimepoint);
+    $hAxis_min = "new Date($timestart_y, $timestart_m, $timestart_d)";
 }
 $json_data2 = array();
 foreach($courses as $item){
@@ -211,6 +217,9 @@ if(get_config('local_intelliboard', 'this_year')){
 }
 if(get_config('local_intelliboard', 'last_year')){
     $menu[5] = get_string('last_year','local_intelliboard');
+}
+if(get_config('local_intelliboard', 'all_time')){
+    $menu[6] = get_string('all_time','local_intelliboard');
 }
 
 $PAGE->requires->js_call_amd(
