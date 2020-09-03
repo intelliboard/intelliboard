@@ -472,6 +472,29 @@ class attendance_repository
     }
 
     /**
+     * Get User By email
+     *
+     * @param array $params Params
+     * @return mixed
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function get_user_by_email($params) {
+        global $DB, $PAGE;
+
+        $user = $DB->get_record(
+            'user', ['email' => $params['user_email']], '*', MUST_EXIST
+        );
+
+        $user_picture = new user_picture($user);
+        $user_picture->size = 100;
+        $user->picture = $user_picture->get_url($PAGE)->out();
+        $user->timezone = \core_date::get_user_timezone($user->timezone);
+
+        return $user;
+    }
+
+    /**
      * Check that user is admin
      *
      * @param array $params Params
