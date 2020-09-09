@@ -2613,6 +2613,12 @@ class local_intelliboard_external extends external_api {
         global $CFG;
         require_once($CFG->libdir . "/adminlib.php");
 
+        if (empty($params->courseid)) {
+            return ['data' => []];
+        }
+
+        $params->courseid = explode(',', $params->courseid)[0];
+
         $sql_attempts_number = '';
         if (get_component_version('mod_questionnaire')) {
             $sql_attempts_number = "WHEN m.name = 'questionnaire'
@@ -2637,8 +2643,8 @@ class local_intelliboard_external extends external_api {
         $sql_columns .= $this->get_modules_sql(null, false, 'itemname');
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
+        $sqlcoursefilter = $this->get_filter_in_sql($params->courseid, "e1.courseid");
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
-        $sql_filter .= $this->get_filter_in_sql($params->courseid, "cm.course");
         $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
@@ -2731,10 +2737,11 @@ class local_intelliboard_external extends external_api {
                     END AS number_of_attempts,
                     CASE WHEN ue.id > 0 $sql_completion_states THEN cmc.timemodified ELSE NULL END AS completed_date
                     {$sql_columns}
-               FROM (SELECT MIN(ue1.id) AS id, ue1.userid, e1.courseid, MIN(ue1.status) AS enrol_status
+               FROM (SELECT MIN(ue1.id) AS id, ue1.userid, MIN(e1.courseid) AS courseid, MIN(ue1.status) AS enrol_status
                        FROM {user_enrolments} ue1
                        JOIN {enrol} e1 ON e1.id = ue1.enrolid
-                   GROUP BY ue1.userid, e1.courseid
+                      WHERE e1.courseid > 0 {$sqlcoursefilter}
+                   GROUP BY ue1.userid
                     ) ue
                JOIN {user} u ON u.id = ue.userid
                JOIN {course} c ON c.id = ue.courseid
@@ -19676,15 +19683,19 @@ class local_intelliboard_external extends external_api {
               }
             }
             if ($assign_categories) {
-              require_once($CFG->libdir. '/coursecatlib.php');
+                require_once($CFG->libdir. '/coursecatlib.php');
 
-              $categories = coursecat::get_many($assign_categories);
-              foreach ($categories as $category) {
-                $children_courses = $category->get_courses(['recursive'=>true]);
-                foreach($children_courses as $course) {
-                  $assign_courses[] = $course->id;
+                $categories = coursecat::get_many($assign_categories);
+                foreach ($categories as $category) {
+                    if (!$category) {
+                        continue;
+                    }
+
+                    $children_courses = $category->get_courses(['recursive'=>true]);
+                    foreach($children_courses as $course) {
+                        $assign_courses[] = $course->id;
+                    }
                 }
-              }
             }
 
             $assign_users_list = implode(",", array_unique($assign_users));
