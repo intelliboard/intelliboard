@@ -53,8 +53,6 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
      * @throws \dml_exception
      */
     public function execute() {
-        global $DB;
-
         if(!get_config('local_intelliboard', 'enable_bb_col_meetings')) {
             return false;
         }
@@ -63,56 +61,56 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
         $repository = bb_collaborate_tool::repository();
         $adapter = bb_collaborate_tool::adapter();
 
-        try {
-            $transaction = $DB->start_delegated_transaction();
+        foreach($repository->getNonTrackedSessions() as $session) {
+            // skip session tracking if enabled synchronization with attendance
+            // but session not be synchronized with attendance service
+            if (
+                get_config('local_intelliboard', 'enablesyncattendance') &&
+                !$session->sync_data
+            ) {
+                continue;
+            }
 
-            foreach($repository->getNonTrackedSessions() as $session) {
-                // skip session tracking if enabled synchronization with attendance
-                // but session not be synchronized with attendance service
-                if (
-                    get_config('local_intelliboard', 'enablesyncattendance') &&
-                    !$session->sync_data
-                ) {
-                    continue;
-                }
-
-                try {
-                    $sesioninstances = $adapter->get_session_instances(
-                        $session->sessionuid
-                    );
-
-                    // 172800 - seconds in 2 days
-                    if (!$sesioninstances && (time() - $session->timestart) < 172800) {
-                        continue;
-                    }
-
+            try {
+                $sesioninstances = $adapter->get_session_instances(
+                    $session->sessionuid
+                );
+            } catch (\Exception $e) {
+                // Mark a session tracked if we more than 24 hours can not get API data of the session
+                if (time() - $session->timestart > DAYSECS) {
                     $service->mark_session_tracked($session->sessionuid);
-
-                    if($sesioninstances) {
-                        $sessionattendees = new session_attendances(
-                            $session,
-                            $adapter->get_session_attendees(
-                                $session->sessionuid, $sesioninstances[0]['id']
-                            )
-                        );
-                        $service->insert_session_attendees(
-                            $session->sessionuid, $sessionattendees->get_attendances()
-                        );
-
-                        if (get_config('local_intelliboard', 'enablesyncattendance')) {
-                            $service->synchronize_attendances(
-                                $session, $sessionattendees
-                            );
-                        }
-                    }
-                } catch (\Exception $e) {
                     continue;
                 }
             }
 
-            $transaction->allow_commit();
-        } catch(\Exception $e) {
-            $transaction->rollback($e);
+            try {
+                if (empty($sesioninstances) && (time() - $session->timestart) < DAYSECS) {
+                    continue;
+                }
+
+                $service->mark_session_tracked($session->sessionuid);
+
+                if($sesioninstances) {
+                    $sessionattendees = new session_attendances(
+                        $session,
+                        $adapter->get_session_attendees(
+                            $session->sessionuid, $sesioninstances[0]['id']
+                        )
+                    );
+                    $service->insert_session_attendees(
+                        $session->sessionuid, $sessionattendees->get_attendances()
+                    );
+
+                    if (get_config('local_intelliboard', 'enablesyncattendance')) {
+                        $service->synchronize_attendances(
+                            $session, $sessionattendees
+                        );
+                    }
+                }
+            } catch (\Exception $e) {
+                echo "Session: " . json_encode($session) . '. Error: ' . $e->getMessage() . PHP_EOL;
+                continue;
+            }
         }
 
         return true;

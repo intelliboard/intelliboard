@@ -296,27 +296,27 @@ function intelliboard_data($type, $userid, $showing_user) {
 function get_timerange($time){
     global $DB;
 
-    if($time == 0){
-        $timestart = strtotime('-1 week');
-        $timefinish = time();
-    }elseif($time == 1){
-        $timestart = strtotime('-1 month');
-        $timefinish = time();
-    }elseif($time == 2){
-        $timestart = strtotime('-4 month');
-        $timefinish = time();
-    }elseif($time == 3){
-        $timestart = strtotime('-6 month');
-        $timefinish = time();
-    }elseif($time == 4){
-        $timestart = strtotime(date('01/01/Y'));
-        $timefinish = time();
-    }elseif($time == 5){
-        $timestart = strtotime(date('01/01/Y', strtotime('-1 year')));
-        $timefinish = strtotime(date('01/01/Y'));
-    }elseif($time == 6){
+    if($time == 0) {
         $timestart = strtotime(date('01/01/Y', strtotime('-10 year')));
         $timefinish = time();
+    }elseif($time == 1){
+        $timestart = strtotime('-1 week');
+        $timefinish = time();
+    }elseif($time == 2){
+        $timestart = strtotime('-1 month');
+        $timefinish = time();
+    }elseif($time == 3){
+        $timestart = strtotime('-4 month');
+        $timefinish = time();
+    }elseif($time == 4){
+        $timestart = strtotime('-6 month');
+        $timefinish = time();
+    }elseif($time == 5){
+        $timestart = strtotime(date('01/01/Y'));
+        $timefinish = time();
+    }elseif($time == 6){
+        $timestart = strtotime(date('01/01/Y', strtotime('-1 year')));
+        $timefinish = strtotime(date('01/01/Y'));
     }else{
         $timestart = strtotime('-14 days');
         $timefinish = strtotime('+14 days');
