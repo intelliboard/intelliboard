@@ -52,7 +52,8 @@ class bb_collaborate_repository {
                                                          iat.type = :type
           LEFT JOIN {local_intelliboard_bb_trck_m} libtm ON libtm.sessionuid = c.sessionuid
               WHERE c.sessionuid IS NOT NULL AND c.timeend <= :currenttime AND
-                    libtm.id IS NULL", [
+                    libtm.id IS NULL
+           ORDER BY c.timecreated DESC", [
                 'currenttime' => time(),
                 'type' => self::ATT_SYNC_TYPE
         ]);
