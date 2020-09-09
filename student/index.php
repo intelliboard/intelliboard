@@ -200,26 +200,26 @@ foreach($courses as $item){
 }
 
 $menu = array();
+if(get_config('local_intelliboard', 'all_time')){
+    $menu[0] = get_string('all_time','local_intelliboard');
+}
 if(get_config('local_intelliboard', 'learner_tf_last_week')){
-    $menu[0] = get_string('last_week','local_intelliboard');
+    $menu[1] = get_string('last_week','local_intelliboard');
 }
 if(get_config('local_intelliboard', 't01')){
-    $menu[1] = get_string('last_month','local_intelliboard');
+    $menu[2] = get_string('last_month','local_intelliboard');
 }
 if(get_config('local_intelliboard', 't02')){
-    $menu[2] = get_string('last_quarter','local_intelliboard');
+    $menu[3] = get_string('last_quarter','local_intelliboard');
 }
 if(get_config('local_intelliboard', 't03')){
-    $menu[3] =  get_string('last_semester','local_intelliboard');
+    $menu[4] =  get_string('last_semester','local_intelliboard');
 }
 if(get_config('local_intelliboard', 'this_year')){
-    $menu[4] = get_string('this_year','local_intelliboard');
+    $menu[5] = get_string('this_year','local_intelliboard');
 }
 if(get_config('local_intelliboard', 'last_year')){
-    $menu[5] = get_string('last_year','local_intelliboard');
-}
-if(get_config('local_intelliboard', 'all_time')){
-    $menu[6] = get_string('all_time','local_intelliboard');
+    $menu[6] = get_string('last_year','local_intelliboard');
 }
 
 $PAGE->requires->js_call_amd(

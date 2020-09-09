@@ -60,7 +60,7 @@ class course_summary extends report {
         $teacherrolefilter = new in_filter($this->get_teacher_roles(), "teachrole");
 
         return $DB->get_records_sql(
-           "SELECT  c.id, c.fullname as course,
+           "SELECT  c.id, c.fullname as course, c.idnumber as sis_number,
                     COUNT(DISTINCT ra.userid) as number_of_enrollments,
                     {$teachersSelect} as teachers
                FROM {course} c
