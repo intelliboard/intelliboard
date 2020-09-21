@@ -60,7 +60,8 @@ class local_external_functions
           11 => "creator.name", // user created by
           12 => "course_roles.roles", // user course roles
           13 => "system_roles.roles", // user system roles
-          14 => "CONCAT(enrol_by.firstname, ' ', enrol_by.lastname)" // Enrolled by
+          14 => "CONCAT(enrol_by.firstname, ' ', enrol_by.lastname)", // Enrolled by
+          15 => "course_teachers.names", // Course teachers
         ];
         $this->functions = [
             'report1',
