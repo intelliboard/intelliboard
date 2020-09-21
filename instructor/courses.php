@@ -109,16 +109,13 @@ if($table->is_downloading($download, $export_file_name, $action, $pagesize)){
     exit;
 }
 
-$exporturls = array();
-$formats = array('excel', 'csv', 'pdf');
-
-foreach ($formats as $format){
-    $page_url->param('download', $format);
-    $exporturls[] = [
-        "type" => $format == 'excel' ? 'xls' : $format,
-        "url" => $page_url->out(),
-    ];
-}
+$exporturls = (object) [];
+$page_url->param('download', 'excel');
+$exporturls->xls = $page_url->out();
+$page_url->param('download', 'pdf');
+$exporturls->pdf = $page_url->out();
+$page_url->param('download', 'csv');
+$exporturls->csv = $page_url->out();
 
 $table->show_download_buttons_at(array());
 
