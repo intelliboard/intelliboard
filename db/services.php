@@ -192,6 +192,13 @@ $functions = array(
         'type'        => 'read',
         'ajax'        => true
     ),
+    'local_intelliboard_setup_apikey' => array(
+        'classname'   => 'local_intelliboard_apikeylib',
+        'methodname'  => 'save_apikey',
+        'classpath'   => 'local/intelliboard/classes/apikeylib.php',
+        'description' => 'Save API key',
+        'type'        => 'write'
+    ),
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
@@ -221,6 +228,7 @@ $services = array(
             'local_intelliboard_setup_login',
             'local_intelliboard_setup_register',
             'local_intelliboard_setup_check_email',
+            'local_intelliboard_setup_apikey',
         ),
         'restrictedusers' => 1,
         'enabled'=>1,

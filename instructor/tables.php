@@ -416,15 +416,6 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
 
         $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3'=>$courseid, 'c4'=>$courseid);
         $sql = "";
-        $having = 'cm.id > 0';
-        if ($search) {
-            $having .= sprintf(' AND (%s OR %s)',
-                $DB->sql_like('m.name', ":activity", false, false),
-                $DB->sql_like('activity', ":activity1", false, false)
-            );
-            $params['activity'] = "%$search%";
-            $params['activity1'] = "%$search%";
-        }
         if ($mod) {
             $sql .= " AND cm.module IN (1,15,16,17,20,23)";
         }
@@ -442,6 +433,16 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
         foreach($modules as $module){
             $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
+
+        if ($search) {
+            $sql .= sprintf(' AND (%s OR %s)',
+                $DB->sql_like('m.name', ":activity", false, false),
+                $DB->sql_like("CASE $sql_columns ELSE 'none' END", ":activity1", false, false)
+            );
+            $params['activity'] = "%$search%";
+            $params['activity1'] = "%$search%";
+        }
+
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
         $grade_avg = intelliboard_grade_sql(true);
         $completion = intelliboard_compl_sql("cm.", false);
@@ -502,7 +503,6 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
                         GROUP BY param
                          ) l ON l.param=cm.id
                    WHERE cm.visible = 1 AND cm.course = :c3 $sql
-                  HAVING {$having}
                  ) t";
 
         $where = "t.id > 0";
@@ -885,6 +885,12 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
         );
         $params = array_merge($params,$sql_params);
 
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg(ra.roleid::character varying, ',')";
+        } else {
+            $group_concat = "GROUP_CONCAT(ra.roleid SEPARATOR ',')";
+        }
+
         $fields = "t.*";
         $from = "(SELECT CONCAT(ra.userid,'_',c.id) as id,
                          ra.userid AS userid,
@@ -907,7 +913,7 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                          '' as actions
                     FROM (SELECT 
                             ra.userid, 
-                            CONCAT(',', GROUP_CONCAT(ra.roleid),',') AS roles, 
+                            CONCAT(',', $group_concat ,',') AS roles, 
                             e.instanceid AS courseid, 
                             MIN(ra.timemodified) AS timemodified 
                           FROM {role_assignments} ra, {context} e 
@@ -938,7 +944,7 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                ) l ON l.courseid = c.id AND l.userid = u.id
                          $join_group_sql
                    WHERE ra.courseid = :c2 $sql $sql33) t";
-        $where = "t.id > 0";
+        $where = "t.userid > 0";
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -1150,15 +1156,6 @@ class intelliboard_learner_grades_table extends local_intelliboard_intelli_table
             'c2'=>$courseid
         );
         $sql = "";
-        $having = 'cm.id > 0';
-        if ($search) {
-            $having .= sprintf(' AND (%s OR %s)',
-                $DB->sql_like('m.name', ":activity", false, false),
-                $DB->sql_like('activity', ":activity1", false, false)
-            );
-            $params['activity'] = "%$search%";
-            $params['activity1'] = "%$search%";
-        }
 
         if ($mod) {
             $sql .= " AND cm.module IN (1,15,16,17,20,23)";
@@ -1178,6 +1175,16 @@ class intelliboard_learner_grades_table extends local_intelliboard_intelli_table
         foreach($modules as $module){
             $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
+
+        if ($search) {
+            $sql .= sprintf(' AND (%s OR %s)',
+                $DB->sql_like('m.name', ":activity", false, false),
+                $DB->sql_like("CASE $sql_columns ELSE 'none' END", ":activity1", false, false)
+            );
+            $params['activity'] = "%$search%";
+            $params['activity1'] = "%$search%";
+        }
+
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
         $grade_single = intelliboard_grade_sql();
         $completion = intelliboard_compl_sql("cmc.");
@@ -1202,8 +1209,7 @@ class intelliboard_learner_grades_table extends local_intelliboard_intelli_table
                            JOIN {enrol} e ON ue.enrolid = e.id
                        GROUP BY ue.userid, e.courseid
                         ) enr ON enr.userid = g.userid AND enr.courseid = gi.courseid
-                  WHERE cm.visible = 1 AND cm.course = :c2 $sql
-                 HAVING $having) t";
+                  WHERE cm.visible = 1 AND cm.course = :c2 $sql) t";
         $where = 't.id > 0';
 
         $this->set_sql($fields, $from, $where, $params);

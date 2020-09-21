@@ -23,7 +23,6 @@
  * @website    http://intelliboard.net/
  */
 
-use local_intelliboard\attendance_api;
 use local_intelliboard\repositories\attendance_repository;
 
 defined('MOODLE_INTERNAL') || die();
