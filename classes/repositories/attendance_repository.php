@@ -331,14 +331,16 @@ class attendance_repository
         $rolefilter = new in_filter($this->get_student_roles(), "srole");
         list($sql, $sqlparams) = $this->buildSqlRequest(
             "SELECT CONCAT(u.id, '_', c.id) AS unique_f, u.*, c.id AS course_id,
-                    c.shortname AS course_short_name, c.fullname AS course_full_name
-               FROM {context} cx
-               JOIN {role_assignments} ra ON ra.contextid = cx.id AND
-                                             ra.roleid " . $rolefilter->get_sql() . "
-               JOIN {user} u ON u.id = ra.userid
-               JOIN {course} c ON c.id = cx.instanceid
-              WHERE {$where}
-           GROUP BY u.id, c.id",
+                    c.shortname AS course_short_name, c.fullname AS course_full_name, gg.finalgrade AS grade
+                FROM {context} cx
+                    JOIN {role_assignments} ra ON ra.contextid = cx.id AND
+                                                 ra.roleid " . $rolefilter->get_sql() . "
+                    JOIN {user} u ON u.id = ra.userid
+                    JOIN {course} c ON c.id = cx.instanceid
+                    LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+                    LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = u.id
+                WHERE {$where}
+           GROUP BY u.id, c.id, gg.finalgrade",
             array_merge($sqlparams, $rolefilter->get_params()),
             $reportparams
         );
