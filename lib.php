@@ -203,8 +203,11 @@ function local_intelliboard_extend_settings_navigation(settings_navigation $sett
         }
 
         $cat = $coursenode->add(get_string('intelliboard_reports', 'local_intelliboard'), null, navigation_node::TYPE_CONTAINER, null, 'intelliboard');
-        foreach ($reports as $key=>$report) {
-            $cat->add(format_string($report->name), new moodle_url('/local/intelliboard/instructor/reports.php',array('id'=>format_string($key))), navigation_node::TYPE_CUSTOM);
+
+        if (is_array($reports)) {
+            foreach ($reports as $key=>$report) {
+                $cat->add(format_string($report->name), new moodle_url('/local/intelliboard/instructor/reports.php',array('id'=>format_string($key))), navigation_node::TYPE_CUSTOM);
+            }
         }
     }
 }
