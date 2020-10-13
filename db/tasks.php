@@ -63,5 +63,14 @@ $tasks = [
         'month' => '*',
         'dayofweek' => '*',
         'disabled' => 1
+    ],
+    [
+        'classname' => 'local_intelliboard\task\import_tracking_process',
+        'blocking' => 0,
+        'minute' => '*/15',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*'
     ]
 ];

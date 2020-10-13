@@ -103,6 +103,13 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/compresstracking';
+        $title = new lang_string('compresstracking', 'local_intelliboard');
+        $description = new lang_string('compresstracking_desc', 'local_intelliboard');
+        $default = false;
+        $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/advanced', new lang_string('adv_settings', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/sso';

@@ -68,7 +68,7 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
     public $scale_real;
 
     function __construct($uniqueid, $search = '', $download = 0) {
-        global $CFG, $PAGE, $DB, $USER;
+        global $PAGE, $DB, $USER;
 
         parent::__construct($uniqueid);
 
@@ -77,7 +77,7 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
         $params = array();
 
         $grade_avg = intelliboard_grade_sql(true);
-        $join_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c.id');
+        $join_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ra.course_id');
         $sql_columns = "";
 
         if(get_config('local_intelliboard', 'table_set_icg_c1')) {
@@ -111,7 +111,7 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
             $columns[] =  'grade';
             $headers[] =  get_string('in21', 'local_intelliboard');
 
-            $join_sql .= " LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+            $join_sql .= " LEFT JOIN {grade_items} gi ON gi.courseid = ra.course_id AND gi.itemtype = 'course'
             LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ra.userid AND g.finalgrade IS NOT NULL";
             $sql_columns .= ", $grade_avg AS grade";
         } else {
@@ -162,7 +162,7 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
                                              SUM(lit.visits) AS visits
                                       FROM {local_intelliboard_tracking} lit
                                   GROUP BY lit.courseid, lit.userid
-                                   ) lit ON lit.userid = u.id AND lit.courseid = c.id";
+                                   ) lit ON lit.userid = ra.userid AND lit.courseid = ra.course_id";
             $sql_columns .= ", SUM(lit.timespend) AS timespend, SUM(lit.visits) AS visits";
         } else {
             $sql_columns .= ", '0' AS timespend, '0' AS visits";
@@ -174,7 +174,7 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
                                                  SUM(lit.visits) AS visits
                                             FROM {local_intelliboard_tracking} lit
                                         GROUP BY lit.courseid, lit.userid
-                                         ) lit ON lit.userid = u.id AND lit.courseid = c.id";
+                                         ) lit ON lit.userid = ra.userid AND lit.courseid = ra.course_id";
             }
             $sql_columns .= ", SUM(lit.timespend)/COUNT(DISTINCT ra.userid) AS avg_timespend, SUM(lit.visits)/COUNT(DISTINCT ra.userid) AS avg_visits";
         } else{
@@ -185,7 +185,7 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
         $this->define_columns($columns);
 
         $sql1 = intelliboard_instructor_getcourses('c.id', false, '', false, false);
-        $sql2 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
+        $sql2 = intelliboard_instructor_getcourses('ra.course_id', false, 'ra.userid');
         $rolefilter = "";
 
         list($sql_r, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
@@ -222,30 +222,28 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
                   (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
                   (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections";
 
-        $from = "{course} c
+        $from = "      {course} c
                   JOIN {course_categories} ca ON ca.id = c.category
-                  LEFT JOIN (SELECT c.id,
-                                    COUNT(ra.userid) AS learners,
-                                    COUNT(DISTINCT cc.userid) AS completed
-                                    {$sql_columns}
-                               FROM (SELECT ra1.userid, ctx.instanceid AS course_id
-                                       FROM {role_assignments} ra1
-                                       JOIN {context} ctx ON ctx.id = ra1.contextid AND ctx.contextlevel = 50
-                                      WHERE ra1.id > 0 {$rolefilter}
-                                   GROUP BY ra1.userid, ctx.instanceid
-                                    ) ra
-                               JOIN {user} u ON ra.userid = u.id
-                               JOIN {course} c ON c.id = ra.course_id
-                          LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = u.id AND cc.timecompleted > 0
-                          LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
-                                       FROM {user_enrolments} ue
-                                       JOIN {enrol} e ON ue.enrolid = e.id
-                                   GROUP BY ue.userid, e.courseid
-                                    ) enr ON enr.userid = u.id AND enr.courseid = c.id
-                                    {$join_sql}
-                              WHERE c.id > 0 {$sql2}
-                           GROUP BY c.id
-                            ) x ON x.id = c.id";
+             LEFT JOIN (SELECT ra.course_id AS id,
+                               COUNT(ra.userid) AS learners,
+                               COUNT(DISTINCT cc.userid) AS completed
+                               {$sql_columns}
+                          FROM (SELECT ra1.userid, ctx.instanceid AS course_id
+                                  FROM {role_assignments} ra1
+                                  JOIN {context} ctx ON ctx.id = ra1.contextid AND ctx.contextlevel = 50
+                                 WHERE ra1.id > 0 {$rolefilter}
+                              GROUP BY ra1.userid, ctx.instanceid
+                               ) ra
+                     LEFT JOIN {course_completions} cc ON cc.course = ra.course_id AND cc.userid = ra.userid AND cc.timecompleted > 0
+                     LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
+                                  FROM {user_enrolments} ue
+                                  JOIN {enrol} e ON ue.enrolid = e.id
+                              GROUP BY ue.userid, e.courseid
+                               ) enr ON enr.userid = ra.userid AND enr.courseid = ra.course_id
+                               {$join_sql}
+                         WHERE ra.course_id > 0 {$sql2}
+                         GROUP BY ra.course_id
+                       ) x ON x.id = c.id";
         $where = "c.id > 0 $sql1";
 
 
