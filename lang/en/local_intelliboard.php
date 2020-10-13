@@ -1012,3 +1012,6 @@ $string['privacy:metadata:local_intelliboard_trns_m:formattedgrade'] = 'Formatte
 $string['privacy:metadata:local_intelliboard_trns_m:timecreated'] = 'Timestamp when record created';
 $string['privacy:metadata:local_intelliboard_trns_m:timemodified'] = 'Timestamp when record was updated last time';
 $string['goal_grade'] = 'Goal Grade';
+$string['importtrackingtask'] = 'Import Tracking Task';
+$string['compresstracking'] = 'Compress Tracking';
+$string['compresstracking_desc'] = 'Write Tracking to file and move data to database by cron (each 15 minutes by default)';

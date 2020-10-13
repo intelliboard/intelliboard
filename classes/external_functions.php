@@ -419,7 +419,8 @@ class local_external_functions
             'report231',
             'get_courses_transcripts',
             'get_modules_transcripts',
-            'monitor89'
+            'monitor89',
+            'course_custom_fields',
         ];
     }
     public function get_function($params = null)
