@@ -421,6 +421,9 @@ class local_external_functions
             'get_modules_transcripts',
             'monitor89',
             'course_custom_fields',
+            'monitor90',
+            'monitor91',
+            'monitor92'
         ];
     }
     public function get_function($params = null)

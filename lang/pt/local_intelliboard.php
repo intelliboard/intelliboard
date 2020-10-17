@@ -1021,4 +1021,4 @@ $string['privacy:metadata:local_intelliboard_trns_m:timemodified'] = 'Timestamp 
 $string['goal_grade'] = 'Goal Grade';
 $string['importtrackingtask'] = 'Import Tracking Task';
 $string['compresstracking'] = 'Compress Tracking';
-$string['compresstracking_desc'] = 'Write Tracking to file and move data to database by cron (each 15 minutes by default)';
+$string['compresstracking_desc'] = 'Write Time Tracking data to file and transfer data to database with cron job (default: every 15 minutes)';
