@@ -156,7 +156,7 @@ echo $OUTPUT->header();
                 <?php endif; ?>
             </div>
 
-            <div class="intelliboard-box">
+            <div class="intelliboard-box competency-dashboard-intelliboard-box">
                 <?php if($n6): ?>
                     <div class="box<?php echo($n7)?'50':'100'; ?> pull-left h410">
                         <ul class="nav nav-tabs clearfix">
