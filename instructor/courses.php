@@ -186,7 +186,7 @@ echo $OUTPUT->header();
 
 								<a href="<?php echo $CFG->wwwroot.'/local/intelliboard/instructor/courses.php?search&action=activities&id='.$data->courseid; ?>" class="btn btn-default btn-back"><i class="ion-android-arrow-back"></i> <?php echo get_string('in201', 'local_intelliboard'); ?></a>
 							</ul>
-						<?php elseif($action === 'learners'): ?>
+						<?php elseif($action === 'learners' && $course): ?>
 							<div class="grade" title="<?php echo get_string('in21', 'local_intelliboard'); ?>">
                                 <div class="circle-progress-course"  data-percent="<?php echo ($scale_real>0)?$course->grade:(int)$course->grade; ?>"></div>
 							</div>
