@@ -246,7 +246,7 @@ echo $OUTPUT->header();
     </div>
 <?php endif; ?>
 
-<div class="intelliboard-box">
+<div class="intelliboard-box admin-dashboard-intelliboard-box">
     <?php if($settingUserSiteSummary): ?>
     	<div class="box<?php echo $settingCourseEnrollmentsTypes ? '60' : '100'; ?> pull-left">
     		<h3><?php echo get_string('user_site_summary_detail', 'local_intelliboard');?></h3>
@@ -261,7 +261,7 @@ echo $OUTPUT->header();
     	</div>
     <?php endif; ?>
 </div>
-<div class="intelliboard-box">
+<div class="intelliboard-box admin-dashboard-intelliboard-box">
     <?php if($settingUserMap): ?>
     	<div class="box<?php echo $settingEnrolComplOverview ? '45' : '100'; ?> pull-left">
     		<h3><?php echo get_string('user_map', 'local_intelliboard');?></h3>

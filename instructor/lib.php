@@ -75,27 +75,37 @@ function intelliboard_course_learners_total($courseid)
     $sql44 = intelliboard_instructor_getcourses('gi.courseid', false, 'g.userid');
     $sql55 = intelliboard_instructor_getcourses('c.id', false, 'ra.userid');
 
-    return $DB->get_record_sql("
-        SELECT c.id,c.fullname, c.startdate, c.enablecompletion,
-            (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
-            (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
-            COUNT(DISTINCT ra.userid) as learners,
-            COUNT(DISTINCT cc.id) as learners_completed,
-            (SELECT $grade_avg
-              FROM {grade_items} gi
-                JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                $join_group_sql2
-              WHERE gi.itemtype = 'course' AND gi.courseid = c.id $sql44) AS grade,
-            SUM(l.timespend) as timespend,
-            SUM(l.visits) as visits
-        FROM {role_assignments} ra
-        LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
-        LEFT JOIN {course} c ON c.id = e.instanceid
-        LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid AND cc.timecompleted > 0
-        LEFT JOIN (SELECT t.userid,t.courseid, SUM(t.timespend) as timespend, SUM(t.visits) as visits FROM
-            {local_intelliboard_tracking} t GROUP BY t.courseid, t.userid) l ON l.courseid = c.id AND l.userid = ra.userid
-        $join_group_sql
-        WHERE ra.roleid $sql_roles AND e.instanceid = :courseid $sql55 GROUP BY c.id LIMIT 1", $params);
+    $cache = cache::make('local_intelliboard', 'instructor_course_data');
+
+    if ($cache->has("total_{$courseid}")) {
+        $data = json_decode($cache->get("total_{$courseid}"));
+    } else {
+        $data = $DB->get_record_sql("
+            SELECT c.id,c.fullname, c.startdate, c.enablecompletion,
+                (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
+                (SELECT COUNT(id) FROM {course_sections} WHERE visible = 1 AND course = c.id) AS sections,
+                COUNT(DISTINCT ra.userid) as learners,
+                COUNT(DISTINCT cc.id) as learners_completed,
+                (SELECT $grade_avg
+                  FROM {grade_items} gi
+                    JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                    $join_group_sql2
+                  WHERE gi.itemtype = 'course' AND gi.courseid = c.id $sql44) AS grade,
+                SUM(l.timespend) as timespend,
+                SUM(l.visits) as visits
+            FROM {role_assignments} ra
+            LEFT JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
+            LEFT JOIN {course} c ON c.id = e.instanceid
+            LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid AND cc.timecompleted > 0
+            LEFT JOIN (SELECT t.userid,t.courseid, SUM(t.timespend) as timespend, SUM(t.visits) as visits FROM
+                {local_intelliboard_tracking} t GROUP BY t.courseid, t.userid) l ON l.courseid = c.id AND l.userid = ra.userid
+            $join_group_sql
+            WHERE ra.roleid $sql_roles AND e.instanceid = :courseid $sql55 GROUP BY c.id LIMIT 1", $params);
+
+        $cache->set("total_{$courseid}", json_encode($data));
+    }
+
+    return $data;
 }
 
 function intelliboard_learner_data($userid, $courseid)

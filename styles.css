@@ -526,6 +526,12 @@ input:checked + .slider:before {
     margin: 0;
 }
 
+.instructor-dashboard-intelliboard-box, .competency-dashboard-intelliboard-box, .admin-dashboard-intelliboard-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
 /* export icons*/
 
 .report-export-panel a img {

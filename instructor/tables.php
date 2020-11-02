@@ -412,7 +412,7 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3'=>$courseid, 'c4'=>$courseid);
+        $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3'=>$courseid, 'c4'=>$courseid, 'c5'=>$courseid, 'c6'=>$courseid);
         $sql = "";
         if ($mod) {
             $sql .= " AND cm.module IN (1,15,16,17,20,23)";
@@ -469,22 +469,22 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
                          '' AS actions
                          $sql_columns
                     FROM {course_modules} cm
-               LEFT JOIN {modules} m ON m.id = cm.module
+                    JOIN {modules} m ON m.id = cm.module
                LEFT JOIN (SELECT gi.iteminstance, gi.itemmodule, $grade_avg AS grade
                             FROM {grade_items} gi
                             JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
                        LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
                                     FROM {user_enrolments} ue
-                                    JOIN {enrol} e ON ue.enrolid = e.id
-                                GROUP BY ue.userid, e.courseid
-                                 ) enr ON enr.userid = g.userid AND enr.courseid = gi.courseid
+                                    JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = :c5
+                                GROUP BY ue.userid
+                                 ) enr ON enr.userid = g.userid
                                  $join_group_sql
                            WHERE gi.itemtype = 'mod' AND gi.courseid = :c1 $sql33
                         GROUP BY gi.iteminstance, gi.itemmodule
                          ) g ON g.iteminstance = cm.instance AND g.itemmodule = m.name
                LEFT JOIN (SELECT cm.coursemoduleid, COUNT(cm.id) AS completed
                             FROM {course_modules_completion} cm
-                            JOIN {course_modules} m ON m.id=cm.coursemoduleid
+                            JOIN {course_modules} m ON m.id = cm.coursemoduleid AND m.course = :c6
                                  $join_group_sql2
                            WHERE $completion $sql44
                         GROUP BY cm.coursemoduleid
@@ -493,9 +493,9 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
                             FROM {local_intelliboard_tracking}
                            WHERE userid IN (SELECT DISTINCT ra.userid
                                               FROM {context} ctx
-                                              JOIN {role_assignments} ra ON ctx.id = ra.contextid
+                                              JOIN {role_assignments} ra ON ctx.id = ra.contextid AND ra.roleid $sql1
                                                    $join_group_sql3
-                                             WHERE ctx.instanceid = :c4 AND ctx.contextlevel = 50 AND ra.roleid $sql1
+                                             WHERE ctx.instanceid = :c4 AND ctx.contextlevel = 50
                                             ) AND
                                  page='module' $sql55 AND courseid = :c2
                         GROUP BY param
@@ -842,7 +842,7 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3' => $courseid, 'c4' => $courseid);
+        $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3' => $courseid, 'c4' => $courseid, 'c5' => $courseid);
         $sql = "";
         if($search){
             $sql .= sprintf(
@@ -860,7 +860,7 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
         $grade_single = intelliboard_grade_sql();
         $completion = intelliboard_compl_sql("cmc.");
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ra.courseid');
-        $join_group_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c1.id');
+        $join_group_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ra.course_id');
 
         $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
         $sql .= get_filter_usersql("u.");
@@ -882,12 +882,6 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
             explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r7'
         );
         $params = array_merge($params,$sql_params);
-
-        if ($CFG->dbtype == 'pgsql') {
-            $group_concat = "string_agg(ra.roleid::character varying, ',')";
-        } else {
-            $group_concat = "GROUP_CONCAT(ra.roleid SEPARATOR ',')";
-        }
 
         $fields = "t.*";
         $from = "(SELECT CONCAT(ra.userid,'_',c.id) as id,
@@ -911,7 +905,6 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                          '' as actions
                     FROM (SELECT 
                             ra.userid, 
-                            CONCAT(',', $group_concat ,',') AS roles, 
                             e.instanceid AS courseid, 
                             MIN(ra.timemodified) AS timemodified 
                           FROM {role_assignments} ra, {context} e 
@@ -919,21 +912,22 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                           GROUP BY ra.userid, e.instanceid) ra
                     JOIN {user} u ON u.id = ra.userid
                     JOIN {course} c ON c.id = ra.courseid
+               LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
                LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid
-               LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
                LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
                
                LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
                             FROM {user_enrolments} ue
-                            JOIN {enrol} e ON ue.enrolid = e.id
-                        GROUP BY ue.userid, e.courseid
-               ) enr ON enr.userid = u.id AND enr.courseid = c.id
+                            JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = :c5
+                        GROUP BY ue.userid
+               ) enr ON enr.userid = u.id
 
                LEFT JOIN (SELECT cmc.userid, COUNT(DISTINCT cmc.id) as progress
-                            FROM {course_modules_completion} cmc, {course_modules} cm
-                           WHERE cm.visible = 1 AND cmc.coursemoduleid = cm.id $completion AND
-                                 cm.completion > 0 AND cm.course = :c1 GROUP BY cmc.userid
+                            FROM {course_modules_completion} cmc
+                            JOIN {course_modules} cm ON cm.visible = 1 AND cmc.coursemoduleid = cm.id AND cm.completion > 0 AND cm.course = :c1
+                           WHERE cm.id > 0 $completion 
+                        GROUP BY cmc.userid
                ) cmc ON cmc.userid = u.id
 
                LEFT JOIN (SELECT t.userid,t.courseid, sum(t.timespend) as timespend, sum(t.visits) as visits
@@ -941,7 +935,7 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                         GROUP BY t.courseid, t.userid
                ) l ON l.courseid = c.id AND l.userid = u.id
                          $join_group_sql
-                   WHERE ra.courseid = :c2 $sql $sql33) t";
+                   WHERE ra.courseid > 0 $sql $sql33) t";
         $where = "t.userid > 0";
 
         $this->set_sql($fields, $from, $where, $params);
@@ -950,30 +944,51 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
 
         /** Count course avg visits and avg time spent */
         if(get_config('local_intelliboard', 'table_set_ilg_c12') or get_config('local_intelliboard', 'table_set_ilg_c11')) {
-            $data = $DB->get_record_sql(
-                "SELECT t.courseid, AVG(t.spent) AS avg_timespend, AVG(t.visits) AS avg_visits
-                   FROM (SELECT c1.id AS courseid, ra.userid,
-                                CASE WHEN SUM(l.timespend) IS NULL THEN 0 ELSE SUM(l.timespend) END AS spent,
-                                CASE WHEN SUM(l.visits) IS NULL THEN 0 ELSE SUM(l.visits) END AS visits
-                           FROM {course} c1
-                           JOIN (SELECT ra1.userid, ctx.instanceid AS course_id
-                                   FROM {role_assignments} ra1
-                                   JOIN {context} ctx ON ctx.id = ra1.contextid AND ctx.contextlevel = 50 AND ctx.instanceid = :c4
-                                  WHERE ra1.id > 0 AND ra1.roleid {$sql6}
-                               GROUP BY ra1.userid, ctx.instanceid
-                                ) ra ON ra.course_id = c1.id
-                           {$join_group_sql1}
-                      LEFT JOIN {local_intelliboard_tracking} l ON l.courseid = c1.id AND ra.userid = l.userid
-                       GROUP BY c1.id, ra.userid
-                        ) t
-                   JOIN (SELECT ue.userid, MIN(ue.status) AS status
-                           FROM {user_enrolments} ue
-                           JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = :c3
-                       GROUP BY ue.userid
-                        ) enr ON enr.userid = t.userid
-                  WHERE t.courseid > 0 {$mainsql}
-               GROUP BY t.courseid", $params
-            );
+            $cache = cache::make('local_intelliboard', 'instructor_course_data');
+
+            if ($cache->has("avg_{$courseid}")) {
+                $data = json_decode($cache->get("avg_{$courseid}"));
+            } else {
+                $data = $DB->get_record_sql(
+                    "SELECT c.id,
+                        course_avg.spent AS avg_timespend,
+                        course_avg.visits AS avg_visits
+                   FROM {course} c
+                   JOIN (SELECT course_total.courseid,
+                                AVG(course_total.spent) AS spent,
+                                AVG(course_total.visits) AS visits
+                           FROM (SELECT l.courseid, l.userid,
+                                        CASE WHEN SUM(l.timespend) IS NULL THEN 0 ELSE SUM(l.timespend) END AS spent,
+                                        CASE WHEN SUM(l.visits) IS NULL THEN 0 ELSE SUM(l.visits) END AS visits
+                                   FROM (SELECT ue.userid, MIN(ue.status) AS status
+                                           FROM {user_enrolments} ue
+                                           JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = :c1
+                                       GROUP BY ue.userid
+                                        ) enr
+                                   JOIN (SELECT ra1.userid, ctx.instanceid AS course_id
+                                           FROM {role_assignments} ra1
+                                           JOIN {context} ctx ON ctx.id = ra1.contextid AND ctx.contextlevel = 50 AND ctx.instanceid = :c2
+                                          WHERE ra1.id > 0 AND ra1.roleid {$sql6}
+                                       GROUP BY ra1.userid, ctx.instanceid
+                                        ) ra ON ra.userid = enr.userid
+                                   JOIN {local_intelliboard_tracking} l ON enr.userid = l.userid
+                                   {$join_group_sql1}
+                                  WHERE l.courseid = :c3 {$mainsql}
+                               GROUP BY l.courseid, l.userid
+                                ) course_total
+                       GROUP BY course_total.courseid
+                        ) course_avg ON course_avg.courseid = c.id
+                  WHERE c.id = :c4", $params
+                );
+
+                if ($data) {
+                    $cachedata = json_encode(['avg_timespend' => $data->avg_timespend, 'avg_visits' => $data->avg_visits]);
+                } else {
+                    $cachedata = json_encode(['avg_timespend' => 0, 'avg_visits' => 0]);
+                }
+
+                $cache->set("avg_{$courseid}", $cachedata);
+            }
 
             if ($data) {
                 $this->course_avg_timespent = $data->avg_timespend;
