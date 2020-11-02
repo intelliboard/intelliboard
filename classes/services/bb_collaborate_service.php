@@ -121,37 +121,39 @@ class bb_collaborate_service {
             $transaction = $DB->start_delegated_transaction();
 
             foreach($attendees as $item) {
-                $row = new \stdClass();
-                $row->sessionuid = $sessionuid;
-                $row->useruid = $item['userId'];
-                $row->external_user_id = $item['externalUserId'];
-                $row->role = $item['role'];
-                $row->display_name = $item['displayName'];
-                $row->first_join_time = 0;
-                $row->last_left_time = 0;
-                $row->duration = 0;
-                $row->rejoins = -1;
+                if (isset($item['userId']) && isset($item['externalUserId'])) {
+                    $row = new \stdClass();
+                    $row->sessionuid = $sessionuid;
+                    $row->useruid = $item['userId'];
+                    $row->external_user_id = $item['externalUserId'];
+                    $row->role = $item['role'];
+                    $row->display_name = $item['displayName'];
+                    $row->first_join_time = 0;
+                    $row->last_left_time = 0;
+                    $row->duration = 0;
+                    $row->rejoins = -1;
 
-                foreach($item['attendance'] as $join) {
-                    $row->duration += $join['duration'];
-                    $row->rejoins += 1;
+                    foreach($item['attendance'] as $join) {
+                        $row->duration += $join['duration'];
+                        $row->rejoins += 1;
 
-                    if(
-                        strtotime($join['joined']) < $row->first_join_time or
-                        $row->first_join_time === 0
-                    ) {
-                        $row->first_join_time = strtotime($join['joined']);
+                        if(
+                            strtotime($join['joined']) < $row->first_join_time or
+                            $row->first_join_time === 0
+                        ) {
+                            $row->first_join_time = strtotime($join['joined']);
+                        }
+
+                        if(
+                            strtotime($join['left']) < $row->last_left_time or
+                            $row->last_left_time === 0
+                        ) {
+                            $row->last_left_time = strtotime($join['left']);
+                        }
                     }
 
-                    if(
-                        strtotime($join['left']) < $row->last_left_time or
-                        $row->last_left_time === 0
-                    ) {
-                        $row->last_left_time = strtotime($join['left']);
-                    }
+                    $DB->insert_record('local_intelliboard_bb_partic', $row);
                 }
-
-                $DB->insert_record('local_intelliboard_bb_partic', $row);
             }
 
             // Assuming the both inserts work, we get to the following line.

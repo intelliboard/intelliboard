@@ -423,7 +423,9 @@ class local_external_functions
             'course_custom_fields',
             'monitor90',
             'monitor91',
-            'monitor92'
+            'monitor92',
+            'intellicart_vendors',
+            'report232',
         ];
     }
     public function get_function($params = null)

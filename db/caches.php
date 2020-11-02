@@ -29,5 +29,11 @@ $definitions = [
     ],
     'reports_list' => [
         'mode' => cache_store::MODE_APPLICATION
+    ],
+    'instructor_course_data' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true,
+        'ttl' => 900 // 15 minutes
     ]
 ];

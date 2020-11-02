@@ -3047,7 +3047,7 @@ class local_intelliboard_external extends external_api {
                 (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'x.start.time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as starttime,
                 (SELECT s.value FROM {scorm_scoes_track} s WHERE (s.element = 'cmi.core.score.raw' OR s.element = 'cmi.score.raw') and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as score,
                 (SELECT s.value FROM {scorm_scoes_track} s WHERE (s.element = 'cmi.core.score.max' OR s.element = 'cmi.score.max') and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as max_score,
-                (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'cmi.core.lesson_status' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as status,
+                (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'cmi.completion_status' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as status,
                 (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'cmi.core.total_time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as totaltime,
                 (SELECT s.timemodified FROM {scorm_scoes_track} s WHERE element = 'cmi.core.total_time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as timemodified,
                 sk.completionscorerequired
@@ -7215,6 +7215,10 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->vendor_filter('lit.userid', 'lit.courseid', $params);
         $sql_join = $this->get_suspended_sql($params);
+        $sql_join_datefilter = '';
+        if($params->timestart && $params->timefinish) {
+            $sql_join_datefilter = "JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id AND (lil.timepoint BETWEEN {$params->timestart} AND {$params->timefinish})";
+        }
 
         return $this->get_report_data("
             SELECT
@@ -7269,6 +7273,7 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {course_categories} cc ON cc.id = c.category
               LEFT JOIN {user} u ON u.id=lit.userid
               $sql_join
+              $sql_join_datefilter
             WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter
             GROUP BY lit.courseid,lit.userid,u.id,c.id,cc.id $sql_having $sql_order", $params);
     }
@@ -13477,7 +13482,11 @@ class local_intelliboard_external extends external_api {
     public function report213($params) {
         global $CFG;
         if (!$params->custom2) {
-            return [];
+            $scorms = $this->get_course_scorms($params);
+            $params->custom2 = [];
+            foreach ($scorms as $scorm){
+                $params->custom2[] = $scorm->id;
+            }
         }
 
         $columns = array_merge(array(
@@ -13517,7 +13526,7 @@ class local_intelliboard_external extends external_api {
         }
 
         return $this->get_report_data("
-          SELECT DISTINCT CONCAT(u.id, '_', COALESCE(st.attempt, 0), '_', COALESCE(sq.id, 0)) AS uniqueid,
+          SELECT DISTINCT CONCAT(u.id, '_', COALESCE(st.attempt, 0), '_', COALESCE(sq.id, 0), '_', COALESCE(st.scormid, 0)) AS uniqueid,
                     c.fullname AS course,
                     s.name AS scorm,
                     st.scormid AS scormid,
@@ -20946,6 +20955,88 @@ class local_intelliboard_external extends external_api {
               WHERE cfc.component = 'core_course' AND cfc.area = 'course' AND cfc.contextid = :systemcontext
            ORDER BY cf.name",
             ['systemcontext' => context_system::instance()->id]
+        );
+    }
+
+    public function intellicart_vendors($params) {
+        global $DB;
+
+        return $DB->get_records('local_intellicart_vendors');
+    }
+
+    public function report232($params) {
+        $columns = array_merge([
+            "vendor_ic.vendors_names",
+            "vendor_ic.emails",
+            "vendor_ic.vendors_idnumbers",
+            "u.firstname",
+            "u.lastname",
+            "u.email",
+            "cc.name",
+            "c.fullname",
+            "ue.date_enrolled",
+            "ccom.timecompleted",
+            "lip.name",
+            "ch.payment_status"
+        ], $this->get_filter_columns($params));
+
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_having = $this->get_filter_sql($params, $columns, false);
+        $sql_order = $this->get_order_sql($params, $columns);
+
+
+        $sqlcoursefilter1 = $this->get_filter_in_sql($params->courseid, "e1.courseid");
+        $sql_filter = $this->get_filter_in_sql($params->courseid, "c.id");
+        $vendorsemailssql = get_operator('GROUP_CONCAT', 'DISTINCT vman.email', ['separator' => ', ']);
+        $vendorsnamessql = get_operator('GROUP_CONCAT', 'DISTINCT vnd.name', ['separator' => ', ']);
+        $vendorsidnumberssql = get_operator('GROUP_CONCAT', 'DISTINCT vnd.idnumber', ['separator' => ', ']);
+
+        if ($params->custom) {
+            $sql_filter .= $this->get_filterdate_sql($params, "ccom.timecompleted");
+        } else {
+            $sql_filter .= $this->get_filterdate_sql($params, "ue.date_enrolled");
+        }
+
+        $sqlvendorfilter = '';
+
+        if ($params->custom2) {
+            $sqlvendorfilter = $this->get_filter_in_sql($params->custom2, "vnd.id");;
+        }
+
+        return $this->get_report_data(
+            "SELECT CONCAT(lil.id, '_', c.id) AS id, vendor_ic.vendors_names, vendor_ic.emails AS company_emails,
+                    vendor_ic.vendors_idnumbers AS tenants_ids, u.firstname, u.lastname, u.email, cc.name AS category,
+                    c.fullname AS course, ue.date_enrolled, ccom.timecompleted, ch.payment_status AS status,
+                    CASE WHEN lip.name IS NULL THEN 'invoice' ELSE lip.name END AS payment_method
+                    {$sql_columns}
+               FROM {local_intellicart_logs} lil
+               JOIN {local_intellicart_relations} lir ON lir.productid = lil.instanceid AND lir.type = 'course'
+               JOIN (SELECT liv.instanceid, {$vendorsidnumberssql} AS vendors_idnumbers,
+                            {$vendorsnamessql} AS vendors_names, {$vendorsemailssql} AS emails
+                       FROM {local_intellicart_vrelations} liv
+                       JOIN {local_intellicart_vendors} vnd ON vnd.id = liv.vendorid
+                  LEFT JOIN (SELECT liu.instanceid, u.email
+                               FROM {local_intellicart_users} liu
+                               JOIN {user} u ON u.id = liu.userid
+                              WHERE liu.role = 'manager' AND liu.type = 'vendor'
+                            ) vman ON vman.instanceid = vnd.id
+                      WHERE liv.type = 'product' {$sqlvendorfilter}
+                   GROUP BY liv.instanceid
+                    ) vendor_ic ON vendor_ic.instanceid = lir.productid
+               JOIN {local_intellicart_checkout} ch ON ch.id = lil.checkoutid
+               JOIN {user} u ON u.id = lil.userid
+               JOIN {course} c ON c.id = lir.instanceid
+               JOIN {course_categories} cc ON cc.id = c.category
+          LEFT JOIN {local_intellicart_payments} lip ON lip.id = ch.paymentid
+          LEFT JOIN (SELECT ue1.userid, e1.courseid,
+                            CASE WHEN MIN(ue1.timestart) > 0 THEN MIN(ue1.timestart) ELSE MIN(ue1.timecreated) END AS date_enrolled
+                       FROM {user_enrolments} ue1
+                       JOIN {enrol} e1 ON e1.id = ue1.enrolid
+                      WHERE ue1.id > 0 {$sqlcoursefilter1}
+                   GROUP BY ue1.userid, e1.courseid
+                    ) ue ON ue.userid = u.id AND ue.courseid = c.id
+          LEFT JOIN {course_completions} ccom ON ccom.course = c.id AND ccom.userid = u.id
+              WHERE lil.type = 'product' {$sql_filter} {$sql_having} {$sql_order}", $params
         );
     }
 }

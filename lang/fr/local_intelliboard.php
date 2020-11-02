@@ -1011,3 +1011,5 @@ $string['goal_grade'] = 'Goal Grade';
 $string['importtrackingtask'] = 'Import Tracking Task';
 $string['compresstracking'] = 'Compress Tracking';
 $string['compresstracking_desc'] = 'Write Time Tracking data to file and transfer data to database with cron job (default: every 15 minutes)';
+$string['cachedef_instructor_course_data'] = 'Cache for course data';
+$string['cachedef_reports_list'] = 'Cache for reports list';

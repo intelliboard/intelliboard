@@ -456,7 +456,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
                 }
             }
 
-            if ($tracktotals) {
+            if (!empty($tracktotals)) {
                 $sessions = false;
                 $courses = false;
 
