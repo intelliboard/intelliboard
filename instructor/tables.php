@@ -909,7 +909,7 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                             MIN(ra.timemodified) AS timemodified 
                           FROM {role_assignments} ra, {context} e 
                           WHERE e.id = ra.contextid AND e.contextlevel = 50 AND ra.roleid $sql_roles
-                          GROUP BY ra.userid, e.instanceid) ra
+                          GROUP BY ra.userid) ra
                     JOIN {user} u ON u.id = ra.userid
                     JOIN {course} c ON c.id = ra.courseid
                LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
