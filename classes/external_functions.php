@@ -426,6 +426,8 @@ class local_external_functions
             'monitor92',
             'intellicart_vendors',
             'report232',
+            'general_lms_data',
+            'report233',
         ];
     }
     public function get_function($params = null)
