@@ -31,4 +31,4 @@ $config['app_url_us'] = 'https://us-app.intelliboard.net/';
 $config['app_url_eu'] = 'https://eu-app.intelliboard.net/';
 $config['app_url_au'] = 'https://au-app.intelliboard.net/';
 $config['app_url_ca'] = 'https://ca-app.intelliboard.net/';
-$config['app_url_cn'] = 'https://app-cn.intelliboard.net/';
+$config['app_url_cn'] = 'https://app.intelliboard.cn/';
