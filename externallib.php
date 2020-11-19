@@ -2379,7 +2379,7 @@ class local_intelliboard_external extends external_api {
                    s.grademethod AS scorm_grade_method,
                    l.visits AS visits_on_course
                    {$sql_columns}
-              FROM {scorm} s 
+              FROM {scorm} s
               JOIN {course} c ON c.id = s.course
               JOIN {modules} m ON m.name = 'scorm'
               JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = s.id
@@ -3445,7 +3445,7 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
                 LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = e.courseid
                 LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                LEFT JOIN (SELECT MAX(t.id) AS id, t.userid,t.courseid 
+                LEFT JOIN (SELECT MAX(t.id) AS id, t.userid,t.courseid
                         FROM
                             {local_intelliboard_tracking} t,
                             {local_intelliboard_logs} l
@@ -4721,11 +4721,14 @@ class local_intelliboard_external extends external_api {
             $sql_columns .= ", '0' AS timespend, '0' AS visits, '' AS last_access";
             $sql_join = "";
         } else {
-            $sql_columns .= ", l.timespend AS timespend, l.visits AS visits, l.last_access AS last_access";
+            $sql_columns .= ", l.timespend AS timespend, l.visits AS visits,
+                               CASE WHEN l.last_access IS NULL THEN mla.timeaccess ELSE l.last_access END AS last_access";
             $groupby .= ', l.timespend, l.visits, l.last_access';
 
+            $sql_mla_filter = "";
             if ($params->custom == 3) { // filter by last access
                 $sql3 = ($params->timestart) ? "WHERE " . $this->get_filterdate_sql($params, 't1.lastaccess', false) : '';
+                $sql_mla_filter = ($params->timestart) ? " AND " . $this->get_filterdate_sql($params, 'mla.timeaccess', false) : '';
             } elseif ($params->custom == 2) { // filter by time spent
                 $sql3 = "JOIN {local_intelliboard_logs} l1 ON l1.trackid = t1.id ";
                 $sql3 .= ($params->timestart) ? $this->get_filterdate_sql($params, 'l1.timepoint') : '';
@@ -4741,6 +4744,8 @@ class local_intelliboard_external extends external_api {
                                      $sql3
                                  GROUP BY t1.courseid, t1.userid
                          ) l ON l.userid = u.id AND l.courseid = c.id";
+            $sql_join .= "
+                JOIN {user_lastaccess} mla ON mla.userid = u.id AND mla.courseid = c.id $sql_mla_filter";
         }
 
         if ($params->custom == 1) { // filter by completed learners
@@ -9536,7 +9541,7 @@ class local_intelliboard_external extends external_api {
 
         while ($userdata = $gui->next_user()) {
             $user = $userdata->user;
-            
+
             if (!empty($users) && !in_array($user->id, $users)) {
                 continue;
             }
@@ -15951,7 +15956,7 @@ class local_intelliboard_external extends external_api {
                            LEFT JOIN {grade_grades} g ON g.itemid=gi.id AND g.userid != 2 AND g.rawgrade IS NOT NULL
                            $join_sql2
                         WHERE g.rawgrade IS NOT NULL $where $sql_vendor_filter1
-                        GROUP BY grade,quiz_id 
+                        GROUP BY grade,quiz_id
                        ", $this->params);
         }
 
@@ -18492,7 +18497,7 @@ class local_intelliboard_external extends external_api {
     }
     public function monitor34($params) {
         global $DB;
-        
+
         $sql_filter  = $this->get_filterdate_sql($params, "m.starttime");
         $sql_filter .= $this->get_teacher_sql($params, ["c.id" => "courses"]);
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
@@ -19905,7 +19910,7 @@ class local_intelliboard_external extends external_api {
         $assign_cohorts = [];
         $assign_categories = [];
         $assign_fields = [];
-        
+
         foreach ( $assigns as  $assign) {
             if ($assign->type == 'users') {
                 $assign_users[] = (int) $assign->instance;
@@ -19922,7 +19927,7 @@ class local_intelliboard_external extends external_api {
 
         if ($assign_fields) {
             $sql_arr = array();
-            
+
             foreach ($assign_fields as $key=>$field) {
                 $elem = explode("|", $field);
                 $fieldid = (int) $elem[0];
@@ -19933,7 +19938,7 @@ class local_intelliboard_external extends external_api {
             }
 
             $sql_filter = " AND (".implode(") OR (", $sql_arr) .")";
-            
+
             if ($list = $DB->get_records_sql(
                 "SELECT DISTINCT userid FROM {user_info_data} WHERE data <> '' $sql_filter", $this->params
             )) {
@@ -19965,7 +19970,7 @@ class local_intelliboard_external extends external_api {
             $result = $DB->get_records_sql(
                 "SELECT distinct ra.userid
                    FROM {role_assignments} ra, {context} ctx
-                  WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND 
+                  WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND
                         tx.instanceid IN ($assign_courses_list)",
                 $this->params
             );
@@ -21187,7 +21192,7 @@ class local_intelliboard_external extends external_api {
         return $DB->get_record_sql(
             "SELECT (SELECT COUNT(*) FROM {course}) AS total_num_courses,
                     (SELECT COUNT(*) FROM {user}) AS total_num_users,
-                    (SELECT COUNT(*) FROM {course_completions}) AS num_completed_learners,
+                    (SELECT COUNT(*) FROM {course_completions} WHERE timecompleted > 0) AS num_completed_learners,
                     (SELECT COUNT(*) FROM {course} WHERE visible = 1) AS num_active_courses,
                     (SELECT COUNT(ue.id)
                        FROM {user_enrolments} ue
@@ -21210,9 +21215,9 @@ class local_intelliboard_external extends external_api {
         if ($completion == 1) {
             return $completiondate ? true : false;
         }
-    
+
         $result = true;
-        
+
         // Only check for existence of tracks and return false if completionstatusrequired or completionscorerequired
         // this means that if only view is required we don't end up with a false state.
         if ($scorm->completionstatusrequired !== null ||
@@ -21244,7 +21249,7 @@ class local_intelliboard_external extends external_api {
                 ",
                 array($scorm->id, $userid, $attempt)
             );
-    
+
             if (!$tracks) {
                 return true;
             }
@@ -21268,7 +21273,7 @@ class local_intelliboard_external extends external_api {
 
         // Check for status.
         if ($scorm->completionstatusrequired !== null) {
-    
+
             // Get status.
             $statuses = array_flip(scorm_status_options());
             $nstatus = 0;
@@ -21283,7 +21288,7 @@ class local_intelliboard_external extends external_api {
                     $nstatus = 1;
                 }
             }
-    
+
             if (!empty($scorm->completionstatusallscos)) {
                 // Iterate over all scos and make sure each has a lesson_status.
                 $scos = $DB->get_records('scorm_scoes', array('scorm' => $scorm->id, 'scormtype' => 'sco'));
@@ -21314,13 +21319,13 @@ class local_intelliboard_external extends external_api {
             if ($completiongradeitemnumber != null && !$attemptscore > 0) {
                 $result = false;
             }
-        
+
             // Check for score.
             if ($scorm->completionscorerequired !== null && $scorm->completionscorerequired > $attemptscore) {
                 $result = false;
             }
         }
-    
+
         return $result;
     }
 
@@ -21347,6 +21352,52 @@ class local_intelliboard_external extends external_api {
                 }
             }
         }
+
+        return $data;
+    }
+
+    public function get_enrollments_sessions_completions($params)
+    {
+        global $DB, $CFG;
+
+        $groupfield = DBHelper::group_by_date_val('monthyear', 'l.timepoint');
+        $groupfield1 = DBHelper::group_by_date_val('monthyear', 'ue.timecreated');
+        $groupfield2 = DBHelper::group_by_date_val('monthyear', 'timecompleted');
+
+        $data = new stdClass();
+
+        if ($CFG->dbtype == 'mysqli' && !$params->sizemode) {
+            $sql_cache = ' SQL_NO_CACHE ';
+        } else {
+            $sql_cache = '';
+        }
+
+        $data->sessions = $DB->get_records_sql(
+            "SELECT {$sql_cache} MIN(l.timepoint) AS timepoint, {$groupfield} AS group_time,
+                    COUNT(DISTINCT t.userid) AS pointval
+               FROM {local_intelliboard_logs} l, {local_intelliboard_tracking} t
+              WHERE l.trackid = t.id
+           GROUP BY 2",
+            $this->params
+        );
+
+        $data->enrolments = $DB->get_records_sql(
+            "SELECT {$sql_cache} MIN(ue.timecreated) AS timepoint, {$groupfield1} AS group_time,
+                    COUNT(ue.userid) AS pointval
+               FROM {user_enrolments} ue
+               JOIN {enrol} e ON e.id = ue.enrolid
+           GROUP BY 2",
+            $this->params
+        );
+
+        $data->completions = $DB->get_records_sql(
+            "SELECT $sql_cache MIN(timecompleted) AS timepoint, {$groupfield2} AS group_time,
+                    COUNT(userid) AS pointval
+               FROM {course_completions}
+              WHERE timecompleted > 0
+           GROUP BY 2",
+            $this->params
+        );
 
         return $data;
     }
@@ -21445,6 +21496,74 @@ class local_intelliboard_external extends external_api {
                     {$sql_having}
                     {$sql_order}",
             $params
+        );
+    }
+
+    public function get_feedback_items($params)
+    {
+        global $DB;
+        if (!$params->courseid) {
+            return [];
+        }
+        $sql_filter = $this->get_filter_in_sql($params->courseid, 'mf.course');
+        return $DB->get_records_sql("SELECT mfi.* FROM {feedback} AS mf
+                                       JOIN {course} c ON c.id = mf.course
+                                       JOIN {feedback_item} AS mfi ON mfi.feedback = mf.id
+                                      WHERE mf.id > 0
+                                      {$sql_filter}
+                                   ORDER BY mfi.id", $this->params);
+    }
+
+    public function report234($params)
+    {
+        global $CFG;
+
+        $feedback_items = $this->get_feedback_items($params);
+        $columns = array(
+             "u.firstname",
+             "u.lastname",
+             "u.email"
+        );
+
+        $sql_columns = array(
+             "u.id",
+             "u.firstname",
+             "u.lastname",
+             "u.email"
+        );
+        if ($feedback_items) {
+            foreach ($feedback_items as $item) {
+                $sql_columns[] = "
+                ( SELECT value
+                    FROM {feedback_value} mfv
+               LEFT JOIN {feedback_completed} mfc ON mfc.id = mfv.completed
+                   WHERE mfv.item = {$item->id} AND mfc.userid = u.id
+                ) as question_{$item->id}";
+            }
+        }
+
+        $sql_columns = implode(", ", $sql_columns);
+
+        $sql_having = $this->get_filter_sql($params, $columns, true);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "mf.course");
+        $sql_filter .= $this->get_filterdate_sql($params, "mfc.timemodified");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_join = $this->get_suspended_sql($params);
+        $sql_columns_ext = $this->get_columns($params, []);
+
+        return $this->get_report_data(
+            "SELECT {$sql_columns} {$sql_columns_ext}
+               FROM {feedback} AS mf
+               JOIN {feedback_completed} mfc ON mfc.feedback = mf.id
+               JOIN {user} u ON mfc.userid = u.id
+               JOIN {course} c ON c.id = mf.course
+                    {$sql_join}
+              WHERE mf.id > 0 {$sql_filter} GROUP BY u.id {$sql_having} {$sql_order}",
+            $this->params,
+            true
         );
     }
 }
