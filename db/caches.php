@@ -35,5 +35,12 @@ $definitions = [
         'simplekeys' => true,
         'simpledata' => true,
         'ttl' => 900 // 15 minutes
+    ],
+    'tracking' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'requirelockingwrite' => true,
+        'overrideclass' => 'local_intelliboard\tools\cache_application',
+        'overrideclassfile ' => 'local/intelliboard/classes/tools/cache_application.php'
     ]
 ];
