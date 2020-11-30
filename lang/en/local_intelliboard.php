@@ -1014,6 +1014,11 @@ $string['privacy:metadata:local_intelliboard_trns_m:timemodified'] = 'Timestamp 
 $string['goal_grade'] = 'Goal Grade';
 $string['importtrackingtask'] = 'Import Tracking Task';
 $string['compresstracking'] = 'Compress Tracking';
-$string['compresstracking_desc'] = 'Write Time Tracking data to file and transfer data to database with cron job (default: every 15 minutes)';
+$string['compresstracking_desc'] = 'Write Time Tracking data to file or redis and transfer data to database with cron job (default: every 15 minutes)';
 $string['cachedef_instructor_course_data'] = 'Cache for course data';
 $string['cachedef_reports_list'] = 'Cache for reports list';
+$string['do_not_use_compresstracking'] = 'Do not use Compress Tracking';
+$string['cache_compresstracking'] = 'Save to Moodle Cache';
+$string['file_compresstracking'] = 'Save to MoodleData';
+$string['cachedef_tracking'] = 'Intelliboard Tracking data';
+

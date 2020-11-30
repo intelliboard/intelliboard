@@ -17,15 +17,34 @@
 /**
  * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
- *
  * @package    local_intelliboard
- * @copyright  2017 IntelliBoard, Inc
+ * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    https://intelliboard.net/
+ * @website    http://intelliboard.net/
  */
 
-$plugin->version = 2020113004;
-$plugin->requires = 2011120500;
-$plugin->release = '7.0.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+namespace local_intelliboard\tools;
+
+use cache_application as moodle_cache_application;
+
+class cache_application extends moodle_cache_application {
+
+    public function purge() {
+        return true;
+    }
+
+    public function delete_many(array $keys, $recurse = true) {
+        return true;
+    }
+
+    public function get_all_keys() {
+        $rawkeys = $this->get_store()->find_all();
+        $keys = [];
+        foreach ($rawkeys as $rawkey) {
+            $keys[] = explode('-', $rawkey)[0];
+        }
+
+        return $keys;
+    }
+
+}

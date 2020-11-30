@@ -107,7 +107,12 @@ if($ADMIN->fulltree){
         $title = new lang_string('compresstracking', 'local_intelliboard');
         $description = new lang_string('compresstracking_desc', 'local_intelliboard');
         $default = false;
-        $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+        $options = array(
+            local_intelliboard\tools\compress_tracking::TYPE_LIVE => new lang_string('do_not_use_compresstracking', 'local_intelliboard'),
+            local_intelliboard\tools\compress_tracking::TYPE_CACHE => new lang_string('cache_compresstracking', 'local_intelliboard'),
+            local_intelliboard\tools\compress_tracking::TYPE_FILE => new lang_string('file_compresstracking', 'local_intelliboard')
+        );
+        $setting = new admin_setting_configselect($name, $title, $description, 0, $options);
         $settings->add($setting);
 
         $settings->add(new admin_setting_heading('local_intelliboard/advanced', new lang_string('adv_settings', 'local_intelliboard'), ''));
