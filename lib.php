@@ -262,7 +262,6 @@ function local_intelliboard_get_regexes(){
 
 function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparameters = []) {
     global $CFG, $PAGE, $SITE, $DB, $USER;
-    require_once($CFG->dirroot .'/local/intelliboard/classes/repositories/tracking_storage_repository.php');
 
     $version = get_config('local_intelliboard', 'version');
     $enabled = get_config('local_intelliboard', 'enabled');
@@ -271,7 +270,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
     $trackadmin = get_config('local_intelliboard', 'trackadmin');
     $trackpoint = get_config('local_intelliboard', 'trackpoint');
     $intelliboardMediaTrack = get_config('local_intelliboard', 'trackmedia');
-    $compresstracking = get_config('local_intelliboard', 'compresstracking');
+    $compresstrackingtype = get_config('local_intelliboard', 'compresstracking');
     $path = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
 
     if (strpos($path,'cron.php') !== false) {
@@ -294,76 +293,9 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
         }
 
         if (!empty($intelliboardPage) and !empty($intelliboardParam) and !empty($intelliboardTime)) {
-
-            if ($compresstracking) {
-                $trackingstorage = new local_intelliboard\repositories\tracking_storage_repository($USER->id);
-                $last_access = get_user_preferences('localintelliboardtracking_lastaccess', 0, $USER);
-
-                if ($last_access <= (time() - $intelliboardTime)) {
-                    $data = new stdClass();
-                    if (!$ajaxRequest) {
-                        $userDetails = (object)local_intelliboard_user_details();
-                        $courseid = 0;
-                        if ($intelliboardPage == "module") {
-                            $courseid = $DB->get_field_sql("SELECT c.id FROM {course} c, {course_modules} cm WHERE c.id = cm.course AND cm.id = $intelliboardParam");
-                        } elseif ($intelliboardPage == "course") {
-                            $courseid = $intelliboardParam;
-                        }
-                        $data->courseid = $courseid;
-                        $data->useragent = $userDetails->useragent;
-                        $data->useros = $userDetails->useros;
-                        $data->userlang = $userDetails->userlang;
-                        $data->userip = $userDetails->userip;
-                        $data->firstaccess = time();
-                        $data->visits = 1;
-                    }
-
-                    $data->userid = $USER->id;
-                    $data->page = $intelliboardPage;
-                    $data->param = $intelliboardParam;
-                    $data->timespend = $intelliboardTime;
-                    $data->lastaccess = time();
-                    $data->table = 'tracking';
-                    $data->ajaxrequest = $ajaxRequest;
-
-                    $trackingstorage->save_data(json_encode($data));
-
-                    set_user_preference('localintelliboardtracking_lastaccess', time(), $USER);
-
-                    $tracklogs = get_config('local_intelliboard', 'tracklogs');
-                    $trackdetails = get_config('local_intelliboard', 'trackdetails');
-                    $tracktotals = get_config('local_intelliboard', 'tracktotals');
-
-                    $currentstamp = strtotime('today');
-                    if ($tracklogs) {
-                        $log = new stdClass();
-                        $log->visits = (!$ajaxRequest) ? 1 : 0;
-                        $log->timespend = $intelliboardTime;
-                        $log->timepoint = $currentstamp;
-                        $log->table = 'logs';
-                        $log->ajaxrequest = $ajaxRequest;
-                        $log->userid = $USER->id;
-                        $log->page = $intelliboardPage;
-                        $log->param = $intelliboardParam;
-                        $trackingstorage->save_data(json_encode($log));
-
-
-                        if ($version >= 2017072300 and $trackdetails) {
-                            $currenthour = date('G');
-                            $detail = new stdClass();
-                            $detail->visits = (!$ajaxRequest) ? 1 : 0;
-                            $detail->timespend = $intelliboardTime;
-                            $detail->timepoint = $currenthour;
-                            $detail->currentstamp = $currentstamp;
-                            $detail->table = 'details';
-                            $detail->ajaxrequest = $ajaxRequest;
-                            $detail->userid = $USER->id;
-                            $detail->page = $intelliboardPage;
-                            $detail->param = $intelliboardParam;
-                            $trackingstorage->save_data(json_encode($detail));
-                        }
-                    }
-                }
+            if ($compresstrackingtype > 0) {
+                $storage = local_intelliboard\tools\compress_tracking::getStorage($compresstrackingtype);
+                $storage->saveData($ajaxRequest, $intelliboardTime, $intelliboardPage, $intelliboardParam);
             } else {
                 if ($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')) {
                     if ($intelliboardMediaTrack) {
@@ -455,6 +387,8 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
                     }
                 }
             }
+            $currentstamp = strtotime('today');
+            $tracktotals = get_config('local_intelliboard', 'tracktotals');
 
             if (!empty($tracktotals)) {
                 $sessions = false;
