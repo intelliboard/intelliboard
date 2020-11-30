@@ -18,29 +18,33 @@
  * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
  * @package    local_intelliboard
- * @copyright  2019 IntelliBoard, Inc
+ * @copyright  2020 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    http://intelliboard.net/
  */
 
-$definitions = [
-    'bb_collaborate_access_token' => [
-        'mode' => cache_store::MODE_APPLICATION
-    ],
-    'reports_list' => [
-        'mode' => cache_store::MODE_APPLICATION
-    ],
-    'instructor_course_data' => [
-        'mode' => cache_store::MODE_APPLICATION,
-        'simplekeys' => true,
-        'simpledata' => true,
-        'ttl' => 900 // 15 minutes
-    ],
-    'tracking' => [
-        'mode' => cache_store::MODE_APPLICATION,
-        'simplekeys' => true,
-        'requirelockingwrite' => true,
-        'overrideclass' => 'local_intelliboard\tools\cache_application',
-        'overrideclassfile ' => 'local/intelliboard/classes/tools/cache_application.php'
-    ]
-];
+namespace local_intelliboard\tools;
+
+use cache_application as moodle_cache_application;
+
+class cache_application extends moodle_cache_application {
+
+    public function purge() {
+        return true;
+    }
+
+    public function delete_many(array $keys, $recurse = true) {
+        return true;
+    }
+
+    public function get_all_keys() {
+        $rawkeys = $this->get_store()->find_all();
+        $keys = [];
+        foreach ($rawkeys as $rawkey) {
+            $keys[] = explode('-', $rawkey)[0];
+        }
+
+        return $keys;
+    }
+
+}

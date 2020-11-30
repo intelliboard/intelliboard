@@ -582,7 +582,7 @@ if($action == 'get_total_students'){
 
     $html = '';
     foreach($enrolled_users as $user){
-        $html .= '<li><a href="#" dava-value="'.$user->id.'">'.fullname($user).'</a></li>';
+        $html .= '<li><a href="#" data-value="'.$user->id.'">'.fullname($user).'</a></li>';
     }
 
     die(json_encode(array('items'=>$html)));
