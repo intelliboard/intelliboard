@@ -4730,9 +4730,11 @@ class local_intelliboard_external extends external_api {
             $sql_columns .= ", '0' AS timespend, '0' AS visits, '' AS last_access";
             $sql_join = "";
         } else {
-            $sql_columns .= ", l.timespend AS timespend, l.visits AS visits,
+            $sql_columns .= ", CASE WHEN l.timespend IS NULL THEN 0 ELSE l.timespend END AS timespend,
+                               CASE WHEN l.visits IS NULL THEN 0 ELSE l.visits END AS visits,
                                CASE WHEN l.last_access IS NULL THEN mla.timeaccess ELSE l.last_access END AS last_access";
             $groupby .= ', l.timespend, l.visits, l.last_access, mla.timeaccess';
+            $counttrackingselectsql = 'SUM(t1.timespend) AS timespend, SUM(t1.visits) AS visits, MAX(t1.lastaccess) AS last_access';
 
             $sql_mla_filter = "";
             if ($params->custom == 3) { // filter by last access
@@ -4740,15 +4742,14 @@ class local_intelliboard_external extends external_api {
                 $sql_mla_filter = ($params->timestart) ? " AND " . $this->get_filterdate_sql($params, 'mla.timeaccess', false) : '';
             } elseif ($params->custom == 2) { // filter by time spent
                 $sql3 = "JOIN {local_intelliboard_logs} l1 ON l1.trackid = t1.id ";
+                $counttrackingselectsql = 'SUM(l1.timespend) AS timespend, SUM(l1.visits) AS visits, MAX(t1.lastaccess) AS last_access';
                 $sql3 .= ($params->timestart) ? $this->get_filterdate_sql($params, 'l1.timepoint') : '';
             }
 
             $sql_join = "LEFT JOIN (
                                    SELECT userid,
                                           courseid,
-                                          SUM(t1.timespend) AS timespend,
-                                          SUM(t1.visits) AS visits,
-                                          MAX(t1.lastaccess) AS last_access
+                                          {$counttrackingselectsql}
                                      FROM {local_intelliboard_tracking} t1
                                      $sql3
                                  GROUP BY t1.courseid, t1.userid
