@@ -91,12 +91,14 @@ function intelliboardMedia(){
 	var frames = document.querySelectorAll('iframe');
 	if (frames.length) {
 		frames.forEach(function(frame) {
-			var elements = frame.contentWindow.document.querySelectorAll('audio,video');
-			if (elements.length) {
-				elements.forEach(function(element) {
-					media.push(element);
-				});
-			}
+			try {
+				var elements = frame.contentWindow.document.querySelectorAll('audio,video');
+				if (elements.length) {
+					elements.forEach(function(element) {
+						media.push(element);
+					});
+				}
+			} catch (e) {}
 		});
 	}
 	if (internal.length) {

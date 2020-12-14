@@ -87,7 +87,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
         $name = get_string('ianalytics', 'local_intelliboard');
         $url = new moodle_url($CFG->wwwroot.'/local/intelliboard/index.php?action=sso');
         $nav->add($name, $url);
-        $node = $mynode->add($name, $url, 0, null, 'intelliboard_admin');
+        $node = $mynode->add($name, $url, 0, null, 'intelliboard_admin', new pix_icon('i/pie_chart', '', 'local_intelliboard'));
         $node->showinflatnavigation = true;
     }
 
@@ -101,13 +101,13 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
 				if($courses = enrol_get_users_courses($USER->id)) {
 					$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
 					$nav->add($name, $url);
-					$node = $mynode->add($name, $url, 0, null, 'intelliboard_student');
+					$node = $mynode->add($name, $url, 0, null, 'intelliboard_student', new pix_icon('i/line_chart', '', 'local_intelliboard'));
 					$node->showinflatnavigation = true;
 				}
 			} else {
 				$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
 				$nav->add($name, $url);
-				$node = $mynode->add($name, $url, 0, null, 'intelliboard_student');
+				$node = $mynode->add($name, $url, 0, null, 'intelliboard_student', new pix_icon('i/line_chart', '', 'local_intelliboard'));
 				$node->showinflatnavigation = true;
 			}
 		}
@@ -132,7 +132,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
 						$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/instructor/index.php');
 						$nav->add($name, $url);
 
-						$node = $mynode->add($name, $url, 0, null, 'intelliboard_instructor');
+						$node = $mynode->add($name, $url, 0, null, 'intelliboard_instructor', new pix_icon('i/area_chart', '', 'local_intelliboard'));
 						$node->showinflatnavigation = true;
 					}
 				}
@@ -145,7 +145,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
 			$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/competencies/index.php');
 			$nav->add($name, $url);
 
-			$node = $mynode->add($name, $url, 0, null, 'intelliboard_competency');
+			$node = $mynode->add($name, $url, 0, null, 'intelliboard_competency', new pix_icon('i/bar_chart', '', 'local_intelliboard'));
 			$node->showinflatnavigation = true;
 		}
 
@@ -159,7 +159,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
                 $url = new moodle_url('/local/intelliboard/attendance/index.php');
                 $nav->add($name, $url);
 
-                $node = $mynode->add($name, $url, 0, null, 'intelliboard_attendance');
+                $node = $mynode->add($name, $url, 0, null, 'intelliboard_attendance', new pix_icon('i/book', '', 'local_intelliboard'));
                 $node->showinflatnavigation = true;
             } else {
                 // show attendance in course navigation
@@ -523,6 +523,16 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
 
         return true;
     }
+}
+
+function local_intelliboard_get_fontawesome_icon_map() {
+    return array(
+        'local_intelliboard:i/pie_chart' => 'fa-pie-chart',
+        'local_intelliboard:i/line_chart' => 'fa-line-chart',
+        'local_intelliboard:i/area_chart' => 'fa-area-chart',
+        'local_intelliboard:i/bar_chart' => 'fa-bar-chart',
+        'local_intelliboard:i/book' => 'fa-book',
+    );
 }
 
 function local_intelliboard_init()
