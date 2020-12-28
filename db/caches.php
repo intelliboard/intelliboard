@@ -41,6 +41,6 @@ $definitions = [
         'simplekeys' => true,
         'requirelockingwrite' => true,
         'overrideclass' => 'local_intelliboard\tools\cache_application',
-        'overrideclassfile ' => 'local/intelliboard/classes/tools/cache_application.php'
+        'overrideclassfile' => 'local/intelliboard/classes/tools/cache_application.php'
     ]
 ];

@@ -1006,6 +1006,101 @@ define(["jquery"], function(jQuery) {
             weekAbbreviation: "Wk",
             scrollTitle: "Scroll to increment",
             toggleTitle: "Click to toggle"
+        },
+        de: {
+            weekdays: {
+                shorthand: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+                longhand: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"]
+            },
+            months: {
+                shorthand: ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"],
+                longhand: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
+            },
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+            firstDayOfWeek: 0,
+            weekAbbreviation: "KW",
+            rangeSeparator: " bis ",
+            scrollTitle: "Zum Ändern scrollen",
+            toggleTitle: "Zum Umschalten klicken"
+        },
+        es: {
+            weekdays: {
+                shorthand: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+                longhand: ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
+            },
+            months: {
+                shorthand: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
+                longhand: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+            },
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+            firstDayOfWeek: 0,
+            ordinal: function(e) {
+                return "º";
+            }
+        },
+        fr: {
+            weekdays: {
+                shorthand: ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"],
+                longhand: ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]
+            },
+            months: {
+                shorthand: ["Janv", "Févr", "Mars", "Avr", "Mai", "Juin", "Juil", "Août", "Sept", "Oct", "Nov", "Déc"],
+                longhand: ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+            },
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+            firstDayOfWeek: 0,
+            ordinal: function(e) {
+                if (e > 1) return "ème";
+
+                return "er";
+            },
+            weekAbbreviation: "Sem",
+            rangeSeparator: " au ",
+            scrollTitle: "Défiler pour augmenter la valeur",
+            toggleTitle: "Cliquer pour basculer"
+        },
+        it: {
+            weekdays: {
+                shorthand: ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"],
+                longhand: ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"]
+            },
+            months: {
+                shorthand: ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"],
+                longhand: ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
+            },
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+            firstDayOfWeek: 0,
+            ordinal: function(e) {
+                return "°";
+            },
+            weekAbbreviation: "Se",
+            scrollTitle: "Scrolla per aumentare",
+            toggleTitle: "Clicca per cambiare"
+        },
+        ja: {
+            weekdays: {
+                shorthand: ["日", "月", "火", "水", "木", "金", "土"],
+                longhand: ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"]
+            },
+            months: {
+                shorthand: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+                longhand: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
+            },
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+            firstDayOfWeek: 0
+        },
+        pt: {
+            weekdays: {
+                shorthand: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+                longhand: ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
+            },
+            months: {
+                shorthand: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"],
+                longhand: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+            },
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+            firstDayOfWeek: 0,
+            rangeSeparator: " até "
         }
     }, flatpickr.l10ns.default = Object.create(flatpickr.l10ns.en), flatpickr.localize = function(e) {
         return _extends(flatpickr.l10ns.default, e || {})

@@ -63,7 +63,7 @@ function intelliboard_data($type, $userid, $showing_user) {
 
         $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
 
-        $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $query = "SELECT a.id, a.name, a.duedate, c.id AS course_id, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
                     FROM {course} c, {assign} a
                         LEFT JOIN {modules} m ON m.name = 'assign'
@@ -112,7 +112,7 @@ function intelliboard_data($type, $userid, $showing_user) {
             $params['timefinish'] = $timefinish;
         }
         $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
-        $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
 
         $query = "SELECT gi.id, a.name, a.timeclose, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
                   FROM {course} c, {quiz} a
@@ -140,7 +140,7 @@ function intelliboard_data($type, $userid, $showing_user) {
 
         $grade_single = intelliboard_grade_sql(
             false, null, 'g.',
-            get_config('local_intelliboard', 'scale_percentage_round'), 'gi.',
+            clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT), 'gi.',
             !get_config('local_intelliboard', 'scale_real')
         );
 
@@ -254,8 +254,8 @@ function intelliboard_data($type, $userid, $showing_user) {
         $params['userid5'] = $userid;
         $params['userid6'] = $userid;
 
-        $grade_single = intelliboard_grade_sql(false, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
-        $grade_avg = intelliboard_grade_sql(true, null, 'g.', get_config('local_intelliboard', 'scale_percentage_round'));
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
+        $grade_avg = intelliboard_grade_sql(true, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $completion = intelliboard_compl_sql("cmc.");
 
         $teacher_roles = get_config('local_intelliboard', 'filter10');

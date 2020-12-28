@@ -709,7 +709,7 @@ class local_intelliboard_external extends external_api {
       if ($params->userfilter == 1) {
         $sql_filter = ($coursefilter) ? $this->get_filter_in_sql($params->courseid, "e.courseid") : '';
 
-        $sql = "SELECT ue.userid, e.courseid FROM {user_enrolments} ue, {enrol} e WHERE e.id = ue.enrolid $sql_enrol $sql_filter GROUP BY ue.userid, e.courseid";
+        $sql = "SELECT ue.userid, e.courseid FROM {user_enrolments} ue, {enrol} e WHERE e.id = ue.enrolid AND ue.status = 0 $sql_enrol $sql_filter GROUP BY ue.userid, e.courseid";
       } elseif ($params->userfilter == 2) {
         $sql_filter = ($coursefilter) ? $this->get_filter_in_sql($params->courseid, "e.courseid") : '';
 
@@ -1012,6 +1012,8 @@ class local_intelliboard_external extends external_api {
 
         if ($params->custom3 == 1) {
             $sql_filter .= $this->get_filterdate_sql($params, 'l.firstaccess');
+        } elseif ($params->custom3 == 2) {
+            $sql_filter .= $this->get_filterdate_sql($params, 'cmc.completion_date');
         } else {
             $sql_filter .= $this->get_filterdate_sql($params, 'cm.added');
         }
@@ -1039,7 +1041,7 @@ class local_intelliboard_external extends external_api {
                       WHERE page='module' {$userIdFilter1}
                    GROUP BY param
                     ) l ON l.param = cm.id
-          LEFT JOIN (SELECT coursemoduleid, COUNT(id) AS num_compl
+          LEFT JOIN (SELECT coursemoduleid, COUNT(id) AS num_compl, timemodified as completion_date
                        FROM {course_modules_completion}
                       WHERE id > 0 {$completion} {$userIdFilter2}
                    GROUP BY coursemoduleid
@@ -3067,6 +3069,7 @@ class local_intelliboard_external extends external_api {
             WHERE u.id > 0 $sql_filter
             GROUP BY u.id $sql_having $sql_order", $params);
     }
+
     public function get_scormattempts($params)
     {
         global $DB;
@@ -3079,7 +3082,10 @@ class local_intelliboard_external extends external_api {
                 (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'x.start.time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as starttime,
                 (SELECT s.value FROM {scorm_scoes_track} s WHERE (s.element = 'cmi.core.score.raw' OR s.element = 'cmi.score.raw') and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as score,
                 (SELECT s.value FROM {scorm_scoes_track} s WHERE (s.element = 'cmi.core.score.max' OR s.element = 'cmi.score.max') and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as max_score,
-                (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'cmi.completion_status' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as status,
+                 CASE WHEN (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'cmi.completion_status' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) IS NOT NULL
+                    THEN (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'cmi.completion_status' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt)
+                    ELSE (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'cmi.core.lesson_status' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt)
+                    END as status,
                 (SELECT s.value FROM {scorm_scoes_track} s WHERE s.element = 'cmi.core.total_time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as totaltime,
                 (SELECT s.timemodified FROM {scorm_scoes_track} s WHERE element = 'cmi.core.total_time' and s.userid = sst.userid and s.scormid = sst.scormid and s.attempt = sst.attempt) as timemodified,
                 sk.completionscorerequired
@@ -4880,6 +4886,8 @@ class local_intelliboard_external extends external_api {
 
     public function report85($params)
     {
+        global $DB;
+
         $columns = array_merge(array(
             "u.firstname",
             "u.lastname",
@@ -4901,18 +4909,44 @@ class local_intelliboard_external extends external_api {
             $sql_filter .= " AND l1.userid IN (SELECT DISTINCT userid FROM {role_assignments} WHERE userid > 0 $sql)";
         }
 
-        return $this->get_report_data("
+        $sql_filter2 = $this->get_filterdate_sql($params, "l1.timecreated");
+        $data = $DB->get_records_sql("SELECT
+                                                   l1.id,
+                                                   l1.userid,
+                                                   l1.timecreated AS loggedout
+                                            FROM {logstore_standard_log} l1
+                                            WHERE l1.action = 'loggedout' AND l1.contextid=1 $sql_filter2 ORDER BY l1.id ASC", $this->params);
+
+        $loggedouts = array();
+        foreach ($data as $item) {
+            $loggedouts[$item->userid][] = $item;
+        }
+
+        $data = $this->get_report_data("
             SELECT l1.id,
                u.firstname,
                u.lastname,
                u.timecreated AS registered,
                l1.userid,
-               l1.timecreated AS loggedin,
-               (SELECT l2.timecreated FROM {logstore_standard_log} l2 WHERE l2.userid = l1.userid and l2.action = 'loggedout' and l2.id > l1.id LIMIT 1) AS loggedout
+               l1.timecreated AS loggedin
                $sql_columns
             FROM {logstore_standard_log} l1
                 JOIN {user} u ON u.id = l1.userid
-            WHERE l1.action = 'loggedin' $sql_filter $sql_having $sql_order", $params);
+            WHERE l1.action = 'loggedin' AND l1.contextid=1 $sql_filter $sql_having $sql_order", $params, false);
+
+        foreach ($data as &$item) {
+            $item->loggedout = null;
+            if (isset($loggedouts[$item->userid])) {
+                foreach ($loggedouts[$item->userid] as $loggedout) {
+                    if ($loggedout->id > $item->id) {
+                        $item->loggedout = $loggedout->loggedout;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return array("data" => $data);
     }
 
     public function report87($params)
@@ -7803,27 +7837,13 @@ class local_intelliboard_external extends external_api {
             "temp.saturday_percent",
         ), $this->get_filter_columns($params));
         $datefilter = '';
-
         if($params->timestart && $params->timefinish) {
             $datefilter = "AND (lil.timepoint BETWEEN {$params->timestart} AND {$params->timefinish})";
         }
 
         $sql_columns1 = $this->get_columns($params, ["u.id"]);
-        $sql_columns2 = $this->get_columns($params, ["u.id"]);
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
-
-        $sql_filter1 = $this->get_teacher_sql($params, ["c.id" => "courses", "u.id" => "users"]);
-        $sql_filter1 .= $this->get_filter_in_sql($params->courseid, "lit.courseid");
-        $sql_filter1 .= $this->get_filter_in_sql($params->users, "lit.userid");
-        $sql_filter1 .= $this->get_filter_user_sql($params, "u.");
-        $sql_filter1 .= $this->get_filter_course_sql($params, "c.");
-
-        $sql_filter2 = $this->get_teacher_sql($params, ["c.id" => "courses", "u.id" => "users"]);
-        $sql_filter2 .= $this->get_filter_in_sql($params->courseid, "lit.courseid");
-        $sql_filter2 .= $this->get_filter_in_sql($params->users, "lit.userid");
-        $sql_filter2 .= $this->get_filter_user_sql($params, "u.");
-        $sql_filter2 .= $this->get_filter_course_sql($params, "c.");
 
         $sql_filter3 = $this->get_teacher_sql($params, ["c.id" => "courses", "u.id" => "users"]);
         $sql_filter3 .= $this->get_filter_in_sql($params->courseid, "lit.courseid");
@@ -7837,568 +7857,138 @@ class local_intelliboard_external extends external_api {
         $sql_filter5 .= $this->get_filter_in_sql($params->courseid, "lit.courseid");
         $sql_filter5 .= $this->get_filter_course_sql($params, "c.");
 
-        $sql_filter6 = $this->get_teacher_sql($params, ["c.id" => "courses", "u.id" => "users"]);
-        $sql_filter6 .= $this->get_filter_in_sql($params->courseid, "lit.courseid");
-        $sql_filter6 .= $this->get_filter_course_sql($params, "c.");
+        $sql_uc_filter = $this->get_teacher_sql($params, ["c.id" => "courses", "u.id" => "users"]);
+        $sql_uc_filter .= $this->get_filter_in_sql($params->courseid, "daystat.courseid");
+        $sql_uc_filter .= $this->get_filter_in_sql($params->users, "daystat.userid");
+        $sql_uc_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_uc_filter .= $this->get_filter_course_sql($params, "c.");
 
-        if ($CFG->dbtype == 'pgsql') {
-            if($params->custom == 1){
+        if($params->custom == 1){
                 $time_of_day = "CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
-                                    CASE WHEN lid.timepoint>=6 AND lid.timepoint<12 THEN 2 ELSE
-                                        CASE WHEN lid.timepoint>=12 AND lid.timepoint<17 THEN 3 ELSE
-                                          CASE WHEN lid.timepoint>=17 AND lid.timepoint<=23 THEN 4 ELSE 0 END END END END";
+                                  CASE WHEN lid.timepoint>=6 AND lid.timepoint<12 THEN 2 ELSE
+                                    CASE WHEN lid.timepoint>=12 AND lid.timepoint<17 THEN 3 ELSE
+                                      CASE WHEN lid.timepoint>=17 AND lid.timepoint<=23 THEN 4 ELSE 0 END END END END";
+                $filter_by_daytime = $time_of_day;
 
-            }elseif($params->custom == 2){
+        }elseif($params->custom == 2){
                 $time_of_day = "CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
-                                    CASE WHEN lid.timepoint>=6 AND lid.timepoint<12 THEN 2 ELSE
-                                        CASE WHEN lid.timepoint>=12 AND lid.timepoint<17 THEN 3 ELSE
-                                          CASE WHEN lid.timepoint>=17 AND lid.timepoint<=23 THEN 4 ELSE 0 END END END END";
-                if(empty($sql_having)){
-                    $sql_having = " HAVING temp.time_of_day=0";
-                }else{
-                    $having_request = str_replace(' HAVING ', '',$sql_having);
-                    $sql_having = " HAVING (".$having_request.") AND temp.time_of_day=0";
-                }
-
-            }else{
-                $time_of_day = "CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
-                                    CASE WHEN lid.timepoint>=6 AND lid.timepoint<9 THEN 2 ELSE
-                                      CASE WHEN lid.timepoint>=9 AND lid.timepoint<12 THEN 3 ELSE
-                                        CASE WHEN lid.timepoint>=12 AND lid.timepoint<15 THEN 4 ELSE
-                                          CASE WHEN lid.timepoint>=15 AND lid.timepoint<18 THEN 5 ELSE
-                                            CASE WHEN lid.timepoint>=18 AND lid.timepoint<21 THEN 6 ELSE
-                                              CASE WHEN lid.timepoint>=21 AND lid.timepoint<=23 THEN 7 ELSE 0 END END END END END END END";
-            }
-
-            return $this->get_report_data("
-				SELECT * FROM (SELECT
-				  CAST(CONCAT(MAX(lit.id),MAX(lid.id)) AS bigint) AS id,
-				  u.id AS userid,
-				  u.firstname,
-				  u.lastname,
-				  u.email,
-				  u.idnumber,
-				  c.id AS courseid,
-				  c.fullname AS course,
-				  cc.name AS category_name,
-				  MAX(popular_day.day) AS most_active_day,
-				  MAX(popular_time.active_time_of_day) AS most_active_time_of_day,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 1 THEN lil.timespend ELSE 0 END) AS monday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 1 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS monday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 2 THEN lil.timespend ELSE 0 END) AS tuesday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 2 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS tuesday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 3 THEN lil.timespend ELSE 0 END) AS wednesday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 3 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS wednesday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 4 THEN lil.timespend ELSE 0 END) AS thursday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 4 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS thursday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 5 THEN lil.timespend ELSE 0 END) AS friday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 5 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS friday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 6 THEN lil.timespend ELSE 0 END) AS saturday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 6 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS saturday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 0 THEN lil.timespend ELSE 0 END) AS sunday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 0 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS sunday_percent,
-
-				  $time_of_day AS time_of_day
-				  $sql_columns1
-
-				FROM {local_intelliboard_tracking} lit
-				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-				  LEFT JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
-				  LEFT JOIN (SELECT
-								  lit.courseid,
-								  lit.userid,
-								  (CASE WHEN extract(dow from to_timestamp(lil.timepoint))=0 THEN 6 ELSE extract(dow from to_timestamp(lil.timepoint))-1 END) AS day,
-								  SUM(lil.timespend) AS sum_timespend,
-								  ROW_NUMBER () OVER (partition by lit.courseid, lit.userid ORDER BY SUM(lil.timespend) DESC) AS row_number
-
-								FROM {local_intelliboard_tracking} lit
-								  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-								  LEFT JOIN {course} c ON c.id = lit.courseid
-								  LEFT JOIN {user} u ON u.id=lit.userid
-								WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter3
-								GROUP BY lit.courseid,day,lit.userid
-							) AS popular_day ON popular_day.courseid=lit.courseid AND popular_day.userid=lit.userid AND popular_day.row_number=1
-
-				  LEFT JOIN (SELECT
-								 lit.courseid,
-								 lit.userid,
-								 $time_of_day AS active_time_of_day,
-								 SUM(lid.timespend) AS sum_timespend,
-								 ROW_NUMBER () OVER (partition by lit.courseid, lit.userid ORDER BY SUM(lid.timespend) DESC) AS row_number
-
-							   FROM {local_intelliboard_tracking} lit
-								 LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-								 LEFT JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
-								 LEFT JOIN {course} c ON c.id = lit.courseid
-								 LEFT JOIN {user} u ON u.id=lit.userid
-							   WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter5
-							   GROUP BY lit.courseid,active_time_of_day,lit.userid
-							) AS popular_time ON popular_time.courseid=lit.courseid AND popular_time.userid=lit.userid AND popular_time.row_number=1
-
-				  LEFT JOIN {course} c ON c.id = lit.courseid
-				  LEFT JOIN {course_categories} cc ON cc.id = c.category
-				  LEFT JOIN {user} u ON u.id=lit.userid
-
-				WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter1
-				GROUP BY lit.courseid,
-						lit.userid,
-						u.id,
-						c.id,
-						cc.id,
-						$time_of_day
-				HAVING $time_of_day > 0
-
-				UNION
-
-				SELECT
-				  MAX(lit.id) AS id,
-				  u.id AS userid,
-				  u.firstname,
-				  u.lastname,
-				  u.email,
-				  u.idnumber,
-				  c.id AS courseid,
-				  c.fullname AS course,
-				  cc.name AS category_name,
-				  MAX(popular_day.day) AS most_active_day,
-				  MAX(popular_time.active_time_of_day) AS most_active_time_of_day,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 1 THEN lil.timespend ELSE 0 END) AS monday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 1 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS monday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 2 THEN lil.timespend ELSE 0 END) AS tuesday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 2 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS tuesday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 3 THEN lil.timespend ELSE 0 END) AS wednesday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 3 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS wednesday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 4 THEN lil.timespend ELSE 0 END) AS thursday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 4 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS thursday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 5 THEN lil.timespend ELSE 0 END) AS friday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 5 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS friday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 6 THEN lil.timespend ELSE 0 END) AS saturday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 6 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS saturday_percent,
-
-				  SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 0 THEN lil.timespend ELSE 0 END) AS sunday_hours,
-				  ROUND(SUM(CASE WHEN extract(dow from to_timestamp(lil.timepoint)) = 0 THEN lil.timespend ELSE 0 END)*100/SUM(lil.timespend), 2) AS sunday_percent,
-
-				  0 AS time_of_day
-				  $sql_columns2
-
-				FROM {local_intelliboard_tracking} lit
-				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-				  JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
-				  LEFT JOIN (SELECT
-								  lit.courseid,
-								  lit.userid,
-								  (CASE WHEN extract(dow from to_timestamp(lil.timepoint))=0 THEN 6 ELSE extract(dow from to_timestamp(lil.timepoint))-1 END) AS day,
-								  SUM(lil.timespend) AS sum_timespend,
-								  ROW_NUMBER () OVER (partition by lit.courseid, lit.userid ORDER BY SUM(lil.timespend) DESC) AS row_number
-
-								FROM {local_intelliboard_tracking} lit
-								  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-								  LEFT JOIN {course} c ON c.id = lit.courseid
-								  LEFT JOIN {user} u ON u.id=lit.userid
-								WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter4
-								GROUP BY lit.courseid,day,lit.userid
-							) AS popular_day ON popular_day.courseid=lit.courseid AND popular_day.userid=lit.userid AND popular_day.row_number=1
-
-				  LEFT JOIN (SELECT
-								 lit.courseid,
-								 lit.userid,
-								 CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
-									CASE WHEN lid.timepoint>=6 AND lid.timepoint<9 THEN 2 ELSE
-									  CASE WHEN lid.timepoint>=9 AND lid.timepoint<12 THEN 3 ELSE
-										CASE WHEN lid.timepoint>=12 AND lid.timepoint<15 THEN 4 ELSE
-										  CASE WHEN lid.timepoint>=15 AND lid.timepoint<18 THEN 5 ELSE
-											CASE WHEN lid.timepoint>=18 AND lid.timepoint<21 THEN 6 ELSE
-											  CASE WHEN lid.timepoint>=21 AND lid.timepoint<=23 THEN 7 ELSE 0 END END END END END END END AS active_time_of_day,
-								 SUM(lid.timespend) AS sum_timespend,
-								 ROW_NUMBER () OVER (partition by lit.courseid, lit.userid ORDER BY SUM(lid.timespend) DESC) AS row_number
-
-							   FROM {local_intelliboard_tracking} lit
-								 LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-								 LEFT JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
-								 LEFT JOIN {course} c ON c.id = lit.courseid
-								 LEFT JOIN {user} u ON u.id=lit.userid
-							   WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter6
-							   GROUP BY lit.courseid,active_time_of_day,lit.userid
-							) AS popular_time ON popular_time.courseid=lit.courseid AND popular_time.userid=lit.userid AND popular_time.row_number=1
-
-				  LEFT JOIN {course} c ON c.id = lit.courseid
-				  LEFT JOIN {course_categories} cc ON cc.id = c.category
-				  LEFT JOIN {user} u ON u.id=lit.userid
-
-				WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter2
-				GROUP BY lit.courseid,lit.userid,c.id,cc.id,u.id ) AS temp WHERE temp.userid > 0 $sql_having $sql_order", $params);
+                                  CASE WHEN lid.timepoint>=6 AND lid.timepoint<12 THEN 2 ELSE
+                                    CASE WHEN lid.timepoint>=12 AND lid.timepoint<17 THEN 3 ELSE
+                                      CASE WHEN lid.timepoint>=17 AND lid.timepoint<=23 THEN 4 ELSE 0 END END END END";
+                $filter_by_daytime = '0';
         }else{
-            if($params->custom == 1){
-                $time_of_day = "IF(lid.timepoint>=0 && lid.timepoint<6,1,
-                                    IF(lid.timepoint>=6 && lid.timepoint<12,2,
-                                        IF(lid.timepoint>=12 && lid.timepoint<17,3,
-                                          IF(lid.timepoint>=17 && lid.timepoint<=23,4,0))))";
-            }elseif($params->custom == 2){
-                $time_of_day = "IF(lid.timepoint>=0 && lid.timepoint<6,1,
-                                    IF(lid.timepoint>=6 && lid.timepoint<12,2,
-                                        IF(lid.timepoint>=12 && lid.timepoint<17,3,
-                                          IF(lid.timepoint>=17 && lid.timepoint<=23,4,0))))";
-                if(empty($sql_having)){
-                    $sql_having = " HAVING temp.time_of_day=0";
-                }else{
-                    $having_request = str_replace(' HAVING ', '',$sql_having);
-                    $sql_having = " HAVING (".$having_request.") AND temp.time_of_day=0";
-                }
-            }else{
-                $time_of_day = "IF(lid.timepoint>=0 && lid.timepoint<6,1,
-                                    IF(lid.timepoint>=6 && lid.timepoint<9,2,
-                                      IF(lid.timepoint>=9 && lid.timepoint<12,3,
-                                        IF(lid.timepoint>=12 && lid.timepoint<15,4,
-                                          IF(lid.timepoint>=15 && lid.timepoint<18,5,
-                                            IF(lid.timepoint>=18 && lid.timepoint<21,6,
-                                              IF(lid.timepoint>=21 && lid.timepoint<=23,7,0)))))))";
-            }
-
-            return $this->get_report_data("
-				SELECT * FROM (SELECT
-				  CONCAT(lit.id,lid.id) AS id,
-				  u.id AS userid,
-				  u.firstname,
-				  u.lastname,
-				  u.email,
-				  u.idnumber,
-				  c.id AS courseid,
-				  c.fullname AS course,
-				  cc.name AS category_name,
-				  popular_day.day AS most_active_day,
-				  popular_time.active_time_of_day AS most_active_time_of_day,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 0,lil.timespend,0)) AS monday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 0,lil.timespend,0))*100/SUM(lil.timespend), 2) AS monday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 1,lil.timespend,0)) AS tuesday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 1,lil.timespend,0))*100/SUM(lil.timespend), 2) AS tuesday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 2,lil.timespend,0)) AS wednesday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 2,lil.timespend,0))*100/SUM(lil.timespend), 2) AS wednesday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 3,lil.timespend,0)) AS thursday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 3,lil.timespend,0))*100/SUM(lil.timespend), 2) AS thursday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 4,lil.timespend,0)) AS friday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 4,lil.timespend,0))*100/SUM(lil.timespend), 2) AS friday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 5,lil.timespend,0)) AS saturday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 5,lil.timespend,0))*100/SUM(lil.timespend), 2) AS saturday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 6,lil.timespend,0)) AS sunday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 6,lil.timespend,0))*100/SUM(lil.timespend), 2) AS sunday_percent,
-
-				  $time_of_day AS time_of_day
-				  $sql_columns1
-
-				FROM {local_intelliboard_tracking} lit
-				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-				  LEFT JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
-				  LEFT JOIN (SELECT CONCAT(a.courseid,a.userid) AS id ,a.courseid,a.day,a.sum_timespend,a.userid
-							  FROM (
-								SELECT
-								  lit.courseid,
-								  lit.userid,
-								  WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) AS day,
-								  SUM(lil.timespend) AS sum_timespend
-
-								FROM {local_intelliboard_tracking} lit
-								  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-								  LEFT JOIN {course} c ON c.id = lit.courseid
-								  LEFT JOIN {user} u ON u.id=lit.userid
-								WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter3
-								GROUP BY lit.courseid,day,lit.userid
-								HAVING sum_timespend>0
-								ORDER BY sum_timespend DESC
-								   ) AS a
-							GROUP BY a.courseid, a.userid) AS popular_day ON popular_day.courseid=lit.courseid AND popular_day.userid=lit.userid
-
-				  LEFT JOIN (SELECT CONCAT(a.courseid,a.userid) AS id ,a.courseid,a.active_time_of_day,a.sum_timespend,a.userid
-								FROM (
-									   SELECT
-										 lit.courseid,
-										 lit.userid,
-										 $time_of_day AS active_time_of_day,
-										 SUM(lid.timespend) AS sum_timespend
-
-									   FROM {local_intelliboard_tracking} lit
-										 LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-										 LEFT JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
-										 LEFT JOIN {course} c ON c.id = lit.courseid
-										 LEFT JOIN {user} u ON u.id=lit.userid
-									   WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter5
-									   GROUP BY lit.courseid,active_time_of_day,lit.userid
-									   HAVING sum_timespend>0
-									   ORDER BY sum_timespend DESC
-									 ) AS a
-								GROUP BY a.courseid, a.userid) AS popular_time ON popular_time.courseid=lit.courseid AND popular_time.userid=lit.userid
-
-				  LEFT JOIN {course} c ON c.id = lit.courseid
-				  LEFT JOIN {course_categories} cc ON cc.id = c.category
-				  LEFT JOIN {user} u ON u.id=lit.userid
-
-				WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter1
-				GROUP BY lit.courseid,lit.userid,`time_of_day`
-				HAVING `time_of_day`>0
-
-				UNION
-
-				SELECT
-				  lit.id,
-				  u.id AS userid,
-				  u.firstname,
-				  u.lastname,
-				  u.email,
-				  u.idnumber,
-				  c.id AS courseid,
-				  c.fullname AS course,
-				  cc.name AS category_name,
-				  popular_day.day AS most_active_day,
-				  popular_time.active_time_of_day AS most_active_time_of_day,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 0,lil.timespend,0)) AS monday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 0,lil.timespend,0))*100/SUM(lil.timespend), 2) AS monday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 1,lil.timespend,0)) AS tuesday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 1,lil.timespend,0))*100/SUM(lil.timespend), 2) AS tuesday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 2,lil.timespend,0)) AS wednesday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 2,lil.timespend,0))*100/SUM(lil.timespend), 2) AS wednesday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 3,lil.timespend,0)) AS thursday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 3,lil.timespend,0))*100/SUM(lil.timespend), 2) AS thursday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 4,lil.timespend,0)) AS friday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 4,lil.timespend,0))*100/SUM(lil.timespend), 2) AS friday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 5,lil.timespend,0)) AS saturday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 5,lil.timespend,0))*100/SUM(lil.timespend), 2) AS saturday_percent,
-
-				  SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 6,lil.timespend,0)) AS sunday_hours,
-				  ROUND(SUM(IF(WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) = 6,lil.timespend,0))*100/SUM(lil.timespend), 2) AS sunday_percent,
-
-				  0 AS time_of_day
-				  $sql_columns2
-
-				FROM {local_intelliboard_tracking} lit
-				  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-				  JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
-				  LEFT JOIN (SELECT CONCAT(a.courseid,a.userid) AS id ,a.courseid,a.day,a.sum_timespend,a.userid
-							  FROM (
-								SELECT
-								  lit.courseid,
-								  lit.userid,
-								  WEEKDAY(FROM_UNIXTIME(lil.timepoint,'%Y-%m-%d %T')) AS day,
-								  SUM(lil.timespend) AS sum_timespend
-
-								FROM {local_intelliboard_tracking} lit
-								  LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-								  LEFT JOIN {course} c ON c.id = lit.courseid
-								  LEFT JOIN {user} u ON u.id=lit.userid
-								WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter4
-								GROUP BY lit.courseid,day,lit.userid
-								HAVING sum_timespend>0
-								ORDER BY sum_timespend DESC
-								   ) AS a
-							GROUP BY a.courseid, a.userid) AS popular_day ON popular_day.courseid=lit.courseid AND popular_day.userid=lit.userid
-
-				  LEFT JOIN (SELECT CONCAT(a.courseid,a.userid) AS id ,a.courseid,a.active_time_of_day,a.sum_timespend,a.userid
-								FROM (
-									   SELECT
-										 lit.courseid,
-										 lit.userid,
-										 IF(lid.timepoint>=0 && lid.timepoint<6,1,
-											IF(lid.timepoint>=6 && lid.timepoint<9,2,
-											   IF(lid.timepoint>=9 && lid.timepoint<12,3,
-												  IF(lid.timepoint>=12 && lid.timepoint<15,4,
-													 IF(lid.timepoint>=15 && lid.timepoint<18,5,
-														IF(lid.timepoint>=18 && lid.timepoint<21,6,
-														   IF(lid.timepoint>=21 && lid.timepoint<=23,7,0))))))) AS active_time_of_day,
-										 SUM(lid.timespend) AS sum_timespend
-
-									   FROM {local_intelliboard_tracking} lit
-										 LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid=lit.id {$datefilter}
-										 LEFT JOIN {local_intelliboard_details} lid ON lid.logid=lil.id
-										 LEFT JOIN {course} c ON c.id = lit.courseid
-										 LEFT JOIN {user} u ON u.id=lit.userid
-									   WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter6
-									   GROUP BY lit.courseid,active_time_of_day,lit.userid
-									   HAVING sum_timespend>0
-									   ORDER BY sum_timespend DESC
-									 ) AS a
-								GROUP BY a.courseid, a.userid) AS popular_time ON popular_time.courseid=lit.courseid AND popular_time.userid=lit.userid
-
-				  LEFT JOIN {course} c ON c.id = lit.courseid
-				  LEFT JOIN {course_categories} cc ON cc.id = c.category
-				  LEFT JOIN {user} u ON u.id=lit.userid
-
-				WHERE lit.courseid>1 AND c.id IS NOT NULL $sql_filter2
-				GROUP BY lit.courseid,lit.userid ) AS temp WHERE temp.userid > 0 $sql_having $sql_order", $params);
-        }
-    }
-
-    function report114($params){
-        global $CFG;
-
-        $columns = array_merge(array(
-            "course_name",
-            "course_created",
-            "c.startdate",
-            "u.firstname",
-            "u.lastname",
-            "learners",
-            "events",
-            "completed_modules",
-            "post_per_day",
-            "visits",
-            "assignment",
-            "quiz",
-            "workshop",
-            "modules",
-        ), $this->get_filter_columns($params));
-
-        $sql_columns = $this->get_columns($params, ["u.id"]);
-        $sql_having = $this->get_filter_sql($params, $columns, false);
-        $sql_order = $this->get_order_sql($params, $columns);
-        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
-        $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
-        $sql_filter .= $this->get_filterdate_sql($params, 'c.timecreated');
-        $sql_filter .= $this->get_filter_user_sql($params, "u.");
-        $sql_filter .= $this->get_filter_course_sql($params, "c.");
-        $sql_filter .= $this->get_filter_in_sql($params->teacher_roles,'ra.roleid');
-        $learner_roles1 = $this->get_filter_in_sql($params->learner_roles,'ras.roleid');
-        $learner_roles2 = $this->get_filter_in_sql($params->learner_roles,'ras.roleid');
-        $learner_roles3 = $this->get_filter_in_sql($params->learner_roles,'ras.roleid');
-        $learner_roles4 = $this->get_filter_in_sql($params->learner_roles,'ras.roleid');
-        $sql_cm1 = $this->get_filter_module_sql($params, "cm.");
-        $sql_cm2 = $this->get_filter_module_sql($params, "cm.");
-        $completion = $this->get_completion($params, "cmc.");
-
-        if ($CFG->dbtype == 'pgsql') {
-            $count_days = "date_part('day',age(CURRENT_TIMESTAMP, to_timestamp(c.timecreated)))";
-        }else{
-            $count_days = 'TO_DAYS(NOW()) - TO_DAYS(FROM_UNIXTIME(c.timecreated))';
+            $time_of_day = "CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
+                              CASE WHEN lid.timepoint>=6 AND lid.timepoint<9 THEN 2 ELSE
+                                CASE WHEN lid.timepoint>=9 AND lid.timepoint<12 THEN 3 ELSE
+                                  CASE WHEN lid.timepoint>=12 AND lid.timepoint<15 THEN 4 ELSE
+                                    CASE WHEN lid.timepoint>=15 AND lid.timepoint<18 THEN 5 ELSE
+                                      CASE WHEN lid.timepoint>=18 AND lid.timepoint<21 THEN 6 ELSE
+                                        CASE WHEN lid.timepoint>=21 AND lid.timepoint<=23 THEN 7 ELSE 0 END END END END END END END";
+                $filter_by_daytime = $time_of_day;
         }
 
-        if (!empty($params->length) && $params->length > 102) {
-            $sql = "SELECT ra.id,
-                           c.id AS courseid,
-                           c.fullname AS course_name,
-                           c.timecreated AS course_created,
-                           c.startdate,
-                           u.id AS teacher_id,
-                           u.lastname,
-                           u.firstname,
-                           learners_data.cnt AS learners,
-                           events_data.cnt AS events,
-                           post_data.cnt AS post_per_day,
-                           visits_data.cnt AS visits,
-                           modules_data.cnt AS modules,
-                           completed_modules_data.cnt AS completed_modules,
-                           assignment_data.cnt AS assignment,
-                           quiz_data.cnt AS quiz,
-                           workshop_data.cnt AS workshop
-                           {$sql_columns}
-                      FROM {role_assignments} ra
-                      JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                      JOIN {course} c ON c.id = ctx.instanceid
-                      JOIN {user} u ON u.id = ra.userid
-                 LEFT JOIN (SELECT COUNT(distinct ras.userid) AS cnt, con.instanceid
-                              FROM {role_assignments} ras
-                              JOIN {context} con ON con.id = ras.contextid AND con.contextlevel = 50
-                             WHERE ras.id > 0 {$learner_roles1}
-                          GROUP BY con.instanceid
-                           ) learners_data ON learners_data.instanceid = c.id
-                 LEFT JOIN (SELECT COUNT(id) AS cnt, course
-                              FROM {assign}
-                          GROUP BY course
-                           ) assignment_data ON assignment_data.course = c.id
-                 LEFT JOIN (SELECT COUNT(id) AS cnt, course
-                              FROM {quiz}
-                          GROUP BY course
-                           ) quiz_data ON quiz_data.course = c.id
-                 LEFT JOIN (SELECT COUNT(id) AS cnt, course
-                              FROM {workshop}
-                          GROUP BY course
-                           ) workshop_data ON workshop_data.course = c.id
-                 LEFT JOIN (SELECT COUNT(DISTINCT cm.id) AS cnt, cm.course
-                              FROM {course_modules} cm
-                             WHERE cm.id > 0 {$sql_cm1}
-                          GROUP BY cm.course
-                           ) modules_data ON modules_data.course = c.id
-                 LEFT JOIN (SELECT COUNT(DISTINCT cmc.id) AS cnt, cm.course
-                              FROM {course_modules} cm
-                         LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id {$completion} {$sql_cm2}
-                          GROUP BY cm.course
-                           ) completed_modules_data ON completed_modules_data.course = c.id
-                 LEFT JOIN (SELECT COUNT(distinct e.id) AS cnt, con.instanceid
-                              FROM {event} e
-                              JOIN {role_assignments} ras ON ras.userid = e.userid {$learner_roles2}
-                              JOIN {context} con ON con.id = ras.contextid AND con.contextlevel = 50 AND e.courseid = con.instanceid
-                          GROUP BY con.instanceid
-                           ) events_data ON events_data.instanceid = c.id
-                 LEFT JOIN (SELECT CASE WHEN COUNT(DISTINCT timepoint) > 0 THEN (SUM(lil.visits) / COUNT(DISTINCT timepoint)) ELSE 0 END AS cnt,
-                                   con.instanceid
-                              FROM {role_assignments} ras
-                              JOIN {context} con ON con.id = ras.contextid AND con.contextlevel = 50
-                              JOIN {local_intelliboard_tracking} lit ON con.instanceid = lit.courseid AND ras.userid = lit.userid
-                              JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id
-                             WHERE ras.id > 0 {$learner_roles4}
-                          GROUP BY con.instanceid
-                           ) visits_data ON visits_data.instanceid = c.id
-                 LEFT JOIN (SELECT CASE WHEN ($count_days) > 0 THEN (COUNT(DISTINCT fp.id)/($count_days)) ELSE 0 END AS cnt,
-                                   con.instanceid
-                              FROM {role_assignments} ras
-                              JOIN {context} con ON con.id = ras.contextid AND con.contextlevel = 50
-                              JOIN {course} c ON c.id = con.instanceid
-                              JOIN {forum_discussions} fd ON fd.course = con.instanceid
-                              JOIN {forum_posts} fp ON fp.userid = ras.userid AND fp.discussion = fd.id
-                             WHERE ras.id > 0 {$learner_roles3}
-                          GROUP BY con.instanceid, c.timecreated
-                           ) post_data ON post_data.instanceid = c.id
-                     WHERE ra.id > 0 {$sql_filter} {$sql_having} {$sql_order}";
+       if ($CFG->dbtype == 'pgsql') {
+            $day_of_week = 'extract(dow from to_timestamp(lil.timepoint))';
         } else {
-            $sql = "SELECT ra.id,
-                           c.id AS courseid,
-                           c.fullname AS course_name,
-                           c.timecreated AS course_created,
-                           c.startdate,
-                           u.id AS teacher_id,
-                           u.lastname,
-                           u.firstname,
-                           (SELECT COUNT(distinct ras.userid) FROM {role_assignments} ras, {context} con WHERE con.id = ras.contextid AND con.contextlevel = 50 $learner_roles1 AND con.instanceid = c.id) AS learners,
-                           (SELECT COUNT(distinct e.id) FROM {event} e, {role_assignments} ras, {context} con WHERE ras.userid = e.userid $learner_roles2 AND con.id = ras.contextid AND con.contextlevel = 50 AND e.courseid = con.instanceid AND con.instanceid = c.id) AS events,
-                           (SELECT CASE WHEN ($count_days) > 0 THEN (COUNT(DISTINCT fp.id)/($count_days)) ELSE 0 END FROM {role_assignments} ras, {context} con, {forum_discussions} fd, {forum_posts} fp WHERE con.id = ras.contextid $learner_roles3 AND con.contextlevel = 50 AND fd.course = con.instanceid AND fp.userid = ras.userid AND fp.discussion = fd.id AND con.instanceid = c.id) AS post_per_day,
-                           (SELECT CASE WHEN COUNT(DISTINCT timepoint) > 0 THEN (SUM(lil.visits) / COUNT(DISTINCT timepoint)) ELSE 0 END FROM {role_assignments} ras, {context} con, {local_intelliboard_tracking} lit, {local_intelliboard_logs} lil WHERE con.id = ras.contextid $learner_roles4 AND con.contextlevel = 50 AND con.instanceid = lit.courseid AND ras.userid = lit.userid AND lil.trackid = lit.id AND con.instanceid = c.id) AS visits,
-                           (SELECT COUNT(DISTINCT cm.id) FROM {course_modules} cm WHERE cm.course = c.id $sql_cm1) AS modules,
-                           (SELECT COUNT(DISTINCT cmc.id) FROM {course_modules} cm LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion $sql_cm2 WHERE cm.course = c.id) AS completed_modules,
-                           (SELECT COUNT(id) FROM {assign} WHERE course = c.id) AS assignment,
-                           (SELECT COUNT(id) FROM {quiz} WHERE course = c.id) AS quiz,
-                           (SELECT COUNT(id) FROM {workshop} WHERE course = c.id) AS workshop
-                           {$sql_columns}
-                      FROM {role_assignments} ra
-                      JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                      JOIN {course} c ON c.id = ctx.instanceid
-                      JOIN {user} u ON u.id = ra.userid
-                     WHERE ra.id > 0 {$sql_filter} {$sql_having} {$sql_order}";
+            $day_of_week = 'WEEKDAY(FROM_UNIXTIME(lil.timepoint,"%Y-%m-%d %T"))';
         }
 
+       $sql ="SELECT * FROM
+                    (SELECT
+                            MAX(daystat.id),
+                            u.id AS userid,
+                            u.firstname,
+                            u.lastname,
+                            u.email,
+                            u.idnumber,
+                            c.id AS courseid,
+                            c.fullname AS course,
+                            cc.name AS category_name,
+                            popular_day.day AS most_active_day,
+                            popular_time.active_time_of_day AS most_active_time_of_day,
+                            MAX(CASE WHEN dayofweek = 0 THEN dayspent ELSE 0 END) as monday_hours,
+                            ROUND(SUM(CASE WHEN dayofweek = 0 THEN dayspent ELSE 0 END)*100/SUM(dayspent), 2) AS monday_percent,
+                            MAX(CASE WHEN dayofweek = 1 THEN dayspent ELSE 0 END) as tuesday_hours,
+                            ROUND(SUM(CASE WHEN dayofweek = 1 THEN dayspent ELSE 0 END)*100/SUM(dayspent), 2) tuesday_percent,
+                            MAX(CASE WHEN dayofweek = 2 THEN dayspent ELSE 0 END) as wednesday_hours,
+                            ROUND(SUM(CASE WHEN dayofweek = 2 THEN dayspent ELSE 0 END)*100/SUM(dayspent), 2) AS wednesday_percent,
+                            MAX(CASE WHEN dayofweek = 3 THEN dayspent ELSE 0 END) as thursday_hours,
+                            ROUND(SUM(CASE WHEN dayofweek = 3 THEN dayspent ELSE 0 END)*100/SUM(dayspent), 2) AS thursday_percent,
+                            MAX(CASE WHEN dayofweek = 4 THEN dayspent ELSE 0 END) as friday_hours,
+                            ROUND(SUM(CASE WHEN dayofweek = 4 THEN dayspent ELSE 0 END)*100/SUM(dayspent), 2) AS friday_percent,
+                            MAX(CASE WHEN dayofweek = 5 THEN dayspent ELSE 0 END) as saturday_hours,
+                            ROUND(SUM(CASE WHEN dayofweek = 5 THEN dayspent ELSE 0 END)*100/SUM(dayspent), 2) AS saturday_percent,
+                            MAX(CASE WHEN dayofweek = 6 THEN dayspent ELSE 0 END) as sunday_hours,
+                            ROUND(SUM(CASE WHEN dayofweek = 6 THEN dayspent ELSE 0 END)*100/SUM(dayspent), 2) AS sunday_percent,
+                            time_of_day
+                            $sql_columns1
+
+                       FROM (
+                            SELECT
+                                    CONCAT(MAX(lid.id), MAX(lit.id)) AS id,
+                                    lit.courseid,
+                                    lit.userid,
+                                    {$day_of_week} AS dayofweek,
+                                    {$filter_by_daytime} AS time_of_day,
+                                    SUM(lil.timespend) AS dayspent
+                            FROM {local_intelliboard_tracking} lit
+                            LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id
+                            LEFT JOIN {local_intelliboard_details} lid ON lid.logid = lil.id
+                            LEFT JOIN {course} c ON c.id = lit.courseid
+                            LEFT JOIN {user} u ON u.id=lit.userid
+                            WHERE lit.courseid>1 AND c.id IS NOT NULL {$datefilter} $sql_filter3
+                            GROUP BY courseid, userid, dayofweek, time_of_day
+                            ORDER BY userid, courseid, dayofweek, time_of_day
+                        ) daystat
+                        LEFT JOIN (
+                                SELECT userid, courseid, day, MAX(dayspent) as maxdayspent
+                                    FROM (
+                                        SELECT lit.userid, lit.courseid,
+                                                MAX({$day_of_week}) AS day,
+                                                SUM(lil.timespend) AS dayspent
+                                            FROM {local_intelliboard_tracking} lit
+                                    LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id
+                                    LEFT JOIN {course} c ON c.id = lit.courseid
+                                    LEFT JOIN {user} u ON u.id=lit.userid
+                                        WHERE lit.courseid>1 AND c.id IS NOT NULL {$datefilter} $sql_filter4
+                                        GROUP BY courseid, userid
+                                        ORDER BY courseid, userid
+                                    ) ds
+                                GROUP BY courseid, userid, day
+                        ) AS popular_day ON popular_day.courseid=daystat.courseid AND popular_day.userid=daystat.userid
+                        LEFT JOIN (
+                                    SELECT
+                                        courseid, userid,
+                                        MAX(timeofday) as active_time_of_day,
+                                        MAX(timespent) as max_time_of_day
+                                        FROM (
+                                                SELECT
+                                                    lit.courseid,
+                                                    lit.userid,
+                                                    {$time_of_day} AS timeofday,
+                                                    SUM(lid.timespend) AS timespent
+                                                FROM {local_intelliboard_tracking} lit
+                                            LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id
+                                            LEFT JOIN {local_intelliboard_details} lid ON lid.logid = lil.id
+                                            LEFT JOIN {course} c ON c.id = lit.courseid
+                                            LEFT JOIN {user} u ON u.id=lit.userid
+                                                WHERE lit.courseid>1 AND c.id IS NOT NULL {$datefilter} $sql_filter5
+                                            GROUP BY courseid, userid, timeofday
+                                            ORDER BY userid, courseid, timeofday
+                                        ) b
+                                    GROUP BY courseid, userid
+                        ) AS popular_time ON popular_time.courseid=daystat.courseid AND popular_time.userid=daystat.userid
+                        LEFT JOIN {course} c ON c.id = daystat.courseid
+                        LEFT JOIN {course_categories} cc ON cc.id = c.category
+                        LEFT JOIN {user} u ON u.id=daystat.userid
+
+                            WHERE daystat.courseid>1 AND c.id IS NOT NULL $sql_uc_filter
+                         GROUP BY daystat.courseid, daystat.userid, time_of_day, u.id, c.id, cc.id, day, active_time_of_day
+            )
+        AS temp WHERE temp.userid > 0 $sql_having $sql_order";
         return $this->get_report_data($sql, $params);
     }
+
 
     function report114_graph($params){
         global $CFG;
@@ -11249,23 +10839,19 @@ class local_intelliboard_external extends external_api {
 
         $columns = array_merge(array(
             "c.fullname",
-            "cs.name",
-            "teacher",
             "startdate",
             "enddate",
             "u.firstname",
             "u.lastname",
-            "activity",
+            "gi.itemname",
             "m.name",
-            "cmc.timemodified",
             "grade",
-            "g.timemodified"),
-            $this->get_filter_columns($params)
-        );
+            "g.finalgrade",
+            "g.timemodified",
+        ), $this->get_filter_columns($params));
         $sql_columns = $this->get_columns($params, ["u.id"]);
-        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
-        $sql_columns .= $this->get_modules_sql($params->custom);
 
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
@@ -11274,10 +10860,10 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
-        $sql_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
-        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
-        $grade_single = intelliboard_grade_sql(true, $params);
+        $sqlstudentrolefilter = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
+        $grade_single = intelliboard_grade_sql(false, $params);
         $sql_join = $this->get_suspended_sql($params);
+        $sql_join .= $this->extra_columns_joins($params, ['u.id', 'c.id', null, 'cm.section', 'cm.id']);
 
         if ($CFG->version < 2016120509) {
             $sql_columns .= ", '' AS startdate, '' AS enddate";
@@ -11285,48 +10871,38 @@ class local_intelliboard_external extends external_api {
             $sql_columns .= ", c.startdate AS startdate, c.enddate AS enddate";
         }
 
-        return $this->get_report_data("
-            SELECT
-                   concat_ws('', cm.id, u.id) as unique_id,
-                   c.id AS courseid,
-                   c.fullname,
-                   cs.section AS section_number,
-                   cs.name AS section_name,
-                   u.id AS userid,
-                   u.firstname,
-                   u.lastname,
-                   m.name,
-                   cm.id as cmid,
-                   0 AS slot,
-                   0 AS attempt,
-                   MAX(cmc.completionstate) AS status,
-                   MAX(cmc.timemodified) AS status_modified,
-                   $grade_single AS grade,
-                   g.finalgrade AS finalgrade,
-                   MAX(g.timemodified) AS graded,
-                   (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
-                                FROM {role_assignments} AS ra
-                                    JOIN {user} u ON ra.userid = u.id
-                                    JOIN {context} AS ctx ON ctx.id = ra.contextid
-                                WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles LIMIT 1
-                            ) AS teacher
-                   $sql_columns
-
-            FROM {course} c
-              JOIN {context} con ON con.contextlevel=50 AND con.instanceid=c.id
-              JOIN {role_assignments} ra ON ra.contextid=con.id
-              JOIN {user} u ON u.id=ra.userid
-
-              JOIN {course_modules} cm ON cm.course = c.id
-              JOIN {modules} m ON m.id = cm.module
-              JOIN {course_sections} cs ON cs.id = cm.section AND cs.course = cm.course
-              LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid=u.id
-
-              LEFT JOIN {grade_items} gi ON gi.itemtype='mod' AND gi.itemmodule=m.name AND gi.iteminstance=cm.instance
-              LEFT JOIN {grade_grades} g ON g.userid=u.id AND g.itemid=gi.id
-              $sql_join
-            WHERE c.id > 0 $sql_filter
-            GROUP BY cm.id, u.id, c.id, cs.id, m.id  $sql_having $sql_order", $params);
+        return $this->get_report_data(
+            "SELECT concat_ws('', cm.id, u.id) as unique_id,
+                    c.id AS courseid,
+                    c.fullname,
+                    u.id AS userid,
+                    u.firstname,
+                    u.lastname,
+                    m.name,
+                    gi.itemname AS activity,
+                    cm.id as cmid,
+                    0 AS slot,
+                    0 AS attempt,
+                    {$grade_single} AS grade,
+                    g.finalgrade AS finalgrade,
+                    g.timemodified AS graded
+                    {$sql_columns}
+               FROM {course} c
+               JOIN (SELECT con.instanceid, ra.userid
+                       FROM {context} con
+                       JOIN {role_assignments} ra ON ra.contextid = con.id
+                      WHERE con.contextlevel = 50 {$sqlstudentrolefilter}
+                   GROUP BY con.instanceid, ra.userid
+               ) student ON student.instanceid = c.id
+               JOIN {user} u ON u.id = student.userid
+               JOIN {course_modules} cm ON cm.course = c.id
+               JOIN {modules} m ON m.id = cm.module
+               JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = m.name AND gi.iteminstance = cm.instance
+          LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id
+                    {$sql_join}
+              WHERE c.id > 0 {$sql_filter} {$sql_having} {$sql_order}",
+            $params
+        );
     }
 
     public function report167($params)
@@ -20835,6 +20411,14 @@ class local_intelliboard_external extends external_api {
         return " AND (" . implode(" OR ", $sqlfilter) . ")";
     }
 
+    /**
+     * $fields -
+     * 0 - user ID column
+     * 1 - course ID column
+     * 2 - user enrolment modifier ID
+     * 3 - course section ID
+     * 4 - course module ID
+     */
     public function extra_columns_joins($params, $fields = []) {
         $sqljoins = "";
 
@@ -20847,7 +20431,7 @@ class local_intelliboard_external extends external_api {
                     /** @var \local_intelliboard\extra_columns\base_column $columnbuilder */
                     $columnbuilder = new $classname($params, $fields);
                     list($sql, $params) = $columnbuilder->get_join();
-                    $sqljoins .= $sql;
+                    $sqljoins .= " {$sql}";
                     $this->params = array_merge($this->params, $params);
                 } else {
                     if ($index == 11) {
@@ -21653,5 +21237,399 @@ class local_intelliboard_external extends external_api {
             $params,
             true
         );
+    }
+
+    public function report235($params)
+    {
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.id",
+            "c.id",
+            "c.fullname",
+            "progress",
+            "modules_completed",
+            "cc.timestarted",
+            "cc.timecompleted"
+            ),
+            $this->get_filter_columns($params)
+        );
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
+        $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $completion = $this->get_completion($params, "x.");
+
+        $data = $this->get_report_data("
+            SELECT max(ue.id) AS id,
+                u.firstname,
+                u.lastname,
+                c.id AS courseid,
+                u.id AS userid,
+                c.fullname,
+                MAX(cc.timestarted) AS timestarted,
+                MAX(cc.timecompleted) AS timecompleted,
+                round(((MAX(cmc.completed)/MAX(m.modules))*100), 0) as progress
+                $sql_columns
+            FROM {user_enrolments} ue
+                JOIN {user} u ON u.id = ue.userid
+                JOIN {enrol} e ON e.id = ue.enrolid
+                JOIN {course} c ON c.id = e.courseid
+           LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype = 'course'
+           LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
+                LEFT JOIN {course_completions} cc ON cc.timecompleted > 0 AND cc.course = e.courseid and cc.userid = ue.userid
+                LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) as m ON m.course = c.id
+                LEFT JOIN (SELECT cm.course, x.userid, COUNT(DISTINCT x.id) as completed FROM {course_modules} cm, {course_modules_completion} x WHERE x.coursemoduleid = cm.id AND cm.visible = 1 $completion GROUP BY cm.course, x.userid) as cmc ON cmc.course = c.id AND cmc.userid = ue.userid
+            WHERE ue.id > 0 $sql_filter
+            GROUP BY u.id, c.id $sql_having $sql_order", $params
+        );
+
+        if (!empty($params->count_report_rows)) {
+            return $data;
+        }
+
+        $usersids = array_map(function($item) {
+            return $item->userid;
+        }, $data);
+        $modulesids = array_map(function($item) {
+            return $item->id;
+        }, $modules['modules']);
+
+        if ($usersids && $modulesids) {
+            $completion = $this->get_completion($params, "");
+            $grade = intelliboard_grade_sql(false, $params,'gg.');
+
+            $grademodulesfilter = [];
+            foreach ($modules['modules'] as $module) {
+                $grademodulesfilter[] = "(gi.iteminstance = {$module->instance} AND gi.itemmodule = '{$module->type}')";
+            }
+
+            $completionmodulesdata = $DB->get_records_sql(
+                "SELECT CONCAT(coursemoduleid, '_', userid) AS id, MAX(timemodified) AS timemodified
+                   FROM {course_modules_completion}
+                  WHERE userid IN (" . implode(',', $usersids) . ") AND
+                        coursemoduleid IN (" . implode(',', $modulesids) . ") $completion
+               GROUP BY coursemoduleid, userid", $this->params
+            );
+            $grademodulesdata = $DB->get_records_sql(
+                "SELECT CONCAT(gi.iteminstance, '_', gi.itemmodule, '_', gg.userid) AS id, {$grade} AS grade
+                   FROM {grade_items} gi
+                   JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid IN (" . implode(',', $usersids) . ")
+                  WHERE gi.itemtype = 'mod' AND
+                        (" . implode(' OR ', $grademodulesfilter) . ")"
+            );
+            $timemodulesdata = $DB->get_records_sql(
+                "SELECT CONCAT(lit.param, '_',lit.userid) AS id, MAX(lit.timespend) AS timespend
+                   FROM {local_intelliboard_tracking} lit
+                  WHERE lit.userid IN (" . implode(',', $usersids) . ") AND
+                        lit.param IN (" . implode(',', $modulesids) . ") AND lit.page = 'module'
+               GROUP BY lit.userid, lit.param"
+            );
+
+            $modulesdata = [
+                'completionmodulesdata' => $completionmodulesdata,
+                'grademodulesdata' => $grademodulesdata,
+                'timemodulesdata' => $timemodulesdata,
+            ];
+        } else {
+            $modulesdata = [
+                'completionmodulesdata' => [],
+                'grademodulesdata' => [],
+                'timemodulesdata' => [],
+            ];
+        }
+
+        return [
+            'modules'      => $modules['modules'],
+            'data'         => $data,
+            'modules_data' => $modulesdata,
+        ];
+    }
+
+    public function report236($params)
+    {
+        global $CFG;
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "email",
+            "c.shortname",
+            "complete_percent",
+            "u.firstname",
+            "u.lastname",
+            "grade",
+            "grade_avg",
+            "visits",
+            "timespend",
+            "days_left"
+        ), $this->get_filter_columns($params));
+
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "e.courseid");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+        $sql_having = $this->get_filter_sql($params, $columns, false);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $grade = intelliboard_grade_sql(false, $params, 'g.', 0, 'gi.', true);
+        $grade_avg = intelliboard_grade_sql(true, $params, 'g.', 0, 'gi.', false);
+
+        $sql_join = "";
+        if ($params->cohortid) {
+            if ($CFG->dbtype == 'pgsql') {
+                $cohorts = "string_agg( DISTINCT coh.name, ', ')";
+            } else {
+                $cohorts = "GROUP_CONCAT( DISTINCT coh.name)";
+            }
+            $sql_columns .= ", coo.cohortname AS cohortname";
+            $sql_cohort = $this->get_filter_in_sql($params->cohortid, "ch.cohortid");
+            $sql_join = " JOIN (SELECT ch.userid, $cohorts as cohortname FROM {cohort} coh, {cohort_members} ch WHERE coh.id = ch.cohortid $sql_cohort GROUP BY ch.userid) coo ON coo.userid = u.id";
+        } else {
+            $sql_columns .= ", '' as cohortname";
+        }
+
+        if ($params->sizemode) {
+            $sql_columns .= ", '0' as timespend, '0' as visits";
+        } else {
+            $sql_lit = $this->get_filter_in_sql($params->courseid, "courseid");
+            $sql_columns .= ", lit.timespend AS timespend, lit.visits AS visits,
+                            lit.firstaccess AS firstaccess, lit.lastaccess AS lastaccess";
+            $sql_join .= " LEFT JOIN (SELECT userid, courseid, SUM(timespend) as timespend, SUM(visits) as visits,
+                                        MIN(firstaccess) AS firstaccess, MAX(lastaccess) AS lastaccess
+                        FROM {local_intelliboard_tracking} WHERE id > 0 $sql_lit GROUP BY courseid, userid) lit ON lit.courseid = c.id AND lit.userid = u.id";
+        }
+        $sql_join .= $this->extra_columns_joins($params);
+
+        return $this->get_report_data("
+            SELECT ue.id AS id,
+                $grade AS grade,
+                c.shortname,
+                u.id AS userid,
+                u.email,
+                u.firstname,
+                u.lastname,
+                gc.score_avg AS grade_avg,
+                gc.complete_percent AS complete_percent,
+                (ue.timeend - ue.timestart) AS days_left
+                $sql_columns
+            FROM {user_enrolments} ue
+                LEFT JOIN {user} u ON u.id = ue.userid
+                LEFT JOIN {enrol} e ON e.id = ue.enrolid
+                LEFT JOIN {course} c ON c.id = e.courseid
+                LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+                LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid =u.id
+                LEFT JOIN (SELECT gi.courseid, g.userid, $grade_avg AS score_avg, (COUNT(gi.id) / COUNT(g.id) * 100) AS complete_percent FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id GROUP BY gi.courseid, g.userid) as gc ON gc.courseid = c.id AND gc.userid = u.id
+                $sql_join
+            WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
+    }
+
+    public function report237($params)
+    {
+        global $CFG;
+        require_once($CFG->libdir . "/adminlib.php");
+
+        $sql_attempts_number = '';
+        if (get_component_version('mod_questionnaire')) {
+            $sql_attempts_number = "WHEN m.name = 'questionnaire'
+                         THEN (CASE WHEN qra.num_of_attempts IS NULL THEN 0 ELSE qra.num_of_attempts END)";
+        }
+
+        $columns = array_merge(array(
+            "u.firstname", "u.lastname", "u.email", "c.shortname", "", "m.name",
+            "grade",
+            "CASE WHEN m.name = 'quiz'
+                  THEN (CASE WHEN qat.num_of_attempts IS NULL THEN 0 ELSE qat.num_of_attempts END)
+                  {$sql_attempts_number}
+                  ELSE 0
+            END",
+            "timespend", "l.firstaccess", "l.lastaccess"
+        ), $this->get_filter_columns($params));
+
+        if ($CFG->dbtype == 'pgsql') {
+            $columns[4] = "gi.itemname";
+        } else {
+            $columns[4] = "itemname";
+        }
+
+        $sql_columns = $this->get_columns($params);
+        $sql_columns .= $this->get_modules_sql(null, false, 'itemname');
+        $sql_having = $this->get_filter_sql($params, $columns, false);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "cm.course");
+        $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_module_sql($params, "cm.");
+        $sql_filter .= $this->vendor_filter('u.id', 'c.id', $params);
+        $grade_single = intelliboard_grade_sql(false, $params);
+
+        if ($params->custom2 == 1) {
+            //skip
+        } elseif ($params->custom2 == 2) {
+            //skip
+        } elseif ($params->custom2 == 3) {
+            //skip
+        } else {
+            $sql_filter .= $this->get_filterdate_sql($params, "g.timemodified");
+        }
+        if ($params->sizemode) {
+            $sql_columns .= ", '0' as timespend, '0' as visits, '' AS firstaccess, '' AS lastaccess";
+            $sql_join = "";
+        } elseif ($params->custom2 == 2) {
+            $filter = $this->get_filterdate_sql($params, "l.timepoint");
+            $sql_filter .= " AND l.visits > 0";
+            $sql_columns .= ", l.timespend as timespend, l.visits as visits, l.firstaccess, l.lastaccess";
+            $sql_join = " LEFT JOIN (SELECT t.userid, t.param, SUM(l.timespend) as timespend, SUM(l.visits) as visits,
+                                            MIN(t.firstaccess) AS firstaccess, MIN(t.lastaccess) AS lastaccess
+                                       FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
+                                      WHERE l.trackid = t.id AND t.page = 'module' $filter
+                                   GROUP BY t.userid, t.param) l ON l.param = cm.id AND l.userid = u.id";
+        } else {
+            $sql_columns .= ", l.timespend as timespend, l.visits as visits, l.firstaccess, l.lastaccess";
+            $sql_join = " LEFT JOIN (SELECT userid, param, SUM(timespend) as timespend, SUM(visits) as visits,
+                                            MIN(firstaccess) AS firstaccess, MIN(lastaccess) AS lastaccess
+                                       FROM {local_intelliboard_tracking}
+                                      WHERE page = 'module'
+                                   GROUP BY userid, param) l ON l.param = cm.id AND l.userid = u.id";
+        }
+
+        if ($CFG->dbtype == 'pgsql') {
+            $rawname = "string_agg( DISTINCT t.rawname, ', ')";
+        } else {
+            $rawname = "GROUP_CONCAT( DISTINCT t.rawname)";
+        }
+        $sql_join .= $this->get_suspended_sql($params);
+
+        if (get_component_version('mod_questionnaire')) {
+            $sql_inner_filter1 = $this->get_filter_in_sql($params->courseid, 'q.course');
+            $sql_join .= " LEFT JOIN (SELECT qr.questionnaireid,
+                                    qr.userid,
+                                    MIN(qr.submitted) AS first_completed_date,
+                                    COUNT(*) AS num_of_attempts
+                               FROM {questionnaire_response} qr
+                               JOIN {questionnaire} q ON q.id = qr.questionnaireid {$sql_inner_filter1}
+                           GROUP BY qr.questionnaireid, qr.userid
+                            ) qra ON qra.userid = u.id AND m.name = 'questionnaire' AND qra.questionnaireid = cm.instance ";
+        }
+        $sql_inner_filter2 = $this->get_filter_in_sql($params->courseid, 'q.course');
+
+        return $this->get_report_data(
+            "SELECT CONCAT(ue.id, '_', cm.id),
+                    ue.userid,
+                    u.email,
+                    u.firstname,
+                    u.lastname,
+                    c.shortname,
+                    {$grade_single} AS grade,
+                    m.name AS module_name,
+                    CASE WHEN m.name = 'quiz'
+                         THEN (CASE WHEN qat.num_of_attempts IS NULL THEN 0 ELSE qat.num_of_attempts END)
+                         {$sql_attempts_number}
+                         ELSE 0
+                    END AS number_of_attempts
+                    {$sql_columns}
+               FROM (SELECT MIN(ue1.id) AS id, ue1.userid, e1.courseid, MIN(ue1.status) AS enrol_status
+                       FROM {user_enrolments} ue1
+                       JOIN {enrol} e1 ON e1.id = ue1.enrolid
+                   GROUP BY ue1.userid, e1.courseid
+                    ) ue
+               JOIN {user} u ON u.id = ue.userid
+               JOIN {course} c ON c.id = ue.courseid
+               JOIN {course_modules} cm ON cm.course = c.id
+               JOIN {modules} m ON m.id = cm.module
+          LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name AND gi.gradetype = 1
+          LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id
+          LEFT JOIN (SELECT qa.quiz, qa.userid, MAX(qa.attempt) AS num_of_attempts,
+                            MIN(qa.timemodified) AS first_completed_date
+                       FROM {quiz_attempts} qa
+                       JOIN {quiz} q ON q.id=qa.quiz {$sql_inner_filter2}
+                   GROUP BY qa.quiz, qa.userid
+                    ) qat ON qat.userid = u.id AND m.name = 'quiz' AND qat.quiz = cm.instance
+                    {$sql_join}
+              WHERE ue.id > 0 {$sql_filter}
+                    {$sql_having}
+                    {$sql_order}",
+            $params
+        );
+    }
+
+    public function report238($params)
+    {
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.email",
+            "c.shortname",
+            "activity",
+            "grade",
+            "l.visits",
+            "l.timespend",
+            "l.firstaccess",
+            "l.lastaccess",
+            "category",
+            "module"
+        ),
+            $this->get_filter_columns($params)
+        );
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_columns .= $this->get_modules_sql($params->custom);
+        $sql_having = $this->get_filter_sql($params, $columns, false);
+        $sql_order = $this->get_order_sql($params, $columns);
+
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "l.courseid");
+        $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
+        $sql_filter .= $this->get_filterdate_sql($params, "l.lastaccess");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_module_sql($params, "cm.");
+        $sql_vendor_filter = $this->vendor_filter('u.id', 'c.id', $params);
+
+        $sqljoin = $this->get_suspended_sql($params);
+
+        if ($params->custom2) {
+            $learner_roles = $this->get_filter_in_sql($params->custom2, 'ra.roleid');
+            $sqljoin .= " JOIN (SELECT ra.userid, ctx.instanceid
+                          FROM {context} ctx, {role_assignments} ra WHERE ctx.contextlevel = 50 AND ra.contextid = ctx.id $learner_roles
+                          GROUP BY ctx.instanceid, ra.userid) x ON x.userid = u.id AND x.instanceid = c.id";
+        }
+
+        $grade_single = intelliboard_grade_sql(false, $params);
+
+        return $this->get_report_data("
+            SELECT
+                l.id,
+                u.firstname,
+                u.lastname,
+                u.email,
+                c.shortname,
+                ca.name AS category,
+                l.visits,
+                l.timespend,
+                l.firstaccess,
+                l.lastaccess,
+                {$grade_single} AS grade,
+                m.name as module
+                $sql_columns
+            FROM {local_intelliboard_tracking} l
+                JOIN {user} u ON u.id = l.userid
+                JOIN {course} c ON c.id = l.courseid
+                LEFT JOIN {course_categories} ca ON ca.id = c.category
+                LEFT JOIN {course_modules} cm ON cm.id = l.param
+                LEFT JOIN {modules} m ON m.id = cm.module
+                LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name AND gi.gradetype = 1
+                LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id
+                {$sqljoin}
+            WHERE l.page = 'module' $sql_filter {$sql_vendor_filter} $sql_having $sql_order", $params);
     }
 }

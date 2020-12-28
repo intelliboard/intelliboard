@@ -331,7 +331,7 @@ class attendance_repository
         $rolefilter = new in_filter($this->get_student_roles(), "srole");
         list($sql, $sqlparams) = $this->buildSqlRequest(
             "SELECT CONCAT(u.id, '_', c.id) AS unique_f, u.*, c.id AS course_id,
-                    c.shortname AS course_short_name, c.fullname AS course_full_name, gg.finalgrade AS grade
+                    c.shortname AS course_short_name, c.fullname AS course_full_name, gg.finalgrade AS grade, gi.grademax AS grademax
                 FROM {context} cx
                     JOIN {role_assignments} ra ON ra.contextid = cx.id AND
                                                  ra.roleid " . $rolefilter->get_sql() . "
@@ -354,6 +354,44 @@ class attendance_repository
         }
 
         return $students;
+    }
+
+    /**
+     * Get Grade Letters
+     *
+     * @param array $params Params
+     * @return array List of grade letters
+     * @throws \dml_exception
+     */
+    public function get_grade_letters($params)
+    {
+        global $DB;
+
+        if(isset($params['report_params'])) {
+            $reportparams = json_decode($params['report_params'], true);
+        } else {
+            $reportparams = [];
+        }
+
+        if (!empty($reportparams['course_id'])) {
+            $gradeletters = $DB->get_records_sql(
+                "SELECT gl.lowerboundary, gl.letter
+                       FROM {grade_letters} gl
+                       JOIN {context} as c ON gl.contextid = c.id AND c.contextlevel = 50
+                       WHERE c.instanceid = :course_id", ['course_id' => $reportparams['course_id']]);
+
+            if ($gradeletters) {
+                return $gradeletters;
+            }
+        }
+
+        $systemcontextid = context_system::instance()->id;
+
+        return $DB->get_records_sql(
+            "SELECT lowerboundary, letter
+                   FROM {grade_letters}
+                   WHERE contextid = :context_id", ['context_id' => $systemcontextid]
+        );
     }
 
     /**
@@ -663,6 +701,32 @@ class attendance_repository
                 'courseidcm' => $params['courseid'],
                 'useridcm' => $params['userid']
             ]
+        );
+    }
+
+    public function get_course_user_attendance($params)
+    {
+        global $DB, $CFG;
+
+        $studentsFilter = new in_filter(explode(",", $params['users']), "");
+
+        return $DB->get_records_sql("
+            SELECT userid, courseid,
+                   MIN(firstaccess) as timestart,
+                   MAX(lastaccess) as timefinish
+              FROM {local_intelliboard_tracking} lit
+             WHERE courseid = :courseid AND userid {$studentsFilter->get_sql()}
+                   AND lit.firstaccess <= :timefinish AND lit.lastaccess >= :timestart
+          GROUP BY userid, courseid
+            ",
+            array_merge(
+                [
+                    'courseid' => $params['courseid'],
+                    'timestart' => $params['timestart'],
+                    'timefinish' => $params['timefinish']
+                ],
+                $studentsFilter->get_params()
+            )
         );
     }
 }
