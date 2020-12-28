@@ -107,7 +107,7 @@ $t22 = get_config('local_intelliboard', 't22');
 $t47 = get_config('local_intelliboard', 't47');
 $course_chart = get_config('local_intelliboard', 'course_chart');
 $course_activities = get_config('local_intelliboard', 'course_activities');
-$scale_percentage_round = get_config('local_intelliboard', 'scale_percentage_round');
+$scale_percentage_round = clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT);
 
 echo $OUTPUT->header();
 ?>

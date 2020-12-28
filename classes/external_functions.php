@@ -62,6 +62,8 @@ class local_external_functions
           13 => "system_roles.roles", // user system roles
           14 => "CONCAT(enrol_by.firstname, ' ', enrol_by.lastname)", // Enrolled by
           15 => "course_teachers.names", // Course teachers
+          17 => "CONCAT(course_sections.name, '|', course_sections.section)",
+          18 => "COALESCE(course_module_completion.timemodified, 0)",
         ];
         $this->functions = [
             'report1',
@@ -432,6 +434,10 @@ class local_external_functions
             'report233',
             'report234',
             'get_feedback_items',
+            'report235',
+            'report236',
+            'report237',
+            'report238',
         ];
     }
     public function get_function($params = null)

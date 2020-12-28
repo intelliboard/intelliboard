@@ -43,7 +43,7 @@ class local_intelliboard_intelli_table extends table_sql {
     function is_downloading($download = null, $filename='', $sheettitle='', $action = '', $pagesize = 10) {
         if ($download === 'pdf') {
             $this->setup();
-            $this->query_db(($action == 'learners' || $action = 'activities') ? $pagesize : 10, true);
+            $this->query_db($pagesize, true);
             $this->download = $download;
             $header = array_map(function($item) {
                 return (object) ["name" => $item];
