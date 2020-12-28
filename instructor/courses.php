@@ -104,8 +104,8 @@ if (in_array($action, ['learner', 'activities'])) {
         $modules
     );
 }
-if($table->is_downloading($download, $export_file_name, $action, $pagesize)){
-    $table->out(($action == 'learners' || $action = 'activities') ? $pagesize : 10, true);
+if($table->is_downloading($download, $export_file_name, '', $action, PHP_INT_MAX)){
+    $table->out(PHP_INT_MAX, true);
     exit;
 }
 
@@ -275,7 +275,7 @@ echo $OUTPUT->header();
 			</div>
 			<div class="clear"></div>
 			<div class="progress-table">
-				<?php $table->columns ? $table->out(($action == 'learners' || $action = 'activities') ? $pagesize : 10, true) : ''; ?>
+				<?php $table->columns ? $table->out(($action == 'learners' || $action == 'activities') ? $pagesize : 10, true) : ''; ?>
 			</div>
 		</div>
 	<?php include("../views/footer.php"); ?>

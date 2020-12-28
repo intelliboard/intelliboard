@@ -108,7 +108,7 @@ $t37 = get_config('local_intelliboard', 't37');
 $t38 = get_config('local_intelliboard', 't38');
 $t53 = get_config('local_intelliboard', 't53');
 $scale_real = get_config('local_intelliboard', 'scale_real');
-$scale_percentage_round = get_config('local_intelliboard', 'scale_percentage_round');
+$scale_percentage_round = clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT);
 
 $courses = intelliboard_learner_courses($showing_user->id, null);
 $coursesprogress = intelliboard_learner_courses($showing_user->id, $time);
