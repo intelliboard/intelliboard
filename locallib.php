@@ -59,9 +59,9 @@ function intelliboard_grade_sql($avg = false, $params = null, $alias = 'g.', $ro
 
     $scales = get_config('local_intelliboard', 'scales');
     $raw = get_config('local_intelliboard', 'scale_raw');
-    $total = get_config('local_intelliboard', 'scale_total');
-    $value = get_config('local_intelliboard', 'scale_value');
-    $percentage = get_config('local_intelliboard', 'scale_percentage');
+    $total = clean_param(get_config('local_intelliboard', 'scale_total'), PARAM_INT);
+    $value = clean_param(get_config('local_intelliboard', 'scale_value'), PARAM_INT);
+    $percentage = clean_param(get_config('local_intelliboard', 'scale_percentage'), PARAM_INT);
     $scale_real = get_config('local_intelliboard', 'scale_real');
 
     if($percent){

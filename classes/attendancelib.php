@@ -50,6 +50,9 @@ class local_intelliboard_attendancelib extends external_api {
                         'userid' => new external_value(
                             PARAM_TEXT, 'User ID', VALUE_OPTIONAL
                         ),
+                        'users' => new external_value(
+                            PARAM_SEQUENCE, 'Users IDs', VALUE_OPTIONAL
+                        ),
                         'role' => new external_value(
                             PARAM_TEXT, 'Role (student, teacher)', VALUE_OPTIONAL
                         ),
@@ -58,6 +61,12 @@ class local_intelliboard_attendancelib extends external_api {
                         ),
                         'report_params' => new external_value(
                             PARAM_TEXT, 'Params of reports', VALUE_OPTIONAL
+                        ),
+                        'timestart' => new external_value(
+                            PARAM_INT, 'Time start param', VALUE_OPTIONAL, 0
+                        ),
+                        'timefinish' => new external_value(
+                            PARAM_INT, 'Time finish param', VALUE_OPTIONAL, 0
                         ),
                     ]
                 )
@@ -96,7 +105,7 @@ class local_intelliboard_attendancelib extends external_api {
             'has_role', 'is_course_participant', 'get_course_students', 'is_admin',
             'number_of_courses', 'report_data', 'get_course_activities',
             'get_activity', 'get_courses_categories', 'get_course_student_stat',
-            'get_user_by_email'
+            'get_user_by_email', 'get_course_user_attendance', 'get_grade_letters',
         ];
 
         return in_array($methodname, $methods);
