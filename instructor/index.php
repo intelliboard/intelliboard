@@ -174,13 +174,11 @@ echo $OUTPUT->header();
 <div class="intelliboard-page intelliboard-instructor">
     <div class="additional_header clearfix">
         <?php include("views/menu.php"); ?>
-        <?php if($view != 'course_overview'): ?>
-            <div class="additional-form clearfix">
-                <input type="text" id="general-daterange" class="daterange flatpickr-input form-control"
-                       name="daterange" title="<?php echo get_string('filter_dates', 'local_intelliboard'); ?>" readonly="readonly"
-                       placeholder="<?php echo get_string('select_date', 'local_intelliboard'); ?>">
-            </div>
-        <?php  endif; ?>
+        <div class="additional-form clearfix">
+            <input type="text" id="general-daterange" class="daterange flatpickr-input form-control"
+                    name="daterange" title="<?php echo get_string('filter_dates', 'local_intelliboard'); ?>" readonly="readonly"
+                    placeholder="<?php echo get_string('select_date', 'local_intelliboard'); ?>">
+        </div>
     </div>
     
     <?php
