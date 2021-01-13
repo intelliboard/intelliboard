@@ -26,6 +26,10 @@ class reportColumnOrder
 
     public function getOrderSQL()
     {
+        if (empty($this->orderColumn["sql_column"])) {
+            return '';
+        }
+
         return "ORDER BY {$this->orderColumn["sql_column"]} {$this->orderDir}";
     }
 }

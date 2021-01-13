@@ -341,7 +341,7 @@ function intelliboard_instructor_modules()
                      GROUP BY ue.userid, e.courseid
                       ) enr ON enr.userid = ra.userid AND enr.courseid = ctx.instanceid
             $join_sql1
-        WHERE c.id > 0 $sql $sql2 GROUP BY m.id", $params);
+        WHERE c.id > 0 AND m.name IS NOT NULL $sql $sql2 GROUP BY m.id", $params);
 
     $data = array(array(get_string('in6', 'local_intelliboard'), get_string('time_spent', 'local_intelliboard')));
     foreach($items as $item){
