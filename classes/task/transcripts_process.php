@@ -70,5 +70,4 @@ class transcripts_process extends \core\task\scheduled_task {
 
         return true;
     }
-
 }
