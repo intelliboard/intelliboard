@@ -476,7 +476,7 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
                        LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
                                     FROM {user_enrolments} ue
                                     JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = :c5
-                                GROUP BY ue.userid
+                                GROUP BY ue.userid, e.courseid
                                  ) enr ON enr.userid = g.userid
                                  $join_group_sql
                            WHERE gi.itemtype = 'mod' AND gi.courseid = :c1 $sql33
@@ -909,7 +909,7 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                             MIN(ra.timemodified) AS timemodified 
                           FROM {role_assignments} ra, {context} e 
                           WHERE e.id = ra.contextid AND e.contextlevel = 50 AND ra.roleid $sql_roles
-                          GROUP BY ra.userid) ra
+                          GROUP BY ra.userid, e.instanceid) ra
                     JOIN {user} u ON u.id = ra.userid
                     JOIN {course} c ON c.id = ra.courseid
                LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
@@ -920,7 +920,7 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
                             FROM {user_enrolments} ue
                             JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = :c5
-                        GROUP BY ue.userid
+                        GROUP BY ue.userid, e.courseid
                ) enr ON enr.userid = u.id
 
                LEFT JOIN (SELECT cmc.userid, COUNT(DISTINCT cmc.id) as progress
