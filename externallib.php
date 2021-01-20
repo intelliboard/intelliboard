@@ -20740,10 +20740,6 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_filterdate_sql($params, 'cc.timecompleted');
         $sql_filter .= $this->get_filter_in_sql($params->cohortid, "ch.id");
         $sql = "
-            SELECT
-                   completion.*,
-                   SUM(completed) OVER(PARTITION BY category ORDER BY completed_at) totalcompleted
-              FROM (
                     SELECT CONCAT(ch.id, c.category, cc.id) AS id,
                            ch.name AS cohortname,
                            ct.name AS categoryname,
@@ -20773,9 +20769,38 @@ class local_intelliboard_external extends external_api {
                     ) cen ON cen.id = ch.id AND cen.category = c.category
               WHERE cc.timecompleted IS NOT NULL $sql_filter
            GROUP BY c.category, FROM_UNIXTIME(cc.timecompleted, '%Y-%m-%d')
-           ORDER BY c.category,completed_at
-            ) completion ";
+           ORDER BY c.category, completed_at";
         $data = $DB->get_records_sql($sql,$this->params);
+        return [
+            'data' => $data,
+        ];
+    }
+
+    public function monitor94($params)
+    {
+        global $DB;
+
+        if (empty($params->courseid)) {
+            return ['data' => []];
+        }
+
+        $sqlfilter = $this->get_filterdate_sql($params, 'cc.timecompleted');
+        $sqlfilter .= $this->get_filter_in_sql($params->courseid,'cc.course');
+        $sql_sub = $this->get_filter_in_sql($params->courseid,'e.courseid');
+
+        $data = $DB->get_records_sql(
+            "SELECT cc.course, COUNT(cc.userid) as completed_users, total_users, 
+                    ROUND(COUNT(cc.userid)/total_users * 100, 1) AS percent
+                    FROM {course_completions} cc
+                    LEFT JOIN (
+                            SELECT COUNT(DISTINCT u.id) as total_users, e.courseid
+                            FROM {user_enrolments} ue, {enrol} e, {user} u
+                            WHERE ue.enrolid = e.id AND u.id = ue.userid {$sql_sub}
+                            GROUP BY e.courseid) AS tu ON tu.courseid = cc.course
+                    WHERE cc.timecompleted IS NOT NULL {$sqlfilter}
+                    GROUP BY cc.course",
+            array_merge($this->params));
+
         return [
             'data' => $data,
         ];
@@ -21330,12 +21355,17 @@ class local_intelliboard_external extends external_api {
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
-        $sql_filter .= $this->get_filterdate_sql($params, "cc.timecompleted");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
         $completion = $this->get_completion($params, "x.");
+
+        if ($params->custom2 == 1) {
+            $sql_filter .= $this->get_filterdate_sql($params, "cc.timecompleted");
+        } else {
+            $sql_filter .= $this->get_filterdate_sql($params, "cc.timestarted");
+        }
 
         $data = $this->get_report_data("
             SELECT max(ue.id) AS id,
