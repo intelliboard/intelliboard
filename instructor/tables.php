@@ -449,9 +449,9 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
         $join_group_sql3 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
 
-        $sql33 = intelliboard_instructor_getcourses('gi.courseid', false, 'g.userid');
-        $sql44 = intelliboard_instructor_getcourses('m.course', false, 'cm.userid');
-        $sql55 = intelliboard_instructor_getcourses('courseid', false, 'userid');
+        $sql33 = intelliboard_instructor_getcourses('gi.courseid', false, 'g.userid', false, false);
+        $sql44 = intelliboard_instructor_getcourses('m.course', false, 'cm.userid', false, false);
+        $sql55 = intelliboard_instructor_getcourses('courseid', false, 'userid', false, false);
 
         if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
             $sql33 .= ' AND enr.status = 0';
@@ -476,7 +476,7 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
                        LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
                                     FROM {user_enrolments} ue
                                     JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = :c5
-                                GROUP BY ue.userid
+                                GROUP BY ue.userid, e.courseid
                                  ) enr ON enr.userid = g.userid
                                  $join_group_sql
                            WHERE gi.itemtype = 'mod' AND gi.courseid = :c1 $sql33
@@ -842,7 +842,10 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
         $this->define_headers($headers);
         $this->define_columns($columns);
 
-        $params = array('c1'=>$courseid, 'c2'=>$courseid, 'c3' => $courseid, 'c4' => $courseid, 'c5' => $courseid);
+        $params = array(
+            'c1' => $courseid, 'c2' => $courseid, 'c3' => $courseid, 'c4' => $courseid, 'c5' => $courseid,
+            'c6' => $courseid
+        );
         $sql = "";
         if($search){
             $sql .= sprintf(
@@ -855,14 +858,18 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
             $params['search2'] = "%$search%";
             $params['search3'] = "%$search%";
         }
-        list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
+        list($sqlroles, $sql_params) = $DB->get_in_or_equal(
+            explode(',', get_config('local_intelliboard', 'filter11')),
+            SQL_PARAMS_NAMED,
+            'r'
+        );
         $params = array_merge($params,$sql_params);
         $grade_single = intelliboard_grade_sql();
         $completion = intelliboard_compl_sql("cmc.");
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ra.courseid');
         $join_group_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ra.course_id');
 
-        $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id');
+        $sql33 = intelliboard_instructor_getcourses('c.id', false, 'u.id', false, false);
         $sql .= get_filter_usersql("u.");
         $mainsql = '';
 
@@ -871,13 +878,13 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
             $mainsql = ' AND enr.status = 0';
         }
 
-        $params = array_merge($params,$sql_params);
+        $params = array_merge($params, $sql_params);
         list($sql6, $sql_params) = $DB->get_in_or_equal(
             explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r6'
         );
-        $params = array_merge($params,$sql_params);
+        $params = array_merge($params, $sql_params);
 
-        $params = array_merge($params,$sql_params);
+        $params = array_merge($params, $sql_params);
         list($sql7, $sql_params) = $DB->get_in_or_equal(
             explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r7'
         );
@@ -903,13 +910,14 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                          l.visits AS visits,
                          cmc.progress AS progress,
                          '' as actions
-                    FROM (SELECT 
-                            ra.userid, 
-                            e.instanceid AS courseid, 
-                            MIN(ra.timemodified) AS timemodified 
-                          FROM {role_assignments} ra, {context} e 
-                          WHERE e.id = ra.contextid AND e.contextlevel = 50 AND ra.roleid $sql_roles
-                          GROUP BY ra.userid) ra
+                    FROM (SELECT ra.userid, 
+                                 cx.instanceid AS courseid, 
+                                 MIN(ra.timemodified) AS timemodified 
+                            FROM {role_assignments} ra
+                            JOIN {context} cx ON cx.id = ra.contextid AND cx.contextlevel = 50
+                           WHERE cx.instanceid = :c6 AND ra.roleid $sqlroles
+                        GROUP BY ra.userid, cx.instanceid
+                         ) ra
                     JOIN {user} u ON u.id = ra.userid
                     JOIN {course} c ON c.id = ra.courseid
                LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
@@ -920,13 +928,14 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
                             FROM {user_enrolments} ue
                             JOIN {enrol} e ON ue.enrolid = e.id AND e.courseid = :c5
-                        GROUP BY ue.userid
+                        GROUP BY ue.userid, e.courseid
                ) enr ON enr.userid = u.id
 
                LEFT JOIN (SELECT cmc.userid, COUNT(DISTINCT cmc.id) as progress
                             FROM {course_modules_completion} cmc
-                            JOIN {course_modules} cm ON cm.visible = 1 AND cmc.coursemoduleid = cm.id AND cm.completion > 0 AND cm.course = :c1
-                           WHERE cm.id > 0 $completion 
+                            JOIN {course_modules} cm ON cm.visible = 1 AND cmc.coursemoduleid = cm.id AND
+                                                        cm.completion > 0 AND cm.course = :c1
+                           WHERE cm.id > 0 {$completion} 
                         GROUP BY cmc.userid
                ) cmc ON cmc.userid = u.id
 
@@ -943,7 +952,9 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
         $this->scale_real = get_config('local_intelliboard', 'scale_real');
 
         /** Count course avg visits and avg time spent */
-        if(get_config('local_intelliboard', 'table_set_ilg_c12') or get_config('local_intelliboard', 'table_set_ilg_c11')) {
+        if (get_config('local_intelliboard', 'table_set_ilg_c12')
+            or get_config('local_intelliboard', 'table_set_ilg_c11')
+        ) {
             $cache = cache::make('local_intelliboard', 'instructor_course_data');
 
             if ($cache->has("avg_{$courseid}")) {
@@ -978,7 +989,8 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                                 ) course_total
                        GROUP BY course_total.courseid
                         ) course_avg ON course_avg.courseid = c.id
-                  WHERE c.id = :c4", $params
+                  WHERE c.id = :c4",
+                    $params
                 );
 
                 if ($data) {
