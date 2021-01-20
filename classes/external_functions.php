@@ -439,6 +439,7 @@ class local_external_functions
             'report237',
             'report238',
             'monitor93',
+            'monitor94',
         ];
     }
     public function get_function($params = null)
