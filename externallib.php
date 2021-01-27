@@ -438,7 +438,12 @@ class local_intelliboard_external extends external_api {
 
             foreach (explode(',', $params->ccf_columns) as $ccfcolumnid) {
                 if ($ccfcolumnid == clean_param($ccfcolumnid, PARAM_INT)) {
-                    $columnsql = "(SELECT CONCAT(cd.value, '|', cf.type, '|', cf.configdata)
+                    $columnsql = "(SELECT CONCAT(
+                    CASE
+                        WHEN cf.type = 'select' THEN cd.value-1
+                        ELSE cd.value
+                    END,
+                     '|', cf.type, '|', cf.configdata)
                                      FROM {customfield_category} cfc
                                      JOIN {customfield_field} cf ON cf.categoryid = cfc.id AND cf.id = {$ccfcolumnid}
                                      JOIN {customfield_data} cd ON cd.fieldid = cf.id
