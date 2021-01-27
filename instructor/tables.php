@@ -186,7 +186,9 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
 
         $sql1 = intelliboard_instructor_getcourses('c.id', false, '', false, false);
         $sql2 = intelliboard_instructor_getcourses('ra.course_id', false, 'ra.userid', false, false);
-        $rolefilter = "";
+        $rolefilter = '';
+        $userjoin = '';
+        $userfilter = '';
 
         list($sql_r, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
@@ -202,6 +204,11 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
         if ($search) {
             $sql1 .= " AND " . $DB->sql_like('c.fullname', ":fullname", false, false);
             $params['fullname'] = "%$search%";
+        }
+
+        if (get_filter_usersql("u.")) {
+            $userjoin = 'JOIN {user} u ON u.id = ra1.userid';
+            $userfilter .= get_filter_usersql("u.");
         }
 
         $fields = "
@@ -231,7 +238,8 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
                           FROM (SELECT ra1.userid, ctx.instanceid AS course_id
                                   FROM {role_assignments} ra1
                                   JOIN {context} ctx ON ctx.id = ra1.contextid AND ctx.contextlevel = 50
-                                 WHERE ra1.id > 0 {$rolefilter}
+                                       {$userjoin}
+                                 WHERE ra1.id > 0 {$rolefilter} {$userfilter}
                               GROUP BY ra1.userid, ctx.instanceid
                                ) ra
                      LEFT JOIN {course_completions} cc ON cc.course = ra.course_id AND cc.userid = ra.userid AND cc.timecompleted > 0
