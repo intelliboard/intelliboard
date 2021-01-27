@@ -72,6 +72,7 @@ function intelliboard_course_learners_total($courseid)
     $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'e.instanceid');
     $join_group_sql2 = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'gi.courseid');
     $enrolmentjoin = '';
+    $userjoin = '';
 
     $sql44 = intelliboard_instructor_getcourses('gi.courseid', false, 'g.userid', false, false);
     $sql55 = intelliboard_instructor_getcourses('c.id', false, 'ra.userid', false, false);
@@ -83,6 +84,11 @@ function intelliboard_course_learners_total($courseid)
                                  WHERE ue.status = 0
                               GROUP BY ue.userid, e.courseid
                                ) enr ON enr.userid = ra.userid AND enr.courseid = e.instanceid';
+    }
+
+    if (get_filter_usersql("u.")) {
+        $userjoin = 'JOIN {user} u ON u.id = ra.userid';
+        $sql55 .= get_filter_usersql("u.");
     }
 
     $cache = cache::make('local_intelliboard', 'instructor_course_data');
@@ -107,6 +113,7 @@ function intelliboard_course_learners_total($courseid)
                FROM {role_assignments} ra
                JOIN {context} e ON e.id = ra.contextid AND e.contextlevel = 50
                     {$enrolmentjoin}
+                    {$userjoin}
           LEFT JOIN {course} c ON c.id = e.instanceid
           LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = ra.userid AND cc.timecompleted > 0
           LEFT JOIN (SELECT t.userid,t.courseid, SUM(t.timespend) as timespend, SUM(t.visits) as visits
