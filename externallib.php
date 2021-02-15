@@ -3064,8 +3064,9 @@ class local_intelliboard_external extends external_api {
                         SUM(l.timespend) as timesite,
                         SUM(CASE WHEN t.courseid > 0 THEN l.timespend ELSE null END) as timecourses ,
                         SUM(CASE WHEN t.page = 'module' THEN l.timespend ELSE null END) as timeactivities
-                    FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
-                    WHERE l.trackid = t.id $sql_join_date
+                    FROM {local_intelliboard_tracking} t
+                    JOIN {local_intelliboard_logs} l ON l.trackid = t.id
+                    WHERE t.id > 0 $sql_join_date
                     GROUP BY t.userid";
         } else {
             $sql_join_filter = "SELECT userid,
@@ -3387,14 +3388,11 @@ class local_intelliboard_external extends external_api {
         } else {
             $sql_columns .= ", '' as cohortname";
         }
-
+        $sum_timespend = "SUM(timespend)";
         if($params->custom == 3) {
-            $sql_filter_join = $this->get_filterdate_sql($params, "timepoint");
-            $sql_join .= " JOIN (SELECT t.userid
-                                   FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
-                                  WHERE t.id = l.trackid {$sql_filter_join}
-                               GROUP BY t.userid
-                                ) l ON l.userid = u.id";
+            $sql_filter_join = $this->get_filterdate_sql($params, "l.timepoint");
+            $sql_time_join =  "JOIN {local_intelliboard_logs} l ON l.trackid = t.id";
+            $sum_timespend = "SUM(l.timespend)";
         } elseif($params->custom == 2) {
             $sql_filter .= $this->get_filterdate_sql($params, "u.lastaccess");
         } elseif($params->custom == 1) {
@@ -3423,20 +3421,23 @@ class local_intelliboard_external extends external_api {
                     lit3.timespend_activities
                     {$sql_columns}
                FROM {user} u
-          LEFT JOIN (SELECT userid, SUM(timespend) AS timespend_site
-                       FROM {local_intelliboard_tracking}
-                      WHERE courseid > 0 {$sql_vendor_filter}
-                   GROUP BY userid
+          LEFT JOIN (SELECT t.userid, {$sum_timespend} AS timespend_site
+                       FROM {local_intelliboard_tracking} t
+                       {$sql_time_join} {$sql_filter_join}
+                       WHERE t.id > 0 {$sql_vendor_filter}
+                       GROUP BY t.userid
                     ) lit1 ON lit1.userid = u.id
-          LEFT JOIN (SELECT userid, SUM(timespend) AS timespend_courses
-                       FROM {local_intelliboard_tracking}
-                      WHERE courseid > 0 {$sql_vendor_filter}
-                   GROUP BY userid
+          LEFT JOIN (SELECT t.userid, {$sum_timespend} AS timespend_courses
+                       FROM {local_intelliboard_tracking} t
+                       {$sql_time_join} {$sql_filter_join}
+                      WHERE t.courseid > 0 {$sql_vendor_filter}
+                   GROUP BY t.userid
                     ) lit2 ON lit2.userid = u.id
-          LEFT JOIN (SELECT userid, SUM(timespend) AS timespend_activities
-                       FROM {local_intelliboard_tracking}
-                      WHERE page = 'module' {$sql_vendor_filter}
-                   GROUP BY userid
+          LEFT JOIN (SELECT t.userid, {$sum_timespend} AS timespend_activities
+                       FROM {local_intelliboard_tracking} t
+                       {$sql_time_join} {$sql_filter_join}
+                      WHERE t.page = 'module' {$sql_vendor_filter}
+                   GROUP BY t.userid
                     ) lit3 ON lit3.userid = u.id
           {$sql_join}
               WHERE u.id > 0 {$sql_filter}
@@ -6260,7 +6261,7 @@ class local_intelliboard_external extends external_api {
         ), $this->get_filter_columns($params, [null, "cou"]));
 
         $sql_columns = $this->get_columns($params, [null, "cou"]);
-        $sql_filter = $this->get_teacher_sql($params, ["ra.userid" => "users", "cou" => "cc.courseid"]);
+        $sql_filter = $this->get_teacher_sql($params, ["ra.userid" => "users", "cc.courseid" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'cc.courseid');
         $sql_filter .= $this->sql_cohort_members_filter($params, "cu.userid");
         $sql_filter .= $this->sql_cohort_members_filter($params, "cou_com.userid");
@@ -6285,7 +6286,7 @@ class local_intelliboard_external extends external_api {
         }
 
         return $this->get_report_data(
-            "SELECT c.id,
+            "SELECT CONCAT(c.id, '_', cou.id) AS id,
                     c.shortname AS competency,
                     cou.fullname AS course,
                     c.path,
@@ -6295,13 +6296,13 @@ class local_intelliboard_external extends external_api {
                     {$group_concat} AS modules
                     {$sql_columns}
                FROM {competency_coursecomp} cc
-          LEFT JOIN {competency} c ON c.id = cc.competencyid
-          LEFT JOIN {competency_usercompcourse} cu ON cu.courseid = cc.courseid AND cu.competencyid = c.id AND cu.proficiency = 1
-          LEFT JOIN {context} con ON con.contextlevel = 50 AND con.instanceid = cc.courseid
-          LEFT JOIN {role_assignments} ra ON ra.contextid = con.id {$learner_roles} {$userfilter}
-          LEFT JOIN {competency_modulecomp} comm ON comm.competencyid = c.id
-          LEFT JOIN {course} cou ON cou.id = cc.courseid
-          LEFT JOIN {course_completions} cou_com ON cou_com.course = cc.courseid AND cou_com.timecompleted > 0
+            LEFT JOIN {context} con ON con.contextlevel = 50 AND con.instanceid = cc.courseid
+            LEFT JOIN {role_assignments} ra ON ra.contextid = con.id {$learner_roles} {$userfilter}
+            LEFT JOIN {competency} c ON c.id = cc.competencyid
+            LEFT JOIN {competency_usercompcourse} cu ON cu.courseid = cc.courseid AND cu.competencyid = c.id AND cu.proficiency = 1 AND cu.userid = ra.userid
+            LEFT JOIN {competency_modulecomp} comm ON comm.competencyid = c.id
+            LEFT JOIN {course} cou ON cou.id = cc.courseid
+            LEFT JOIN {course_completions} cou_com ON cou_com.course = cc.courseid AND cou_com.timecompleted > 0 AND cou_com.userid = ra.userid
               WHERE cc.id > 0 {$sql_filter}
            GROUP BY c.id, cou.id {$sql_having} {$sql_order}",
             $params
@@ -12767,16 +12768,19 @@ class local_intelliboard_external extends external_api {
             JOIN {cohort_members} cm ON cm.userid = u.id
             $sql_join
           WHERE u.id>0 $sql_filter $sql_filter_compl $sql_having $sql_order", $params, false);
+        $totals = null;
+        $completions = null;
+        if (!empty($data)) {
+            $totals = $DB->get_record_sql("
+                SELECT COUNT(DISTINCT cm.id) AS learners, COUNT(DISTINCT CASE WHEN u.firstaccess > 0 THEN u.id ELSE null END) AS registrants
+                FROM {cohort_members} cm, {user} u
+                WHERE u.id = cm.userid $sql_filter $sql_having", $this->params);
 
-        $totals = $DB->get_record_sql("
-              SELECT COUNT(DISTINCT cm.id) AS learners, COUNT(DISTINCT CASE WHEN u.firstaccess > 0 THEN u.id ELSE null END) AS registrants
-              FROM {cohort_members} cm, {user} u
-              WHERE u.id = cm.userid $sql_filter $sql_having", $this->params);
-
-        $completions = $DB->get_records_sql("
-              SELECT c.course, COUNT(DISTINCT c.userid) AS users
-              FROM {course_completions} c, {cohort_members} cm,  {user} u
-              WHERE c.userid = cm.userid AND u.id = c.userid AND c.timecompleted > 0 $sql_filter GROUP BY c.course $sql_having1", $this->params);
+            $completions = $DB->get_records_sql("
+                SELECT c.course, COUNT(DISTINCT c.userid) AS users
+                FROM {course_completions} c, {cohort_members} cm,  {user} u
+                WHERE c.userid = cm.userid AND u.id = c.userid AND c.timecompleted > 0 $sql_filter GROUP BY c.course $sql_having1", $this->params);
+        }
 
         return [
           'data' => $data,
@@ -20910,42 +20914,53 @@ class local_intelliboard_external extends external_api {
     {
         global $DB;
         if (empty($params->cohortid)) {
-            return [];
+            return ['data' => []];
         }
+        $sql_cohort_filter = $this->get_filter_in_sql($params->cohortid, "ch.id");
+        $sql_filter = $this->get_filterdate_sql($params, 'completed_at');
+        if ($params->timefinish) {
+            $max_date_filter = "AND cc.timecompleted < {$params->timefinish} + 86400";
+        }
+        $sql = "  SELECT id, cohort_id, cohortname, categoryname, category, uenrolled, ucompleted, completed_at, percent_completed
+                  FROM (
+                  SELECT t1.*,
+                         IF(@cur_category <> category, @prev_completed:=0, @prev_completed) AS prev_sum,
+                         @cur_category:=category AS cur_category,
+                         @prev_completed:=@prev_completed+ucompleted AS prev_completed,
+                         ROUND(@prev_completed / uenrolled * 100, 2) AS percent_completed
+                    FROM (SELECT @prev_completed:=0) prev_completed,
+                         (SELECT @cur_category:=NULL) cur_category,
+                         (SELECT @rowid := @rowid + 1 AS id,
+                                 ch.id AS cohort_id,
+                                 ch.name AS cohortname,
+                                 ct.name AS categoryname,
+                                 c.category,
+                                 cen.uenrolled,
+                                 SUM(CASE WHEN cc.timecompleted>0 THEN 1 ELSE 0 END) AS ucompleted,
+                                 UNIX_TIMESTAMP(FROM_UNIXTIME(cc.timecompleted, '%Y-%m-%d')) AS completed_at
+                            FROM (SELECT @rowid := 0) AS rowid, {cohort} ch
+                            JOIN {enrol} e ON e.customint1 = ch.id  AND e.enrol = 'cohort'
+                            JOIN {user_enrolments} ue ON ue.enrolid=e.id
+                            JOIN {course} c ON c.id = e.courseid
+                            JOIN {course_categories} ct ON ct.id = c.category
+                       LEFT JOIN {course_completions} cc ON cc.userid=ue.userid AND cc.course=c.id
+                            JOIN (
+                                    SELECT
+                                        ch.id,
+                                        c.category,
+                                        COUNT(ue.userid) AS uenrolled
+                                    FROM {cohort} ch
+                                    JOIN {enrol} e ON e.customint1 = ch.id  AND e.enrol = 'cohort'
+                                    JOIN {user_enrolments} ue ON ue.enrolid=e.id
+                                    JOIN {course} c ON c.id = e.courseid
+                                GROUP BY ch.id, c.category
+                            ) cen ON cen.id = ch.id AND cen.category = c.category
+                    WHERE cc.timecompleted IS NOT NULL $sql_cohort_filter $max_date_filter
+                GROUP BY c.category, FROM_UNIXTIME(cc.timecompleted, '%Y-%m-%d')
+                ORDER BY c.category, completed_at) AS t1
+                ) completions
+                WHERE cohort_id > 0 $sql_filter";
 
-        $sql_filter = $this->get_filterdate_sql($params, 'cc.timecompleted');
-        $sql_filter .= $this->get_filter_in_sql($params->cohortid, "ch.id");
-        $sql = "
-                    SELECT CONCAT(ch.id, c.category, cc.id) AS id,
-                           ch.name AS cohortname,
-                           ct.name AS categoryname,
-                           c.category,
-                           cen.uenrolled,
-                           SUM(CASE WHEN cc.timecompleted>0 THEN 1 ELSE 0 END) AS ucompleted,
-                           ROUND(SUM(CASE WHEN cc.timecompleted>0 THEN 1 ELSE 0 END) / cen.uenrolled * 100, 2) AS completed,
-                           UNIX_TIMESTAMP(FROM_UNIXTIME(cc.timecompleted, '%Y-%m-%d')) AS completed_at
-                      FROM {cohort} ch
-                      JOIN {enrol} e ON e.customint1 = ch.id  AND e.enrol = 'cohort'
-                      JOIN {course} c ON c.id = e.courseid
-                      JOIN {user_enrolments} ue ON ue.enrolid=e.id
-                      JOIN {user} u ON u.id=ue.userid
-                      JOIN {course_categories} ct ON ct.id = c.category
-                 LEFT JOIN {course_completions} cc ON cc.userid=ue.userid AND cc.course=c.id
-                      JOIN (
-                            SELECT
-                                   ch.id,
-                                   c.category,
-                                   COUNT(u.id) AS uenrolled
-                              FROM {cohort} ch
-                              JOIN {enrol} e ON e.customint1 = ch.id  AND e.enrol = 'cohort'
-                              JOIN {course} c ON c.id = e.courseid
-                              JOIN {user_enrolments} ue ON ue.enrolid=e.id
-                              JOIN {user} u ON u.id=ue.userid
-                          GROUP BY ch.id, c.category
-                    ) cen ON cen.id = ch.id AND cen.category = c.category
-              WHERE cc.timecompleted IS NOT NULL $sql_filter
-           GROUP BY c.category, FROM_UNIXTIME(cc.timecompleted, '%Y-%m-%d')
-           ORDER BY c.category, completed_at";
         $data = $DB->get_records_sql($sql,$this->params);
         return [
             'data' => $data,
@@ -20957,26 +20972,17 @@ class local_intelliboard_external extends external_api {
         global $DB;
 
         $sqlfilter = $this->get_filterdate_sql($params, 'cc.timecompleted');
-        $sqlfilter .= $this->get_filter_in_sql($params->courseid,'cc.course');
+        $sqlfilter .= $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
         $sqlfilter .= $this->get_filter_in_sql($params->learner_roles, 'ra.roleid');
-        $sqlsubfilter = $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
-        $sqlsubfilter .= $this->get_filter_in_sql($params->learner_roles, 'ra.roleid');
 
         $data = $DB->get_records_sql(
-            "SELECT cc.course, COUNT(cc.userid) as completed_users, total_users, 
-                    ROUND(COUNT(cc.userid)/total_users * 100, 1) AS percent
-                    FROM {course_completions} cc
-                        LEFT JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.instanceid =  cc.course
-                        LEFT JOIN {role_assignments} ra ON ra.contextid = ctx.id AND ra.userid = cc.userid
-                        LEFT JOIN (
-                            SELECT COUNT(DISTINCT u.id) as total_users, ctx.instanceid
-                            FROM {user} u
-                                LEFT JOIN {role_assignments} ra ON ra.userid = u.id
-                                LEFT JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.id = ra.contextid
-                            WHERE ctx.instanceid > 0 {$sqlsubfilter}
-                            GROUP BY ctx.instanceid) AS tu ON tu.instanceid = cc.course
-                     WHERE cc.timecompleted IS NOT NULL {$sqlfilter}
-                    GROUP BY cc.course, tu.total_users", $this->params);
+            "SELECT cc.course, COUNT(DISTINCT cc.userid) as completed_users, COUNT(DISTINCT ra.userid) AS total_users, 
+                        ROUND(COUNT(DISTINCT cc.userid)/COUNT(DISTINCT ra.userid) * 100, 1) AS percent
+                   FROM {context} ctx
+                   JOIN {role_assignments} ra ON ra.contextid = ctx.id
+              LEFT JOIN {course_completions} cc ON ctx.instanceid = cc.course AND ra.userid = cc.userid AND cc.timecompleted
+                  WHERE ctx.contextlevel = 50 {$sqlfilter}
+               GROUP BY ctx.instanceid", $this->params);
 
         return [
             'data' => $data,
