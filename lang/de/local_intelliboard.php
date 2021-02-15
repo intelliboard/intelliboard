@@ -1021,3 +1021,4 @@ $string['do_not_use_compresstracking'] = 'Verwenden Sie Compress Tracking nicht'
 $string['cache_compresstracking'] = 'Im Moodle-Cache speichern';
 $string['file_compresstracking'] = 'In MoodleData speichern';
 $string['cachedef_tracking'] = 'Intelliboard Tracking-Daten';
+$string['cachedef_track_config'] = 'Intelliboard Tracking total data';

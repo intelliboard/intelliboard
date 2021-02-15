@@ -272,6 +272,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
     $intelliboardMediaTrack = get_config('local_intelliboard', 'trackmedia');
     $compresstrackingtype = get_config('local_intelliboard', 'compresstracking');
     $path = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
+    $cachetrackconfig = \cache::make('local_intelliboard', 'track_config');
 
     if (strpos($path,'cron.php') !== false) {
         return false;
@@ -397,23 +398,31 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
                 if (!$ajaxRequest) {
                     if ($trackpoint != $currentstamp) {
                         set_config("trackpoint", $currentstamp, "local_intelliboard");
-
-                        $DB->delete_records('local_intelliboard_config');
+                        $cachetrackconfig->purge();
                     }
-                    if (!$DB->get_record('local_intelliboard_config', ['type' => 0, 'instanceid' => $USER->id])) {
+
+                    $cachekey = 'type_0_instanceid_' . $USER->id;
+                    if (!$cachetrackconfig->has($cachekey)) {
                         $sessions = new stdClass();
                         $sessions->type = 0;
                         $sessions->instanceid = (int)$USER->id;
                         $sessions->timecreated = $currentstamp;
-                        $DB->insert_record('local_intelliboard_config', $sessions);
+                        if (!$cachetrackconfig->set($cachekey, $sessions)){
+                            // Something wrong.
+                            error_log("Intelliboard tracking config: error save track to cache, key:{$cachekey}, data:" . json_encode($sessions));
+                        }
                     }
 
-                    if ($intelliboardPage == 'course' and !$DB->get_record('local_intelliboard_config', ['type' => 1, 'instanceid' => $intelliboardParam])) {
+                    $cachekey = 'type_1_instanceid_' . $intelliboardParam;
+                    if ($intelliboardPage == 'course' and !$cachetrackconfig->has($cachekey)) {
                         $courses = new stdClass();
                         $courses->type = 1;
                         $courses->instanceid = (int)$intelliboardParam;
                         $courses->timecreated = $currentstamp;
-                        $DB->insert_record('local_intelliboard_config', $courses);
+                        if (!$cachetrackconfig->set($cachekey, $sessions)){
+                            // Something wrong.
+                            error_log("Intelliboard tracking config: error save track to cache, key:{$cachekey}, data:" . json_encode($courses));
+                        }
                     }
                 }
 

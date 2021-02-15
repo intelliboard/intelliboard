@@ -42,5 +42,10 @@ $definitions = [
         'requirelockingwrite' => true,
         'overrideclass' => 'local_intelliboard\tools\cache_application',
         'overrideclassfile' => 'local/intelliboard/classes/tools/cache_application.php'
+    ],
+    'track_config' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true
     ]
 ];
