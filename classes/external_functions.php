@@ -440,6 +440,8 @@ class local_external_functions
             'report238',
             'monitor93',
             'monitor94',
+            'get_course_feedbacks',
+            'get_feedback_questions',
         ];
     }
     public function get_function($params = null)
