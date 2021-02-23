@@ -70,7 +70,7 @@ class student_badges extends \table_sql {
         $from = "{badge} bdg
             JOIN {badge_criteria} bdgc ON bdgc.badgeid = bdg.id AND bdgc.criteriatype = 5
             JOIN {badge_criteria_param} bcrp ON bcrp.critid = bdgc.id
-       LEFT JOIN {course} c ON c.id = (CASE WHEN bcrp.name LIKE 'course_%' THEN " . ($CFG->dbtype == 'mysqli' ? 'bcrp.value' : 'bcrp.value::INTEGER') . " ELSE -1 END)
+       LEFT JOIN {course} c ON c.id = (CASE WHEN bcrp.name LIKE 'course_%' THEN " . (in_array($CFG->dbtype, ['mysqli', 'mariadb']) ? 'bcrp.value' : 'bcrp.value::INTEGER') . " ELSE -1 END)
        LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
        LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = :userid1
        LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = :userid2";
