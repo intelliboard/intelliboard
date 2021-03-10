@@ -328,6 +328,14 @@ class attendance_repository
             $sqlparams = array_merge($coursesfilter->get_params(), $sqlparams);
         }
 
+        if ($reportparams['inactive_users'] == 0) {
+            $enroljoin = 'JOIN {enrol} e ON e.courseid = c.id
+                    JOIN {user_enrolments} ue ON ue.userid = u.id AND ue.enrolid = e.id';
+            $sqlenrolfilter = 'AND ue.status = 0';
+        } else {
+            $enroljoin = $sqlenrolfilter = '';
+        }
+
         $rolefilter = new in_filter($this->get_student_roles(), "srole");
         list($sql, $sqlparams) = $this->buildSqlRequest(
             "SELECT CONCAT(u.id, '_', c.id) AS unique_f, u.*, c.id AS course_id,
@@ -337,9 +345,10 @@ class attendance_repository
                                                  ra.roleid " . $rolefilter->get_sql() . "
                     JOIN {user} u ON u.id = ra.userid
                     JOIN {course} c ON c.id = cx.instanceid
+                    {$enroljoin}
                     LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
                     LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = u.id
-                WHERE {$where}
+                WHERE {$where} {$sqlenrolfilter}
            GROUP BY u.id, c.id, gg.finalgrade, gi.grademax",
             array_merge($sqlparams, $rolefilter->get_params()),
             $reportparams

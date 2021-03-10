@@ -263,9 +263,17 @@ function local_intelliboard_get_regexes(){
 function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparameters = []) {
     global $CFG, $PAGE, $SITE, $DB, $USER;
 
+    $ajax = (int) get_config('local_intelliboard', 'ajax');
+    $lastajaxtracking = get_user_preferences('last_intelliboard_ajax_tracking', 0);
+    
+    if ($ajaxRequest && (time() - $lastajaxtracking < $ajax)) {
+        return true;
+    } else {
+        set_user_preference('last_intelliboard_ajax_tracking', time());
+    }
+
     $version = get_config('local_intelliboard', 'version');
     $enabled = get_config('local_intelliboard', 'enabled');
-    $ajax = (int) get_config('local_intelliboard', 'ajax');
     $inactivity = (int) get_config('local_intelliboard', 'inactivity');
     $trackadmin = get_config('local_intelliboard', 'trackadmin');
     $trackpoint = get_config('local_intelliboard', 'trackpoint');
