@@ -26,10 +26,21 @@ class reportColumnOrder
 
     public function getOrderSQL()
     {
+        global $CFG;
+
         if (empty($this->orderColumn["sql_column"])) {
             return '';
         }
 
-        return "ORDER BY {$this->orderColumn["sql_column"]} {$this->orderDir}";
+        $order= '';
+        if ($CFG->dbtype == 'pgsql') {
+            if (strtolower($this->orderDir) == 'desc') {
+                $order = 'NULLS LAST';
+            } else {
+                $order = 'NULLS FIRST';
+            }
+        }
+
+        return "ORDER BY {$this->orderColumn["sql_column"]} {$this->orderDir} {$order}";
     }
 }
