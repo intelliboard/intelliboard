@@ -757,5 +757,33 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2021021204, 'local', 'intelliboard');
     }
 
-	return true;
+    if ($oldversion < 2021031504) {
+        // Define index courseid (not unique) to be added to local_intelliboard_bbb_meet.
+        $table = new xmldb_table('local_intelliboard_bbb_meet');
+        $index = new xmldb_index('courseid', XMLDB_INDEX_NOTUNIQUE, ['courseid']);
+
+        // Conditionally launch add index courseid.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Intelliboard savepoint reached.
+        upgrade_plugin_savepoint(true, 2021031504, 'local', 'intelliboard');
+    }
+
+    if ($oldversion < 2021031508) {
+        // Define index localmeetingid (not unique) to be added to local_intelliboard_bbb_atten.
+        $table = new xmldb_table('local_intelliboard_bbb_atten');
+        $index = new xmldb_index('localmeetingid', XMLDB_INDEX_NOTUNIQUE, ['localmeetingid']);
+
+        // Conditionally launch add index localmeetingid.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Intelliboard savepoint reached.
+        upgrade_plugin_savepoint(true, 2021031508, 'local', 'intelliboard');
+    }
+
+    return true;
 }
