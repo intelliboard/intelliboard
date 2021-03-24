@@ -5504,7 +5504,7 @@ class local_intelliboard_external extends external_api {
         global $CFG;
         $columns = array_merge(array(
             "c.id", "c.fullname", "c.shortname", "category", "c.startdate", "ue.enrolled", "x.users", "inactiveusers",
-            "cc.completed", "completed_activities", "x.lastaccess", "timespend", "visits", "teacher"
+            "cc.completed", "completed_activities", "x.lastaccess", "visits", "timespend", "teacher"
         ), $this->get_filter_columns($params, [null]));
 
         $sql_columns = $this->get_columns($params, [null]);
@@ -10298,7 +10298,7 @@ class local_intelliboard_external extends external_api {
                 $item->teacher_feedback = '';
             }
         }
-        
+
         return ['data' => $data];
     }
     function report155($params)
@@ -10325,7 +10325,7 @@ class local_intelliboard_external extends external_api {
             SELECT c.id,
                    c.fullname,
                    COUNT(DISTINCT ra.userid) as all_learners,
-                   COUNT(DISTINCT CASE WHEN comp.userid IS NOT NULL THEN u.id ELSE NULL END) as completed_learners,
+                   COUNT(DISTINCT CASE WHEN comp.userid IS NOT NULL AND ula.id IS NOT NULL THEN u.id ELSE NULL END) as completed_learners,
                    COUNT(DISTINCT CASE WHEN comp.userid IS NULL AND ula.id IS NOT NULL THEN u.id ELSE NULL END) as not_completed_learners,
                    COUNT(DISTINCT CASE WHEN ula.id IS NULL THEN u.id ELSE NULL END) as not_accessed_learners
                    {$sql_columns}
@@ -11264,7 +11264,7 @@ class local_intelliboard_external extends external_api {
         $sql_cohort = $this->get_filter_in_sql($params->cohortid, "ch.cohortid");
         $sql_join = " LEFT JOIN (SELECT ch.userid, $cohorts AS cohorts FROM {cohort} coh, {cohort_members} ch WHERE coh.id = ch.cohortid $sql_cohort GROUP BY ch.userid) coo ON coo.userid = u.id";
         $sql_join .= $this->group_aggregation('u.id', 'c.id', $params);
-        
+
         if ($params->cohortid) {
           $sql_filter .= " AND coo.cohorts IS NOT NULL";
         }
@@ -12322,8 +12322,24 @@ class local_intelliboard_external extends external_api {
             $temp_table[] = "SELECT '$hash_code' AS hashcode, $quiz->id AS quiz";
         }
 
-
-        $columns = array("c.fullname", "q.name", "ta_course.tags", "ta_module.tags", "qs.slot", "q.qtype", "q.name", "ta_question.tags", "qs.s", "qs.facility", "qs.sd", "qs.randomguessscore", "qs.maxmark", "qs.effectiveweight", "qs.discriminationindex", "qs.discriminativeefficiency");
+        $columns = [
+            "c.fullname",
+            "q.name",
+            "ta_course.tags",
+            "ta_module.tags",
+            "qs.slot",
+            "q.qtype",
+            "q.name",
+            "ta_question.tags",
+            "qs.s",
+            "qs.facility",
+            "sd",
+            "qs.randomguessscore",
+            "intended_weight",
+            "qs.effectiveweight",
+            "qs.discriminationindex",
+            "qs.discriminativeefficiency"
+        ];
 
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
@@ -12417,7 +12433,22 @@ class local_intelliboard_external extends external_api {
             $temp_table[] = "SELECT '$hash_code' AS hashcode, $quiz->id AS quiz";
         }
 
-        $columns = array("c.fullname", "q.name", "ta_course.tags", "ta_module.tags", "qs.firstattemptscount", "qs.allattemptscount", "qs.firstattemptsavg", "qs.allattemptsavg", "qs.lastattemptsavg", "qs.highestattemptsavg", "qs.median", "qs.standarddeviation", "qs.skewness", "qs.kurtosis");
+        $columns = [
+            "course_name",
+            "quiz_name",
+            "course_tags",
+            "activity_tags",
+            "qs.firstattemptscount",
+            "qs.allattemptscount",
+            "firstattemptsavg",
+            "allattemptsavg",
+            "lastattemptsavg",
+            "highestattemptsavg",
+            "median",
+            "standarddeviation",
+            "qs.skewness",
+            "qs.kurtosis"
+        ];
 
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses"]);
         $sql_having = $this->get_filter_sql($params, $columns, false);
