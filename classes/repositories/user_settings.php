@@ -26,7 +26,7 @@ class user_settings
         $numerictypecast = DBHelper::get_typecast("numeric");
 
         return $DB->get_records_sql(
-            "SELECT c.*
+            "SELECT DISTINCT c.*
                FROM {local_intelliboard_assign} lia
                JOIN {course} c ON c.id = lia.instance{$numerictypecast} {$sqlcourseivsibility}
                JOIN {context} cx ON cx.contextlevel = :coursecontextlevel AND cx.instanceid = c.id
