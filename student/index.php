@@ -642,6 +642,7 @@ echo $OUTPUT->header();
         
         jQuery(document).ready(function(){
             jQuery('.intelliboard-dropdown:not(.students) ul li').click(function(e){
+                e.stopPropagation();
                 var stext = jQuery(this).parent().parent().find('span').text();
                 var svalue = jQuery(this).parent().parent().find('span').attr('value');
                 var ctext = jQuery(this).text();
@@ -656,6 +657,7 @@ echo $OUTPUT->header();
             });
 
             jQuery('.intelliboard-dropdown:not(.students) button').click(function(e){
+                e.stopPropagation();
                 if(jQuery(this).parent().hasClass('disabled')){
                     return false;
                 }
@@ -663,26 +665,31 @@ echo $OUTPUT->header();
             });
 
             jQuery('.closesettings').click(function(e){
+                e.stopPropagation();
                 e.preventDefault();
                 jQuery(this).parent().parent().parent().parent().find('.nav-tabs li:first a')[0].click();
             });
 
             jQuery('.intsettings').click(function(e){
+                e.stopPropagation();
                 e.preventDefault();
                 jQuery(this).parent().parent().find('li').removeClass("active");
                 jQuery(this).parent().parent().parent().find('.tab').removeClass("active");
                 jQuery('.intsettings-box').addClass("active");
             });
             jQuery('.searchviewclose').click(function(e){
+                e.stopPropagation();
                 e.preventDefault();
                 jQuery(this).parent().parent().removeClass("active");
             });
             jQuery('.searchview').click(function(e){
+                e.stopPropagation();
                 e.preventDefault();
                 jQuery(this).parent().addClass("active");
             });
 
             jQuery('.cview').click(function(e){
+                e.stopPropagation();
                 e.preventDefault();
 
                 jQuery(this).parent().find('span').removeClass("active");
@@ -692,6 +699,7 @@ echo $OUTPUT->header();
                 jQuery('.cview-table').addClass(m);
             });
             jQuery('.nav-tabs li a').click(function(e){
+                e.stopPropagation();
                 e.preventDefault();
                 jQuery(this).parent().parent().find('li').removeClass("active");
                 jQuery(this).parent().parent().find('a').removeClass("active");
@@ -701,11 +709,13 @@ echo $OUTPUT->header();
             });
 
             jQuery('.chart-tabs a').click(function(e){
+                e.stopPropagation();
                 e.preventDefault();
                 jQuery(this).parent().parent().parent().find('.chart-tab').hide().eq(jQuery(this).parent().index()).show();
             });
 
             jQuery('.intelliboard-origin-head a').click(function(e){
+                e.stopPropagation();
                 e.preventDefault();
 
                 jQuery(this).parent().find('a').removeClass("active");

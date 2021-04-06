@@ -349,6 +349,7 @@
 
             function googleChartsCallback() {
                 $('.intelliboard-dropdown button').click(function(e){
+                    e.stopPropagation();
                     if($(this).parent().hasClass('disabled')){
                         return false;
                     }
@@ -356,6 +357,7 @@
                 });
 
                 $('.nav-tabs .nav-item').click(function (e) {
+                    e.stopPropagation();
                     e.preventDefault();
                     var parent = $(this).parent();
                     var container = $(parent).parent();
@@ -394,6 +396,7 @@
                 });
 
                 $('.summary .intelliboard-dropdown ul li a').click(function (e) {
+                    e.stopPropagation();
                     e.preventDefault();
                     var tab = $(this).attr('data-tab');
                     $('.summary .summary-item').hide();
@@ -405,6 +408,7 @@
                 $('.summary .intelliboard-dropdown ul li:first-child a').click();
 
                 $('#chart5 .intelliboard-dropdown a').click(function (e) {
+                    e.stopPropagation();
                     e.preventDefault();
                     $('#chart5 .intelliboard-dropdown button span').html($(this).html());
                     $('#chart5 .intelliboard-dropdown button').val($(this).attr('data-value'));
@@ -412,10 +416,12 @@
                     load_engagement_chart();
                 });
                 $('.nav-item[data-tab="chart5"]').click(function (e) {
+                    e.stopPropagation();
                     load_engagement_chart();
                 });
 
                 $('#chart8 .intelliboard-dropdown a').click(function (e) {
+                    e.stopPropagation();
                     e.preventDefault();
                     $('#chart8 .intelliboard-dropdown button span').html($(this).html());
                     $('#chart8 .intelliboard-dropdown button').val($(this).attr('data-value'));
@@ -424,6 +430,7 @@
                 });
 
                 $('#chart7 .intelliboard-dropdown.courses a').click(function (e) {
+                    e.stopPropagation();
                     e.preventDefault();
                     var course = $(this).attr('data-value');
                     $('#chart7 .intelliboard-dropdown.courses button span').html($(this).html());
@@ -437,6 +444,7 @@
                 load_chart7_users_list(course);
 
                 $("#chart7 .intelliboard-dropdown.users").on("click", "a", function(e){
+                    e.stopPropagation();
                     e.preventDefault();
                     var user = $(this).attr('data-value');
                     var course = $('#chart7 .intelliboard-dropdown.courses button').val();
@@ -466,6 +474,7 @@
                     });
                 });
                 $('#chart3 .intelliboard-dropdown a').click(function (e) {
+                    e.stopPropagation();
                     e.preventDefault();
                     $('#chart3 .intelliboard-dropdown button span').html($(this).html());
                     $('#chart3 .intelliboard-dropdown button').val($(this).attr('data-value'));
@@ -473,9 +482,11 @@
                     load_module_utilization_chart();
                 });
                 $('.nav-item[data-tab="chart3"]').click(function (e) {
+                    e.stopPropagation();
                     load_module_utilization_chart();
                 });
                 $('#chart6 .intelliboard-dropdown a').click(function (e) {
+                    e.stopPropagation();
                     e.preventDefault();
                     $('#chart6 .intelliboard-dropdown button span').html($(this).html());
                     $('#chart6 .intelliboard-dropdown button').val($(this).attr('data-value'));
@@ -483,6 +494,7 @@
                     load_topic_utilization_chart();
                 });
                 $('.nav-item[data-tab="chart6"]').click(function (e) {
+                    e.stopPropagation();
                     load_topic_utilization_chart();
                 });
 
@@ -491,6 +503,7 @@
 
                 {{#iscourseview}}
                     $('.intelliboard-additional-form .switcher a').click(function (e) {
+                        e.stopPropagation();
                         e.preventDefault();
                         $('.intelliboard-additional-form .switcher a').removeClass('active');
                         $(this).addClass('active');
@@ -784,7 +797,8 @@
                         }
                     });
 
-                    $('#summary-users-list .close').click(function () {
+                    $('#summary-users-list .close').click(function (e) {
+                        e.stopPropagation();
                         $('#summary-users-list').removeClass('visible');
                     });
                 }
@@ -799,6 +813,7 @@
                 }
 
                 $('#chart8 .report-export-panel a').on('click', function(e) {
+                    e.stopPropagation();
                     e.preventDefault();
                     let format = $(this).attr('data-format');
                     let course = $('#chart8 .intelliboard-dropdown button').val();
