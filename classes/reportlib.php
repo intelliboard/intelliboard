@@ -49,6 +49,7 @@ class local_intelliboard_report extends external_api {
                         'timestart' => new external_value(PARAM_INT, 'Report filter date[start]', VALUE_OPTIONAL, 0),
                         'timefinish' => new external_value(PARAM_INT, 'Report filter date[finish]', VALUE_OPTIONAL, 0),
                         'courses' => new external_value(PARAM_SEQUENCE, 'Course IDs SEQUENCE', VALUE_OPTIONAL, 0),
+                        'vendors' => new external_value(PARAM_SEQUENCE, 'Vendors IDs SEQUENCE', VALUE_OPTIONAL, 0),
                         'start' => new external_value(PARAM_INT, 'Report pagination start'),
                         'length' => new external_value(PARAM_INT, 'Report pagination length')
                     )
@@ -83,7 +84,7 @@ class local_intelliboard_report extends external_api {
 
         if ($report = $DB->get_record('local_intelliboard_reports', ['status' => 1, 'appid' => $params->appid])) {
             if ($report->sqlcode) {
-                $query = base64_decode($report->sqlcode);
+                $query = str_replace("prefix_", "mdl_", base64_decode($report->sqlcode));
 
                 $filters = [];
                 if (strrpos($query, ':sorting') !== false) {
@@ -134,6 +135,28 @@ class local_intelliboard_report extends external_api {
                         $query = str_replace($val, "", $query);
                     }
                 }
+                if ($intellicartvendorfilter = strpos($query, ':intellicartvendorfilter[')) {
+                    $start =  $intellicartvendorfilter+25;
+                    $end =  strpos($query, ']', $intellicartvendorfilter) - $start;
+                    $col = substr($query, $start, $end);
+                    $val = ":intellicartvendorfilter[$col]";
+
+                    if ($params->vendors and $col) {
+                        list($innersql, $params) = $DB->get_in_or_equal(explode(",", $params->vendors), SQL_PARAMS_NAMED, 'vndid', true);
+
+                        $sql = "SELECT liu.userid
+                                   FROM {local_intellicart_users} liu
+                                   JOIN {local_intellicart_vendors} vnd ON vnd.id = liu.instanceid AND vnd.id $innersql
+                                  WHERE liu.role = 'user' AND liu.type = 'vendor'
+                               GROUP BY liu.userid";
+
+                        $filters = array_merge($filters, $params);
+                        $like = " AND $col IN($sql) ";
+                        $query = str_replace($val, $like, $query);
+                    } else {
+                        $query = str_replace($val, "", $query);
+                    }
+                }
 
                 if (strrpos($query, ':filter') !== false) {
                     $query = str_replace(":filter", "", $query);
@@ -142,10 +165,11 @@ class local_intelliboard_report extends external_api {
                     $params->filtercol = isset($params->filtercol)? $params->filtercol : false;
 
                     if ($params->filterval and $params->filtercol) {
+                        $key = str_replace(" ", "_", $params->filtercol);
                         $query = "SELECT t.*
                                     FROM ({$query}) t
-                                   WHERE t." . $DB->sql_like($params->filtercol, ":" . $params->filtercol, false, false);
-                        $filters[$params->filtercol] = "%".$params->filterval."%";
+                                   WHERE t." . $DB->sql_like('`'.$params->filtercol.'`', ":" . $key, false, false);
+                        $filters[$key] = "%".$params->filterval."%";
                     }
                 }
 
@@ -154,7 +178,7 @@ class local_intelliboard_report extends external_api {
                     $CFG->debugdisplay = 1;
                 }
                 if ($params->debug === 2) {
-                    $data = [$report->sqlcode, $query];
+                    $data = [$report->sqlcode, $query, $filters];
                 } elseif(isset($params->start) and $params->length != 0 and $params->length != -1){
                     $data = $DB->get_records_sql($query, $filters, $params->start, $params->length);
                 } else {
