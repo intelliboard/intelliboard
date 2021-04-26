@@ -771,7 +771,6 @@ class local_intelliboard_external extends external_api {
             "u.address",
             "u.city",
             "u.country",
-            "teacher",
             "cohortname",
             "ue.status"
         ), $this->get_filter_columns($params));
@@ -929,13 +928,7 @@ class local_intelliboard_external extends external_api {
                 c.id AS cid,
                 c.fullname AS course,
                 c.shortname,
-                c.timemodified AS start_date,
-                (SELECT $group_concat
-                    FROM {role_assignments} AS ra
-                        JOIN {user} u ON ra.userid = u.id
-                        JOIN {context} AS ctx ON ctx.id = ra.contextid
-                    WHERE ctx.instanceid = c.id AND ctx.contextlevel = 50 $sql_teacher_roles
-                ) AS teacher
+                c.timemodified AS start_date
                 $sql_columns
             FROM {user_enrolments} ue
                 JOIN {enrol} e ON e.id = ue.enrolid
@@ -969,8 +962,8 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses", "ue.userid" => "users"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
-        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
-        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sqluenrfilter = $this->get_filter_enrol_sql($params, "ue.");
+        $sqlenrfilter = $this->get_filter_enrol_sql($params, "e.");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $grade_avg = intelliboard_grade_sql(true, $params);
@@ -1004,10 +997,10 @@ class local_intelliboard_external extends external_api {
                 (SELECT name FROM {course_categories} WHERE id = c.category) AS category
                 $sql_columns
             FROM {course} c
-                LEFT JOIN {enrol} e ON e.courseid = c.id
-                JOIN {context} ctx ON e.courseid = ctx.instanceid AND ctx.contextlevel = 50
-                JOIN {role_assignments} ra ON ra.contextid = ctx.id $sql1
-                LEFT JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ra.userid = ue.userid
+                LEFT JOIN {enrol} e ON e.courseid = c.id {$sqlenrfilter}
+                LEFT JOIN {context} ctx ON c.id = ctx.instanceid AND ctx.contextlevel = 50
+                LEFT JOIN {role_assignments} ra ON ra.contextid = ctx.id $sql1
+                LEFT JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ra.userid = ue.userid {$sqluenrfilter}
                 LEFT JOIN {course_completions} cc ON cc.timecompleted > 0 AND cc.course = c.id AND cc.userid = ue.userid $sql_compl
                 LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
                 LEFT JOIN {grade_grades} g ON g.userid = ue.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
@@ -1234,6 +1227,7 @@ class local_intelliboard_external extends external_api {
         );
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "t.courseid");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_join = "";
 
         if($params->custom == 3) {
@@ -1274,7 +1268,7 @@ class local_intelliboard_external extends external_api {
                JOIN {user} u ON u.id = t.userid
           LEFT JOIN {course} c ON c.id = t.courseid
           $sql_join
-              WHERE t.id > 0 $sql_filter $sql_having $sql_order",
+              WHERE t.id > 0 AND c.category > 0 $sql_filter $sql_having $sql_order",
             $params
         );
     }
@@ -11903,6 +11897,7 @@ class local_intelliboard_external extends external_api {
         $sqldf .= ')';
 
         $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_columns .= $this->get_modules_sql('');
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -11914,8 +11909,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_filter .= $this->get_filter_in_sql($params->custom2, "cm.id");
         $sql_filter .= $this->get_filter_in_sql($params->custom3, "ra.roleid");
-        $sql_columns .= $this->get_modules_sql('');
-        $grade_avg = intelliboard_grade_sql(true, $params);
+        $gradesql = intelliboard_grade_sql(false, $params);
 
         $sql_join = '';
         if (!empty($params->custom3)) {
@@ -11932,55 +11926,38 @@ class local_intelliboard_external extends external_api {
         $sql_inner_filter4 = $this->get_filter_in_sql($params->courseid, 'm.course');
         $sql_inner_filter5 = $this->get_filter_in_sql($params->courseid, 'm.course');
 
-        if ($CFG->dbtype == 'pgsql') {
-            $typecast = '::TEXT';
-        } else {
-            $typecast = '';
-        }
-
         $sql_select = $sql_overal_submission_date = $sql_overal_submission_graded = $sql_overal_submission_grade = '';
         if (get_component_version('mod_hsuforum')) {
             $sql_inner_filter6 = $this->get_filter_in_sql($params->courseid, 'm.course');
             $sql_select = "LEFT JOIN (SELECT
                             fd.forum,
                             fp.userid,
-                            MAX(fp.modified) AS posted,
-                            MAX(g.timemodified) AS graded,
-                            $grade_avg AS grade
+                            MAX(fp.modified) AS posted
                         FROM {hsuforum_discussions} fd
                             JOIN {hsuforum} m ON m.id=fd.forum $sql_inner_filter6
                             LEFT JOIN {hsuforum_posts} fp ON fp.discussion=fd.id
-                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'hsuforum' AND gi.iteminstance = fd.forum
-                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = fp.userid
                         GROUP BY fd.forum, fp.userid) hf ON hf.userid=u.id AND hf.forum=cm.instance AND m.name='hsuforum'";
 
             $sql_overal_submission_date = ", COALESCE(hf.posted,0)";
-            $sql_overal_submission_graded = ", COALESCE(hf.graded,0)";
-            $sql_overal_submission_grade = ", COALESCE(hf.grade$typecast,'')";
         }
 
+        $sqlqasubmissiondate = '';
         if (get_component_version('mod_questionnaire')) {
             $sql_inner_filter7 = $this->get_filter_in_sql($params->courseid, 'q.course');
             $sql_select .= "LEFT JOIN (SELECT qr.questionnaireid,
                                     qr.userid,
-                                    MAX(qr.submitted) AS submitted,
-                                    MAX(g.timemodified) AS graded,
-                                    {$grade_avg} AS grade
+                                    MAX(qr.submitted) AS submitted
                                FROM {questionnaire_response} qr
                                JOIN {questionnaire} q ON q.id = qr.questionnaireid {$sql_inner_filter7}
-                          LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'questionnaire' AND gi.iteminstance = qr.questionnaireid
-                          LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = qr.userid
                            GROUP BY qr.questionnaireid, qr.userid
                             ) qra ON qra.userid = u.id AND qra.questionnaireid = cm.instance AND m.name = 'questionnaire'";
 
             $sqlqasubmissiondate = ", COALESCE(qra.submitted,0)";
-            $sqlqasubmissiongraded = ", COALESCE(qra.graded,0)";
-            $sqlqasubmissiongrade = ", COALESCE(qra.grade$typecast,'')";
         }
 
         return $this->get_report_data("
               SELECT
-                CONCAT(u.id, '_', cm.id) AS id,
+                CONCAT(u.id, '_', cm.id, '_', ue.id) AS id,
                 u.username,
                 u.idnumber,
                 u.firstname,
@@ -11989,16 +11966,6 @@ class local_intelliboard_external extends external_api {
                 c.fullname,
                 m.name AS mod_name,
                 cm.id AS instance_id,
-                ass.submitted AS assignment_submission_date,
-                ass.graded AS assignment_submission_graded,
-                f.posted AS forum_posted_date,
-                f.graded AS forum_graded,
-                q.started AS quiz_started_date,
-                q.graded AS quiz_graded,
-                gl.submitted AS glossary_submission_date,
-                gl.graded AS glossary_graded,
-                ch.submitted AS choice_submission_date,
-                ch.graded AS choice_graded,
                 ul.timeaccess,
                 ue.status,
                 ue.timeend,
@@ -12006,15 +11973,8 @@ class local_intelliboard_external extends external_api {
                     COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0),
                     COALESCE(ch.submitted,0) $sql_overal_submission_date {$sqlqasubmissiondate}
                 ) AS overal_submission_date,
-                GREATEST(
-                    COALESCE(ass.graded,0), COALESCE(f.graded,0), COALESCE(q.graded,0), COALESCE(gl.graded,0),
-                    COALESCE(ch.graded,0) $sql_overal_submission_graded {$sqlqasubmissiongraded}
-                ) AS overal_submission_graded,
-                GREATEST(
-                    COALESCE(ass.grade$typecast,''), COALESCE(f.grade$typecast,''), COALESCE(q.grade$typecast,''),
-                    COALESCE(gl.grade$typecast,''), COALESCE(ch.grade$typecast,'')
-                    $sql_overal_submission_grade {$sqlqasubmissiongrade}
-                ) AS overal_submission_grade,
+                g.timemodified AS overal_submission_graded,
+                {$gradesql} AS overal_submission_grade,
                  (SELECT DISTINCT CONCAT(u.firstname,' ',u.lastname)
                             FROM {role_assignments} AS ra
                                 JOIN {user} u ON ra.userid = u.id
@@ -12027,70 +11987,52 @@ class local_intelliboard_external extends external_api {
                 JOIN {user} u ON u.id = ue.userid
                 JOIN {course} c ON c.id = e.courseid
                 {$sql_join}
-                  LEFT JOIN {course_modules} cm ON cm.course = c.id
-                  LEFT JOIN {modules} m ON m.id = cm.module
+                  JOIN {course_modules} cm ON cm.course = c.id
+                  JOIN {modules} m ON m.id = cm.module
+                  LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = m.name AND gi.iteminstance = cm.instance
+                  LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id
                   LEFT JOIN {user_lastaccess} ul ON ul.userid = u.id AND ul.courseid = c.id
 
                   LEFT JOIN (SELECT
                             ass.userid,
                             ass.assignment,
-                            MAX(ass.timecreated) AS submitted,
-                            MAX(g.timemodified) AS graded,
-                            $grade_avg AS grade
+                            MAX(ass.timemodified) AS submitted
                         FROM {assign_submission} ass
                             JOIN {assign} m ON m.id=ass.assignment $sql_inner_filter1
-                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'assign' AND gi.iteminstance = ass.assignment
-                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ass.userid
                         WHERE ass.status='submitted'
                         GROUP BY ass.userid, ass.assignment) ass ON ass.userid=u.id AND ass.assignment=cm.instance AND m.name='assign'
 
                   LEFT JOIN (SELECT
                             fd.forum,
                             fp.userid,
-                            MAX(fp.modified) AS posted,
-                            MAX(g.timemodified) AS graded,
-                            $grade_avg AS grade
+                            MAX(fp.modified) AS posted
                         FROM {forum_discussions} fd
                             JOIN {forum} m ON m.id=fd.forum $sql_inner_filter2
                             LEFT JOIN {forum_posts} fp ON fp.discussion=fd.id
-                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'forum' AND gi.iteminstance = fd.forum
-                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = fp.userid
                         GROUP BY fd.forum, fp.userid) f ON f.userid=u.id AND f.forum=cm.instance AND m.name='forum'
 
                   LEFT JOIN (SELECT
                             qa.quiz,
                             qa.userid,
-                            MIN(qa.timestart) AS started,
-                            MAX(g.timemodified) AS graded,
-                            $grade_avg AS grade
+                            MIN(qa.timestart) AS started
                         FROM {quiz_attempts} qa
                             JOIN {quiz} m ON m.id=qa.quiz $sql_inner_filter3
-                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'quiz' AND gi.iteminstance = qa.quiz
-                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = qa.userid
                         GROUP BY qa.quiz, qa.userid) q ON q.userid=u.id AND q.quiz=cm.instance AND m.name='quiz'
 
                   LEFT JOIN (SELECT
                             ge.glossaryid,
                             ge.userid,
-                            MAX(ge.timecreated) AS submitted,
-                            MAX(g.timemodified) AS graded,
-                            $grade_avg AS grade
+                            MAX(ge.timecreated) AS submitted
                         FROM {glossary_entries} ge
                             JOIN {glossary} m ON m.id=ge.glossaryid $sql_inner_filter4
-                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'glossary' AND gi.iteminstance = ge.glossaryid
-                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ge.userid
                         GROUP BY ge.glossaryid, ge.userid) gl ON gl.userid=u.id AND gl.glossaryid=cm.instance AND m.name='glossary'
 
                   LEFT JOIN (SELECT
                             ca.choiceid,
                             ca.userid,
-                            MAX(ca.timemodified) AS submitted,
-                            MAX(g.timemodified) AS graded,
-                            $grade_avg AS grade
+                            MAX(ca.timemodified) AS submitted
                         FROM {choice_answers} ca
                             JOIN {choice} m ON m.id=ca.choiceid $sql_inner_filter5
-                            LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.itemmodule = 'choice' AND gi.iteminstance = ca.choiceid
-                            LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ca.userid
                         GROUP BY ca.choiceid, ca.userid) ch ON ch.userid=u.id AND ch.choiceid=cm.instance AND m.name='choice'
 
                   $sql_select
@@ -14257,6 +14199,15 @@ class local_intelliboard_external extends external_api {
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["tm.userid" => "users", "tm.courseid" => "courses"]);
+
+        if ($params->custom2) {
+            $sequence = explode(',', $params->custom2);
+            $sql_filter .=  $this->get_filter_in_sql(
+                    clean_param_array($sequence, PARAM_ALPHANUM),
+                    'tm.moduletype'
+            );
+        }
+
         $sql_filter .= $this->get_filter_in_sql($params->custom3, 'tm.courseid');
         $sql_filter .= $this->get_filter_in_sql($params->custom4, 'tm.userenrolid');
         $sql_columns = $this->get_columns($params, ["u.id"]);
