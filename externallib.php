@@ -3825,6 +3825,7 @@ class local_intelliboard_external extends external_api {
         $role_filter    = $this->get_filter_in_sql($params->learner_roles,'roleid');
         $grade_avg      = intelliboard_grade_sql(true, $params, 'g.', 2, 'gi.',true);
         $grade_single   = intelliboard_grade_sql(false, $params, 'g.', 2, 'gi.');
+        $grade_single_percent   = intelliboard_grade_sql(false, $params, 'g.', 2, 'gi.', true);
         $grade_single_raw   = intelliboard_grade_sql(false, $params, 'g.', 2, 'gi.');
         $completion     = $this->get_completion($params, "cmc.");
         $grades         = [];
@@ -3847,12 +3848,13 @@ class local_intelliboard_external extends external_api {
             $book = explode(',',$params->custom2);
 
             foreach($book as $i=>$item){
+
                 $grade = explode('-',$item);
                 $grade0 = "grade0$i"; $grade1 = "grade1$i";
                 $this->params[$grade0] = isset($grade[0]) ? clean_param($grade[0], PARAM_INT) : false;
                 $this->params[$grade1] = isset($grade[1]) ? clean_param($grade[1], PARAM_FLOAT) : false;
                 if($grade0 !== false and $grade1 !== false ){
-                    $grades[] = "$grade_single BETWEEN :$grade0 AND :$grade1";
+                    $grades[] = "$grade_single_percent BETWEEN :$grade0 AND :$grade1";
                 }
             }
 
@@ -3874,6 +3876,7 @@ class local_intelliboard_external extends external_api {
                     git.average,
                     {$grade_single} AS grade,
                     {$grade_single_raw} AS grade_raw,
+                    {$grade_single_percent} AS grade_percent,
                     cmc.completed,
                     u.firstname,
                     u.lastname,
@@ -6607,7 +6610,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter2 .= $this->get_filter_course_sql($params, "c.");
         $sql_filter2 .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter2 .= $this->get_filter_enrol_sql($params, "e.");
-        $sql_filter2 .= $this->get_filterdate_sql($params, "quiza.timefinish");
+        $sql_filter2 .= $this->get_filterdate_sql($params, "quiz_attempt.timefinish");
         $sql_teacher_roles2 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
 
         $sql_filter3 = $this->get_filter_in_sql($params->courseid,'c.id');
@@ -6736,7 +6739,7 @@ class local_intelliboard_external extends external_api {
 
             UNION ALL
 
-               (SELECT DISTINCT CONCAT(cm.id,'_',u.id,'_',quiza.id, '_', qa.slot) AS uniqueid,
+               (SELECT DISTINCT CONCAT(cm.id,'_',u.id,'_',quiz_attempt.id, '_', quiz_attempt.slot) AS uniqueid,
                        cm.id AS cmid,
                        qz.id,
                        qz.name,
@@ -6748,21 +6751,27 @@ class local_intelliboard_external extends external_api {
                        grps.groups,
                        c.fullname,
                        qz.timeclose as due_date,
-                       quiza.timefinish as time_on,
+                       quiz_attempt.timefinish as time_on,
                        'quiz' AS activity,
                        teachers.t_names AS teacher,
-                       qa.slot,
-                       quiza.id AS attempt
+                       quiz_attempt.slot,
+                       quiz_attempt.id AS attempt
                        $sql_columns2
-                  FROM {quiz_attempts} quiza
-             LEFT JOIN {question_attempts} qa ON qa.questionusageid = quiza.uniqueid
-             LEFT JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id AND
-                       qas.sequencenumber = (SELECT MAX(sequencenumber)
-                                               FROM {question_attempt_steps}
-                                              WHERE questionattemptid = qa.id)
-             LEFT JOIN {quiz} qz ON qz.id = quiza.quiz
-             LEFT JOIN {course} c ON c.id=qz.course
-             LEFT JOIN {user} u ON u.id=quiza.userid
+                  FROM (SELECT qa.quiz, qa.userid, MIN(qa.id) AS id,
+                               MIN(qa.timefinish) AS timefinish,
+                               MIN(qat.slot) AS slot
+                          FROM {quiz_attempts} qa
+                     LEFT JOIN {question_attempts} qat ON qat.questionusageid = qa.uniqueid
+                     LEFT JOIN {question_attempt_steps} qas ON qas.questionattemptid = qat.id AND
+                                                               qas.sequencenumber = (SELECT MAX(sequencenumber)
+                                                                                       FROM {question_attempt_steps}
+                                                                                      WHERE questionattemptid = qat.id)
+                         WHERE qa.preview = 0 AND qa.state = 'finished' AND qas.state = 'needsgrading'
+                      GROUP BY qa.quiz, qa.userid
+                       )  quiz_attempt
+             LEFT JOIN {quiz} qz ON qz.id = quiz_attempt.quiz
+             LEFT JOIN {course} c ON c.id = qz.course
+             LEFT JOIN {user} u ON u.id = quiz_attempt.userid
                   JOIN {modules} m ON m.name='quiz'
                   JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=qz.id AND cm.visible=1
                   JOIN {enrol} e ON e.courseid=c.id
@@ -6782,7 +6791,7 @@ class local_intelliboard_external extends external_api {
                             GROUP BY ctx.instanceid
                         ) AS teachers ON teachers.instanceid = c.id
                        $sql2
-                 WHERE quiza.preview = 0 AND quiza.state = 'finished' AND qas.state='needsgrading'
+                 WHERE quiz_attempt.id > 0
                        $sql_filter2)
                {$turnitinsql}
             ) t
