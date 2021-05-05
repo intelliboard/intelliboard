@@ -76,15 +76,15 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
                     $session->sessionuid
                 );
             } catch (\Exception $e) {
-                // Mark a session tracked if we more than 24 hours can not get API data of the session
-                if (time() - $session->timestart > DAYSECS) {
+                // Mark a session tracked if we more than 72 hours can not get API data of the session
+                if ((time() - $session->timestart) > (DAYSECS * 3)) {
                     $service->mark_session_tracked($session->sessionuid);
                     continue;
                 }
             }
 
             try {
-                if (empty($sesioninstances) && (time() - $session->timestart) < DAYSECS) {
+                if (empty($sesioninstances) && (time() - $session->timestart) < (DAYSECS * 3)) {
                     continue;
                 }
 
