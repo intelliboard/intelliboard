@@ -26,6 +26,7 @@
 namespace local_intelliboard\bb_collaborate;
 
 use Exception;
+use local_intelliboard\event\local_intelliboard_bb_collaborate_api_request_finished;
 use local_intelliboard\services\bb_collaborate_service;
 
 class bb_collaborate_adapter {
@@ -113,10 +114,6 @@ class bb_collaborate_adapter {
             $this->access_token = $this->get_access_token();
         } catch (Exception $e) {
             $this->access_token = '';
-
-            if(get_config('local_intelliboard', 'bb_col_debug')) {
-                var_dump($e);
-            }
         }
 
     }
@@ -331,6 +328,8 @@ class bb_collaborate_adapter {
      * @throws Exception
      */
     private function make_request($method, $url, $headers = [], $params = [], $options = []) {
+        global $USER;
+
         $this->httpclient->resetHeader();
         $this->httpclient->setHeader($headers);
 
@@ -349,7 +348,27 @@ class bb_collaborate_adapter {
             $this->service->remember_access_token($token);
             $this->update_auth_header($headers);
 
-            return $this->make_request($method, $url, $headers, $params);
+            $response = $this->make_request($method, $url, $headers, $params);
+        }
+
+        if (get_config('local_intelliboard', 'bb_col_debug')) {
+            $event = local_intelliboard_bb_collaborate_api_request_finished::create([
+                'objectid' => null,
+                'userid' => $USER->id,
+                'relateduserid' => $USER->id,
+                'context' => \context_system::instance(),
+                'other' => [
+                    'response' => $response,
+                    'request' => [
+                        'method' => $method,
+                        'url' => $url,
+                        'headers' => $headers,
+                        'params' => $params,
+                        'options' => $options
+                    ]
+                ]
+            ]);
+            $event->trigger();
         }
 
         return $response;

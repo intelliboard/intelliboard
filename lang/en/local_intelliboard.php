@@ -797,6 +797,9 @@
  $string['bb_col_secret'] = 'BlackBoard Collaborate secret';
  $string['enable_bb_col_meetings'] = 'Enable BlackBoard Collaborate meetings';
  $string['check_active_bb_col_meetings'] = 'Check active BlackBoard Collaborate meeting';
+ $string['local_intelliboard_bb_collaborate_session_tracking_started'] = 'Started tracking of BB collaborate session';
+ $string['local_intelliboard_bb_collaborate_session_tracking_finished'] = 'Finished tracking of BB collaborate session';
+ $string['local_intelliboard_bb_collaborate_api_request_finished'] = 'Finished API request to BB collaborate';
 
 /* Admin dashboard */
 $string['admin_dashboard'] = 'Admin dashboard';

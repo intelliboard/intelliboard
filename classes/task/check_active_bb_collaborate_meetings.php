@@ -26,6 +26,8 @@
 namespace local_intelliboard\task;
 
 use local_intelliboard\bb_collaborate\session_attendances;
+use local_intelliboard\event\local_intelliboard_bb_collaborate_session_tracking_finished;
+use local_intelliboard\event\local_intelliboard_bb_collaborate_session_tracking_started;
 use local_intelliboard\tools\bb_collaborate_tool;
 
 /**
@@ -53,6 +55,7 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
      * @throws \dml_exception
      */
     public function execute() {
+        global $USER;
         if(!get_config('local_intelliboard', 'enable_bb_col_meetings')) {
             return false;
         }
@@ -62,6 +65,17 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
         $adapter = bb_collaborate_tool::adapter();
 
         foreach($repository->getNonTrackedSessions() as $session) {
+            if (get_config('local_intelliboard', 'bb_col_debug')) {
+                $event = local_intelliboard_bb_collaborate_session_tracking_started::create([
+                    'objectid' => $session->id,
+                    'userid' => $USER->id,
+                    'relateduserid' => $USER->id,
+                    'context' => \context_system::instance(),
+                    'other' => ['sessionuid' => $session->sessionuid]
+                ]);
+                $event->trigger();
+            }
+
             // skip session tracking if enabled synchronization with attendance
             // but session not be synchronized with attendance service
             if (
@@ -78,9 +92,25 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
             } catch (\Exception $e) {
                 // Mark a session tracked if we more than 72 hours can not get API data of the session
                 if ((time() - $session->timestart) > (DAYSECS * 3)) {
+                    if (get_config('local_intelliboard', 'bb_col_debug')) {
+                        $event = local_intelliboard_bb_collaborate_session_tracking_finished::create([
+                            'objectid' => $session->id,
+                            'userid' => $USER->id,
+                            'relateduserid' => $USER->id,
+                            'context' => \context_system::instance(),
+                            'other' => [
+                                'sessionuid' => $session->sessionuid,
+                                'message' => 'Have not received data from API for 72 hours',
+                                'api_response' => $e->getMessage()
+                            ]
+                        ]);
+                        $event->trigger();
+                    }
+
                     $service->mark_session_tracked($session->sessionuid);
-                    continue;
                 }
+
+                continue;
             }
 
             try {
@@ -107,8 +137,36 @@ class check_active_bb_collaborate_meetings extends \core\task\scheduled_task {
                         );
                     }
                 }
+
+                if (get_config('local_intelliboard', 'bb_col_debug')) {
+                    $event = local_intelliboard_bb_collaborate_session_tracking_finished::create([
+                        'objectid' => $session->id,
+                        'userid' => $USER->id,
+                        'relateduserid' => $USER->id,
+                        'context' => \context_system::instance(),
+                        'other' => [
+                            'sessionuid' => $session->sessionuid,
+                            'message' => 'Successful tracking'
+                        ]
+                    ]);
+                    $event->trigger();
+                }
             } catch (\Exception $e) {
-                echo "Session: " . json_encode($session) . '. Error: ' . $e->getMessage() . PHP_EOL;
+                if (get_config('local_intelliboard', 'bb_col_debug')) {
+                    $event = local_intelliboard_bb_collaborate_session_tracking_finished::create([
+                        'objectid' => $session->id,
+                        'userid' => $USER->id,
+                        'relateduserid' => $USER->id,
+                        'context' => \context_system::instance(),
+                        'other' => [
+                            'sessionuid' => $session->sessionuid,
+                            'message' => 'Tracking error',
+                            'api_response' => $e->getMessage()
+                        ]
+                    ]);
+                    $event->trigger();
+                }
+
                 continue;
             }
         }
