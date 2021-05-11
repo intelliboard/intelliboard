@@ -797,6 +797,9 @@ $string['bb_col_consumer_key'] = 'Пользовательский ключ Blac
 $string['bb_col_secret'] = 'Секретный ключ BlackBoard Collaborate ';
 $string['enable_bb_col_meetings'] = 'Включить встречи BlackBoard Collaborate';
 $string['check_active_bb_col_meetings'] = 'Проверить активные встречи BlackBoard Collaborate';
+$string['local_intelliboard_bb_collaborate_session_tracking_started'] = 'Started tracking of BB collaborate session';
+$string['local_intelliboard_bb_collaborate_session_tracking_finished'] = 'Finished tracking of BB collaborate session';
+$string['local_intelliboard_bb_collaborate_api_request_finished'] = 'Finished API request to BB collaborate';
 
 /* Панель администратора */
 $string['admin_dashboard'] = 'Панель администратора';
