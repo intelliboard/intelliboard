@@ -473,12 +473,13 @@ class local_intelliboard_notification
         $filterUser = '';
 
         if (!$DB->count_records('local_intelliboard_assign', ['type' => 'courses', 'userid' => $notification['userid']])) {
+            $texttypecast = \local_intelliboard\helpers\DBHelper::get_typecast('text');
             $availableUsers = $DB->get_records_sql("
-                SELECT u.id FROM {user} u WHERE u.id IN(
-                  SELECT lia.instance as id FROM {local_intelliboard_assign} lia WHERE lia.rel = 'external' AND lia.type = 'users' AND lia.userid = ?
+                SELECT u.id FROM {user} u WHERE u.id{$texttypecast} IN(
+                  SELECT lia.instance as id FROM {local_intelliboard_assign} lia WHERE lia.rel = 'external' AND lia.type = 'users' AND lia.userid{$texttypecast} = ?
                 ) OR u.id IN (
                   SELECT chm.userid FROM {local_intelliboard_assign} lia, {cohort_members} chm
-                  WHERE lia.rel = 'external' AND lia.type = 'cohorts' AND lia.userid = ? AND chm.cohortid = lia.instance
+                  WHERE lia.rel = 'external' AND lia.type = 'cohorts' AND lia.userid{$texttypecast} = ? AND chm.cohortid{$texttypecast} = lia.instance{$texttypecast}
                 )
             ", [$notification['userid'], $notification['userid']]);
             $availableUsers = array_map(function ($user) {
@@ -500,7 +501,10 @@ class local_intelliboard_notification
             $params = array_merge($params, $notification['params']['cohort']);
         }
 
-        $sql = 'SELECT u.*, GROUP_CONCAT(\':|:\', cm.name) as activity_names, GROUP_CONCAT(\':|:\', cm.duedate) as activity_duedates
+        $activitynamessql = get_operator('GROUP_CONCAT', 'cm.name', ['separator' => ':|:']);
+        $duedatessql = get_operator('GROUP_CONCAT', 'cm.duedate', ['separator' => ':|:']);
+
+        $sql = 'SELECT u.*, ' . $activitynamessql . ' as activity_names, ' . $duedatessql . ' as activity_duedates
                 FROM {user} u
                 INNER JOIN {user_enrolments} ue ON ue.userid = u.id
                 INNER JOIN {enrol} e ON e.id = ue.enrolid
@@ -511,7 +515,7 @@ class local_intelliboard_notification
                     INNER JOIN {modules} m ON cm.module = m.id
                     INNER JOIN {event} me ON me.modulename = m.name AND me.instance = cm.instance AND me.timestart BETWEEN ? AND ? AND me.eventtype IN(?,?,?)
                     WHERE cm.id IN(' . rtrim(str_repeat('?,', count($notification['params']['activities'])), ',') . ')
-                    GROUP BY cm.id HAVING MIN(me.timestart) < ?
+                    GROUP BY cm.id, m.name HAVING MIN(me.timestart) < ?
                   ) cm ON cm.course = c.id
                 LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id
                 WHERE cmc.completionstate IS NULL OR cmc.completionstate NOT IN (1)
@@ -534,8 +538,11 @@ class local_intelliboard_notification
 
             foreach ($activity_names as $i => $name) {
                 if ($name) {
-                    $duedate = $activity_duedates[$i];
-                    $activities->body[] = compact('name', 'duedate');
+                    $duedate = userdate($activity_duedates[$i]);
+                    $activities->body[] = [
+                        'name' => $name,
+                        'duedate' => "'{$duedate}'"
+                    ];
                 }
             }
 
