@@ -172,4 +172,12 @@ class DBHelper
 
         return $group_concat;
     }
+
+    public static function prepare_sql_in_query($column, $ids) {
+        if (!empty($ids)) {
+            return "$column IN (".implode(",", $ids).")";
+        } else {
+            return "$column = -1";
+        }
+    }
 }
