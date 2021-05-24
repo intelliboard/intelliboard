@@ -35,8 +35,12 @@ defined('MOODLE_INTERNAL') || die();
  * @return bool true if success
  */
 function xmldb_local_intelliboard_uninstall() {
-    $configwriter = new ib_config_writer();
-    $configwriter->config_save();
+    global $CFG;
+
+    if (!isset($CFG->intelliboardcache) || (bool) $CFG->intelliboardcache !== false) {
+        $configwriter = new ib_config_writer();
+        $configwriter->config_save();
+    }
 
     return true;
 }
