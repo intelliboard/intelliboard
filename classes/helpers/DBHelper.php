@@ -180,4 +180,17 @@ class DBHelper
             return "$column = -1";
         }
     }
+
+    public static function prepare_sql_for_row_number_counting() {
+        global $CFG;
+
+        if ($CFG->dbtype == 'pgsql') {
+            $uniqueIdColumn = "ROW_NUMBER () OVER ()";
+            $uniqueIdColumn2 = "";
+        } else {
+            $uniqueIdColumn = "@rowid := @rowid + 1";
+            $uniqueIdColumn2 = "(SELECT @rowid := 0) as row, ";
+        }
+        return [$uniqueIdColumn,$uniqueIdColumn2];
+    }
 }
