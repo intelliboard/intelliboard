@@ -68,7 +68,7 @@ class student_badges extends \table_sql {
                    {$criteriaconcat} AS criteria,
                    {$coursestatsconcat} AS course_stats";
         $from = "{badge} bdg
-            JOIN {badge_criteria} bdgc ON bdgc.badgeid = bdg.id AND bdgc.criteriatype = 5
+            JOIN {badge_criteria} bdgc ON bdgc.badgeid = bdg.id AND bdgc.criteriatype IN (4, 5)
             JOIN {badge_criteria_param} bcrp ON bcrp.critid = bdgc.id
        LEFT JOIN {course} c ON c.id = (CASE WHEN bcrp.name LIKE 'course_%' THEN " . (in_array($CFG->dbtype, ['mysqli', 'mariadb']) ? 'bcrp.value' : 'bcrp.value::INTEGER') . " ELSE -1 END)
        LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
@@ -80,7 +80,7 @@ class student_badges extends \table_sql {
         $this->set_count_sql(
             "SELECT COUNT(bdg.id)
                FROM {badge} bdg
-               JOIN {badge_criteria} bdgc ON bdgc.badgeid = bdg.id AND bdgc.criteriatype = 5"
+               JOIN {badge_criteria} bdgc ON bdgc.badgeid = bdg.id AND bdgc.criteriatype IN (4, 5)"
         );
 
         $this->set_sql($fields, $from, $where, $params);
