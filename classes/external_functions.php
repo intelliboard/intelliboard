@@ -64,6 +64,7 @@ class local_external_functions
           15 => "course_teachers.names", // Course teachers
           17 => "CONCAT(course_sections.name, '|', course_sections.section)",
           18 => "COALESCE(course_module_completion.timemodified, 0)",
+          19 => "intellicart_vendors.names"
         ];
         $this->functions = [
             'report1',
@@ -442,6 +443,10 @@ class local_external_functions
             'monitor94',
             'get_course_feedbacks',
             'get_feedback_questions',
+            'analytic241',
+            'report242',
+            'report243',
+            'report244',
         ];
     }
     public function get_function($params = null)

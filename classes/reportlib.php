@@ -51,7 +51,8 @@ class local_intelliboard_report extends external_api {
                         'courses' => new external_value(PARAM_SEQUENCE, 'Course IDs SEQUENCE', VALUE_OPTIONAL, 0),
                         'vendors' => new external_value(PARAM_SEQUENCE, 'Vendors IDs SEQUENCE', VALUE_OPTIONAL, 0),
                         'start' => new external_value(PARAM_INT, 'Report pagination start'),
-                        'length' => new external_value(PARAM_INT, 'Report pagination length')
+                        'length' => new external_value(PARAM_INT, 'Report pagination length'),
+                        'vendor_user_id' => new external_value(PARAM_INT, 'Vendor User ID', VALUE_OPTIONAL, 0),
                     )
                 )
             )
@@ -170,6 +171,26 @@ class local_intelliboard_report extends external_api {
                                     FROM ({$query}) t
                                    WHERE t." . $DB->sql_like('`'.$params->filtercol.'`', ":" . $key, false, false);
                         $filters[$key] = "%".$params->filterval."%";
+                    }
+                }
+
+                if ($intellicartvendorfilter = strpos($query, ':managervendors')) {
+                    if (!empty($params->vendor_user_id)) {
+                        $managersvendors = $DB->get_records_sql(
+                            "SELECT DISTINCT instanceid
+                               FROM {local_intellicart_users}
+                              WHERE type = 'vendor' AND userid = :userid AND role = 'manager'",
+                            ['userid' => $params->vendor_user_id]
+                        );
+
+                        if (!$managersvendors) {
+                            $vendorsids = '-1';
+                        } else {
+                            $vendorsids = implode(',', array_keys($managersvendors));
+                        }
+                        $query = str_replace(':managervendors', " IN ({$vendorsids})", $query);
+                    } else {
+                        $query = str_replace(':managervendors', ' > 0', $query);
                     }
                 }
 
