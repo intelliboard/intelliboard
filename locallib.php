@@ -773,6 +773,9 @@ function intelli_date_format() {
  * @throws dml_exception
  */
 function intelli_date($date) {
+    if (is_null($date) OR intval($date) == 0) {
+        return '';
+    }
     return date(intelli_date_format(), $date);
 }
 

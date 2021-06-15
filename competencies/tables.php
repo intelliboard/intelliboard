@@ -107,7 +107,7 @@ class intelliboard_courses_table extends table_sql {
        LEFT JOIN (SELECT ctx.instanceid AS courseid, COUNT(DISTINCT ra.userid) AS cnt_learners
                     FROM {role_assignments} ra
                     JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.id = ra.contextid
-                    JOIN (SELECT userid
+               LEFT JOIN (SELECT userid
                             FROM {cohort_members}
                            WHERE id > 0 AND cohortid {$cohortfilter}
                         GROUP BY userid
@@ -117,7 +117,7 @@ class intelliboard_courses_table extends table_sql {
                  ) cl ON cl.courseid = c.id
        LEFT JOIN (SELECT cu.courseid, COUNT(DISTINCT cu.id) AS cnt_related
                     FROM {competency_usercompcourse} cu
-                    JOIN (SELECT userid
+               LEFT JOIN (SELECT userid
                             FROM {cohort_members}
                            WHERE id > 0 AND cohortid {$cohortfilter1}
                         GROUP BY userid
@@ -127,7 +127,7 @@ class intelliboard_courses_table extends table_sql {
                  ) cr ON cr.courseid = c.id
        LEFT JOIN (SELECT cu.courseid, COUNT(DISTINCT cu.id) AS cnt_proficiency
                     FROM {competency_usercompcourse} cu
-                    JOIN (SELECT userid
+               LEFT JOIN (SELECT userid
                             FROM {cohort_members}
                            WHERE id > 0 AND cohortid {$cohortfilter2}
                         GROUP BY userid
@@ -234,7 +234,7 @@ class intelliboard_competencies_table extends table_sql {
         $fields = "c.id, cc.courseid, c.shortname, c.idnumber, c.timecreated AS created, cc.timecreated AS asigned,
                   (SELECT COUNT(DISTINCT cu.id)
                      FROM {competency_usercompcourse} cu
-                     JOIN (SELECT userid
+                LEFT JOIN (SELECT userid
                              FROM {cohort_members}
                             WHERE id > 0 AND cohortid {$cohortfilter}
                          GROUP BY userid
@@ -243,7 +243,7 @@ class intelliboard_competencies_table extends table_sql {
                   ) AS proficient,
                   (SELECT COUNT(DISTINCT cu.id)
                      FROM {competency_usercompcourse} cu
-                     JOIN (SELECT userid
+                LEFT JOIN (SELECT userid
                              FROM {cohort_members}
                             WHERE id > 0 AND cohortid {$cohortfilter1}
                          GROUP BY userid
@@ -546,7 +546,7 @@ class intelliboard_learners_table extends table_sql {
                  ) ra
             JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
             JOIN {user} u ON u.id = ra.userid
-            JOIN (SELECT userid
+       LEFT JOIN (SELECT userid
                     FROM {cohort_members}
                    WHERE id > 0 AND cohortid {$cohortfilter}
                 GROUP BY userid
