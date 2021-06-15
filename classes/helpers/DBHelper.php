@@ -149,6 +149,8 @@ class DBHelper
         switch ($type) {
             case 'numeric':
                 return '::NUMERIC';
+            case 'integer':
+                    return '::INTEGER';
             case 'text':
                 return '::TEXT';
             default:
