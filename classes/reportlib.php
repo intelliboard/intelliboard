@@ -128,8 +128,8 @@ class local_intelliboard_report extends external_api {
                     $params->courses = isset($params->courses)? $params->courses : false;
 
                     if ($params->courses and $col) {
-                        list($sql, $params) = $DB->get_in_or_equal(explode(",", $params->courses), SQL_PARAMS_NAMED, 'courses', true);
-                        $filters = array_merge($filters, $params);
+                        list($sql, $coursefilter) = $DB->get_in_or_equal(explode(",", $params->courses), SQL_PARAMS_NAMED, 'courses', true);
+                        $filters = array_merge($filters, $coursefilter);
                         $like = " AND $col $sql ";
                         $query = str_replace($val, $like, $query);
                     } else {
@@ -143,7 +143,7 @@ class local_intelliboard_report extends external_api {
                     $val = ":intellicartvendorfilter[$col]";
 
                     if ($params->vendors and $col) {
-                        list($innersql, $params) = $DB->get_in_or_equal(explode(",", $params->vendors), SQL_PARAMS_NAMED, 'vndid', true);
+                        list($innersql, $intellicartvendorfilter) = $DB->get_in_or_equal(explode(",", $params->vendors), SQL_PARAMS_NAMED, 'vndid', true);
 
                         $sql = "SELECT liu.userid
                                    FROM {local_intellicart_users} liu
@@ -151,7 +151,7 @@ class local_intelliboard_report extends external_api {
                                   WHERE liu.role = 'user' AND liu.type = 'vendor'
                                GROUP BY liu.userid";
 
-                        $filters = array_merge($filters, $params);
+                        $filters = array_merge($filters, $intellicartvendorfilter);
                         $like = " AND $col IN($sql) ";
                         $query = str_replace($val, $like, $query);
                     } else {
