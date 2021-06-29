@@ -1101,7 +1101,65 @@ define(["jquery"], function(jQuery) {
             daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
             firstDayOfWeek: 0,
             rangeSeparator: " até "
-        }
+        },
+        tr: {
+            weekdays: {
+                longhand: ['Pazar', 'Pazartesi','Salı','Çarşamba','Perşembe', 'Cuma','Cumartesi'],
+                shorthand: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
+            },
+            months: {
+                longhand: ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos', 'Eylül','Ekim','Kasım','Aralık'],
+                shorthand: ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
+            },
+            today: 'Bugün',
+            clear: 'Temizle',
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+        },
+        ro: {
+            weekdays: {
+                shorthand: ["Dum", "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm"],
+                longhand: [
+                    "Duminică",
+                    "Luni",
+                    "Marți",
+                    "Miercuri",
+                    "Joi",
+                    "Vineri",
+                    "Sâmbătă",
+                ],
+            },
+            months: {
+                shorthand: [
+                    "Ian",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "Mai",
+                    "Iun",
+                    "Iul",
+                    "Aug",
+                    "Sep",
+                    "Oct",
+                    "Noi",
+                    "Dec",
+                ],
+                longhand: [
+                    "Ianuarie",
+                    "Februarie",
+                    "Martie",
+                    "Aprilie",
+                    "Mai",
+                    "Iunie",
+                    "Iulie",
+                    "August",
+                    "Septembrie",
+                    "Octombrie",
+                    "Noiembrie",
+                    "Decembrie",
+                ],
+            },
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+        },
     }, flatpickr.l10ns.default = Object.create(flatpickr.l10ns.en), flatpickr.localize = function(e) {
         return _extends(flatpickr.l10ns.default, e || {})
     }, flatpickr.setDefaults = function(e) {
