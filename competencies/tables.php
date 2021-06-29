@@ -662,7 +662,7 @@ class intelliboard_proficient_table extends table_sql {
             $params['firstname'] = "%$search%";
         }
 
-        $fields = "u.id, u.firstname,  u.lastname, u.email, ctx.instanceid AS courseid, '' AS actions,
+        $fields = "DISTINCT(u.id), u.firstname,  u.lastname, u.email, ctx.instanceid AS courseid, '' AS actions,
             (SELECT COUNT(DISTINCT comp.id)
                 FROM {competency_coursecomp} coursecomp
                     JOIN {competency} comp ON coursecomp.competencyid = comp.id
@@ -674,7 +674,7 @@ class intelliboard_proficient_table extends table_sql {
         $from = "{role_assignments} ra
             JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
             JOIN {user} u ON u.id = ra.userid
-            JOIN (SELECT userid
+            LEFT JOIN (SELECT userid
                     FROM {cohort_members}
                    WHERE id > 0 AND cohortid {$cohortfilter}
                 GROUP BY userid
@@ -691,7 +691,7 @@ class intelliboard_proficient_table extends table_sql {
         $proficient = ($values->proficientcompetencycount) ? number_format((($values->proficientcompetencycount / $values->competencycount) * 100), 1) : 0;
         $html = html_writer::start_tag("div",array("class"=>"progress"));
         $html .= html_writer::tag("div", $proficient, array(
-            "class" => "bar",
+            "class" => "progress-bar",
             "aria-valuenow" => "$proficient",
             "aria-valuemin" => "0",
             "aria-valuemax" => "100",

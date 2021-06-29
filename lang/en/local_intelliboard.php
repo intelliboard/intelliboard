@@ -287,7 +287,7 @@
  $string['items_per_query'] = 'Items per-query';
  $string['import'] = 'Import';
  $string['log_values_include'] = 'Log values include logs for each user per day.';
- $string['powered_by'] = 'Powered by <a href="https://intelliboard.net/">IntelliBoard.net</a>';
+ $string['powered_by'] = 'Powered by <a href="https://intelliboard.net/">IntelliBoard</a>';
  $string['intelliboardnet'] = 'IntelliBoard.net';
  $string['visits'] = 'Visits';
  $string['registered'] = 'Registered';
@@ -1025,4 +1025,3 @@ $string['cache_compresstracking'] = 'Save to Moodle Cache';
 $string['file_compresstracking'] = 'Save to MoodleData';
 $string['cachedef_tracking'] = 'Intelliboard Tracking data';
 $string['cachedef_track_config'] = 'Intelliboard Tracking total data';
-
