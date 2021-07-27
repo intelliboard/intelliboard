@@ -24,23 +24,29 @@ class reportColumnOrder
         $this->orderDir = $orderDir;
     }
 
-    public function getOrderSQL()
+    public function getOrderSQL($additionalordercolumnssql = '')
     {
         global $CFG;
 
         if (empty($this->orderColumn["sql_column"])) {
-            return '';
+            return $additionalordercolumnssql ? " ORDER BY {$additionalordercolumnssql}" : '';
         }
 
-        $order= '';
+        $ordernulls = '';
         if ($CFG->dbtype == 'pgsql') {
             if (strtolower($this->orderDir) == 'desc') {
-                $order = 'NULLS LAST';
+                $ordernulls = 'NULLS LAST';
             } else {
-                $order = 'NULLS FIRST';
+                $ordernulls = 'NULLS FIRST';
             }
         }
 
-        return "ORDER BY {$this->orderColumn["sql_column"]} {$this->orderDir} {$order}";
+        return sprintf(
+            "ORDER BY %s %s %s %s",
+            $additionalordercolumnssql ? ($additionalordercolumnssql . ', ') : '',
+            $this->orderColumn["sql_column"],
+            $this->orderDir,
+            $ordernulls
+        );
     }
 }
