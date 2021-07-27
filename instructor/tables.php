@@ -199,6 +199,10 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
 
         if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
             $sql2 .= ' AND enr.status = 0';
+            $join_sql .= " LEFT JOIN (SELECT DISTINCT ue.userid, e.courseid, ue.status AS status
+                                        FROM {user_enrolments} ue
+                                        JOIN {enrol} e ON ue.enrolid = e.id
+                                      ) enr ON enr.userid = ra.userid AND enr.courseid = ra.course_id";
         }
 
         if ($search) {
@@ -235,19 +239,13 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
                                COUNT(ra.userid) AS learners,
                                COUNT(DISTINCT cc.userid) AS completed
                                {$sql_columns}
-                          FROM (SELECT ra1.userid, ctx.instanceid AS course_id
+                          FROM (SELECT DISTINCT ra1.userid, ctx.instanceid AS course_id
                                   FROM {role_assignments} ra1
                                   JOIN {context} ctx ON ctx.id = ra1.contextid AND ctx.contextlevel = 50
                                        {$userjoin}
                                  WHERE ra1.id > 0 {$rolefilter} {$userfilter}
-                              GROUP BY ra1.userid, ctx.instanceid
                                ) ra
                      LEFT JOIN {course_completions} cc ON cc.course = ra.course_id AND cc.userid = ra.userid AND cc.timecompleted > 0
-                     LEFT JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
-                                  FROM {user_enrolments} ue
-                                  JOIN {enrol} e ON ue.enrolid = e.id
-                              GROUP BY ue.userid, e.courseid
-                               ) enr ON enr.userid = ra.userid AND enr.courseid = ra.course_id
                                {$join_sql}
                          WHERE ra.course_id > 0 {$sql2}
                          GROUP BY ra.course_id

@@ -66,7 +66,7 @@ class notification_task extends \core\task\adhoc_task {
 
         if ($notification->attachment) {
 
-            $filename = clean_filename('export' . round(microtime(true) * 1000) . '.' . ($notification->attachmentType === 'xlsx'? 'xls' : $notification->attachmentType));
+            $filename = clean_filename('export' . round(microtime(true) * 1000) . '.' . (in_array($notification->attachmentType, ['xlsx', 'xls']) ? 'xlsx' : $notification->attachmentType));
 
             if (!empty($notification->attachment->body)) {
                 $notification->attachment->body = array_map(function($row) {
