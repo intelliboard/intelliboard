@@ -344,7 +344,7 @@ function intelliboard_export_report($json, $itemname, $format = 'csv', $output_t
 
 	if($format == 'csv'){
 		return intelliboard_export_csv($json, $name, $output_type);
-	}elseif($format == 'xls'){
+	}elseif($format == 'xlsx' || $format == 'xls'){
         return intelliboard_export_xls($json, $name, $output_type);
 	}elseif($format == 'pdf'){
         return intelliboard_export_pdf($json, $name, $output_type);
