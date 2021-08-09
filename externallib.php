@@ -17340,15 +17340,21 @@ class local_intelliboard_external extends external_api {
                                           WHERE a.userid = u.id AND b.cuserid = a.userid AND b.muserid IN (
                                             SELECT DISTINCT userid FROM {quiz_attempts} WHERE state = 'finished') $sql", $this->params);
         }else{
-            $sql = $this->get_filter_in_sql($params->cohortid,'cm.cohortid');
-            if($params->courseid){
+            if ($params->courseid) {
                 $sql_enabled = $this->get_filter_in_sql($params->courseid,'e.courseid',false);
-                $sql .= " AND u.id IN(SELECT distinct ue.userid FROM {user_enrolments} ue, {enrol} e WHERE $sql_enabled  and ue.enrolid = e.id)";
+                $sql .= " AND u.id IN(SELECT DISTINCT ue.userid FROM {user_enrolments} ue, {enrol} e WHERE $sql_enabled  and ue.enrolid = e.id)";
             }
+
+            if ($params->cohortid) {
+                $sql_enabled = $this->get_filter_in_sql($params->cohortid,'cm.cohortid', false);
+                $sql .= " AND u.id IN(SELECT DISTINCT cm.userid FROM {cohort_members} cm WHERE $sql_enabled)";
+            }
+
+            $sql .= $this->get_filter_user_sql($params, "u.");
+
             return $DB->get_records_sql("SELECT DISTINCT u.id, CONCAT(u.firstname,' ',u.lastname) AS name
-                                         FROM {user} u, {cohort_members} cm
-                                         WHERE cm.userid = u.id AND u.deleted = 0 AND u.suspended = 0 AND u.id IN (
-                                            SELECT DISTINCT userid FROM {quiz_attempts} WHERE state = 'finished') $sql", $this->params);
+                                         FROM {user} u
+                                         WHERE u.id IN (SELECT DISTINCT userid FROM {quiz_attempts} WHERE state = 'finished') $sql", $this->params);
         }
     }
     public function get_users($params)
@@ -23138,6 +23144,64 @@ class local_intelliboard_external extends external_api {
           $sql_having
           $sql_order
         ";
+
+        return $this->get_report_data($sql, $params);
+    }
+
+    public function report248($params)
+    {
+        global $DB;
+
+        $columns = array_merge(array(
+            "v.id",
+            "v.name",
+            "ua.activeusers",
+            "ui.inactiveusers",
+            "vm.centerlead",
+        ),
+            $this->get_filter_columns($params)
+        );
+
+        $sql_having = $this->get_filter_sql($params, $columns, false);
+        $where = "v.id > 0";
+        if (!empty($params->vendor_user_id)) {
+            $vendor_instances = array_keys($DB->get_records_sql("SELECT DISTINCT liu.instanceid
+                               FROM {local_intellicart_users} liu
+                              WHERE liu.type = 'vendor' AND liu.role = 'manager' AND liu.userid = :user", ["user" => $params->vendor_user_id]));
+            if (empty($vendor_instances)) {
+                return ["data" => []];
+            } else {
+                $where .= $this->get_filter_in_sql($vendor_instances, "v.id");
+            }
+        }
+
+        $sql = "SELECT v.id, 
+                       v.name, 
+                       ua.activeusers,
+                       ui.inactiveusers, 
+                       vm.centerlead
+               FROM {local_intellicart_vendors} v 
+          LEFT JOIN (SELECT vr.instanceid, COUNT(u.id) as activeusers
+                       FROM {local_intellicart_users} vr
+                       JOIN {user} u ON u.id = vr.userid
+                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 0 AND vr.type = 'vendor' 
+                   GROUP BY vr.instanceid
+                    ) ua ON ua.instanceid = v.id
+          LEFT JOIN (SELECT vr.instanceid, COUNT(u.id) as inactiveusers
+                       FROM {local_intellicart_users} vr
+                       JOIN {user} u ON u.id = vr.userid
+                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 1 AND vr.type = 'vendor'
+                   GROUP BY vr.instanceid
+                    ) ui ON ui.instanceid = v.id
+          LEFT JOIN (SELECT vr.instanceid, CONCAT(u.username, '/', u.email, ', ', u.firstname, ' ', u.lastname) as centerlead
+                       FROM {local_intellicart_users} vr
+                       JOIN {user} u ON u.id = vr.userid
+                      WHERE u.id > 2 AND u.deleted = 0 AND vr.type = 'vendor'
+                            AND u.suspended = 0 AND vr.role = 'manager'
+                   GROUP BY vr.instanceid, u.id
+                    ) vm ON vm.instanceid = v.id
+              WHERE $where $sql_having
+           ORDER BY v.name";
 
         return $this->get_report_data($sql, $params);
     }
