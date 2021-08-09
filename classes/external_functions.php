@@ -450,6 +450,7 @@ class local_external_functions
             'report245',
             'report246',
             'report247',
+            'report248',
         ];
     }
     public function get_function($params = null)

@@ -23,6 +23,7 @@
  * @website    http://intelliboard.net/
  */
 
+use local_intelliboard\attendance\api\get_user_permissions;
 use local_intelliboard\repositories\attendance_repository;
 
 defined('MOODLE_INTERNAL') || die();
@@ -81,6 +82,10 @@ class local_intelliboard_attendancelib extends external_api {
      * @return array
      */
     public static function attendance_api($params) {
+        $map = [
+            'get_user_permissions' => get_user_permissions::class,
+        ];
+
         if(self::method_available($params['action'])) {
             $methodname = $params['action'];
             $repository = new attendance_repository();
@@ -88,6 +93,13 @@ class local_intelliboard_attendancelib extends external_api {
             return [
                 'code' => 200,
                 'content' => json_encode($repository->{$methodname}($params))
+            ];
+        } elseif (isset($map[$params['action']])) {
+            $class = new $map[$params['action']];
+
+            return [
+                'code' => 200,
+                'content' => json_encode($class->run($params))
             ];
         } else {
             return [
