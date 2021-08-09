@@ -73,6 +73,16 @@ class attendance_repository
             $sqlarguments['search1'] = "%{$reportparams['search']}%";
         }
 
+        if(!empty($reportparams['courses'])) {
+            list($coursesfiltersql, $coursesfilterparams) = $DB->get_in_or_equal(
+                $reportparams['courses'],
+                SQL_PARAMS_NAMED,
+                'crs'
+            );
+            $where .= " AND c.id {$coursesfiltersql}";
+            $sqlarguments = array_merge($sqlarguments, $coursesfilterparams);
+        }
+
         if(intval($params['userid'])) {
             $isteacherfilter = new in_filter($this->get_teacher_roles(), "role");
 
