@@ -451,6 +451,8 @@ class local_external_functions
             'report246',
             'report247',
             'report248',
+            'get_enrolment_methods',
+            'report249',
         ];
     }
     public function get_function($params = null)
