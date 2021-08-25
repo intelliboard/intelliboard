@@ -8,9 +8,9 @@ class get_user_permissions extends base
 {
     use report_trait;
 
-    public const PERMISSIONS_TYPE_ASSIGNS = 1;
-    public const PERMISSIONS_TYPE_TEACHER_ENROLMENTS = 2;
-    public const PERMISSIONS_TYPE_STUDENT_ENROLMENTS = 2;
+    const PERMISSIONS_TYPE_ASSIGNS = 1;
+    const PERMISSIONS_TYPE_TEACHER_ENROLMENTS = 2;
+    const PERMISSIONS_TYPE_STUDENT_ENROLMENTS = 2;
 
     public function run($params) {
         $type = json_decode($params['report_params'])->type;
