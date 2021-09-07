@@ -306,6 +306,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
                 $storage = local_intelliboard\tools\compress_tracking::getStorage($compresstrackingtype);
                 $storage->saveData($ajaxRequest, $intelliboardTime, $intelliboardPage, $intelliboardParam);
             } else {
+                $userDetails = (object)local_intelliboard_user_details();
                 if ($data = $DB->get_record('local_intelliboard_tracking', array('userid' => $USER->id, 'page' => $intelliboardPage, 'param' => $intelliboardParam), 'id, visits, timespend, lastaccess')) {
                     if ($intelliboardMediaTrack) {
                         if ($data->lastaccess <= (time() - $intelliboardTime)) {
@@ -328,10 +329,10 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
                     }
                     if ($intelliboardTime) {
                         $data->timespend = $data->timespend + $intelliboardTime;
+                        $data->useragent = $userDetails->useragent;
                         $DB->update_record('local_intelliboard_tracking', $data);
                     }
                 } else {
-                    $userDetails = (object)local_intelliboard_user_details();
                     $courseid = 0;
                     if ($intelliboardPage == "module") {
                         $courseid = $DB->get_field_sql("SELECT c.id FROM {course} c, {course_modules} cm WHERE c.id = cm.course AND cm.id = $intelliboardParam");
