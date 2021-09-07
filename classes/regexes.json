@@ -523,7 +523,8 @@
       "regex": "(Vivaldi)/(\\d+)\\.(\\d+)\\.(\\d+)"
     },
     {
-      "regex": "(Edge)/(\\d+)(?:\\.(\\d+))?"
+      "regex": "(Edg[e]?)/(\\d+)(?:\\.(\\d+))?",
+      "family_replacement": "Microsoft Edge"
     },
     {
       "regex": "(brave)/(\\d+)\\.(\\d+)\\.(\\d+) Chrome",

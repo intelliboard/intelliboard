@@ -166,7 +166,7 @@ class local_intelliboard_report extends external_api {
                     $params->filtercol = isset($params->filtercol)? $params->filtercol : false;
 
                     if ($params->filterval and $params->filtercol) {
-                        $key = str_replace(" ", "_", $params->filtercol);
+                        $key = 'build_by_sql_search';
                         $query = "SELECT t.*
                                     FROM ({$query}) t
                                    WHERE t." . $DB->sql_like('`'.$params->filtercol.'`', ":" . $key, false, false);
