@@ -3870,19 +3870,19 @@ class local_intelliboard_external extends external_api {
 
         $enrol = "'-'";
         if (!$params->filter_enrol_status || !$params->custom) {
-            $joins .= " JOIN {enrol} e ON e.courseid = c.id
-                        JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id";
-            $sql_filter .= $this->get_filter_enrol_sql($params, "", "ue.status");
-            $sql_filter .= $this->get_filter_enrol_sql($params, "", "e.status");
+            $enrolmentsFilter = $this->get_filter_enrol_sql($params, "", "e.status");
+            $enrolmentsFilter .= $this->get_filter_in_sql($params->courseid, "e.courseid");
             if ($params->custom3) {
                 $enrolfilter = $DB->get_in_or_equal(
                     explode(',', $params->custom3),
                     SQL_PARAMS_NAMED,
                     'enr'
                 );
-                $sql_filter .= " AND e.enrol {$enrolfilter[0]}";
+                $enrolmentsFilter .= " AND e.enrol {$enrolfilter[0]}";
                 $this->params += $enrolfilter[1];
             }
+            $joins .= " JOIN {enrol} e ON e.courseid = c.id {$enrolmentsFilter}
+                        JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id";
             $enrol = " (CASE WHEN e.name IS NULL
                          THEN
                               e.enrol
@@ -5461,6 +5461,7 @@ class local_intelliboard_external extends external_api {
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'c.id');
+        $sql_filter .= $this->get_filter_in_sql($params->cohortid,'cm.cohortid');
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
@@ -5490,6 +5491,7 @@ class local_intelliboard_external extends external_api {
                 JOIN {enrol} e ON e.id = ue.enrolid
                 JOIN {course} c ON c.id = e.courseid
                 {$joins}
+           LEFT JOIN {cohort_members} cm ON cm.userid = u.id
            LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype = 'course'
            LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
                 LEFT JOIN {course_completions} cc ON cc.timecompleted > 0 AND cc.course = e.courseid and cc.userid = ue.userid
@@ -17944,11 +17946,13 @@ class local_intelliboard_external extends external_api {
         $days = floor($datediff/(60*60*24)) + 1;
         $sql_filter = $this->get_teacher_sql($params, ["tr.userid" => "users", "tr.courseid" => "courses"]);
 
-        if($days <= 30){
+        if($days <= 1) {
+            $ext = 3600; //by hour
+        }elseif($days <= 31){
             $ext = 86400; //by day
         }elseif($days <= 90){
             $ext = 604800; //by week
-        }elseif($days <= 365){
+        }elseif($days <= 367){
             $ext = 2592000; //by month
         }else{
             $ext = 31556926; //by year
@@ -23328,8 +23332,8 @@ class local_intelliboard_external extends external_api {
         );
         $filterUsersSql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $filterUsersSql .= $this->get_filter_in_sql($params->courseid, "ctx.instanceid");
-        $quizFilterSql1 = $this->get_filter_in_sql($params->courseid, "q.course");
-        $quizFilterSql2 = $this->get_filter_in_sql($params->courseid, "q.course");
+        $quizFilterSql1 = $this->get_filter_in_sql($params->courseid, "q.course", false);
+        $quizFilterSql2 = $this->get_filter_in_sql($params->courseid, "q.course", false);
         $filterSql = $this->get_filterdate_sql($params, "qd1.submission_date");
         $filterSql .= $this->get_filterdate_sql($params, "qd2.submission_date");
         $filterSql .= $this->get_filter_sql($params, $columns, true);
@@ -23343,32 +23347,29 @@ class local_intelliboard_external extends external_api {
                     qa.userid,
                     q.course,
                     q.name,
-                    (MAX(qa.sumgrades)/q.sumgrades)*100 AS highest_grade,
+                    MAX(qa.sumgrades/q.sumgrades)*100 AS highest_grade,
                     AVG((qa.sumgrades/q.sumgrades)*100) AS avg_grade,
-                    (qal.sumgrades/q.sumgrades)*100 AS last_attempt_grade,
-                    (qaf.sumgrades/q.sumgrades)*100 AS first_attempt_grade,
+                    MAX(qal.sumgrades/q.sumgrades)*100 AS last_attempt_grade,
+                    MAX(qaf.sumgrades/q.sumgrades)*100 AS first_attempt_grade,
                     MAX(qa.timefinish) AS submission_date,
-                    q.grademethod
+                    q.grademethod,
+                    MAX(qal.attempt_id) as attempt_id
                 FROM {quiz_attempts} qa
                 JOIN (
-                        SELECT quiz, userid, sumgrades
+                        SELECT MAX(qa.uniqueid) as attempt_id, quiz, userid, sumgrades
                         FROM {quiz_attempts} qa
-                        JOIN (SELECT MAX(id) AS maxid
-                                FROM {quiz_attempts} qa
-                            GROUP BY qa.quiz, qa.userid
-                        ) qamax ON qamax.maxid = qa.id
+                        WHERE qa.state = 'finished'" . (!empty($quizid) ? " AND qa.quiz = " . $quizid : '') . "
+                        GROUP BY qa.quiz, qa.userid, qa.sumgrades
                 ) qal ON qal.quiz = qa.quiz AND qal.userid = qa.userid
                 JOIN (
-                        SELECT quiz, userid, sumgrades
+                        SELECT MIN(qa.id) as id, quiz, userid, sumgrades
                         FROM {quiz_attempts} qa
-                        JOIN (SELECT MIN(id) AS minid
-                                FROM {quiz_attempts} qa
-                            GROUP BY qa.quiz, qa.userid
-                        ) qamin ON qamin.minid = qa.id
+                        WHERE qa.state = 'finished'" . (!empty($quizid) ? " AND qa.quiz = " . $quizid : '') . "
+                        GROUP BY qa.quiz, qa.userid, qa.sumgrades
                 ) qaf ON qaf.quiz = qa.quiz AND qaf.userid = qa.userid
-                JOIN {quiz} q ON q.id = qa.quiz" . (!empty($quizid) ? " AND q.id = " . $quizid : '') . "
-                WHERE qa.state = 'finished' $filter
-            GROUP BY qa.quiz, qa.userid, qa.sumgrades, q.id, q.sumgrades, qal.sumgrades, qaf.sumgrades) $alias ON $alias.course = c.id AND $alias.userid = u.id";
+                JOIN {quiz} q ON q.id = qa.quiz
+                WHERE $filter
+            GROUP BY qa.quiz, qa.userid, q.course, q.name, q.sumgrades, q.grademethod) $alias ON $alias.course = c.id AND $alias.userid = u.id";
          };
 
         $sql = "SELECT
@@ -23390,7 +23391,9 @@ class local_intelliboard_external extends external_api {
                             WHEN qd2.grademethod = 2 THEN qd2.avg_grade
                             WHEN qd2.grademethod = 3 THEN qd2.first_attempt_grade
                             WHEN qd2.grademethod = 4 THEN qd2.last_attempt_grade
-                       END AS grade2
+                       END AS grade2,
+                       qd1.attempt_id as quiz1_attempt_id,
+                       qd2.attempt_id as quiz2_attempt_id
                   FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as row, ') . "(
                        SELECT ctx.instanceid AS courseid, ra.userid
                          FROM {context} ctx
@@ -23406,5 +23409,22 @@ class local_intelliboard_external extends external_api {
                  $sqlOrder";
 
         return $this->get_report_data($sql, $params);
+    }
+
+    public function get_quiz_attempt($params){
+        global $CFG, $DB;
+
+        $this->params['filter'] = intval($params->filter);
+
+        return $DB->get_records_sql("
+            SELECT
+                qa.id,
+                qa.questionsummary as question,
+                qa.responsesummary as answer
+            FROM
+                {question_attempts} qa
+            WHERE qa.questionusageid = :filter",
+            $this->params
+        );
     }
 }
