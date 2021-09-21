@@ -162,8 +162,8 @@ class local_intelliboard_report extends external_api {
                 if (strrpos($query, ':filter') !== false) {
                     $query = str_replace(":filter", "", $query);
 
-                    $params->filterval = isset($params->filterval)? $params->filterval : false;
-                    $params->filtercol = isset($params->filtercol)? $params->filtercol : false;
+                    $params->filterval = isset($params->filterval) ? str_replace("&apos;", '_', $params->filterval) : false;
+                    $params->filtercol = isset($params->filtercol) ? $params->filtercol : false;
 
                     if ($params->filterval and $params->filtercol) {
                         $key = 'build_by_sql_search';
