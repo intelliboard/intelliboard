@@ -6813,8 +6813,8 @@ class local_intelliboard_external extends external_api {
                             GROUP BY ctx.instanceid
                         ) AS teachers ON teachers.instanceid = c.id
                  WHERE s.latest = 1 AND s.timemodified IS NOT NULL AND
-                       s.status = 'submitted' AND
-                       (g.timemodified IS NULL OR g.grade IS NULL)
+                       (s.status = 'submitted' OR s.status = 'reopened') AND
+                       (g.grade = -1 OR g.grade IS NULL)
                        $sql_filter1)
 
             UNION ALL
