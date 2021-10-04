@@ -5647,7 +5647,7 @@ class local_intelliboard_external extends external_api {
                 FROM  {local_intelliboard_tracking} t, {local_intelliboard_logs} l
                 WHERE l.trackid = t.id $sql_timefilter {$sql_vendor_filter1}
                 GROUP BY t.courseid) x ON x.courseid = c.id
-            WHERE c.id > 0 $sql_filter $sql_having $sql_order ", $params);
+            WHERE c.id > 1 $sql_filter $sql_having $sql_order ", $params);
     }
 
     public function report98($params)
@@ -13611,7 +13611,7 @@ class local_intelliboard_external extends external_api {
                           GROUP BY ctx.instanceid) t ON t.instanceid=c.id
                         LEFT JOIN (SELECT
                                    ctx.instanceid,
-                                   SUM(lit.timespend)/COUNT(ra.userid) AS avg_learners_timespend
+                                   SUM(lit.timespend)/COUNT(DISTINCT(ra.userid)) AS avg_learners_timespend
                                FROM {role_assignments} AS ra
                                     JOIN {context} AS ctx ON ctx.id = ra.contextid
                                     JOIN {local_intelliboard_tracking} lit ON lit.courseid=ctx.instanceid AND lit.userid=ra.userid
@@ -22800,7 +22800,7 @@ class local_intelliboard_external extends external_api {
                               ctx.instanceid AS courseid,
                               COUNT(DISTINCT ra.userid) AS userscount,
                               " . ($CFG->dbtype == 'pgsql' ? 'extract(epoch from lit.firstaccess) AS firstaccess' : 'firstaccess') . "
-                         FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as row, ') . " {context} ctx
+                         FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . " {context} ctx
                          JOIN {role_assignments} ra ON ra.contextid = ctx.id $sql_learners_filter
                          JOIN (SELECT
                                       courseid,
@@ -23003,7 +23003,7 @@ class local_intelliboard_external extends external_api {
                    c2.enddate AS pcourse_end_at,
                    ula2.timeaccess AS pcourse_lastaccess,
                    $grade_calc_sql AS grade
-              FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as row, ') . "{context} ctx
+              FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "{context} ctx
               JOIN {role_assignments} ra ON ra.contextid = ctx.id $sql_learners_filter1
               JOIN {course} c ON c.id = ctx.instanceid AND {$timestamp_func}(c.startdate) <= now() AND {$timestamp_func}(c.enddate) >= now()
               JOIN {user} u ON u.id = ra.userid
@@ -23230,7 +23230,7 @@ class local_intelliboard_external extends external_api {
                    SUM(CASE WHEN completionstate = 0 AND gg.finalgrade IS NULL THEN 1 ELSE 0 END) AS nongr_nocompl,
                    SUM(CASE WHEN $completion3 AND gg.finalgrade IS NULL THEN 1 ELSE 0 END) AS nongr_compl,
                    SUM(CASE WHEN completionstate = 0 AND gg.finalgrade IS NULL AND $timestamp_func(cm.completionexpected) < NOW() THEN 1 ELSE 0 END) AS nongr_nocompl_expired
-              FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as row, ') . "(SELECT ctx.instanceid AS courseid, ra.userid
+              FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "(SELECT ctx.instanceid AS courseid, ra.userid
                       FROM {context} ctx
                       JOIN {role_assignments} ra ON ra.contextid = ctx.id $filter_users_sql
                      WHERE ctx.contextlevel=50
@@ -23394,7 +23394,7 @@ class local_intelliboard_external extends external_api {
                        END AS grade2,
                        qd1.attempt_id as quiz1_attempt_id,
                        qd2.attempt_id as quiz2_attempt_id
-                  FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as row, ') . "(
+                  FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "(
                        SELECT ctx.instanceid AS courseid, ra.userid
                          FROM {context} ctx
                          JOIN {role_assignments} ra ON ra.contextid = ctx.id $filterUsersSql
