@@ -191,7 +191,7 @@ class DBHelper
             $uniqueIdColumn2 = "";
         } else {
             $uniqueIdColumn = "@rowid := @rowid + 1";
-            $uniqueIdColumn2 = "(SELECT @rowid := 0) as row, ";
+            $uniqueIdColumn2 = "(SELECT @rowid := 0) as curr_row, ";
         }
         return [$uniqueIdColumn,$uniqueIdColumn2];
     }
