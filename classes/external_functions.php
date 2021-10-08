@@ -454,6 +454,7 @@ class local_external_functions
             'get_enrolment_methods',
             'report249',
             'get_quiz_attempt',
+            'report251',
         ];
     }
     public function get_function($params = null)
