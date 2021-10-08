@@ -639,7 +639,11 @@ echo $OUTPUT->header();
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
         google.charts.load('current', {'callback': googleChartsCallback, 'name':'visualization', 'version': 1, 'packages':['corechart'], 'language': '<?php echo current_language(); ?>'});
-        
+        function decodeJson(htmlstring) {
+            var taEl = document.createElement("textarea");
+            taEl.innerHTML = htmlstring;
+            return JSON.parse(taEl.value);
+        }
         jQuery(document).ready(function(){
             jQuery('.intelliboard-dropdown:not(.students) ul li').click(function(e){
                 e.stopPropagation();
@@ -737,7 +741,7 @@ echo $OUTPUT->header();
                         ['<?php echo intellitext(get_string('inprogress', 'local_intelliboard')); ?>',<?php echo (int)$totals->inprogress; ?>],
                         ['<?php echo intellitext(get_string('notstarted', 'local_intelliboard')); ?>',<?php $t = intval($totals->enrolled)-(intval($totals->inprogress) + intval($totals->completed)); echo ($t>0)?$t:0 ?>],
                     ]);
-                    var options = <?php echo format_string($factorInfo->CourseSuccessCalculation); ?>;
+                    var options = decodeJson('<?php echo format_string($factorInfo->CourseSuccessCalculation); ?>');
                     var chart = new google.visualization.PieChart(document.getElementById('chart3'));
                     chart.draw(data, options);
                 }
@@ -751,7 +755,7 @@ echo $OUTPUT->header();
                     data.addColumn('number', '<?php echo intellitext(get_string('in13', 'local_intelliboard')); ?>');
                     data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
                     data.addRows([<?php echo ($json_data2) ? implode(",", $json_data2):"";?>]);
-                    var options = <?php echo format_string($factorInfo->CorrelationsCalculation); ?>;
+                    var options = decodeJson('<?php echo format_string($factorInfo->CorrelationsCalculation); ?>');
                     var chart = new google.visualization.ScatterChart(document.getElementById('chart4'));
                     chart.draw(data, options);
                 }
@@ -766,7 +770,7 @@ echo $OUTPUT->header();
                         ['<?php echo addslashes(get_string('modulename', $row->name)); ?>', <?php echo (int)$row->modules; ?>, <?php echo (int)$row->start_modules; ?>, <?php echo (int)$row->completed_modules; ?>],
                         <?php endforeach; ?>
                     ]);
-                    var options = <?php echo format_string($factorInfo->ActivityParticipationCalculation); ?>;
+                    var options = decodeJson('<?php echo format_string($factorInfo->ActivityParticipationCalculation); ?>');
                     var chart = new google.visualization.ColumnChart(document.getElementById('chart1'));
                     chart.draw(data, options);
                 }
@@ -782,7 +786,7 @@ echo $OUTPUT->header();
                         ['<?php echo intellitext(get_string('modulename', $row->name)); ?>', {v:<?php echo (int)$row->duration; ?>, f:'<?php echo seconds_to_time(intval($row->duration)); ?>'}],
                         <?php endforeach; ?>
                     ]);
-                    var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
+                    var options = decodeJson('<?php echo format_string($factorInfo->LearningProgressCalculation); ?>');
                     var chart = new google.visualization.PieChart(document.getElementById('chart2'));
                     chart.draw(data, options);
                 }
@@ -798,7 +802,7 @@ echo $OUTPUT->header();
                         <?php endforeach; ?>
                     ]);
 
-                    var options = <?php echo format_string($factorInfo->CourseProgressCalculation); ?>;
+                    var options = decodeJson('<?php echo format_string($factorInfo->CourseProgressCalculation); ?>');
                     var chart = new google.visualization.ComboChart(document.getElementById('intelliboard-chart-combo'));
                     chart.draw(data, options);
                     setTimeout(function () {
@@ -819,7 +823,7 @@ echo $OUTPUT->header();
                     data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
                     <?php endif; ?>
                     data.addRows([<?php echo ($json_data) ? implode(",", $json_data):"";?>]);
-                    var options = <?php echo format_string($factorInfo->ActivityProgressCalculation); ?>;
+                    var options = decodeJson('<?php echo format_string($factorInfo->ActivityProgressCalculation); ?>');
                     options.hAxis.minValue = <?php echo $hAxis_min; ?>;
                     options.hAxis.maxValue = <?php echo $hAxis_max; ?>;
                     var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
