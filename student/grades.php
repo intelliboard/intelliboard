@@ -150,9 +150,14 @@ echo $OUTPUT->header();
 	<?php include("../views/footer.php"); ?>
 </div>
 <script type="text/javascript">
+    function decodeJson(htmlstring) {
+        var taEl = document.createElement("textarea");
+        taEl.innerHTML = htmlstring;
+        return JSON.parse(taEl.value);
+    }
 	jQuery(document).ready(function(){
-		jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesXCalculation); ?>);
-		jQuery('.circle-progress-course').percentcircle(<?php echo format_string($factorInfo->GradesZCalculation); ?>);
+		jQuery('.circle-progress').percentcircle(decodeJson('<?php echo format_string($factorInfo->GradesXCalculation); ?>'));
+		jQuery('.circle-progress-course').percentcircle(decodeJson('<?php echo format_string($factorInfo->GradesZCalculation); ?>'));
 	});
 </script>
 <?php endif; ?>
