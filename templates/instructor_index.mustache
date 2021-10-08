@@ -347,6 +347,12 @@
         require(['jquery', 'local_intelliboard/flatpickr'], function($, flatpickr) {
             google.charts.load('current', {"callback": googleChartsCallback, 'name':'visualization', 'version': 1, 'packages':['corechart'], 'language': '{{currentlanguage}}'});
 
+            function decodeJson(htmlstring) {
+                var taEl = document.createElement("textarea");
+                taEl.innerHTML = htmlstring;
+                return JSON.parse(taEl.value);
+            }
+
             function googleChartsCallback() {
                 $('.intelliboard-dropdown button').click(function(e){
                     e.stopPropagation();
@@ -463,9 +469,8 @@
                             for (var i = 1; i < response.length; i++) {
                                 response[i][0] = new Date(response[i][0] * 1000);
                             }
-
                             var data = google.visualization.arrayToDataTable(response);
-                            var options = {{{gradeprogressionoptions}}};
+                            var options = decodeJson('{{{gradeprogressionoptions}}}');
                             options.vAxis.format = '#';
                             options.vAxis.title = '{{chart7title}}';
                             var chart = new google.visualization.LineChart(document.getElementById('chart7_area'));
@@ -538,7 +543,7 @@
                             dataType: "json"
                         }).done(function( response ) {
                             var data = google.visualization.arrayToDataTable(response);
-                            var options = {{{learningprogressoptions}}};
+                            var options = decodeJson('{{{learningprogressoptions}}}');
                             var chart = new google.visualization.PieChart(document.getElementById('chart2'));
                             chart.draw(data, options);
                         });
@@ -558,7 +563,7 @@
                             data.addColumn('number', '{{jsstrings.in13}}');
                             data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
                             data.addRows(response);
-                            var options = {{{correlationsoptions}}};
+                            var options = decodeJson('{{{correlationsoptions}}}');
                             var chart = new google.visualization.ScatterChart(document.getElementById('chart4'));
                             chart.draw(data, options);
                         });
@@ -678,7 +683,7 @@
                         dataType: "json"
                     }).done(function(response) {
                         let data = google.visualization.arrayToDataTable(response);
-                        let options = {{{gradeactivitiesoverviewoptions}}};
+                        let options = decodeJson('{{{gradeactivitiesoverviewoptions}}}');
                         options.title = '{{jsstrings.gradeactivitiesoverview}}';
 
                         if (options.hAxis) {
@@ -703,9 +708,8 @@
                         dataType: "json"
                     }).done(function( response ) {
                         var data = google.visualization.arrayToDataTable(response);
-                        var options = {{{correlationsoptions}}};
-                        options.vAxis.format = '#%';
-                        options.vAxis.title = '{{jsstrings.s46}}';
+                        var options = decodeJson('{{{correlationsoptions}}}');
+                        options.vAxis = {format: '#%', title: '{{jsstrings.s46}}'};
                         options.height = 290;
                         var chart = new google.visualization.AreaChart(document.getElementById('chart5_area'));
                         chart.draw(data, options);
@@ -721,7 +725,7 @@
                     }).done(function( response ) {
                         if(response.length > 0) {
                             var data = google.visualization.arrayToDataTable(response);
-                            var options = {{{learningprogressoptions}}};
+                            var options = decodeJson('{{{learningprogressoptions}}}');
                             options.height = 270;
                             options.tooltip = {isHtml: true};
                             var chart = new google.visualization.PieChart(document.getElementById('chart3_area'));
@@ -741,7 +745,7 @@
                     }).done(function( response ) {
                         if(response.length > 0) {
                             var data = google.visualization.arrayToDataTable(response);
-                            var options = {{{learningprogressoptions}}};
+                            var options = decodeJson('{{{learningprogressoptions}}}');
                             options.height = 270;
                             options.tooltip = {isHtml: true};
                             var chart = new google.visualization.PieChart(document.getElementById('chart6_area'));

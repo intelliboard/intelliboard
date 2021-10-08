@@ -276,19 +276,99 @@ function chart_options()
 		$grade = get_string('grade', 'local_intelliboard');
     $res = array();
 
-    $res['CourseProgressCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',title:'',legend:{position:'none'},vAxis: {title:'{$grade}'},hAxis:{title:''},seriesType:'bars',series:{1:{type:'line'}},chartArea:{width:'92%',height: '76%',right:10,top:10},colors:['#1d7fb3', '#1db34f'],backgroundColor:{fill:'transparent'}}";
+    $res['CourseProgressCalculation'] = json_encode([
+        "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
+        "title"     => '',
+        "legend"    => ["position" => "none"],
+        "vAxis"     => ["title" => $grade],
+        "hAxis"     => ["title" => ''],
+        "seriesType" => "bars",
+        "series"    => ['1' => ["type" => "line"]],
+        "chartArea" => ["width" => '92%', "height" => '76%', "right" => "10","top" => 10],
+        "colors"    => ['#1d7fb3', '#1db34f'],
+        "backgroundColor" => ["fill" => 'transparent']
+    ]);
 
-    $res['ActivityProgressCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chartArea: {width: '95%',height: '76%',right:10,top:10},height: 250,hAxis: {format: 'dd MMM',gridlines: {},baselineColor: '#ccc',gridlineColor: '#ccc',},vAxis: {baselineColor: '#CCCCCC',gridlines: {count: 5,color: 'transparent',},minValue: 0},pointSize: 6,lineWidth: 2,colors: ['#1db34f', '#1d7fb3'],backgroundColor:{fill:'transparent'},tooltip: {isHtml: true},legend: { position: 'none' }}";
+    $res['ActivityProgressCalculation'] = json_encode([
+        "factor" => md5("#FGS$%FGH245$".rand(0,1000)),
+        "chartArea" => [ "width" => '95%', "height" => '76%', "right" => 10, "top" => 10],
+        "height" => 250,
+        "hAxis" => [
+            "format" => 'dd MMM',
+            "gridlines" => [],
+            "baselineColor" => '#ccc',
+            "gridlineColor" => '#ccc',
+        ],
+        "vAxis" => [
+            "baselineColor" => '#CCCCCC',
+            "gridlines" => ["count" => 5, "color" => 'transparent',],
+            "minValue" => 0
+        ],
+        "pointSize" => 6,
+        "lineWidth" => 2,
+        "colors" => ['#1db34f', '#1d7fb3'],
+        "backgroundColor" => ["fill" => 'transparent'],
+        "tooltip" => ["isHtml" =>  true],
+        "legend" => ["position" => 'none']
+    ]);
 
-    $res['LearningProgressCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:{position:'bottom',alignment:'center' },title: '',height: '350', pieHole: 0.4, pieSliceText:'value',chartArea:{width: '95%',height: '85%',right:10, top:10 },backgroundColor:{fill:'transparent'}}";
+    $res['LearningProgressCalculation'] = json_encode([
+        "factor" => md5("#FGS$%FGH245$".rand(0,1000)),
+        "legend" => ["position" => 'bottom', "alignment" => 'center'],
+        "title"=> '',
+        "height" => '350',
+        "pieHole" => 0.4,
+        "pieSliceText" => 'value',
+        "chartArea" => ["width" => '95%', "height" => '85%', "right" => 10, "top" => 10],
+        "backgroundColor" => ["fill" => 'transparent']
+    ]);
 
-    $res['ActivityParticipationCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:{ position:'bottom', alignment:'center' },title:'',height:'350',chartArea: {width: '85%',height: '85%',right:10,top:10 },backgroundColor:{fill:'transparent'}}";
+    $res['ActivityParticipationCalculation'] = json_encode([
+        "factor" => md5("#FGS$%FGH245$".rand(0,1000)),
+        "legend" => ["position" => 'bottom', "alignment" => 'center'],
+        "title" => '',
+        "height" => '350',
+        "chartArea" => ["width" => '85%', "height" => '85%', "right" => 10, "top" => 10],
+        "backgroundColor" => ["fill" => 'transparent']
+    ]);
 
-    $res['CorrelationsCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:'none',colors:['#1d7fb3', '#1db34f'],pointSize:16,tooltip:{isHtml: true},title:'',height:'350',chartArea:{ width: '85%', height:'70%',right:10, top:10 },backgroundColor:{fill:'transparent'},hAxis:{ticks: [], baselineColor: 'none', title:'{$timespent}'},vAxis:{title:'{$grade}'}}";
+    $res['CorrelationsCalculation'] = json_encode([
+        "factor" => md5("#FGS$%FGH245$".rand(0,1000)),
+        "legend" => 'none',
+        "colors" => ['#1d7fb3', '#1db34f'],
+        "pointSize" => 16,
+        "tooltip" => ["isHtml" => true],
+        "title" => '',
+        "height" => '350',
+        "chartArea" => ["width" => '85%', "height" => '70%', "right" => 10, "top" => 10],
+        "backgroundColor" => ["fill" => 'transparent'],
+        "hAxis" => ["ticks" => []],
+        "baselineColor" => 'none',
+        "title" => $timespent,
+        "vAxis" => ["title" => $grade],
+    ]);
 
-    $res['CourseSuccessCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',legend:{ position:'bottom',alignment:'center' },title: '',height:'350',chartArea:{width:'95%',height: '85%',right:10,top:10},backgroundColor:{fill:'transparent'}}";
+    $res['CourseSuccessCalculation'] = json_encode([
+        "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
+        "legend"    => ["position" => 'bottom', "alignment" => 'center'],
+        "title"     => '',
+        "height"    => '350',
+        "chartArea" => ["width" => '95%', "height" => '85%', "right" => 10, "top" => 10],
+        "backgroundColor" => ["fill" => 'transparent']
+    ]);
 
-    $res['GradesCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:40,guage:1,coverBg: '#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'11px',percentWeight:'normal'}";
+    $res['GradesCalculation'] = json_encode([
+        "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
+        "animate"   => true,
+        "diameter"  => 40,
+        "guage"     => 1,
+        "coverBg"   => '#fff',
+        "bgColor"   => '#efefef',
+        "fillColor" => '#5c93c8',
+        "percentSize"   => '11px',
+        "percentWeight" => 'normal'
+    ]);
+
     $res['GradesCalculationJSON'] = json_encode([
         "factor" => md5("#FGS$%FGH245$".rand(0,1000)),
         "animate" => true,
@@ -301,9 +381,30 @@ function chart_options()
         "percentWeight" => "normal",
     ]);
 
-    $res['GradesFCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:80,guage:2,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'15px',percentWeight:'normal'}";
+    $res['GradesFCalculation'] = json_encode([
+        "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
+        "animate"   => true,
+        "diameter"  => 80,
+        "guage"     => 2,
+        "coverBg"   => '#fff',
+        "bgColor"   => '#efefef',
+        "fillColor" => '#5c93c8',
+        "percentSize"   => '15px',
+        "percentWeight" => 'normal'
+    ]);
 
-    $res['GradesXCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:40,guage:1,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'11px',percentWeight:'normal'}";
+    $res['GradesXCalculation'] = json_encode([
+        "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
+        "animate"   => true,
+        "diameter"  => 40,
+        "guage"     => 1,
+        "coverBg"   => '#fff',
+        "bgColor"   => '#efefef',
+        "fillColor" => '#5c93c8',
+        "percentSize"   => '11px',
+        "percentWeight" => 'normal'
+    ]);
+
     $res['GradesXCalculationJSON'] = json_encode([
         'factor' => md5("#FGS$%FGH245$".rand(0,1000)),
         'animate' => true,
@@ -316,13 +417,51 @@ function chart_options()
         'percentWeight' => 'normal',
     ]);
 
-    $res['GradesZCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',animate:true,diameter:80,guage:2,coverBg:'#fff',bgColor:'#efefef',fillColor:'#5c93c8',percentSize:'15px',percentWeight:'normal'}";
+    $res['GradesZCalculation'] = json_encode([
+        "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
+        "animate"   => true,
+        "diameter"  => 80,
+        "guage"     => 2,
+        "coverBg"   => '#fff',
+        "bgColor"   => '#efefef',
+        "fillColor" => '#5c93c8',
+        "percentSize"   => '15px',
+        "percentWeight" => 'normal'
+    ]);
 
-    $res['CoursesCalculation'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chartArea:{width:'90%',height:'76%',right:20,top:10},height:200,hAxis:{format:'dd MMM',gridlines: {},baselineColor:'#ccc',gridlineColor:'#ccc',},vAxis:{baselineColor:'#CCCCCC',gridlines:{count:5,color:'transparent',},minValue:0},pointSize:6,lineWidth:2,colors:['#1db34f','#1d7fb3'],backgroundColor:{fill:'transparent'},tooltip:{isHtml:true},legend:{position:'bottom'}}";
+    $res['CoursesCalculation'] = json_encode([
+        "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
+        "chartArea" => ["width" => '90%', "height" => '76%', "right" => 20, "top" => 10],
+        "height"    => 200,
+        "hAxis"     => ["format" => 'dd MMM', "gridlines" => [], "baselineColor" => '#ccc', "gridlineColor" => '#ccc'],
+        "vAxis"     => ["baselineColor" => '#CCCCCC', "gridlines" => ["count" => 5, "color" => 'transparent'], "minValue" => 0],
+        "pointSize" => 6,
+        "lineWidth" => 2,
+        "colors"    => ['#1db34f','#1d7fb3'],
+        "backgroundColor"   => ["fill" => 'transparent'],
+        "tooltip"   => ["isHtml" => true],
+        "legend"    => ["position" => 'bottom']
+    ]);
 
-    $res['GradeProgression'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chartArea:{width:'90%',height:'70%',top:10},hAxis:{format:'dd MMM',gridlines: {},baselineColor:'#ccc',gridlineColor:'#ccc',},vAxis:{baselineColor:'#CCCCCC',gridlines:{count:5,color:'transparent',},minValue:0},pointSize:6,lineWidth:2,colors:['#1db34f','#1d7fb3'],backgroundColor:{fill:'transparent'},tooltip:{isHtml:true},legend:{position:'bottom'}}";
+    $res['GradeProgression'] = json_encode([
+        "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
+        "chartArea" => ["width" => '90%', "height" => '70%', "top" => 10],
+        "hAxis"     => ["format" => 'dd MMM', "gridlines" => [], "baselineColor" => '#ccc', "gridlineColor" => '#ccc'],
+        "vAxis"     => ["baselineColor" => '#CCCCCC', "gridlines" => ["count" => 5, "color" => 'transparent'], "minValue" => 0],
+        "pointSize" => 6,
+        "lineWidth" => 2,
+        "colors"    => ['#1db34f','#1d7fb3'],
+        "backgroundColor" => ["fill" => 'transparent'],
+        "tooltip" => ["isHtml" => true],
+        "legend" => ["position" => 'bottom']
+    ]);
 
-    $res['GradeActivitiesOverview'] = "{factor:'".md5("#FGS$%FGH245$".rand(0,1000))."',chart:{},chartArea:{width:'90%',height:'70%',top:10},legend: {position: 'none'}}";
+    $res['GradeActivitiesOverview'] = json_encode([
+        "factor" => md5("#FGS$%FGH245$".rand(0,1000)),
+        "chart" => [],
+        "chartArea" => ["width" => '90%', "height" => '70%', "top" => 10],
+        "legend" => ["position" => 'none']
+    ]);
 
     return (object) $res;
 }

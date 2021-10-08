@@ -228,6 +228,12 @@ echo $OUTPUT->header();
         google.charts.load('current', {'name':'visualization', 'version': 1, 'packages':['corechart'], 'language': '<?php echo current_language(); ?>'});
         google.charts.setOnLoadCallback(initChartHandler);
 
+        function decodeJson(htmlstring) {
+            var taEl = document.createElement("textarea");
+            taEl.innerHTML = htmlstring;
+            return JSON.parse(taEl.value);
+        }
+
         function initChartHandler() {
             jQuery('.course-details').click(function(e){
                 e.preventDefault();
@@ -267,7 +273,7 @@ echo $OUTPUT->header();
                         data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
                         data.addRows(json_data);
 
-                        var options = <?php echo format_string($factorInfo->CoursesCalculation); ?>;
+                        var options = decodeJson('<?php echo format_string($factorInfo->CoursesCalculation); ?>');
                         var chart = new google.visualization.LineChart(document.getElementById('course-chart'+id));
                         chart.draw(data, options);
                     });
@@ -276,7 +282,7 @@ echo $OUTPUT->header();
         }
 
         $(document).ready(function() {
-            jQuery('.circle-progress').percentcircle(<?php echo format_string($factorInfo->GradesFCalculation); ?>);
+            jQuery('.circle-progress').percentcircle(decodeJson('<?php echo format_string($factorInfo->GradesFCalculation); ?>'));
             jQuery('.intelliboard-search span a').click(function(e){
                 e.preventDefault();
                 jQuery(this).parent().find('a').removeClass("active");

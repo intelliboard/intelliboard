@@ -85,6 +85,15 @@ if (!$daterange) {
     $timefinish_date = intelli_date($timefinish);
 }
 
+
+if($action == 'modules'){
+	$data = intelliboard_instructor_modules();
+	die(json_encode($data));
+}elseif ($action == 'correlations') {
+	$data = intelliboard_instructor_correlations($page, $length);
+	die(json_encode($data));
+}
+
 $PAGE->set_url(new moodle_url(
     "/local/intelliboard/instructor/index.php", array("type"=>$type, "search"=>$search)
 ));
@@ -102,13 +111,6 @@ $PAGE->requires->css('/local/intelliboard/assets/css/flatpickr.min.css');
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 $PAGE->requires->css('/local/intelliboard/assets/css/multiple-select.css');
 
-if($action == 'modules'){
-	$data = intelliboard_instructor_modules();
-	die(json_encode($data));
-}elseif ($action == 'correlations') {
-	$data = intelliboard_instructor_correlations($page, $length);
-	die(json_encode($data));
-}
 
 $instructor_course_shortname = get_config('local_intelliboard', 'instructor_course_shortname');
 $mycourses = intelliboard_instructor_getcourses('', true, '');
