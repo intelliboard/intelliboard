@@ -455,6 +455,7 @@ class local_external_functions
             'report249',
             'get_quiz_attempt',
             'report251',
+            'report252',
         ];
     }
     public function get_function($params = null)

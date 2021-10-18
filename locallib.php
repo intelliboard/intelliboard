@@ -295,7 +295,7 @@ function chart_options()
         "height" => 250,
         "hAxis" => [
             "format" => 'dd MMM',
-            "gridlines" => [],
+            "gridlines" => new \stdClass(),
             "baselineColor" => '#ccc',
             "gridlineColor" => '#ccc',
         ],
@@ -342,7 +342,7 @@ function chart_options()
         "height" => '350',
         "chartArea" => ["width" => '85%', "height" => '70%', "right" => 10, "top" => 10],
         "backgroundColor" => ["fill" => 'transparent'],
-        "hAxis" => ["ticks" => []],
+        "hAxis" => ["ticks" => [], "baselineColor" => 'none', "title" => $timespent],
         "baselineColor" => 'none',
         "title" => $timespent,
         "vAxis" => ["title" => $grade],
@@ -433,7 +433,7 @@ function chart_options()
         "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
         "chartArea" => ["width" => '90%', "height" => '76%', "right" => 20, "top" => 10],
         "height"    => 200,
-        "hAxis"     => ["format" => 'dd MMM', "gridlines" => [], "baselineColor" => '#ccc', "gridlineColor" => '#ccc'],
+        "hAxis"     => ["format" => 'dd MMM', "gridlines" => new \stdClass(), "baselineColor" => '#ccc', "gridlineColor" => '#ccc'],
         "vAxis"     => ["baselineColor" => '#CCCCCC', "gridlines" => ["count" => 5, "color" => 'transparent'], "minValue" => 0],
         "pointSize" => 6,
         "lineWidth" => 2,
@@ -446,7 +446,7 @@ function chart_options()
     $res['GradeProgression'] = json_encode([
         "factor"    => md5("#FGS$%FGH245$".rand(0,1000)),
         "chartArea" => ["width" => '90%', "height" => '70%', "top" => 10],
-        "hAxis"     => ["format" => 'dd MMM', "gridlines" => [], "baselineColor" => '#ccc', "gridlineColor" => '#ccc'],
+        "hAxis"     => ["format" => 'dd MMM', "gridlines" => new \stdClass(), "baselineColor" => '#ccc', "gridlineColor" => '#ccc'],
         "vAxis"     => ["baselineColor" => '#CCCCCC', "gridlines" => ["count" => 5, "color" => 'transparent'], "minValue" => 0],
         "pointSize" => 6,
         "lineWidth" => 2,
@@ -458,7 +458,7 @@ function chart_options()
 
     $res['GradeActivitiesOverview'] = json_encode([
         "factor" => md5("#FGS$%FGH245$".rand(0,1000)),
-        "chart" => [],
+        "chart" => new \stdClass(),
         "chartArea" => ["width" => '90%', "height" => '70%', "top" => 10],
         "legend" => ["position" => 'none']
     ]);

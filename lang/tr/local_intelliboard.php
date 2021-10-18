@@ -1022,6 +1022,3 @@ $string['cache_compresstracking'] = 'Moodle Cache e kaydedin';
 $string['file_compresstracking'] = 'MoodleData ya kaydedin';
 $string['cachedef_tracking'] = 'Intelliboard İzleme verileri';
 $string['cachedef_track_config'] = 'Intelliboard İzleme toplam verileri';
-$string['XLS'] = 'XLS';
-$string['CSV'] = 'CSV';
-$string['PDF'] = 'PDF';
