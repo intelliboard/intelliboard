@@ -989,6 +989,3 @@ $string['widget_name31'] = 'استيعاب المسجلين و المشرف';
 $string['x_completions'] = 'الإكتمالات {a$}';
 $string['you_have_certificates'] = 'لديك {a$} من الشهادات';
 $string['you_need_to_enable_at_least_one_protocol'] = 'تحتاج إلى تمكين بروتوكول واحد على الأقل';
-$string['XLS'] = 'XLS';
-$string['CSV'] = 'CSV';
-$string['PDF'] = 'PDF';

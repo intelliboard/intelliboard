@@ -182,7 +182,11 @@ echo $OUTPUT->header();
             <script type="text/javascript" src="https://www.google.com/jsapi"></script>
             <script type="text/javascript">
                 google.charts.load('current', {'callback': googleChartsCallback, 'name':'visualization', 'version': 1, 'packages':['corechart'], 'language': '<?php echo current_language(); ?>'});
-
+                function decodeJson(htmlstring) {
+                    var taEl = document.createElement("textarea");
+                    taEl.innerHTML = htmlstring;
+                    return JSON.parse(taEl.value);
+                }
                 function googleChartsCallback() {
                     <?php if($n7): ?>
                         (function() {
@@ -198,7 +202,7 @@ echo $OUTPUT->header();
                                 ],
                                 <?php endforeach; ?>
                             ]);
-                            var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
+                            var options = decodeJson('<?php echo format_string($factorInfo->LearningProgressCalculation); ?>');
                             options.pieSliceText = 'label';
                             var chart = new google.visualization.PieChart(document.getElementById('chart4'));
                             chart.draw(data, options);
@@ -219,7 +223,7 @@ echo $OUTPUT->header();
                                 ],
                                 <?php endforeach; ?>
                             ]);
-                            var options = <?php echo format_string($factorInfo->LearningProgressCalculation); ?>;
+                            var options = decodeJson('<?php echo format_string($factorInfo->LearningProgressCalculation); ?>');
                             var chart = new google.visualization.BarChart(document.getElementById('chart2'));
                             chart.draw(data, options);
                         })();
