@@ -142,7 +142,7 @@ if($action == 'get_total_students'){
         $params
     );
 
-    $data->users = array();
+    $data->users = array('active' => '', 'not_active' => '');
     foreach($users_list as $user){
         $key = ($user->active == 1)?'active':'not_active';
         $data->users[$key] .= "<li><a href='".$CFG->wwwroot."/user/view.php?id=".$user->id."'>".fullname($user)."</a></li>";

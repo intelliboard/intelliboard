@@ -324,7 +324,7 @@ function intelliboard_instructor_correlations($page, $length)
         $d = seconds_to_time(intval($item->duration));
 
         $tooltip = "<div class=\"chart-tooltip\">";
-        $tooltip .= "<div class=\"chart-tooltip-header\">". format_string($item->fullname) ."</div>";
+        $tooltip .= "<div class=\"chart-tooltip-header\">". strip_tags($item->fullname) ."</div>";
         $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
         $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". $item->grade_real."</span></div>";
         $tooltip .= "<div class=\"chart-tooltip-right\">".get_string('time_spent','local_intelliboard').": <span>". $d."</span></div>";
