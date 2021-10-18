@@ -12672,10 +12672,13 @@ class local_intelliboard_external extends external_api {
         if (!class_exists('quiz_statistics_report')) {
             print_error('preprocesserror', 'quiz');
         }
-
-        $courses = (is_array($params->courseid)) ? $params->courseid : explode(",", clean_param($params->courseid, PARAM_SEQUENCE));
-        list($sql, $params2) = $DB->get_in_or_equal($courses, SQL_PARAMS_NAMED, 'courseid');
-        $quizes = $DB->get_records_sql("SELECT * FROM {quiz} WHERE course $sql", $params2);
+        if (!empty($params->courseid)) {
+            $courses = (is_array($params->courseid)) ? $params->courseid : explode(",", clean_param($params->courseid, PARAM_SEQUENCE));
+            list($sql, $params2) = $DB->get_in_or_equal($courses, SQL_PARAMS_NAMED, 'courseid');
+            $quizes = $DB->get_records_sql("SELECT * FROM {quiz} WHERE course $sql", $params2);
+        } else {
+            $quizes = $DB->get_records_sql("SELECT * FROM {quiz}");
+        }
 
         $temp_table = array();
         foreach($quizes as $quiz){
@@ -23344,6 +23347,7 @@ class local_intelliboard_external extends external_api {
         $filterSql = $this->get_filterdate_sql($params, "qd1.submission_date");
         $filterSql .= $this->get_filterdate_sql($params, "qd2.submission_date");
         $filterSql .= $this->get_filter_sql($params, $columns, true);
+        $filterSql .= $this->vendor_filter('u.id', 'c.id', $params);
         $sqlOrder = $this->get_order_sql($params, $columns);
 
         $getQuizeSql = function ($quizid, $quizkey, $filter, $prefix="qd") {
@@ -23521,6 +23525,106 @@ class local_intelliboard_external extends external_api {
                      {$sql_order}",
             $params
         );
+    }
+
+    public function report252($params)
+    {
+        global $DB, $CFG;
+
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.email",
+            "c.shortname",
+            "qd1.name",
+            "qd2.name",
+            ),
+            $this->get_filter_columns($params)
+        );
+        $filterUsersSql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
+        $filterUsersSql .= $this->get_filter_in_sql($params->courseid, "ctx.instanceid");
+        $quizFilterSql1 = $this->get_filter_in_sql($params->courseid, "q.course", false);
+        $quizFilterSql2 = $this->get_filter_in_sql($params->courseid, "q.course", false);
+        $filterSql = $this->get_filterdate_sql($params, "qd1.submission_date");
+        $filterSql .= $this->get_filterdate_sql($params, "qd2.submission_date");
+        $filterSql .= $this->get_filter_sql($params, $columns, true);
+        $filterSql .= $this->vendor_filter('u.id', 'c.id', $params);
+        $sqlOrder = $this->get_order_sql($params, $columns);
+
+        $getQuizeSql = function ($quizid, $quizkey, $filter, $prefix="qd") {
+            $alias = $prefix . $quizkey;
+            return "
+                LEFT JOIN (SELECT
+                    qa.quiz,
+                    qa.userid,
+                    q.course,
+                    q.name,
+                    MAX(qa.sumgrades/q.sumgrades)*100 AS highest_grade,
+                    AVG((qa.sumgrades/q.sumgrades)*100) AS avg_grade,
+                    MAX(qal.sumgrades/q.sumgrades)*100 AS last_attempt_grade,
+                    MAX(qaf.sumgrades/q.sumgrades)*100 AS first_attempt_grade,
+                    MAX(qa.timefinish) AS submission_date,
+                    q.grademethod,
+                    MAX(qal.attempt_id) as attempt_id
+                FROM {quiz_attempts} qa
+                JOIN (
+                        SELECT MAX(qa.uniqueid) as attempt_id, quiz, userid, sumgrades
+                        FROM {quiz_attempts} qa
+                        WHERE qa.state = 'finished'" . (!empty($quizid) ? " AND qa.quiz = " . $quizid : '') . "
+                        GROUP BY qa.quiz, qa.userid, qa.sumgrades
+                ) qal ON qal.quiz = qa.quiz AND qal.userid = qa.userid
+                JOIN (
+                        SELECT MIN(qa.id) as id, quiz, userid, sumgrades
+                        FROM {quiz_attempts} qa
+                        WHERE qa.state = 'finished'" . (!empty($quizid) ? " AND qa.quiz = " . $quizid : '') . "
+                        GROUP BY qa.quiz, qa.userid, qa.sumgrades
+                ) qaf ON qaf.quiz = qa.quiz AND qaf.userid = qa.userid
+                JOIN {quiz} q ON q.id = qa.quiz
+                WHERE $filter
+            GROUP BY qa.quiz, qa.userid, q.course, q.name, q.sumgrades, q.grademethod) $alias ON $alias.course = c.id AND $alias.userid = u.id";
+         };
+
+        $sql = "SELECT
+                       " . ($CFG->dbtype == 'pgsql' ?  "ROW_NUMBER () OVER ()" : " @rowid := @rowid + 1") . " AS rowid,
+                       u.firstname,
+                       u.lastname,
+                       u.email,
+                       c.shortname,
+                       qd1.name AS quizname1,
+                       qd1.submission_date AS submission_date1,
+                       CASE WHEN qd1.grademethod = 1 THEN qd1.highest_grade
+                            WHEN qd1.grademethod = 2 THEN qd1.avg_grade
+                            WHEN qd1.grademethod = 3 THEN qd1.first_attempt_grade
+                            WHEN qd1.grademethod = 4 THEN qd1.last_attempt_grade
+                       END AS grade1,
+                       qd2.name AS quizname2,
+                       qd2.submission_date AS submission_date2,
+                       CASE WHEN qd2.grademethod = 1 THEN qd2.highest_grade
+                            WHEN qd2.grademethod = 2 THEN qd2.avg_grade
+                            WHEN qd2.grademethod = 3 THEN qd2.first_attempt_grade
+                            WHEN qd2.grademethod = 4 THEN qd2.last_attempt_grade
+                       END AS grade2,
+                        qsa1.questionsummary as q1question,
+                        qsa1.responsesummary as q1answer,
+                        qsa2.questionsummary as q2question,
+                        qsa2.responsesummary as q2answer
+                  FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "(
+                       SELECT ctx.instanceid AS courseid, ra.userid
+                         FROM {context} ctx
+                         JOIN {role_assignments} ra ON ra.contextid = ctx.id $filterUsersSql
+                        WHERE ctx.contextlevel=50
+                     GROUP BY ctx.instanceid, ra.userid
+                 ) ue
+                 JOIN {user} u ON u.id = ue.userid
+                 JOIN {course} c ON c.id = ue.courseid" .
+                 $getQuizeSql($params->custom2, 1, $quizFilterSql1) .
+                 $getQuizeSql($params->custom3, 2, $quizFilterSql2) . "
+                 LEFT JOIN {question_attempts} qsa1 ON qsa1.questionusageid = qd1.attempt_id
+                 LEFT JOIN {question_attempts} qsa2 ON qsa2.questionusageid = qd2.attempt_id
+                 WHERE u.id > 0 $filterSql
+                 $sqlOrder";
+
+        return $this->get_report_data($sql, $params);
     }
 
     public function get_quiz_attempt($params){
