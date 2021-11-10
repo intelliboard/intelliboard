@@ -6854,6 +6854,7 @@ class local_intelliboard_external extends external_api {
                                MIN(qa.timefinish) AS timefinish,
                                MIN(qat.slot) AS slot
                           FROM {quiz_attempts} qa
+                          JOIN {quiz} q ON q.id = qa.quiz " . $this->get_filter_in_sql($params->courseid, 'q.course') . "
                      LEFT JOIN {question_attempts} qat ON qat.questionusageid = qa.uniqueid
                      LEFT JOIN {question_attempt_steps} qas ON qas.questionattemptid = qat.id AND
                                                                qas.sequencenumber = (SELECT MAX(sequencenumber)
@@ -22538,7 +22539,7 @@ class local_intelliboard_external extends external_api {
         if ($params->order_column != 0) {
             $sql_order = $this->get_order_sql($params, $columns);
         } else {
-            $sql_order = "ORDER BY u.lastname, c.shortname, itemname";
+            $sql_order = "ORDER BY c.shortname, u.lastname, u.id, cm.section";
         }
         $sql_columns = $this->get_columns($params);
         $sql_columns .= $this->get_modules_sql(null, false, 'itemname');
@@ -22611,7 +22612,7 @@ class local_intelliboard_external extends external_api {
             $rawname = "GROUP_CONCAT( DISTINCT t.rawname)";
         }
         $sql_join .= $this->get_suspended_sql($params);
-
+        $sql_user_filter = "";
         if ($params->userfilter == 1) {
             if ($CFG->dbtype == 'pgsql') {
                 $sql_user_filter = " AND (ue1.timeend = 0 OR (ue1.timeend > 0 AND ue1.timeend > EXTRACT(epoch from now())))";
@@ -22822,7 +22823,7 @@ class local_intelliboard_external extends external_api {
                    GROUP BY qa.quiz, qa.userid
                 ) qat ON qat.userid = u.id AND m.name = 'quiz' AND qat.quiz = cm.instance
                 {$sqljoin}
-            WHERE l.page = 'module' $sql_filter {$sql_vendor_filter} $sql_having ORDER BY u.lastname, activity", $params);
+            WHERE l.page = 'module' $sql_filter {$sql_vendor_filter} $sql_having ORDER BY c.shortname, u.lastname, u.id, cm.section", $params);
     }
 
     function analytic241($params)
