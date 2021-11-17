@@ -13144,12 +13144,18 @@ class local_intelliboard_external extends external_api {
             if ($params->custom4 == 1) {
                 $sql_filter_compl = " AND ccpl.completed_courses IS NOT NULL";
             } elseif ($params->custom4 == 2) {
-                $sql_filter_compl = " AND ccpl.completed_courses IS NULL";
+                $sql_filter_compl = " AND (ccpl.completed_courses IS NULL OR ccpl.completed_courses < " . count($courses) . ")";
             } elseif ($params->custom4 == 3) {
                 if ($CFG->dbtype == 'pgsql') {
-                    $sql_filter_compl = " AND (ccpl.last_completed > extract(epoch from (now() - interval '10 days')) or ccpl.last_completed IS NULL)";
+                    $sql_filter_compl = " AND (
+                        ccpl.last_completed > extract(epoch from (now() - interval '10 days')) OR ccpl.completed_courses < " . count($courses) . "
+                        OR ccpl.last_completed IS NULL
+                    )";
                 } else {
-                    $sql_filter_compl = " AND (ccpl.last_completed > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 10 DAY)) or ccpl.last_completed IS NULL)";
+                    $sql_filter_compl = " AND (
+                        ccpl.last_completed > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 10 DAY)) OR ccpl.completed_courses < " . count($courses) . "
+                        OR ccpl.last_completed IS NULL
+                    )";
                 }
             }
 
@@ -18012,7 +18018,6 @@ class local_intelliboard_external extends external_api {
         global $DB;
         $daysdiff = floor(($params->timefinish - $params->timestart)/(3600 * 24));
         $sql_filter = $this->get_teacher_sql($params, ["lit.userid" => "users", "lit.courseid" => "courses"]);
-        $userfilter = '';
 
         if($daysdiff <= 1){
             $groupkey = 'daytime';
@@ -18030,26 +18035,19 @@ class local_intelliboard_external extends external_api {
 
         $this->params['timestart'] = $params->timestart;
         $this->params['timefinish'] = $params->timefinish;
-        $sql = $this->get_filter_in_sql($params->custom4, 'roleid');
-
-        $users = $DB->get_records_sql(
-            "SELECT DISTINCT userid
-               FROM {role_assignments}
-              WHERE contextid = :context $sql",
-            array_merge($this->params,['context' => context_system::instance()->id])
-        );
-
-        if (count($users)) {
-            $userfilter = $this->get_filter_in_sql(array_keys($users), 'lit.userid');
-        } else {
-            $userfilter = ' AND lit.userid = -1';
-        }
+        $role_filter = $this->get_filter_in_sql($params->custom4,'ra.roleid', false);
 
         return $DB->get_records_sql(
             "SELECT {$groupfield} AS timepointval, SUM(t.users) AS users
                FROM (SELECT lil.timepoint, COUNT(DISTINCT lit.userid) AS users
                        FROM {local_intelliboard_tracking} lit
-                       JOIN {local_intelliboard_logs} lil ON lit.id = lil.trackid {$userfilter}
+                       JOIN {local_intelliboard_logs} lil ON lit.id = lil.trackid 
+                       JOIN (SELECT ra.userid, ctx.instanceid
+                               FROM {role_assignments} ra
+                               JOIN {context} ctx ON ctx.id = ra.contextid AND contextlevel = 50 
+                              WHERE {$role_filter}
+                           GROUP BY ra.userid, ctx.instanceid
+                            ) ur ON ur.userid = lit.userid AND ur.instanceid = lit.courseid
                       WHERE lit.id > 0 {$sql_filter}
                    GROUP BY lil.timepoint
                     ) t
