@@ -576,7 +576,8 @@ if($action == 'get_total_students'){
                GROUP BY ue.userid, e.courseid
                 ) enr ON enr.userid = ra.userid AND enr.courseid = ctx.instanceid
                 {$join_sql1}
-          WHERE ctx.contextlevel = 50 {$sql1}",
+          WHERE ctx.contextlevel = 50 {$sql1}
+          GROUP BY u.id",
         $params
     );
 
