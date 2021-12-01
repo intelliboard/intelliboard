@@ -1077,6 +1077,32 @@ define(["jquery"], function(jQuery) {
             scrollTitle: "Scrolla per aumentare",
             toggleTitle: "Clicca per cambiare"
         },
+        zh_cn: {
+            weekdays: {
+                shorthand: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
+                longhand: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
+            },
+            months: {
+                shorthand: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
+                longhand: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
+            },
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+            firstDayOfWeek: 0,
+            rangeSeparator: " 至 "
+        },
+        zh_tw: {
+            weekdays: {
+                shorthand: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
+                longhand: ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
+            },
+            months: {
+                shorthand: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
+                longhand: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
+            },
+            daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+            firstDayOfWeek: 0,
+            rangeSeparator: " 至 "
+        },
         ja: {
             weekdays: {
                 shorthand: ["日", "月", "火", "水", "木", "金", "土"],
