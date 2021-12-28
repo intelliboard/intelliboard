@@ -594,6 +594,7 @@ $string['delete_message'] = 'Удалить отчет SQL?';
 $string['success_message'] = 'Отчет SQL сохранен';
 $string['scale_percentage_round'] = 'Округление в процентах';
 $string['instructor_show_suspended_enrollments'] = 'Показать приостановленные зачисления';
+$string['instructor_hide_suspended_enrollments'] = 'Скрыть приостановленные зачисления';
 // Встречи BigBlueButton
 $string['bbbapiendpoint'] = 'Конечная точка BBB API';
 $string['bbbserversecret'] = 'Секретный ключ сервера BBB';
@@ -809,6 +810,9 @@ $string['adm_dshb_user_site_summary_details'] = 'Данные использов
 $string['adm_dshb_course_enrollments_types'] = 'Типы зачисления на курсы';
 $string['adm_dshb_user_map'] = 'Карта пользователей';
 $string['adm_dshb_user_enrol_with_compl_overview'] = 'Зачисление на курс с обзором завершения';
+$string['adm_dshb_report_user_status'] = 'Report User status';
+$string['adm_dshb_report_activity_stats_summary'] = 'Report Activity Stats Summary';
+$string['adm_dshb_report_quiz_activity_detail'] = 'Report Quiz Activity Detail';
 
 $string['instructor_hide_need_help'] = 'Скрыть кнопку «Нужна помощь»';
 $string['names_order'] = 'Порядок имен';

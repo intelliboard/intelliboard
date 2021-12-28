@@ -661,6 +661,7 @@ $string['sslversion_desc'] = "Pasar un campo Long como parámetro como para cont
 $string['debug'] = "Depurar solicitudes CURL";
 $string['debug_desc'] = "";
 $string['instructor_show_suspended_enrollments'] = 'Show suspended enrollments';
+$string['instructor_hide_suspended_enrollments'] = 'Hide suspended enrollments';
 /* IntelliCart */
 $string['intellicart'] = "Integración IntelliCart";
 $string['intellicart_desc'] = "Permitir a los estudiantes ver informes de IntelliCart";
@@ -796,6 +797,9 @@ $string['adm_dshb_user_site_summary_details'] = 'User Site Summary Detail';
 $string['adm_dshb_course_enrollments_types'] = 'Course Enrollment Types';
 $string['adm_dshb_user_map'] = 'User Map';
 $string['adm_dshb_user_enrol_with_compl_overview'] = 'Course Enrollments with Completion Overview';
+$string['adm_dshb_report_user_status'] = 'Report User status';
+$string['adm_dshb_report_activity_stats_summary'] = 'Report Activity Stats Summary';
+$string['adm_dshb_report_quiz_activity_detail'] = 'Report Quiz Activity Detail';
 
 $string['intelliboard:attendanceadmin'] = "Attendance Admin";
 $string['student_grades'] = "Student grades";

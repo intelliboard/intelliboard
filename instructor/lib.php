@@ -77,7 +77,7 @@ function intelliboard_course_learners_total($courseid)
     $sql44 = intelliboard_instructor_getcourses('gi.courseid', false, 'g.userid', false, false);
     $sql55 = intelliboard_instructor_getcourses('c.id', false, 'ra.userid', false, false);
 
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $enrolmentjoin = 'JOIN (SELECT ue.userid, MIN(ue.status) AS status, e.courseid
                                   FROM {user_enrolments} ue
                                   JOIN {enrol} e ON ue.enrolid = e.id
@@ -286,7 +286,7 @@ function intelliboard_instructor_correlations($page, $length)
     $join_sql = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'c.id');
     $sql = intelliboard_instructor_getcourses('c.id', false, 'g.userid');
 
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $sql .= ' AND enr.status = 0';
     }
 
@@ -344,7 +344,7 @@ function intelliboard_instructor_modules()
     $sql = intelliboard_instructor_getcourses('c.id', false, 'ra.userid');
     list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", []);
 
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $sql .= ' AND enr.status = 0';
     }
 
@@ -397,7 +397,7 @@ function intelliboard_instructor_stats()
     $sqluserfilter = get_filter_usersql("u.");
     $sqlenrolfilter = "";
 
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $sqlenrolfilter .= ' AND enr.status = 0';
     }
 
@@ -439,7 +439,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
     if($view == 'grades'){
         $sql = intelliboard_instructor_getcourses('c.id', false, 'g.userid');
 
-        if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+        if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
             $sql .= ' AND enr.status = 0';
         }
 
@@ -489,7 +489,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
         $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
         $join_sql2 = intelliboard_group_aggregation_sql('cmc.userid', $USER->id, 'c.id');
 
-        if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+        if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
             $sql2 .= ' AND enr.status = 0';
         }
 

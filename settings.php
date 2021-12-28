@@ -343,21 +343,36 @@ if($ADMIN->fulltree){
 
         $name = 'local_intelliboard/adm_dshb_user_site_summary_details';
         $title = new lang_string('adm_dshb_user_site_summary_details', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
         $name = 'local_intelliboard/adm_dshb_course_enrollments_types';
         $title = new lang_string('adm_dshb_course_enrollments_types', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
         $name = 'local_intelliboard/adm_dshb_user_map';
         $title = new lang_string('adm_dshb_user_map', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
         $name = 'local_intelliboard/adm_dshb_user_enrol_with_compl_overview';
         $title = new lang_string('adm_dshb_user_enrol_with_compl_overview', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/adm_dshb_report_user_status';
+        $title = new lang_string('adm_dshb_report_user_status', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/adm_dshb_report_activity_stats_summary';
+        $title = new lang_string('adm_dshb_report_activity_stats_summary', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/adm_dshb_report_quiz_activity_detail';
+        $title = new lang_string('adm_dshb_report_quiz_activity_detail', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
         /* Admin dashboard (end) */
@@ -509,8 +524,8 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
-        $name = 'local_intelliboard/instructor_show_suspended_enrollments';
-        $title = new lang_string('instructor_show_suspended_enrollments', 'local_intelliboard');
+        $name = 'local_intelliboard/instructor_hide_suspended_enrollments';
+        $title = new lang_string('instructor_hide_suspended_enrollments', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 

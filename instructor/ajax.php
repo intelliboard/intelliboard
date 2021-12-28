@@ -80,7 +80,7 @@ if($action == 'get_total_students'){
     list($sql6, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $sql3 .= ' AND ue.status = 0';
         $sql7 .= ' AND enr.status = 0';
     }
@@ -182,7 +182,7 @@ if($action == 'get_total_students'){
     list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
 
     $enrfilter = '';
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $enrfilter = ' AND enr.status = 0';
     }
 
@@ -296,7 +296,7 @@ if($action == 'get_total_students'){
     $params = array('course'=>$course,'timestart'=>$timestart, 'timefinish'=>$timefinish);
     list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
 
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $sql1 .= ' AND enr.status = 0';
     }
 
@@ -389,7 +389,7 @@ if($action == 'get_total_students'){
     list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
 
     $enrolfilter = '';
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $enrolfilter = ' AND enr.status = 0';
     }
 
@@ -561,7 +561,7 @@ if($action == 'get_total_students'){
     list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
 
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $sql1 .= ' AND enr.status = 0';
     }
 
@@ -594,7 +594,7 @@ if($action == 'get_total_students'){
     $raw = get_config('local_intelliboard', 'scale_raw');
 
     $enrfilter = '';
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $enrfilter = ' AND enr.status = 0';
     }
 
@@ -651,7 +651,7 @@ if($action == 'get_total_students'){
     ]];
 
     $enrfilter = '';
-    if (!get_config('local_intelliboard', 'instructor_show_suspended_enrollments')) {
+    if (get_config('local_intelliboard', 'instructor_hide_suspended_enrollments')) {
         $enrfilter = ' AND enr.status = 0';
     }
 

@@ -938,11 +938,16 @@ function intelli_lms_admins() {
 }
 
 function intelli_initial_reports() {
-    $reports = [
-        ["id" => 1, "class" => \local_intelliboard\output\tables\initial_reports\report1::class],
-        ["id" => 3, "class" => \local_intelliboard\output\tables\initial_reports\report3::class],
-        ["id" => 45, "class" => \local_intelliboard\output\tables\initial_reports\report45::class],
-    ];
+    $reports = [];
+    if (get_config('local_intelliboard', 'adm_dshb_report_user_status')) {
+        $reports[] = ["id" => 1, "class" => \local_intelliboard\output\tables\initial_reports\report1::class];
+    }
+    if (get_config('local_intelliboard', 'adm_dshb_report_activity_stats_summary')) {
+        $reports[] = ["id" => 3, "class" => \local_intelliboard\output\tables\initial_reports\report3::class];
+    }
+    if (get_config('local_intelliboard', 'adm_dshb_report_quiz_activity_detail')) {
+        $reports[] = ["id" => 45, "class" => \local_intelliboard\output\tables\initial_reports\report45::class];
+    }
 
     foreach ($reports as &$report) {
         $url = new \moodle_url("/local/intelliboard/initial_report.php", ["id" => $report["id"]]);

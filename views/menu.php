@@ -61,12 +61,14 @@
     </li>
     <?php endif; ?>
 
+    <?php $intelli_initial_reports = intelli_initial_reports();
+    if ($intelli_initial_reports || $intelliboard->reports): ?>
     <li class="submenu">
         <a href="#" <?php echo (in_array($PAGE->pagetype, ['reports', 'initial-report']))?'class="active"':''; ?>>
             <?php echo get_string('reports', 'local_intelliboard');?> <i class="arr ion-arrow-down-b"></i>
         </a>
         <ul class="reports-l">
-            <?php foreach(intelli_initial_reports() as $ireport): ?>
+            <?php foreach($intelli_initial_reports as $ireport): ?>
                 <li>
                     <a href="<?php echo $ireport["url"]; ?>">
                         <?php echo $ireport["name"]; ?>
@@ -85,6 +87,8 @@
             <?php endif; ?>
         </ul>
     </li>
+    <?php endif; ?>
+
     <li><a href="help.php" <?php echo ($PAGE->pagetype == 'help')?'class="active"':''; ?>><?php echo get_string('help', 'local_intelliboard');?></a></li>
     <?php if($intelliboard->token and get_config('local_intelliboard', 'sso')): ?>
         <li class="sso" >

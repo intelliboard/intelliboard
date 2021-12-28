@@ -594,6 +594,7 @@
  $string['success_message'] = 'SQL Bericht wurde gespeichert ';
  $string['scale_percentage_round'] = 'Prozenten rund ';
  $string['instructor_show_suspended_enrollments'] = 'suspendierte Anmeldungen zeigen';
+ $string['instructor_hide_suspended_enrollments'] = 'Hide suspended enrollments';
  // BigBlueButton Treffungen
  $string['bbbapiendpoint'] = 'BBB API Endpunkt';
  $string['bbbserversecret'] = 'BBB Server Hehl';
@@ -809,6 +810,9 @@ $string['adm_dshb_user_site_summary_details'] = 'Detaillierte Zusammenfassung Be
 $string['adm_dshb_course_enrollments_types'] = 'Kursanmeldung Typen';
 $string['adm_dshb_user_map'] = 'Benutzerkarte';
 $string['adm_dshb_user_enrol_with_compl_overview'] = 'Kurs Einschreibungen mit Abschluss Übersicht';
+$string['adm_dshb_report_user_status'] = 'Report User status';
+$string['adm_dshb_report_activity_stats_summary'] = 'Report Activity Stats Summary';
+$string['adm_dshb_report_quiz_activity_detail'] = 'Report Quiz Activity Detail';
 
 $string['instructor_hide_need_help'] = '„Brauchen Sie Hilfe“ Button verstecken';
 $string['names_order'] = 'Namen Ordnung';

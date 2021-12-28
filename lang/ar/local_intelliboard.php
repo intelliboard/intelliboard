@@ -84,6 +84,9 @@ $string['adm_dshb_user_enrol_with_compl_overview'] = 'عمليات التسجي�
 $string['adm_dshb_user_map'] = 'خريطة المستخدم';
 $string['adm_dshb_user_site_summary_details'] = 'تفاصيل ملخص موقع المستخدم';
 $string['admin_dashboard'] = 'لوحة بيانات مسؤول الموقع';
+$string['adm_dshb_report_user_status'] = 'Report User status';
+$string['adm_dshb_report_activity_stats_summary'] = 'Report Activity Stats Summary';
+$string['adm_dshb_report_quiz_activity_detail'] = 'Report Quiz Activity Detail';
 $string['adv_settings'] = 'إعدادات متقدمة';
 $string['ajax'] = 'التكرار';
 $string['ajax_desc'] = 'تكرار تخزين الجلسة عبر AJAX. 0 - تعطيل AJAX (بالثواني)';
@@ -349,6 +352,7 @@ $string['instructor_mode'] = 'إظهار كافة الحقائب التدريب�
 $string['instructor_mode_access'] = 'إظهار كافة الحقائب التدريبية المتاحة لـ [مدرس] مع  [تحديث] الأذونات';
 $string['instructor_redirect'] = 'إعادة توجيه المدرس';
 $string['instructor_show_suspended_enrollments'] = 'إظهار التسجيلات الموقوفة مؤقتا';
+$string['instructor_hide_suspended_enrollments'] = 'Hide suspended enrollments';
 $string['intb_settings_descr'] = 'يتطلب IntelliBoard بريدًا إلكترونيًا رئيسيًا وفريدًا للاشتراك. الرجاء إدخال البريد الإلكتروني الذي ترغب في استخدامه كبريد إلكتروني للاشتراك أدناه. يجب التحقق من البريد الإلكتروني مرتين من خلال تأكيد البريد الإلكتروني قبل الاستخدام. للأسئلة ، يرجى الاتصال <a href=\'mailto:Support@IntelliBoard.net\'> Support@IntelliBoard.net </a>. للحصول على قائمة كاملة بإعدادات IntelliBoard ، انتقل إلى إدارة الموقع> الملاحق> الملاحق  المحلية> IntelliBoard';
 $string['intelliboard_logs'] = 'سجلات IntelliBoard';
 $string['intelliBoard_migration_tool'] = 'أداة ترحيل IntelliBoard';

@@ -594,6 +594,7 @@ $string['delete_message'] = 'Ștergeți raportul SQL?';
 $string['success_message'] = 'Raportul SQL a fost salvat';
 $string['scale_percentage_round'] = 'Procentaj rotund';
 $string['instructor_show_suspended_enrollments'] = 'Afișați înscrierile suspendate';
+$string['instructor_hide_suspended_enrollments'] = 'Hide suspended enrollments';
 // BigBlueButton meetings
 $string['bbbapiendpoint'] = 'BBB API endpoint';
 $string['bbbserversecret'] = 'BBB server secret';
@@ -809,6 +810,9 @@ $string['adm_dshb_user_site_summary_details'] = 'Detalii Rezumat Sit al Utilizat
 $string['adm_dshb_course_enrollments_types'] = 'Tipuri de Înscriere la Curs';
 $string['adm_dshb_user_map'] = 'Harta Utilizatorului';
 $string['adm_dshb_user_enrol_with_compl_overview'] = 'Înscrieri la Curs cu Prezentare Generală de Finalizare';
+$string['adm_dshb_report_user_status'] = 'Report User status';
+$string['adm_dshb_report_activity_stats_summary'] = 'Report Activity Stats Summary';
+$string['adm_dshb_report_quiz_activity_detail'] = 'Report Quiz Activity Detail';
 
 $string['instructor_hide_need_help'] = 'Ascundeți butonul „Ai nevoie de ajutor?”';
 $string['names_order'] = 'Ordinea numelor';
