@@ -71,11 +71,16 @@ class student_badges extends \table_sql {
             JOIN {badge_criteria} bdgc ON bdgc.badgeid = bdg.id AND bdgc.criteriatype IN (4, 5)
             JOIN {badge_criteria_param} bcrp ON bcrp.critid = bdgc.id
        LEFT JOIN {course} c ON c.id = (CASE WHEN bcrp.name LIKE 'course_%' THEN " . (in_array($CFG->dbtype, ['mysqli', 'mariadb']) ? 'bcrp.value' : 'bcrp.value::INTEGER') . " ELSE -1 END)
+            JOIN (SELECT DISTINCT courseid
+                    FROM {enrol} e
+                    JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                   WHERE ue.userid = :userid3
+            ) ec ON ec.courseid = c.id
        LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
        LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = :userid1
        LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = :userid2";
         $where = "bdg.status IN(1,3) GROUP BY bdg.id, bdg.name, bdg.issuername, bdgc.method";
-        $params = ['userid1' => $USER->id, 'userid2' => $USER->id];
+        $params = ['userid1' => $USER->id, 'userid2' => $USER->id, 'userid3' => $USER->id];
 
         $this->set_count_sql(
             "SELECT COUNT(bdg.id)

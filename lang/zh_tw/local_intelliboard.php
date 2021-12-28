@@ -594,6 +594,7 @@
  $string['success_message'] = 'SQL報告已經保存';
  $string['scale_percentage_round'] = '百分比四捨五入';
  $string['instructor_show_suspended_enrollments'] = '顯示已暫停的選課';
+ $string['instructor_hide_suspended_enrollments'] = 'Hide suspended enrollments';
  // BigBlueButton meetings
  $string['bbbapiendpoint'] = 'BBB API端點';
  $string['bbbserversecret'] = 'BBB 伺服器金鑰';
@@ -809,6 +810,9 @@ $string['adm_dshb_user_site_summary_details'] = '用戶概要';
 $string['adm_dshb_course_enrollments_types'] = '課程選課類型';
 $string['adm_dshb_user_map'] = '用戶地圖';
 $string['adm_dshb_user_enrol_with_compl_overview'] = '課程完成度概況';
+$string['adm_dshb_report_user_status'] = 'Report User status';
+$string['adm_dshb_report_activity_stats_summary'] = 'Report Activity Stats Summary';
+$string['adm_dshb_report_quiz_activity_detail'] = 'Report Quiz Activity Detail';
 
 $string['instructor_hide_need_help'] = '隱藏"需要幫助？"按鈕';
 $string['names_order'] = '名稱順序';
