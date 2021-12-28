@@ -594,6 +594,7 @@
  $string['success_message'] = 'SQL报告已经保存';
  $string['scale_percentage_round'] = '百分比四舍五入';
  $string['instructor_show_suspended_enrollments'] = '显示已暂停的选课';
+ $string['instructor_hide_suspended_enrollments'] = 'Hide suspended enrollments';
  // BigBlueButton meetings
  $string['bbbapiendpoint'] = 'BBB API端点';
  $string['bbbserversecret'] = 'BBB 服务器密钥';
@@ -809,6 +810,9 @@ $string['adm_dshb_user_site_summary_details'] = '用户概要';
 $string['adm_dshb_course_enrollments_types'] = '课程选课类型';
 $string['adm_dshb_user_map'] = '用户地图';
 $string['adm_dshb_user_enrol_with_compl_overview'] = '课程完成度概况';
+$string['adm_dshb_report_user_status'] = 'Report User status';
+$string['adm_dshb_report_activity_stats_summary'] = 'Report Activity Stats Summary';
+$string['adm_dshb_report_quiz_activity_detail'] = 'Report Quiz Activity Detail';
 
 $string['instructor_hide_need_help'] = '隐藏"需要帮助？"按钮';
 $string['names_order'] = '名称顺序';

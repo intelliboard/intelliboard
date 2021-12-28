@@ -752,6 +752,7 @@ $string['support_trial'] = "Inizia periodo di prova";
 $string['support_close'] = "Chiudi";
 $string['instructor_custom_groups'] = "Gruppi personalizzati docente";
 $string['instructor_show_suspended_enrollments'] = 'Show suspended enrollments';
+$string['instructor_hide_suspended_enrollments'] = 'Hide suspended enrollments';
 
 // settings of tables
 $string['table_set_icg'] = 'Corsi del Docente';
@@ -855,6 +856,9 @@ $string['adm_dshb_user_site_summary_details'] = 'User Site Summary Detail';
 $string['adm_dshb_course_enrollments_types'] = 'Course Enrollment Types';
 $string['adm_dshb_user_map'] = 'User Map';
 $string['adm_dshb_user_enrol_with_compl_overview'] = 'Course Enrollments with Completion Overview';
+$string['adm_dshb_report_user_status'] = 'Report User status';
+$string['adm_dshb_report_activity_stats_summary'] = 'Report Activity Stats Summary';
+$string['adm_dshb_report_quiz_activity_detail'] = 'Report Quiz Activity Detail';
 
 $string['instructor_hide_need_help'] = 'Hide "Need help" button';
 $string['names_order'] = 'Names order';
