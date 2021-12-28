@@ -83,6 +83,9 @@ $string['adm_dshb_user_enrol_with_compl_overview'] = '修了を伴うコース�
 $string['adm_dshb_user_map'] = 'ユーザーマップ';
 $string['adm_dshb_user_site_summary_details'] = 'ユーザーサイトの概要の詳細';
 $string['admin_dashboard'] = '管理ダッシュボード';
+$string['adm_dshb_report_user_status'] = 'Report User status';
+$string['adm_dshb_report_activity_stats_summary'] = 'Report Activity Stats Summary';
+$string['adm_dshb_report_quiz_activity_detail'] = 'Report Quiz Activity Detail';
 $string['adv_settings'] = '詳細設定';
 $string['ajax'] = '頻度';
 $string['ajax_desc'] = 'セッションをAJAX経由で保存しています。 0 - AJAX無効（秒）';
@@ -807,6 +810,7 @@ $string['you_have_certificates'] = 'あなたは {$a} 修了証を持ってい�
 $string['debug_desc'] = "";
 
 $string['instructor_show_suspended_enrollments'] = "Show suspended enrollments";
+$string['instructor_hide_suspended_enrollments'] = 'Hide suspended enrollments';
 $string['check_active_bb_col_meetings'] = "Check active BlackBoard Collaborate meeting";
 $string['learner_menu'] = "Show Learner Dashboard in Navigation Block menu only for enrolled learners";
 $string['learning_plan_filter'] = "Learning Plan Filter";
