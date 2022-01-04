@@ -6684,7 +6684,7 @@ class local_intelliboard_external extends external_api {
         global $CFG, $DB;
 
         $columns = array_merge(array(
-            "t.fullname", "t.name", "t.activity", "t.due_date", "t.firstname", "t.lastname", "t.email", "groups", "t.time_on", "teacher", ""
+            "t.fullname", "t.name", "t.activity", "t.due_date", "t.firstname", "t.lastname", "t.email", "user_groups", "t.time_on", "teacher", ""
         ), $this->get_filter_columns($params));
 
         $sql_having = $this->get_filter_sql($params, $columns, false);
@@ -6741,7 +6741,7 @@ class local_intelliboard_external extends external_api {
                        u.firstname,
                        u.lastname,
                        u.email,
-                       grps.groups,
+                       grps.user_groups,
                        c.fullname,
                        tp.dtdue AS due_date,
                        trs.submission_modified AS time_on,
@@ -6763,7 +6763,7 @@ class local_intelliboard_external extends external_api {
                   JOIN {grade_items} gi ON gi.courseid=tr.course AND gi.itemtype='mod' AND
                                            gi.itemmodule='turnitintooltwo' AND gi.iteminstance=tr.id
                   JOIN {grade_grades} gg ON gg.itemid=gi.id AND gg.userid=u.id AND gg.overridden=0
-             LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS groups
+             LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS user_groups
                         FROM {groups} g
                         JOIN {groups_members} m ON m.groupid = g.id
                        WHERE g.id > 0 " . $this->get_filter_in_sql($params->courseid, 'g.courseid') . "
@@ -6793,7 +6793,7 @@ class local_intelliboard_external extends external_api {
                        u.firstname,
                        u.lastname,
                        u.email,
-                       grps.groups,
+                       grps.user_groups,
                        c.fullname,
                        a.duedate AS due_date,
                        s.timemodified AS time_on,
@@ -6814,7 +6814,7 @@ class local_intelliboard_external extends external_api {
                   JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=a.id AND cm.visible=1
                   JOIN {enrol} e ON e.courseid=c.id
                   JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ue.userid=u.id
-             LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS groups
+             LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS user_groups
                             FROM {groups} g
                             JOIN {groups_members} m ON m.groupid = g.id
                            WHERE g.id > 0 " . $this->get_filter_in_sql($params->courseid, 'g.courseid') . "
@@ -6843,7 +6843,7 @@ class local_intelliboard_external extends external_api {
                        u.firstname,
                        u.lastname,
                        u.email,
-                       grps.groups,
+                       grps.user_groups,
                        c.fullname,
                        qz.timeclose as due_date,
                        quiz_attempt.timefinish as time_on,
@@ -6872,7 +6872,7 @@ class local_intelliboard_external extends external_api {
                   JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=qz.id AND cm.visible=1
                   JOIN {enrol} e ON e.courseid=c.id
                   JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ue.userid=u.id
-             LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS groups
+             LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS user_groups
                         FROM {groups} g
                         JOIN {groups_members} m ON m.groupid = g.id
                        WHERE g.id > 0 " . $this->get_filter_in_sql($params->courseid, 'g.courseid') . "
@@ -9003,7 +9003,7 @@ class local_intelliboard_external extends external_api {
             "u.firstname",
             "u.lastname",
             "u.email",
-            "gr.groups",
+            "gr.user_groups",
             "c.fullname",
             "s.name"
         ), $this->get_filter_columns($params));
@@ -9033,7 +9033,7 @@ class local_intelliboard_external extends external_api {
                 u.email,
                 s.name AS survey,
                 c.fullname,
-                gr.groups,
+                gr.user_groups,
                 $group_concat AS answers
                 $sql_columns
             FROM {survey_answers} a
@@ -9042,9 +9042,9 @@ class local_intelliboard_external extends external_api {
             JOIN {course} c ON c.id = s.course
        LEFT JOIN {modules} m ON m.name = 'survey'
        LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = s.id
-            LEFT JOIN (SELECT m.userid, g.courseid, $group_concat2 AS groups FROM {groups} g, {groups_members} m WHERE m.groupid = g.id GROUP BY m.userid, g.courseid) gr ON gr.userid = u.id AND gr.courseid = c.id
+            LEFT JOIN (SELECT m.userid, g.courseid, $group_concat2 AS user_groups FROM {groups} g, {groups_members} m WHERE m.groupid = g.id GROUP BY m.userid, g.courseid) gr ON gr.userid = u.id AND gr.courseid = c.id
             WHERE a.id > 0 $sql_filter
-            GROUP BY u.id, s.id, c.fullname, gr.groups $sql_having $sql_order", $params);
+            GROUP BY u.id, s.id, c.fullname, gr.user_groups $sql_having $sql_order", $params);
     }
 
     function report125($params)
@@ -9062,7 +9062,7 @@ class local_intelliboard_external extends external_api {
             "u.firstname",
             "u.lastname",
             "u.email",
-            "gr.groups",
+            "gr.user_groups",
             "c.fullname",
             "q.questionnairename"
         ), $this->get_filter_columns($params));
@@ -9172,7 +9172,7 @@ class local_intelliboard_external extends external_api {
                     c.fullname,
                     q.questionnaire,
                     q.questionnairename,
-                    gr.groups,
+                    gr.user_groups,
                     r.submitted,
                     {$answers} AS answers
                     {$sql_columns}
@@ -9189,13 +9189,13 @@ class local_intelliboard_external extends external_api {
                JOIN {course} c ON c.id = q.course
           LEFT JOIN {modules} m ON m.name = 'questionnaire'
           LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = q.questionnaire
-          LEFT JOIN (SELECT m.userid, g.courseid, {$group_concat} AS groups
+          LEFT JOIN (SELECT m.userid, g.courseid, {$group_concat} AS user_groups
                        FROM {groups} g, {groups_members} m
                       WHERE m.groupid = g.id
                    GROUP BY m.userid, g.courseid
                     ) gr ON gr.userid = u.id AND gr.courseid = c.id
               WHERE r.complete = 'y' $sql_filter
-           GROUP BY u.id, r.id, c.id, q.questionnaire, q.questionnairename, gr.groups, cm.id $sql_having $sql_order", $params);
+           GROUP BY u.id, r.id, c.id, q.questionnaire, q.questionnairename, gr.user_groups, cm.id $sql_having $sql_order", $params);
     }
      public function report126($params)
     {
@@ -9554,9 +9554,9 @@ class local_intelliboard_external extends external_api {
             $cohort_filter = "LEFT JOIN {cohort_members} cm ON cm.userid = ue.userid ";
         }
         if ($CFG->dbtype == 'pgsql') {
-            $group_concat = "string_agg( DISTINCT g.name, ', ') AS groups, string_agg( DISTINCT ch.name, ', ') AS cohorts";
+            $group_concat = "string_agg( DISTINCT g.name, ', ') AS user_groups, string_agg( DISTINCT ch.name, ', ') AS cohorts";
         } else {
-            $group_concat = "GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') AS groups, GROUP_CONCAT(DISTINCT ch.name SEPARATOR ', ') AS cohorts";
+            $group_concat = "GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') AS user_groups, GROUP_CONCAT(DISTINCT ch.name SEPARATOR ', ') AS cohorts";
         }
         $uinfo = $DB->get_records_sql("
                 SELECT ue.userid, $group_concat
@@ -9571,7 +9571,7 @@ class local_intelliboard_external extends external_api {
         $udata = array();
         if ($uinfo) {
             foreach($uinfo as $ui) {
-                $udata[$ui->userid] = ['cohorts' => $ui->cohorts, 'groups' => $ui->groups];
+                $udata[$ui->userid] = ['cohorts' => $ui->cohorts, 'groups' => $ui->user_groups];
             }
         }
 
@@ -9925,7 +9925,7 @@ class local_intelliboard_external extends external_api {
         global $CFG, $DB;
 
         $columns = array_merge(array(
-            "u.firstname","u.lastname","u.email","lit.firstaccess","lit.lastaccess","u.idnumber","c.fullname","c.shortname","grps.groups",
+            "u.firstname","u.lastname","u.email","lit.firstaccess","lit.lastaccess","u.idnumber","c.fullname","c.shortname","grps.user_groups",
             "ca.name","c.timecreated","enddate","ra.timemodified","cc.timecompleted","grade"
         ), $this->get_filter_columns($params));
         $modules = $this->get_course_modules($params);
@@ -9973,7 +9973,7 @@ class local_intelliboard_external extends external_api {
               u.lastname,
               c.fullname,
               c.shortname,
-              grps.groups,
+              grps.user_groups,
               c.timecreated,
               cc.timecompleted,
               ca.name AS category,
@@ -9984,7 +9984,7 @@ class local_intelliboard_external extends external_api {
               JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.id = ra.contextid
               JOIN {user} u ON u.id=ra.userid
               JOIN {course} c ON c.id=ctx.instanceid
-         LEFT JOIN (SELECT g.courseid, {$groups} as groups, gm.userid as user_id
+         LEFT JOIN (SELECT g.courseid, {$groups} as user_groups, gm.userid as user_id
                       FROM {groups} g
                       JOIN {groups_members} gm ON gm.groupid=g.id
                   GROUP BY g.courseid, user_id
@@ -14022,7 +14022,7 @@ class local_intelliboard_external extends external_api {
 
         $columns = array_merge([
             "u.firstname", "u.lastname", "u.email", "ue.status", "lit.firstaccess", "u.idnumber", "c.fullname", "c.shortname",
-            "grps.groups", "ca.name", "c.timecreated", "enddate", "ra.timemodified", "cc.timecompleted"
+            "grps.user_groups", "ca.name", "c.timecreated", "enddate", "ra.timemodified", "cc.timecompleted"
         ], $this->get_filter_columns($params));
         $modulesids = empty($params->custom) ? [] : explode(',', $params->custom);
         $params->custom = '';
@@ -14107,7 +14107,7 @@ class local_intelliboard_external extends external_api {
                     u.lastname,
                     c.fullname,
                     c.shortname,
-                    grps.groups,
+                    grps.user_groups,
                     c.timecreated,
                     cc.timecompleted,
                     ca.name AS category,
@@ -14131,7 +14131,7 @@ class local_intelliboard_external extends external_api {
                     JOIN {user_enrolments} ue1 ON ue1.enrolid = e1.id
                     GROUP BY e1.courseid, ue1.userid
                     ) ue ON ue.userid = u.id AND ue.courseid = c.id
-               LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS groups
+               LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS user_groups
                     FROM {groups} g
                     JOIN {groups_members} m ON m.groupid = g.id
                     GROUP BY m.userid, g.courseid
@@ -22972,7 +22972,7 @@ class local_intelliboard_external extends external_api {
                    u.firstname, 
                    u.lastname,
                    u.email,
-                   grps.groups AS groupname,
+                   grps.user_groups AS groupname,
                    u.lastaccess,
                    u.timecreated,
                    c.shortname,
@@ -22989,7 +22989,7 @@ class local_intelliboard_external extends external_api {
          LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
          LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id AND g.finalgrade IS NOT NULL
          LEFT JOIN {local_intelliboard_tracking} ul ON ul.userid = u.id AND ul.courseid = c.id AND ul.page = 'course'
-          LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS groups
+          LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS user_groups
                     FROM {groups} g
                     JOIN {groups_members} m ON m.groupid = g.id
                     GROUP BY m.userid, g.courseid
