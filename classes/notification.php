@@ -435,7 +435,7 @@ class local_intelliboard_notification
         $filteredUserIds = $this->filter_by_cohort($notification, array_column($events, 'relateduserid'));
 
         foreach ($events as $data) {
-            if (isset($filteredUserIds[$data['relateduserid']])) {
+            if (in_array($data['relateduserid'], $filteredUserIds)) {
                 if (!isset($notifications[$data['relateduserid']])) {
                     $notifications[$data['relateduserid']] = [];
                     $recipients[$data['relateduserid']] = $DB->get_record('user', ['id' => $data['relateduserid']]);
@@ -565,7 +565,7 @@ class local_intelliboard_notification
 
         $filteredUserIds = $this->filter_by_cohort($notification, array_column($events, 'userid'));
         foreach ($events as $data) {
-            if (!isset($filteredUserIds[$data['userid']])) {
+            if ( !in_array($data['userid'], $filteredUserIds)) {
                 continue;
             }
 
