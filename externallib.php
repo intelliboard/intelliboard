@@ -2332,6 +2332,10 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
 
+        if (empty($params->courseid)) {
+            return ["data" => []];
+        }
+
         $columns = array_merge(array(
             "s.name", "c.fullname", "attempts", "visits", "duration", "s.timemodified"
         ), $this->get_filter_columns($params, [null]));
@@ -2346,36 +2350,39 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->vendor_filter('sst.userid', 'c.id', $params);
         $sql_vendor_filter1 = $this->vendor_filter('lit.userid', 'lit.courseid', $params);
         $sql_vendor_filter2 = $this->vendor_filter('userid', null, $params);
+        $lit_course_filter = $this->get_filter_in_sql($params->courseid, "lit.courseid");
 
-        $time_func = ($CFG->dbtype == 'pgsql') ? "sum(value::interval)" : "SUM(TIME_TO_SEC(value))";
+        $time_func = ($CFG->dbtype == 'pgsql') ? "value::interval" : "TIME_TO_SEC(value)";
 
         return $this->get_report_data("
             SELECT s.id,
                     c.fullname,
                     s.name,
                     s.timemodified,
-                    count(sst.id) as attempts,
+                    SUM(CASE WHEN element = 'x.start.time' THEN 1 ELSE 0 END) AS attempts,
                     MAX(sl.visits) AS visits,
-                    MAX(sm.duration) AS duration
+                    SUM(CASE WHEN element = 'cmi.core.total_time' THEN {$time_func} ELSE 0 END) AS duration
                     {$sql_columns}
             FROM {scorm} s
-                LEFT JOIN {scorm_scoes_track} sst ON sst.scormid = s.id AND sst.element = 'x.start.time'
-                LEFT JOIN {course} c ON c.id = s.course
-                LEFT JOIN {modules} m ON m.name = 'scorm'
-                LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.course = c.id AND cm.instance = s.id
+                JOIN {course} c ON c.id = s.course
+                LEFT JOIN {scorm_scoes_track} sst ON sst.scormid = s.id AND (element = 'cmi.core.total_time' OR element = 'x.start.time')
                 LEFT JOIN (SELECT cm.instance, SUM(lit.visits) as visits
-                             FROM {local_intelliboard_tracking} lit, {course_modules} cm, {modules} m
-                            WHERE lit.page = 'module' and cm.id = lit.param and m.id = cm.module and m.name='scorm' {$sql_vendor_filter1}
+                             FROM {local_intelliboard_tracking} lit
+                             JOIN {course_modules} cm ON cm.id = lit.param
+                             JOIN {modules} m ON m.id = cm.module AND m.name='scorm'
+                            WHERE lit.page = 'module' {$lit_course_filter} {$sql_vendor_filter1}
                          GROUP BY cm.instance) sl ON sl.instance = s.id
-                LEFT JOIN (SELECT scormid, $time_func AS duration
-                             FROM {scorm_scoes_track}
-                            WHERE element = 'cmi.core.total_time' {$sql_vendor_filter2}
-                         GROUP BY scormid) AS sm ON sm.scormid = s.id
-            WHERE s.id > 0 $sql_filter GROUP BY s.id, c.id $sql_having $sql_order", $params);
+            WHERE s.id > 0 $sql_filter
+            GROUP BY s.id, c.id $sql_having $sql_order", $params);
     }
+
     public function report21($params)
     {
         global $CFG;
+
+        if (empty($params->courseid)) {
+            return ["data" => []];
+        }
 
         $columns = array_merge(array(
             "u.firstname", "u.lastname", "u.email", "ue.status", "u.idnumber", "s.name", "c.fullname", "attempts",
@@ -2396,6 +2403,10 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->vendor_filter('ue.userid', 'c.id', $params);
         $sqltimefilter = $this->get_filterdate_sql($params, "sst.timemodified");
         $grade_single = intelliboard_grade_sql(false, $params);
+
+        $enrol_sql_filter = $this->get_filter_in_sql($params->courseid, "e.courseid");
+        $cdata_sql_filter = $this->get_filter_in_sql($params->courseid, "s1.course");
+        $tlit_sql_filter = $this->get_filter_in_sql($params->courseid, "lit.courseid");
 
         $sql_join = "";
         if($params->cohortid){
@@ -2483,6 +2494,7 @@ class local_intelliboard_external extends external_api {
               JOIN (SELECT e.courseid, ue1.userid, MIN(ue1.status) AS status, MIN(ue1.timeend) AS timeend
                       FROM {enrol} e
                       JOIN {user_enrolments} ue1 ON ue1.enrolid = e.id
+                      WHERE e.id > 0 {$enrol_sql_filter}
                   GROUP BY e.courseid, ue1.userid
                    ) ue ON ue.courseid = c.id
               JOIN {user} u ON u.id = ue.userid
@@ -2496,11 +2508,12 @@ class local_intelliboard_external extends external_api {
                            {$currentcompletionstatus} AS current_completion_status,
                            COUNT(DISTINCT(sst.attempt)) as attempts
                       FROM {scorm_scoes_track} sst
+                      JOIN {scorm} s1 ON s1.id = sst.scormid
                       JOIN (SELECT userid, scormid, MAX(attempt) AS last_attempt_number
                               FROM {scorm_scoes_track}
                           GROUP BY userid, scormid
                            ) la ON la.userid = sst.userid AND la.scormid = sst.scormid
-                     WHERE sst.id > 0 {$sqltimefilter}
+                     WHERE sst.id > 0 {$cdata_sql_filter} {$sqltimefilter}
                   GROUP BY sst.userid, sst.scormid
                    ) t ON t.scormid = s.id AND t.userid = u.id
          LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
@@ -2518,7 +2531,7 @@ class local_intelliboard_external extends external_api {
                            SUM(lit.timespend) AS timespend,
                            SUM(lit.visits) AS visits
                       FROM {local_intelliboard_tracking} lit
-                     WHERE lit.courseid > 0
+                     WHERE lit.courseid > 0 {$tlit_sql_filter}
                   GROUP BY lit.courseid, lit.userid
                    ) l ON l.userid=u.id AND l.courseid=c.id
          LEFT JOIN {local_intelliboard_tracking} l2 ON l2.userid = u.id AND l2.page = 'module' AND l2.param = cm.id
@@ -9552,7 +9565,7 @@ class local_intelliboard_external extends external_api {
         $users = $this->subaccount_assigned_users($params);
 
         $sql_filter = $this->get_filter_in_sql($params->courseid, "e.courseid");
-        if (isset($params->cohortid)) {
+        if (!empty($params->cohortid)) {
             $cohort_filter = "JOIN {cohort_members} cm ON cm.userid = ue.userid " . $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
         }
         else {
@@ -12108,7 +12121,7 @@ class local_intelliboard_external extends external_api {
         $sql_inner_filter3 = $this->get_filter_in_sql($params->courseid, 'm.course');
         $sql_inner_filter4 = $this->get_filter_in_sql($params->courseid, 'm.course');
         $sql_inner_filter5 = $this->get_filter_in_sql($params->courseid, 'm.course');
-        $sql_inner_filter6 = $this->get_filter_in_sql($params->courseid, 'ctx.instanceid');
+        $sql_inner_filter8 = $this->get_filter_in_sql($params->courseid, 'ctx.instanceid');
 
         $sql_select = $sql_overal_submission_date = '';
         if (get_component_version('mod_hsuforum')) {
@@ -12217,7 +12230,7 @@ class local_intelliboard_external extends external_api {
                   LEFT JOIN (SELECT {$teachersnames} AS teacher, ctx.instanceid 
                        FROM {role_assignments} AS ra
                        JOIN {user} u ON ra.userid = u.id
-                       JOIN {context} AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50 $sql_inner_filter6 
+                       JOIN {context} AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50 $sql_inner_filter8 
                       WHERE $sql_teacher_roles
                    GROUP BY ctx.instanceid
                             ) tch ON tch.instanceid = c.id
@@ -12930,7 +12943,8 @@ class local_intelliboard_external extends external_api {
 
         $columns = array_merge(array(
             "orderid",
-            "customer",
+            "u.firstname",
+            "u.lastname",
             "u.email",
             "products",
             "pc.courses",
@@ -12975,11 +12989,14 @@ class local_intelliboard_external extends external_api {
                     u.email,
                     ch.userid,
                     ch.notes,
-                    CONCAT(u.firstname, ' ', u.lastname) AS customer,
+                    u.firstname,
+                    u.lastname,
                     ch.id AS invoice,
                     ch.billingtype,
                     s.quantity,
                     pc.courses,
+                    v.vendors,
+                    cp.code AS couponcode,
                     '{$currency}' AS currency
                     {$sql_columns}
                FROM {local_intellicart_checkout} ch
@@ -12998,6 +13015,19 @@ class local_intelliboard_external extends external_api {
                       WHERE il.type = 'product'
                    GROUP BY il.checkoutid
                     ) pc ON pc.checkoutid = ch.id
+          LEFT JOIN (SELECT itlu.userid, GROUP_CONCAT(DISTINCT itlv.name) vendors
+                       FROM {local_intellicart_users} itlu
+                       JOIN {local_intellicart_vendors} itlv ON itlu.instanceid = itlv.id AND
+                                                                itlu.type = 'vendor'
+                   GROUP BY itlu.userid
+                    ) v ON v.userid = ch.userid
+          LEFT JOIN (
+                     SELECT l.checkoutid, l.userid, c.code
+                       FROM {local_intellicart_logs} l
+                       JOIN {local_intellicart_coupons} c ON l.instanceid = c.id
+                      WHERE l.type = 'coupon'
+                    ) cp ON cp.checkoutid = ch.id AND 
+                            cp.userid = ch.userid
                WHERE ch.id > 0 {$sql_filter} {$sql_having} {$sql_order}",
             $params
         );
@@ -14288,7 +14318,7 @@ class local_intelliboard_external extends external_api {
 
         $columns = array_merge([
             "u.firstname", "u.lastname", "u.email", "ue.enrol_status", "q.name", "qa.attempt", "q.grademethod", "qa.state",
-            "qa.timestart", "qa.timefinish", "timespend", "late_submission", "qa.sumgrades",
+            "qa.timestart", "qa.timefinish", "timespend", "total.late_submission", "qa.sumgrades",
             "qa.sumgrades", "qa.sumgrades", "(qa.sumgrades - q.sumgrades)"
         ], $this->get_filter_columns($params));
 
@@ -14336,7 +14366,7 @@ class local_intelliboard_external extends external_api {
                     gi.grademax,
                     q.grademethod,
                     q.name,
-                    CASE WHEN qa.timefinish > 0 THEN q.timelimit - (qa.timefinish - qa.timestart) ELSE 0 END AS late_submission,
+                    total.late_submission,
                     total.highest_grade,
                     total.last_attempt_number
                     {$sql_columns}
@@ -14344,7 +14374,8 @@ class local_intelliboard_external extends external_api {
                FROM {quiz_attempts} qa
                JOIN (SELECT qa1.quiz, qa1.userid,
                             MAX(qa1.sumgrades) AS highest_grade,
-                            MAX(qa1.attempt) AS last_attempt_number
+                            MAX(qa1.attempt) AS last_attempt_number,                            
+                            MAX(CASE WHEN qa1.state = 'finished' THEN qa1.timefinish ELSE 0 END) AS late_submission
                        FROM {quiz_attempts} qa1
                        JOIN {quiz} q1 ON q1.id = qa1.quiz
                    GROUP BY qa1.quiz, qa1.userid
