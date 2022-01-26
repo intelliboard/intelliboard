@@ -353,7 +353,7 @@ echo $OUTPUT->header();
                                                     <?php if($scale_real):?>
                                                         <?php echo $item->grade; ?>
                                                     <?php else:?>
-                                                        <div class="circle-progress"  data-percent="<?php echo round($item->grade, $scale_percentage_round); ?>"></div>
+                                                        <div class="circle-progress d-inline-block"  data-percent="<?php echo round($item->grade, $scale_percentage_round); ?>"></div>
                                                     <?php endif;?>
                                                 </td>
                                             <?php endif; ?>
@@ -494,8 +494,8 @@ echo $OUTPUT->header();
                             <th colspan="2"><?php echo get_string('course');?></th>
                             <?php if($t35): ?><th><?php echo get_string('progress', 'local_intelliboard'); ?></th><?php endif; ?>
                             <?php if($t36): ?><th class="align-center"><?php echo get_string('grade', 'local_intelliboard'); ?></th><?php endif; ?>
-                            <?php if($t37): ?><th><?php echo get_string('enrolled', 'local_intelliboard'); ?></th><?php endif; ?>
-                            <?php if($t38): ?><th><?php echo get_string('completed', 'local_intelliboard'); ?></th><?php endif; ?>
+                            <?php if($t37): ?><th class="align-center"><?php echo get_string('enrolled', 'local_intelliboard'); ?></th><?php endif; ?>
+                            <?php if($t38): ?><th class="align-center"><?php echo get_string('completed', 'local_intelliboard'); ?></th><?php endif; ?>
 
                             </thead>
                             <tbody>
@@ -530,19 +530,19 @@ echo $OUTPUT->header();
                                                 <?php if($scale_real):?>
                                                     <?php echo $item->grade; ?>
                                                 <?php else:?>
-                                                    <div class="circle-progress"  data-percent="<?php echo round($item->grade,$scale_percentage_round); ?>"></div>
+                                                    <div class="circle-progress d-inline-block"  data-percent="<?php echo round($item->grade,$scale_percentage_round); ?>"></div>
                                                 <?php endif;?>
                                             </td>
                                         <?php endif; ?>
 
                                         <?php if($t37): ?>
-                                            <td align="right">
+                                            <td align="center">
                                                 <?php echo intelli_date($item->timemodified); ?>
                                             </td>
                                         <?php endif; ?>
 
                                         <?php if($t38): ?>
-                                            <td align="right">
+                                            <td align="center">
                                                 <?php echo ($item->timecompleted) ? intelli_date($item->timecompleted):'-'; ?>
                                             </td>
                                         <?php endif; ?>
