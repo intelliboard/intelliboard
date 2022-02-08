@@ -140,6 +140,7 @@
 .intelliboard-student .actions a{display: block;width: 100%; border:1px solid #4c75a2; margin-bottom: 10px; text-align: center; padding: 5px; border-radius: 5px; box-sizing: border-box;}
 
 .align-center{text-align: center !important;}
+.d-inline-block{display: inline-block!important;}
 
 
 

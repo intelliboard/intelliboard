@@ -3791,6 +3791,7 @@ class local_intelliboard_external extends external_api {
     public function report45($params)
     {
         $columns = array_merge(array(
+            "course_name", "quiz_name",
             "u.firstname", "u.lastname", "u.email", "ue.enrol_status", "qa.attempt", "attm.first_completed_date",
             "qa.state", "timespend", "highest_grade", "lowest_grade", "qa.state"
         ), $this->get_filter_columns($params));
@@ -3813,6 +3814,8 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data(
             "SELECT qa.id as quiz_attempt_id,
+                    c.fullname AS course_name,
+                    q.name AS quiz_name,
                     u.id,
                     u.firstname,
                     u.lastname,
@@ -3852,6 +3855,7 @@ class local_intelliboard_external extends external_api {
                JOIN {modules} m ON m.name = 'quiz'
                JOIN {course_modules} cm ON cm.course = q.course AND cm.module = m.id AND cm.instance = q.id
                JOIN {grade_items} gi ON gi.itemmodule = 'quiz' AND gi.iteminstance = q.id
+               JOIN {course} c ON c.id = cm.course
           LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id {$completion} AND cmc.userid = qa.userid
                     {$sql_join}
               WHERE q.id = :courseid {$sql_filter}
@@ -12167,7 +12171,7 @@ class local_intelliboard_external extends external_api {
                 ue.status,
                 ue.timeend,
                 GREATEST(
-                    COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0),
+                    COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.completed,0), COALESCE(gl.submitted,0),
                     COALESCE(ch.submitted,0) $sql_overal_submission_date {$sqlqasubmissiondate}
                 ) AS overal_submission_date,
                 g.timemodified AS overal_submission_graded,
@@ -12206,7 +12210,7 @@ class local_intelliboard_external extends external_api {
                   LEFT JOIN (SELECT
                             qa.quiz,
                             qa.userid,
-                            MIN(qa.timestart) AS started
+                            MAX(qa.timefinish) AS completed
                         FROM {quiz_attempts} qa
                             JOIN {quiz} m ON m.id=qa.quiz $sql_inner_filter3
                         GROUP BY qa.quiz, qa.userid) q ON q.userid=u.id AND q.quiz=cm.instance AND m.name='quiz'
@@ -18437,6 +18441,11 @@ class local_intelliboard_external extends external_api {
         if($params->custom){
             $sql = " AND name IN (SELECT itemmodule FROM {grade_items} GROUP BY itemmodule)";
         }
+
+        if($params->custom3){
+            $sql = " AND id IN (SELECT module FROM {course_modules} WHERE course = ".$params->custom3.")";
+        }
+
         return $DB->get_records_sql("SELECT id, name FROM {modules} WHERE visible = 1 $sql");
     }
     public function get_modules_transcripts($params){
@@ -23807,6 +23816,510 @@ class local_intelliboard_external extends external_api {
                 {question_attempts} qa
             WHERE qa.questionusageid = :filter",
             $this->params
+        );
+    }
+
+    private function get_filter_program_sql($params, $prefix)
+    {
+        return ($params->filter_program_visible) ? "" : " AND {$prefix}visible = 1";
+    }
+
+    public function get_programs($params){
+        global $DB;
+
+        $sqlfilter = $this->get_filter_program_sql($params, "p.");
+
+        return $this->get_report_data(
+            "SELECT p.id,
+                    p.fullname
+               FROM {tool_program} p
+              WHERE p.id >= 0 {$sqlfilter}
+           ORDER BY p.fullname", $params, false
+        );
+    }
+
+    public function report253($params)
+    {
+        global $DB, $CFG;
+
+        $columns = array_merge(array(
+                "itlpr.category_name",
+                "itlpr.product_name",
+                "program_name",
+                "count_users",
+                "count_users_completed",
+                "count_required_courses",
+                "count_courses",
+                "spent_time",
+            ),
+            $this->get_filter_columns($params)
+        );
+
+        $productnames = get_operator('GROUP_CONCAT', 'DISTINCT(lip.name)', ['separator' => ', ']);
+        $categorynames = get_operator('GROUP_CONCAT', 'DISTINCT(lic.name)', ['separator' => ', ']);
+        
+        $sqlFilter = $this->get_filter_in_sql($params->custom2, "itlpr.programid");
+        $sqlFilter .= $this->get_filter_sql($params, $columns, true);
+
+        $sqlOrder = $this->get_order_sql($params, $columns);
+
+        $sql = "SELECT
+               " . ($CFG->dbtype == 'pgsql' ?  "ROW_NUMBER () OVER ()" : " @rowid := @rowid + 1") . " AS rowid,
+                    itlpr.category_name,
+                    itlpr.product_name,
+                    tp.fullname program_name,
+                    COALESCE(enrusr.count_users, 0) AS count_users,
+                    cmpl.count_users_completed,
+                    cmpl.count_courses,
+                    cmpl.count_required_courses,
+                    SEC_TO_TIME(ROUND(COALESCE(tmspnt.stime, 0))) as spent_time,
+                    tp.id AS program_id
+                FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "{tool_program} tp
+                LEFT JOIN (
+                    SELECT
+                           lirp.instanceid programid,
+                           $productnames product_name,
+                           $categorynames category_name
+                      FROM {local_intellicart_relations} lirp
+                 LEFT JOIN {local_intellicart_products} lip ON lirp.productid = lip.id AND lirp.type = 'mwpprogram'
+                 LEFT JOIN {local_intellicart_relations} lirc ON lirp.productid = lip.id AND lirc.type = 'product_category'
+                 LEFT JOIN {local_intellicart_cat} lic ON lic.id = lirc.instanceid
+                    GROUP BY lirp.instanceid
+                ) itlpr ON itlpr.programid = tp.id
+                LEFT JOIN (
+                    SELECT
+                        programid,
+                        COUNT(DISTINCT userid) AS count_users
+                      FROM {tool_program_users} tpu
+                  GROUP BY programid
+                ) enrusr ON enrusr.programid = tp.id
+                LEFT JOIN (
+                    SELECT programid, AVG(timespend) AS stime
+                      FROM {tool_program_sets} tps  
+                      JOIN {tool_program_courses} tpc ON tps.id = tpc.setid
+                      JOIN {local_intelliboard_tracking} lit ON lit.courseid = tpc.courseid
+                  GROUP BY programid
+                ) tmspnt ON tmspnt.programid = tp.id
+                LEFT JOIN (
+                    SELECT programid, count_courses, count_required_courses, SUM(completed) count_users_completed FROM (
+                        SELECT *, CASE 
+                                 WHEN completioncriteria = 0 THEN count_courses
+                                 WHEN completioncriteria = 1 THEN 1
+                                 WHEN completioncriteria = 2 then completionatleast
+                               END as count_required_courses,
+                               CASE 
+                                 WHEN count_courses_completed = 0 THEN 0 ELSE 
+                                    CASE 
+                                     WHEN completioncriteria = 0 THEN 
+                                        CASE WHEN count_courses_completed >= count_courses THEN 1 ELSE 0 END
+                                     WHEN completioncriteria = 1 THEN 1
+                                     WHEN completioncriteria = 2 THEN 
+                                        CASE WHEN count_courses_completed >= completionatleast THEN 1 ELSE 0 END  
+                                    END 
+                                 END as completed
+                        FROM (
+                            SELECT tpu.programid, 
+                                   tpu.userid,
+                                   COALESCE(count_seats_completed,0) + COALESCE(count_courses_completed,0) count_courses_completed,
+                                   COALESCE(count_seats,0) + COALESCE(count_courses,0) count_courses,
+                                   COALESCE(completioncriteria,0) completioncriteria,
+                                   COALESCE(completionatleast,0) completionatleast
+                            FROM {tool_program_users} tpu
+                            JOIN {tool_program_sets} tps ON tpu.programid = tps.programid AND parent = 0
+                            LEFT JOIN (
+                                SELECT programid, userid, COUNT(DISTINCT tps.id) count_seats_completed
+                                FROM {tool_program_sets}  tps
+                                LEFT JOIN {tool_program_set_completion} tpsc ON tps.id = tpsc.setid
+                                WHERE parent = 1 and completeddate > 0
+                                GROUP BY 1,2
+                            ) as pcs ON pcs.programid = tpu.programid AND pcs.userid = tpu.userid
+                            LEFT JOIN (
+                                SELECT programid, userid, COUNT(DISTINCT(courseid)) count_courses_completed
+                                FROM {tool_program_courses} tpc 
+                                JOIN {tool_program_sets} tps ON tpc.setid = tps.id AND tps.parent = 0
+                                JOIN {course_completions} cc ON cc.course = tpc.courseid AND cc.timecompleted > 0
+                                GROUP BY 1,2
+                            ) as pcc ON pcc.programid = tpu.programid AND pcc.userid = tpu.userid
+                            LEFT JOIN (
+                                SELECT programid, COUNT(DISTINCT tps.id) count_seats
+                                FROM {tool_program_sets}  tps
+                                WHERE parent = 1
+                                GROUP BY 1
+                            ) as pccs ON pccs.programid = tpu.programid
+                            LEFT JOIN (
+                                SELECT programid, COUNT(DISTINCT(courseid)) count_courses
+                                FROM {tool_program_courses} tpc 
+                                JOIN {tool_program_sets} tps ON tpc.setid = tps.id AND tps.parent = 0
+                                GROUP BY 1
+                            ) as pccc ON pccc.programid = tpu.programid
+                        ) as pp) as ps GROUP BY 1,2,3
+                ) cmpl ON cmpl.programid = tp.id WHERE tp.id > 0 $sqlFilter $sqlOrder";
+
+        return $this->get_report_data($sql, $params);
+    }
+
+    public function get_mwp_program_users_completion($params)
+    {
+        global $CFG, $DB;
+
+        $this->params['filter'] = intval($params->filter);
+
+        return $DB->get_records_sql("
+            SELECT
+                    u.id,
+                    u.firstname,
+                    u.lastname,
+                    u.email,
+                    tpu.timecreated,
+                    COALESCE(pcrs.mcompletions, 0) AS module_completions,
+                    CASE WHEN prc.count_courses > 0 AND pcrs.grades > 0
+                         THEN ROUND(pcrs.grades/prc.count_courses, 2)
+                         ELSE '0.00'
+                         END AS grade,
+                    SEC_TO_TIME(CASE WHEN prc.count_courses > 0 AND pcrs.spent > 0
+                         THEN ROUND(pcrs.spent/prc.count_courses)
+                         ELSE 0
+                         END) AS spent_time,
+                    COALESCE(cmpl.count_courses_completed, 0) AS count_courses_completed,
+                    COALESCE(cmpl.count_required_courses, 0) AS count_required_courses  
+                 FROM {tool_program_users} tpu
+                 JOIN {user} u ON tpu.userid = u.id
+            LEFT JOIN (
+                  SELECT pc.programid,
+                         pc.userid,
+                         SUM(cc.ccompl) ccompletions,
+                         SUM(mc.mcompl) mcompletions,
+                         SUM(gr.finalgrade) grades,
+                         SUM(tmspnt.timespend) spent
+                    FROM (
+                        SELECT DISTINCT tps.programid, tpu.userid, tpc.courseid
+                          FROM {tool_program_courses} tpc
+                          JOIN {tool_program_sets} tps ON tpc.setid = tps.id
+                          JOIN {tool_program_users} tpu ON tpu.programid = tps.programid
+                      ) pc
+               LEFT JOIN (
+                        SELECT DISTINCT cc.course, cc.userid, tps.programid, 1 AS ccompl
+                          FROM {course_completions} cc
+                          JOIN {tool_program_courses} tpc ON cc.course = tpc.courseid
+                          JOIN {tool_program_sets} tps ON tpc.setid = tps.id
+                         WHERE cc.timecompleted > 0
+               ) cc ON cc.course = pc.courseid AND cc.userid = pc.userid AND cc.programid = pc.programid
+               LEFT JOIN (
+                        SELECT cm.course, cmc.userid, tps.programid, COUNT(DISTINCT cm.ID) AS mcompl
+                          FROM {course_modules} cm
+                          JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id
+                          JOIN {tool_program_courses} tpc ON cm.course = tpc.courseid
+                          JOIN {tool_program_sets} tps ON tpc.setid = tps.id
+                          GROUP BY 1,2,3
+               ) mc ON mc.course = pc.courseid AND mc.userid = pc.userid AND mc.programid = pc.programid
+               LEFT JOIN (
+                        SELECT DISTINCT tpc.courseid, tps.programid, gg.userid, gg.finalgrade
+                          FROM {tool_program_courses} tpc
+                          JOIN {grade_items} gi ON gi.courseid = tpc.courseid AND gi.itemtype = 'course' 
+                          JOIN {grade_grades} gg ON gi.id = gg.itemid
+                          JOIN {tool_program_sets} tps ON tpc.setid = tps.id
+               ) gr ON gr.courseid = pc.courseid AND gr.userid = pc.userid AND gr.programid = pc.programid
+               LEFT JOIN (
+                        SELECT courseid, userid, SUM(timespend) AS timespend
+                          FROM {local_intelliboard_tracking}
+                      GROUP BY 1,2  
+                ) tmspnt ON tmspnt.courseid = pc.courseid AND tmspnt.userid = pc.userid
+                GROUP BY 1,2
+            ) pcrs ON tpu.programid = pcrs.programid AND pcrs.userid = u.id
+            LEFT JOIN (
+                SELECT tps.programid, COUNT(DISTINCT(tpc.courseid)) AS count_courses
+                  FROM {tool_program_courses} tpc
+                  JOIN {tool_program_sets} tps ON tpc.setid = tps.id
+              GROUP BY 1
+            ) prc ON prc.programid = pcrs.programid
+            LEFT JOIN (
+                SELECT *, CASE 
+                         WHEN completioncriteria = 0 THEN count_courses
+                         WHEN completioncriteria = 1 THEN 1
+                         WHEN completioncriteria = 2 then completionatleast
+                       END as count_required_courses
+                FROM (
+                    SELECT tpu.programid, 
+                           tpu.userid,
+                           COALESCE(count_seats_completed,0) + COALESCE(count_courses_completed,0) count_courses_completed,
+                           COALESCE(count_seats,0) + COALESCE(count_courses,0) count_courses,
+                           COALESCE(completioncriteria,0) completioncriteria,
+                           COALESCE(completionatleast,0) completionatleast
+                    FROM {tool_program_users} tpu
+                    JOIN {tool_program_sets} tps ON tpu.programid = tps.programid AND parent = 0
+                    LEFT JOIN (
+                        SELECT programid, userid, COUNT(DISTINCT tps.id) count_seats_completed
+                        FROM {tool_program_sets}  tps
+                        LEFT JOIN {tool_program_set_completion} tpsc ON tps.id = tpsc.setid
+                        WHERE parent = 1 and completeddate > 0
+                        GROUP BY 1,2
+                    ) as pcs ON pcs.programid = tpu.programid AND pcs.userid = tpu.userid
+                    LEFT JOIN (
+                        SELECT programid, userid, COUNT(DISTINCT(courseid)) count_courses_completed
+                        FROM {tool_program_courses} tpc 
+                        JOIN {tool_program_sets} tps ON tpc.setid = tps.id AND tps.parent = 0
+                        JOIN {course_completions} cc ON cc.course = tpc.courseid AND cc.timecompleted > 0
+                        GROUP BY 1,2
+                    ) as pcc ON pcc.programid = tpu.programid AND pcc.userid = tpu.userid
+                    LEFT JOIN (
+                        SELECT programid, COUNT(DISTINCT tps.id) count_seats
+                        FROM {tool_program_sets}  tps
+                        WHERE parent = 1
+                        GROUP BY 1
+                    ) as pccs ON pccs.programid = tpu.programid
+                    LEFT JOIN (
+                        SELECT programid, COUNT(DISTINCT(courseid)) count_courses
+                        FROM {tool_program_courses} tpc 
+                        JOIN {tool_program_sets} tps ON tpc.setid = tps.id
+                        WHERE tpc.setid in (SELECT id from {tool_program_sets} WHERE parent = 0)
+                        GROUP BY 1
+                    ) as pccc ON pccc.programid = tpu.programid
+                ) as a    
+            ) cmpl ON cmpl.programid = pcrs.programid AND cmpl.userid = u.id
+            WHERE tpu.programid = :filter",
+            $this->params
+        );
+    }
+
+    public function report254($params)
+    {
+        global $DB, $CFG;
+
+        $columns = array_merge(array(
+                "u.firstname",
+                "u.lastname",
+                "u.email",
+                "itlpr.category_name",
+                "itlpr.product_name",
+                "program_name",
+                "enroll_date",
+                "crs.course_name",
+                "crs.courseid",
+                "gr.finalgrade",
+                "tmspnt.timecompleted",
+                "count_modules_completede",
+                "act.module_ids",
+                "act.module_instances", 
+                "act.grades", 
+                "act.duedates", 
+                "act.submission_dates", 
+                "act.submission_feedbacks"
+            ),
+            $this->get_filter_columns($params)
+        );
+
+        $separator1 = ['separator' => ', '];
+
+        $productnames = get_operator('GROUP_CONCAT', 'DISTINCT(lip.name)', $separator1);
+        $categorynames = get_operator('GROUP_CONCAT', 'DISTINCT(lic.name)', $separator1);
+        
+        $separator2 = ['separator' => ';;'];
+
+        $moduleinstances = get_operator('GROUP_CONCAT', 'instance',    $separator2);
+        $moduleids       = get_operator('GROUP_CONCAT', 'module',      $separator2);
+        $grades          = get_operator('GROUP_CONCAT', 'finalgrade',  $separator2);
+        $duedates        = get_operator('GROUP_CONCAT', 'duedate',     $separator2);
+        $timecreated     = get_operator('GROUP_CONCAT', 'timecreated', $separator2);
+        $commenttext     = get_operator('GROUP_CONCAT', 'commenttext', $separator2);
+
+        $sqlFilter = $this->get_filter_in_sql($params->custom2, "tp.id");
+        $sqlFilter .= $this->get_filter_in_sql($params->custom3, "crs.courseid");
+        $sqlFilter .= $this->get_filter_sql($params, $columns, true);
+
+        $sqlModuleFilter = $this->get_filter_in_sql($params->custom4, "cm.module");
+
+        $sqlDateFilter = $this->get_filterdate_sql($params, "tpu.timecreated");
+        $sqlDateFilter .= $this->get_filterdate_sql($params, "tmspnt.timecompleted");
+
+        $sqlInnerDateFilter = $this->get_filterdate_sql($params, "aa.duedate");
+        $sqlInnerDateFilter .= $this->get_filterdate_sql($params, "aa.timecreated");
+
+        $sqlOrder = $this->get_order_sql($params, $columns);
+
+        $sql = "SELECT
+               " . ($CFG->dbtype == 'pgsql' ?  "ROW_NUMBER () OVER ()" : " @rowid := @rowid + 1") . " AS rowid,
+                    u.firstname, 
+                    u.lastname,
+                    u.email,
+                    itlpr.category_name,
+                    itlpr.product_name,
+                    tp.fullname program_name,
+                    tpu.timecreated enroll_date,
+                    crs.course_name,
+                    crs.courseid,
+                    gr.finalgrade,
+                    tmspnt.timecompleted,
+                    count_modules_completed,
+                    act.module_ids, 
+                    act.module_instances, 
+                    act.grades, 
+                    act.duedates, 
+                    act.submission_dates, 
+                    act.submission_feedbacks
+                FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "{user} u
+                JOIN {tool_program_users} tpu ON u.id = tpu.userid
+                JOIN {tool_program} tp ON tp.id = tpu.programid
+                LEFT JOIN (
+                    SELECT
+                        lirp.instanceid programid,
+                        $productnames product_name,
+                        $categorynames category_name
+                    FROM {local_intellicart_relations} lirp
+                    LEFT JOIN {local_intellicart_products} lip ON lirp.productid = lip.id AND lirp.type = 'mwpprogram'
+                    LEFT JOIN {local_intellicart_relations} lirc ON lirp.productid = lip.id AND lirc.type = 'product_category'
+                    LEFT JOIN {local_intellicart_cat} lic ON lic.id = lirc.instanceid
+                    GROUP BY lirp.instanceid
+                ) itlpr ON itlpr.programid = tp.id
+                LEFT JOIN (
+                    SELECT DISTINCT tps.programid, tpc.courseid, c.fullname course_name
+                        FROM {tool_program_sets} tps
+                        LEFT JOIN {tool_program_courses} tpc ON tpc.setid = tps.id 
+                        JOIN {course} c ON c.id = tpc.courseid
+                ) crs ON crs.programid = tp.id
+                LEFT JOIN (
+                    SELECT DISTINCT tpc.courseid, gg.userid, gg.finalgrade 
+                      FROM {tool_program_courses} tpc
+                      JOIN {grade_items} gi ON gi.courseid = tpc.courseid AND gi.itemtype = 'course' 
+                      JOIN {grade_grades} gg ON gi.id = gg.itemid
+                ) gr ON gr.courseid = crs.courseid AND gr.userid = u.id
+                LEFT JOIN (
+                    SELECT DISTINCT courseid, userid, timecompleted
+                      FROM {tool_program_courses} tpc
+                      JOIN {course_completions} cc ON cc.course = tpc.courseid
+                ) tmspnt ON tmspnt.courseid = crs.courseid AND tmspnt.userid = u.id
+                LEFT JOIN (
+                    SELECT DISTINCT course, userid, COUNT(cm.id) count_modules_completed
+                      FROM {course_modules} cm
+                      JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id
+                      GROUP BY 1,2
+                ) mc ON mc.course = crs.courseid AND mc.userid = u.id 
+                LEFT JOIN (
+                    SELECT 
+                        course, 
+                        userid, 
+                        $moduleids module_ids, 
+                        $moduleinstances module_instances, 
+                        $grades grades, 
+                        $duedates duedates, 
+                        $timecreated submission_dates, 
+                        $commenttext submission_feedbacks
+                    FROM (
+                        SELECT 
+                            cm.course, 
+                            gr.userid, 
+                            cm.module,
+                            cm.instance,
+                            COALESCE(gr.finalgrade, '') finalgrade,
+                            COALESCE(a.duedate, COALESCE(cm.completionexpected,'')) duedate,
+                            COALESCE(ass.timecreated, '') timecreated,
+                            COALESCE(assc.commenttext, '') commenttext
+                        FROM {course_modules} cm
+                        LEFT JOIN (
+                             SELECT courseid, userid, m.id moduleid, finalgrade 
+                               FROM {grade_items} gi
+                               JOIN {modules} m ON gi.itemmodule = m.name AND gi.itemtype = 'mod'
+                               JOIN {grade_grades} gg ON gg.itemid = gi.id
+                        ) gr ON gr.courseid = cm.course AND gr.moduleid = cm.module
+                        LEFT JOIN {assign} a ON a.course = cm.course AND a.id = cm.instance AND cm.module = 2
+                        LEFT JOIN {assign_submission} ass ON ass.assignment = a.id AND ass.userid = gr.userid
+                        LEFT JOIN {assignfeedback_comments} assc ON assc.assignment = a.id 
+                        WHERE cm.id > 0 $sqlModuleFilter
+                    ) aa WHERE aa.course > 0 $sqlInnerDateFilter GROUP BY 1,2
+                ) act ON act.course = crs.courseid AND act.userid = u.id 
+                WHERE u.id > 0 $sqlFilter $sqlOrder $sqlDateFilter $filterSql";
+        
+        return $this->get_report_data($sql, $params);
+    }
+
+    function get_course_modules_names($params)
+    {
+        global $DB, $CFG;
+
+        $sqlFilter = $this->get_filter_in_sql($params->courseid, "cm.course");
+        $sqlFilter .= $this->get_filter_in_sql($params->custom2, "tps.programid");
+        $sqlFilter .= $this->get_filter_in_sql($params->custom4, "cm.module");
+
+        $modules = $DB->get_records_sql(
+            "SELECT DISTINCT
+                cm.id,
+                cm.course, 
+                cm.module,
+                cm.instance,
+                acn.name
+            FROM {course_modules} cm
+            LEFT JOIN (
+                SELECT id, '1' AS module, course, name FROM {appointment}
+                    UNION
+                SELECT id, '2' AS module, course, name FROM {assign}
+                    UNION
+                SELECT id, '3' AS module, course, name FROM {assignment}
+                    UNION
+                SELECT id, '4' AS module, course, name FROM {book}
+                    UNION
+                SELECT id, '5' AS module, course, name FROM {chat}
+                    UNION
+                SELECT id, '6' AS module, course, name FROM {choice}
+                    UNION
+                SELECT id, '7' AS module, course, name FROM {coursecertificate}
+                    UNION
+                SELECT id, '8' AS module, course, name FROM {data}
+                    UNION
+                SELECT id, '9' AS module, course, name FROM {feedback}
+                    UNION
+                SELECT id, '10' AS module, course, name FROM {folder}
+                    UNION
+                SELECT id, '11' AS module, course, name FROM {forum}
+                    UNION
+                SELECT id, '12' AS module, course, name FROM {glossary}
+                    UNION
+                SELECT id, '13' AS module, course, name FROM {h5pactivity}
+                    UNION
+                SELECT id, '14' AS module, course, name FROM {imscp}
+                    UNION
+                SELECT id, '15' AS module, course, name FROM {label}
+                    UNION
+                SELECT id, '16' AS module, course, name FROM {lesson}
+                    UNION
+                SELECT id, '17' AS module, course, name FROM {lti}
+                    UNION
+                SELECT id, '18' AS module, course, name FROM {page}
+                    UNION
+                SELECT id, '19' AS module, course, name FROM {quiz}
+                    UNION
+                SELECT id, '20' AS module, course, name FROM {resource}
+                    UNION
+                SELECT id, '21' AS module, course, name FROM {scorm}
+                    UNION
+                SELECT id, '22' AS module, course, name FROM {survey}
+                    UNION
+                SELECT id, '23' AS module, course, name FROM {url}
+                    UNION
+                SELECT id, '24' AS module, course, name FROM {wiki}
+                    UNION
+                SELECT id, '25' AS module, course, name FROM {workshop}
+            ) acn ON acn.course = cm.course AND acn.module = cm.module AND acn.id = cm.instance
+            LEFT JOIN {tool_program_courses} tpc ON tpc.courseid = cm.course
+            LEFT JOIN {tool_program_sets} tps ON tps.id = tpc.setid
+            WHERE cm.id > 0 $sqlFilter", $this->params);
+
+        return $modules;
+    }
+
+    public function get_program_courses($params){  
+        global $DB;
+
+        $sqlFilter = $this->get_filter_in_sql($params->custom2, "tps.programid");
+
+        return $this->get_report_data(
+            "SELECT DISTINCT
+                    c.id,
+                    c.shortname,
+                    c.fullname
+               FROM {course} c
+               JOIN {tool_program_courses} tpc ON c.id = tpc.courseid
+               JOIN {tool_program_sets} tps ON tps.id = tpc.setid
+              WHERE c.id >= 0 $sqlFilter 
+           ORDER BY c.fullname", $this->params, false
         );
     }
 }
