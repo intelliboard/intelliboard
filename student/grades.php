@@ -115,7 +115,7 @@ echo $OUTPUT->header();
 							<?php if(get_config('local_intelliboard', 't42')): ?>
 							&nbsp; &nbsp; &nbsp;
 
-							<?php echo ($courseObj->timeaccess) ? " <i class='ion-android-person'></i> ".get_string('last_access_on_course', 'local_intelliboard', date('F d, Y h:i', $courseObj->timeaccess)) : "" ?>
+							<?php echo ($courseObj->timeaccess) ? " <i class='ion-android-person'></i> ".get_string('last_access_on_course', 'local_intelliboard', userdate($courseObj->timeaccess, '%B %d, %Y %I:%M %P')) : "" ?>
 							<?php endif; ?>
 						</p>
 					</div>

@@ -760,6 +760,9 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
         $columns = [];
         $headers = [];
 
+        $this->no_sorting('avg_visits');
+        $this->no_sorting('avg_timespend');
+
         if(get_config('local_intelliboard', 'table_set_ilg_c1')) {
             $columns[] = 'learner';
             $headers[] = get_string('learner_name','local_intelliboard');
@@ -896,7 +899,9 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
                          l.timespend AS timespend,
                          l.visits AS visits,
                          cmc.progress AS progress,
-                         '' as actions
+                         '' as actions,
+                         '' as avg_timespend,
+                         '' as avg_visits
                     FROM (SELECT ra.userid,
                                  cx.instanceid AS courseid,
                                  MIN(ra.timemodified) AS timemodified
