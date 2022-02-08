@@ -456,6 +456,12 @@ class local_external_functions
             'get_quiz_attempt',
             'report251',
             'report252',
+            'report253',
+            'get_programs',
+            'get_mwp_program_users_completion',
+            'report254',
+            'get_course_modules_names',
+            'get_program_courses',
         ];
     }
     public function get_function($params = null)
