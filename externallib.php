@@ -3833,7 +3833,10 @@ class local_intelliboard_external extends external_api {
                     qa.sumgrades AS finalgrade,
                     attm.first_completed_date,
                     gi.gradepass AS gradepass,
-                    cmc.timemodified AS timemodified
+                    cmc.timemodified AS timemodified,
+                    u.deleted,
+                    u.suspended,
+                    u.username
                     {$sql_columns}
                FROM {quiz_attempts} qa
                JOIN (SELECT qa1.quiz, qa1.userid, COUNT(qa1.id) AS at_cont,
@@ -8057,11 +8060,17 @@ class local_intelliboard_external extends external_api {
         $sql_filter5 .= $this->get_filter_in_sql($params->courseid, "lit.courseid");
         $sql_filter5 .= $this->get_filter_course_sql($params, "c.");
 
-        $sql_uc_filter = $this->get_teacher_sql($params, ["c.id" => "courses", "u.id" => "users"]);
-        $sql_uc_filter .= $this->get_filter_in_sql($params->courseid, "daystat.courseid");
-        $sql_uc_filter .= $this->get_filter_in_sql($params->users, "daystat.userid");
-        $sql_uc_filter .= $this->get_filter_user_sql($params, "u.");
-        $sql_uc_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_join = "";
+        if (!empty($params->custom2)) {
+            $sql_roles_filter = $this->get_filter_in_sql($params->custom2, "ra.roleid");
+            $sql_roles_filter .= $this->get_filter_in_sql($params->courseid, "ctx.instanceid");
+            $sql_join .= " JOIN (SELECT DISTINCT ra.userid, ctx.instanceid
+                                   FROM {role_assignments} AS ra
+                                   JOIN {role} r ON r.id=ra.roleid
+                                   JOIN {context} AS ctx ON ctx.id = ra.contextid
+                                  WHERE ctx.contextlevel = 50 $sql_roles_filter
+                                ) rl ON rl.userid=u.id AND rl.instanceid=c.id";
+        }
 
         if($params->custom == 1){
                 $time_of_day = "CASE WHEN lid.timepoint>=0 AND lid.timepoint<6 THEN 1 ELSE
@@ -8181,8 +8190,9 @@ class local_intelliboard_external extends external_api {
                         LEFT JOIN {course} c ON c.id = daystat.courseid
                         LEFT JOIN {course_categories} cc ON cc.id = c.category
                         LEFT JOIN {user} u ON u.id=daystat.userid
+                        {$sql_join}
 
-                            WHERE daystat.courseid>1 AND c.id IS NOT NULL $sql_uc_filter
+                            WHERE daystat.courseid>1 AND c.id IS NOT NULL
                          GROUP BY daystat.courseid, daystat.userid, time_of_day, u.id, c.id, cc.id, day, active_time_of_day
             )
         AS temp WHERE temp.userid > 0 $sql_having $sql_order";
@@ -12083,7 +12093,7 @@ class local_intelliboard_external extends external_api {
             "ul.timeaccess"),
             $this->get_filter_columns($params)
         );
-        $sqldf = "GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.started,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0)";
+        $sqldf = "GREATEST(COALESCE(ass.submitted,0), COALESCE(f.posted,0), COALESCE(q.completed,0), COALESCE(gl.submitted,0), COALESCE(ch.submitted,0)";
 
         if (get_component_version('mod_hsuforum')) {
             $sqldf .= ', COALESCE(hf.posted,0)';
@@ -23861,10 +23871,22 @@ class local_intelliboard_external extends external_api {
         $sqlFilter = $this->get_filter_in_sql($params->custom2, "itlpr.programid");
         $sqlFilter .= $this->get_filter_sql($params, $columns, true);
 
+        if ($params->courseid) {
+            $sql = $this->get_filter_in_sql($params->courseid, 'tpc.courseid');
+            $sqlFilter .= " AND tp.id IN(SELECT id 
+                                           FROM {tool_program} tp
+                                          WHERE tp.id IN(SELECT programid 
+                                                        FROM {tool_program_sets} tps
+                                                       WHERE tps.id IN(SELECT setid 
+                                                                     FROM {tool_program_courses} tpc
+                                                                    WHERE tpc.id > 0 $sql)))";
+        }
+
+        $sqlFilterDate = $this->get_filterdate_sql($params, "tpu.timecreated");
+
         $sqlOrder = $this->get_order_sql($params, $columns);
 
-        $sql = "SELECT
-               " . ($CFG->dbtype == 'pgsql' ?  "ROW_NUMBER () OVER ()" : " @rowid := @rowid + 1") . " AS rowid,
+        $sql = "SELECT ". ($CFG->dbtype == 'pgsql' ?  "ROW_NUMBER () OVER ()" : " @rowid := @rowid + 1") . " AS rowid,
                     itlpr.category_name,
                     itlpr.product_name,
                     tp.fullname program_name,
@@ -23872,9 +23894,10 @@ class local_intelliboard_external extends external_api {
                     cmpl.count_users_completed,
                     cmpl.count_courses,
                     cmpl.count_required_courses,
-                    SEC_TO_TIME(ROUND(COALESCE(tmspnt.stime, 0))) as spent_time,
+                    SEC_TO_TIME(CASE WHEN cmpl.stime>0 AND enrusr.count_users>0 THEN ROUND(cmpl.stime/enrusr.count_users) 
+                                     ELSE 0 END) AS spent_time,
                     tp.id AS program_id
-                FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "{tool_program} tp
+                FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . " {tool_program} tp
                 LEFT JOIN (
                     SELECT
                            lirp.instanceid programid,
@@ -23882,7 +23905,7 @@ class local_intelliboard_external extends external_api {
                            $categorynames category_name
                       FROM {local_intellicart_relations} lirp
                  LEFT JOIN {local_intellicart_products} lip ON lirp.productid = lip.id AND lirp.type = 'mwpprogram'
-                 LEFT JOIN {local_intellicart_relations} lirc ON lirp.productid = lip.id AND lirc.type = 'product_category'
+                 LEFT JOIN {local_intellicart_relations} lirc ON lirc.productid = lip.id AND lirc.type = 'product_category'
                  LEFT JOIN {local_intellicart_cat} lic ON lic.id = lirc.instanceid
                     GROUP BY lirp.instanceid
                 ) itlpr ON itlpr.programid = tp.id
@@ -23891,68 +23914,74 @@ class local_intelliboard_external extends external_api {
                         programid,
                         COUNT(DISTINCT userid) AS count_users
                       FROM {tool_program_users} tpu
+                     WHERE tpu.id > 0 $sqlFilterDate
                   GROUP BY programid
                 ) enrusr ON enrusr.programid = tp.id
                 LEFT JOIN (
-                    SELECT programid, AVG(timespend) AS stime
-                      FROM {tool_program_sets} tps  
-                      JOIN {tool_program_courses} tpc ON tps.id = tpc.setid
-                      JOIN {local_intelliboard_tracking} lit ON lit.courseid = tpc.courseid
-                  GROUP BY programid
-                ) tmspnt ON tmspnt.programid = tp.id
-                LEFT JOIN (
-                    SELECT programid, count_courses, count_required_courses, SUM(completed) count_users_completed FROM (
-                        SELECT *, CASE 
-                                 WHEN completioncriteria = 0 THEN count_courses
-                                 WHEN completioncriteria = 1 THEN 1
-                                 WHEN completioncriteria = 2 then completionatleast
-                               END as count_required_courses,
-                               CASE 
-                                 WHEN count_courses_completed = 0 THEN 0 ELSE 
-                                    CASE 
-                                     WHEN completioncriteria = 0 THEN 
-                                        CASE WHEN count_courses_completed >= count_courses THEN 1 ELSE 0 END
-                                     WHEN completioncriteria = 1 THEN 1
-                                     WHEN completioncriteria = 2 THEN 
-                                        CASE WHEN count_courses_completed >= completionatleast THEN 1 ELSE 0 END  
-                                    END 
-                                 END as completed
-                        FROM (
-                            SELECT tpu.programid, 
-                                   tpu.userid,
-                                   COALESCE(count_seats_completed,0) + COALESCE(count_courses_completed,0) count_courses_completed,
-                                   COALESCE(count_seats,0) + COALESCE(count_courses,0) count_courses,
-                                   COALESCE(completioncriteria,0) completioncriteria,
-                                   COALESCE(completionatleast,0) completionatleast
-                            FROM {tool_program_users} tpu
-                            JOIN {tool_program_sets} tps ON tpu.programid = tps.programid AND parent = 0
-                            LEFT JOIN (
-                                SELECT programid, userid, COUNT(DISTINCT tps.id) count_seats_completed
-                                FROM {tool_program_sets}  tps
-                                LEFT JOIN {tool_program_set_completion} tpsc ON tps.id = tpsc.setid
-                                WHERE parent = 1 and completeddate > 0
-                                GROUP BY 1,2
-                            ) as pcs ON pcs.programid = tpu.programid AND pcs.userid = tpu.userid
-                            LEFT JOIN (
-                                SELECT programid, userid, COUNT(DISTINCT(courseid)) count_courses_completed
-                                FROM {tool_program_courses} tpc 
-                                JOIN {tool_program_sets} tps ON tpc.setid = tps.id AND tps.parent = 0
-                                JOIN {course_completions} cc ON cc.course = tpc.courseid AND cc.timecompleted > 0
-                                GROUP BY 1,2
-                            ) as pcc ON pcc.programid = tpu.programid AND pcc.userid = tpu.userid
-                            LEFT JOIN (
-                                SELECT programid, COUNT(DISTINCT tps.id) count_seats
-                                FROM {tool_program_sets}  tps
-                                WHERE parent = 1
-                                GROUP BY 1
-                            ) as pccs ON pccs.programid = tpu.programid
-                            LEFT JOIN (
-                                SELECT programid, COUNT(DISTINCT(courseid)) count_courses
-                                FROM {tool_program_courses} tpc 
-                                JOIN {tool_program_sets} tps ON tpc.setid = tps.id AND tps.parent = 0
-                                GROUP BY 1
-                            ) as pccc ON pccc.programid = tpu.programid
-                        ) as pp) as ps GROUP BY 1,2,3
+                    SELECT programid,
+                           stime,
+                           count_courses,
+                           CASE WHEN completioncriteria = 2 THEN completionatleast
+                                ELSE count_courses
+                                END AS count_required_courses,
+                           CASE WHEN count_courses_completed = 0 THEN 0 
+                                WHEN completioncriteria = 2 AND count_courses_completed >= completionatleast THEN 1
+                                WHEN completioncriteria < 2 AND count_courses_completed >= count_courses THEN 1
+                                ELSE 0 
+                                END AS count_users_completed 
+                      FROM (
+                          SELECT tp.id AS programid,
+                                COALESCE(count_courses, 0) + COALESCE(count_seats, 0) AS count_courses,
+                                completionatleast,
+                                completioncriteria,
+                                prm.stime,
+                                count_courses_completed
+                            FROM {tool_program} tp
+                            JOIN {tool_program_sets} tps ON tps.programid = tp.id AND tps.parent = 0
+                       LEFT JOIN (
+                            SELECT tps.programid, COUNT(DISTINCT(tps1.id)) AS count_seats
+                              FROM {tool_program_sets} tps
+                              JOIN {tool_program_sets} tps1 ON tps1.parent = tps.id
+                          GROUP BY 1
+                       ) as pccs ON pccs.programid = tp.id
+                       LEFT JOIN (
+                            SELECT programid, COUNT(DISTINCT(courseid)) AS count_courses
+                              FROM {tool_program_courses} tpc 
+                              JOIN {tool_program_sets} tps ON tpc.setid = tps.id 
+                             WHERE tps.parent = 0
+                          GROUP BY 1
+                       ) as pccc ON pccc.programid = tp.id
+                       LEFT JOIN (
+                            SELECT programid, SUM(count_courses_completed) AS count_courses_completed, SUM(stime) AS stime 
+                              FROM (
+                                SELECT 
+                                    tpu.programid, 
+                                    tpu.userid, 
+                                    COUNT(DISTINCT(pcs.id)) + COUNT(DISTINCT(pcc.course)) AS count_courses_completed,
+                                    SUM(timespend) AS stime
+                                  FROM {tool_program_users} tpu
+                                  JOIN {tool_program_sets} tps ON tpu.programid = tps.programid
+                             LEFT JOIN {tool_program_courses} tpc ON tpc.setid = tps.id 
+                             LEFT JOIN (
+                                    SELECT DISTINCT userid, tps.id
+                                      FROM {tool_program_sets} tps
+                                 LEFT JOIN {tool_program_set_completion} tpsc ON tps.id = tpsc.setid
+                                     WHERE parent = 1 AND completeddate > 0
+                             ) as pcs ON pcs.userid = tpu.userid AND pcs.id = tps.id
+                             LEFT JOIN (
+                                    SELECT DISTINCT userid, course
+                                      FROM {tool_program_courses} tpc 
+                                 LEFT JOIN {course_completions} cc ON tpc.courseid = cc.course
+                                      JOIN {tool_program_sets} tps ON tps.id = tpc.setid 
+                                     WHERE parent = 0 AND cc.timecompleted > 0
+                             ) as pcc ON pcc.userid = tpu.userid AND pcc.course = tpc.courseid
+                             LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid = tpc.courseid AND lit.userid = tpu.userid
+                             WHERE tpu.id > 0 $sqlFilterDate
+                             GROUP BY 1,2) AS a
+                          GROUP BY 1  
+                       ) as prm ON prm.programid = tp.id  
+                       GROUP BY 1,2,3,4
+                    ) as crs  
                 ) cmpl ON cmpl.programid = tp.id WHERE tp.id > 0 $sqlFilter $sqlOrder";
 
         return $this->get_report_data($sql, $params);
@@ -23964,22 +23993,27 @@ class local_intelliboard_external extends external_api {
 
         $this->params['filter'] = intval($params->filter);
 
+        if($daterange = $params->custom) {
+            list($timestart, $timefinish) = explode(" to ", $daterange);
+
+            $this->params['timestart'] = strtotime($timestart);
+            $this->params['timefinish'] = strtotime(!$timefinish || '0000-00-00' ? 'now' : $timefinish);
+        }
+
+        $sqlFilterDate = $this->get_filterdate_sql((object)$this->params, "tpu.timecreated");
+
         return $DB->get_records_sql("
-            SELECT
+               SELECT
                     u.id,
                     u.firstname,
                     u.lastname,
                     u.email,
                     tpu.timecreated,
                     COALESCE(pcrs.mcompletions, 0) AS module_completions,
-                    CASE WHEN prc.count_courses > 0 AND pcrs.grades > 0
-                         THEN ROUND(pcrs.grades/prc.count_courses, 2)
+                    CASE WHEN prc.count_courses > 0 AND pcrs.grades > 0 THEN ROUND(pcrs.grades/prc.count_courses, 2)
                          ELSE '0.00'
                          END AS grade,
-                    SEC_TO_TIME(CASE WHEN prc.count_courses > 0 AND pcrs.spent > 0
-                         THEN ROUND(pcrs.spent/prc.count_courses)
-                         ELSE 0
-                         END) AS spent_time,
+                    SEC_TO_TIME(COALESCE(pcrs.timespend, 0)) AS spent_time,
                     COALESCE(cmpl.count_courses_completed, 0) AS count_courses_completed,
                     COALESCE(cmpl.count_required_courses, 0) AS count_required_courses  
                  FROM {tool_program_users} tpu
@@ -23987,43 +24021,38 @@ class local_intelliboard_external extends external_api {
             LEFT JOIN (
                   SELECT pc.programid,
                          pc.userid,
-                         SUM(cc.ccompl) ccompletions,
-                         SUM(mc.mcompl) mcompletions,
-                         SUM(gr.finalgrade) grades,
-                         SUM(tmspnt.timespend) spent
+                         SUM(cc.ccompl) AS ccompletions,
+                         SUM(mc.mcompl) AS mcompletions,
+                         SUM(gr.grade) AS grades,
+                         SUM(tmspnt.timespend) AS timespend
                     FROM (
-                        SELECT DISTINCT tps.programid, tpu.userid, tpc.courseid
+                        SELECT tps.programid, tpu.userid, tpc.courseid
                           FROM {tool_program_courses} tpc
                           JOIN {tool_program_sets} tps ON tpc.setid = tps.id
                           JOIN {tool_program_users} tpu ON tpu.programid = tps.programid
                       ) pc
                LEFT JOIN (
-                        SELECT DISTINCT cc.course, cc.userid, tps.programid, 1 AS ccompl
-                          FROM {course_completions} cc
-                          JOIN {tool_program_courses} tpc ON cc.course = tpc.courseid
-                          JOIN {tool_program_sets} tps ON tpc.setid = tps.id
-                         WHERE cc.timecompleted > 0
-               ) cc ON cc.course = pc.courseid AND cc.userid = pc.userid AND cc.programid = pc.programid
+                    SELECT DISTINCT cc.course, cc.userid, 1 AS ccompl
+                      FROM {course_completions} cc
+                     WHERE cc.timecompleted > 0
+               ) cc ON cc.course = pc.courseid AND cc.userid = pc.userid
                LEFT JOIN (
-                        SELECT cm.course, cmc.userid, tps.programid, COUNT(DISTINCT cm.ID) AS mcompl
-                          FROM {course_modules} cm
-                          JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id
-                          JOIN {tool_program_courses} tpc ON cm.course = tpc.courseid
-                          JOIN {tool_program_sets} tps ON tpc.setid = tps.id
-                          GROUP BY 1,2,3
-               ) mc ON mc.course = pc.courseid AND mc.userid = pc.userid AND mc.programid = pc.programid
+                    SELECT cm.course, cmc.userid, COUNT(DISTINCT cm.ID) AS mcompl
+                      FROM {course_modules} cm
+                      JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id
+                  GROUP BY 1,2
+               ) mc ON mc.course = pc.courseid AND mc.userid = pc.userid 
                LEFT JOIN (
-                        SELECT DISTINCT tpc.courseid, tps.programid, gg.userid, gg.finalgrade
-                          FROM {tool_program_courses} tpc
-                          JOIN {grade_items} gi ON gi.courseid = tpc.courseid AND gi.itemtype = 'course' 
-                          JOIN {grade_grades} gg ON gi.id = gg.itemid
-                          JOIN {tool_program_sets} tps ON tpc.setid = tps.id
-               ) gr ON gr.courseid = pc.courseid AND gr.userid = pc.userid AND gr.programid = pc.programid
+                    SELECT gi.courseid, gg.userid, SUM(gg.finalgrade) as grade
+                      FROM {grade_items} gi 
+                      JOIN {grade_grades} gg ON gi.id = gg.itemid AND gi.itemtype = 'course' 
+                  GROUP BY 1,2
+               ) gr ON gr.courseid = pc.courseid AND gr.userid = pc.userid
                LEFT JOIN (
-                        SELECT courseid, userid, SUM(timespend) AS timespend
-                          FROM {local_intelliboard_tracking}
-                      GROUP BY 1,2  
-                ) tmspnt ON tmspnt.courseid = pc.courseid AND tmspnt.userid = pc.userid
+                    SELECT lit.courseid, lit.userid, SUM(timespend) AS timespend
+                      FROM {local_intelliboard_tracking} lit
+                  GROUP BY 1,2
+               ) tmspnt ON tmspnt.courseid = pc.courseid AND tmspnt.userid = pc.userid
                 GROUP BY 1,2
             ) pcrs ON tpu.programid = pcrs.programid AND pcrs.userid = u.id
             LEFT JOIN (
@@ -24033,50 +24062,48 @@ class local_intelliboard_external extends external_api {
               GROUP BY 1
             ) prc ON prc.programid = pcrs.programid
             LEFT JOIN (
-                SELECT *, CASE 
-                         WHEN completioncriteria = 0 THEN count_courses
-                         WHEN completioncriteria = 1 THEN 1
-                         WHEN completioncriteria = 2 then completionatleast
-                       END as count_required_courses
+                SELECT *, CASE WHEN completioncriteria = 2 THEN completionatleast
+                               ELSE count_courses
+                               END as count_required_courses
                 FROM (
-                    SELECT tpu.programid, 
-                           tpu.userid,
-                           COALESCE(count_seats_completed,0) + COALESCE(count_courses_completed,0) count_courses_completed,
-                           COALESCE(count_seats,0) + COALESCE(count_courses,0) count_courses,
-                           COALESCE(completioncriteria,0) completioncriteria,
-                           COALESCE(completionatleast,0) completionatleast
-                    FROM {tool_program_users} tpu
-                    JOIN {tool_program_sets} tps ON tpu.programid = tps.programid AND parent = 0
+                       SELECT tpu.programid, 
+                              tpu.userid,
+                              COALESCE(count_seats_completed,0) + COALESCE(count_courses_completed,0) AS count_courses_completed,
+                              COALESCE(count_seats,0) + COALESCE(count_courses,0) AS count_courses,
+                              COALESCE(completioncriteria,0) AS completioncriteria,
+                              COALESCE(completionatleast,0) AS completionatleast
+                         FROM {tool_program_users} tpu
+                         JOIN {tool_program_sets} tps ON tpu.programid = tps.programid AND parent = 0
                     LEFT JOIN (
                         SELECT programid, userid, COUNT(DISTINCT tps.id) count_seats_completed
-                        FROM {tool_program_sets}  tps
-                        LEFT JOIN {tool_program_set_completion} tpsc ON tps.id = tpsc.setid
-                        WHERE parent = 1 and completeddate > 0
-                        GROUP BY 1,2
+                          FROM {tool_program_sets}  tps
+                     LEFT JOIN {tool_program_set_completion} tpsc ON tps.id = tpsc.setid
+                         WHERE parent = 1 and completeddate > 0
+                      GROUP BY 1,2
                     ) as pcs ON pcs.programid = tpu.programid AND pcs.userid = tpu.userid
                     LEFT JOIN (
                         SELECT programid, userid, COUNT(DISTINCT(courseid)) count_courses_completed
-                        FROM {tool_program_courses} tpc 
-                        JOIN {tool_program_sets} tps ON tpc.setid = tps.id AND tps.parent = 0
-                        JOIN {course_completions} cc ON cc.course = tpc.courseid AND cc.timecompleted > 0
-                        GROUP BY 1,2
+                          FROM {tool_program_courses} tpc 
+                          JOIN {tool_program_sets} tps ON tpc.setid = tps.id AND tps.parent = 0
+                          JOIN {course_completions} cc ON cc.course = tpc.courseid AND cc.timecompleted > 0
+                      GROUP BY 1,2
                     ) as pcc ON pcc.programid = tpu.programid AND pcc.userid = tpu.userid
                     LEFT JOIN (
                         SELECT programid, COUNT(DISTINCT tps.id) count_seats
-                        FROM {tool_program_sets}  tps
-                        WHERE parent = 1
-                        GROUP BY 1
+                          FROM {tool_program_sets}  tps
+                         WHERE parent = 1
+                      GROUP BY 1
                     ) as pccs ON pccs.programid = tpu.programid
                     LEFT JOIN (
                         SELECT programid, COUNT(DISTINCT(courseid)) count_courses
-                        FROM {tool_program_courses} tpc 
-                        JOIN {tool_program_sets} tps ON tpc.setid = tps.id
-                        WHERE tpc.setid in (SELECT id from {tool_program_sets} WHERE parent = 0)
-                        GROUP BY 1
+                          FROM {tool_program_courses} tpc 
+                          JOIN {tool_program_sets} tps ON tpc.setid = tps.id
+                         WHERE tpc.setid in (SELECT id from {tool_program_sets} WHERE parent = 0)
+                      GROUP BY 1
                     ) as pccc ON pccc.programid = tpu.programid
                 ) as a    
             ) cmpl ON cmpl.programid = pcrs.programid AND cmpl.userid = u.id
-            WHERE tpu.programid = :filter",
+                WHERE tpu.programid = :filter $sqlFilterDate",
             $this->params
         );
     }
@@ -24094,16 +24121,9 @@ class local_intelliboard_external extends external_api {
                 "program_name",
                 "enroll_date",
                 "crs.course_name",
-                "crs.courseid",
                 "gr.finalgrade",
                 "tmspnt.timecompleted",
-                "count_modules_completede",
-                "act.module_ids",
-                "act.module_instances", 
-                "act.grades", 
-                "act.duedates", 
-                "act.submission_dates", 
-                "act.submission_feedbacks"
+                "count_modules_completed",
             ),
             $this->get_filter_columns($params)
         );
@@ -24126,13 +24146,27 @@ class local_intelliboard_external extends external_api {
         $sqlFilter .= $this->get_filter_in_sql($params->custom3, "crs.courseid");
         $sqlFilter .= $this->get_filter_sql($params, $columns, true);
 
-        $sqlModuleFilter = $this->get_filter_in_sql($params->custom4, "cm.module");
+        $sqlInlineFilter = $this->get_filter_in_sql($params->custom4, "aa.module");
+        $sqlInlineFilter .= $this->get_filter_in_sql($params->custom3, "aa.course");
 
-        $sqlDateFilter = $this->get_filterdate_sql($params, "tpu.timecreated");
-        $sqlDateFilter .= $this->get_filterdate_sql($params, "tmspnt.timecompleted");
-
-        $sqlInnerDateFilter = $this->get_filterdate_sql($params, "aa.duedate");
-        $sqlInnerDateFilter .= $this->get_filterdate_sql($params, "aa.timecreated");
+        if ($params->timestart && $params->timefinish) {
+            switch ($params->custom) {
+                case '0':
+                    $sqlFilter .= $this->get_filterdate_sql($params, "tpu.timecreated");
+                break;
+                case '1':
+                    $sqlFilter .= $this->get_filterdate_sql($params, "tmspnt.timecompleted");
+                break;
+                case '2':
+                    $sqlInlineFilter .= $this->get_filterdate_sql($params, "aa.duedate");
+                break;
+                case '3':
+                    $sqlInlineFilter .= $this->get_filterdate_sql($params, "aa.timecreated");
+                break;
+                default:
+                break;
+            }
+        }
 
         $sqlOrder = $this->get_order_sql($params, $columns);
 
@@ -24166,7 +24200,7 @@ class local_intelliboard_external extends external_api {
                         $categorynames category_name
                     FROM {local_intellicart_relations} lirp
                     LEFT JOIN {local_intellicart_products} lip ON lirp.productid = lip.id AND lirp.type = 'mwpprogram'
-                    LEFT JOIN {local_intellicart_relations} lirc ON lirp.productid = lip.id AND lirc.type = 'product_category'
+                    LEFT JOIN {local_intellicart_relations} lirc ON lirc.productid = lip.id AND lirc.type = 'product_category'
                     LEFT JOIN {local_intellicart_cat} lic ON lic.id = lirc.instanceid
                     GROUP BY lirp.instanceid
                 ) itlpr ON itlpr.programid = tp.id
@@ -24215,19 +24249,18 @@ class local_intelliboard_external extends external_api {
                             COALESCE(assc.commenttext, '') commenttext
                         FROM {course_modules} cm
                         LEFT JOIN (
-                             SELECT courseid, userid, m.id moduleid, finalgrade 
+                             SELECT courseid, userid, m.id moduleid, gi.iteminstance, finalgrade 
                                FROM {grade_items} gi
                                JOIN {modules} m ON gi.itemmodule = m.name AND gi.itemtype = 'mod'
                                JOIN {grade_grades} gg ON gg.itemid = gi.id
-                        ) gr ON gr.courseid = cm.course AND gr.moduleid = cm.module
+                        ) gr ON gr.courseid = cm.course AND gr.moduleid = cm.module AND gr.iteminstance = cm.instance
                         LEFT JOIN {assign} a ON a.course = cm.course AND a.id = cm.instance AND cm.module = 2
                         LEFT JOIN {assign_submission} ass ON ass.assignment = a.id AND ass.userid = gr.userid
                         LEFT JOIN {assignfeedback_comments} assc ON assc.assignment = a.id 
-                        WHERE cm.id > 0 $sqlModuleFilter
-                    ) aa WHERE aa.course > 0 $sqlInnerDateFilter GROUP BY 1,2
+                    ) aa WHERE aa.course > 0 $sqlInlineFilter GROUP BY 1,2
                 ) act ON act.course = crs.courseid AND act.userid = u.id 
-                WHERE u.id > 0 $sqlFilter $sqlOrder $sqlDateFilter $filterSql";
-        
+                WHERE u.id > 0 $sqlFilter $sqlOrder";
+
         return $this->get_report_data($sql, $params);
     }
 
@@ -24321,5 +24354,59 @@ class local_intelliboard_external extends external_api {
               WHERE c.id >= 0 $sqlFilter 
            ORDER BY c.fullname", $this->params, false
         );
+    }
+
+    public function report255($params)
+    {
+        global $CFG;
+
+        $columns = array_merge(array(
+                "u.firstname",
+                "u.lastname",
+                "u.email",
+                "coursename",
+                "timespend",
+                "lit.firstaccess",
+                "lastaccess",
+                "userip",
+            ),
+            $this->get_filter_columns($params)
+        );
+
+        $sqlFilter = $this->get_filter_sql($params, $columns, true);
+        $sqlFilter .= $this->get_filter_user_sql($params, "u.");
+        $sqlFilter .= $this->get_filter_in_sql($params->courseid, "c.id");
+
+        if($params->custom2){
+            $sql = $this->get_filter_in_sql($params->custom2, 'r.roleid');
+            $sqlFilter .= " AND (u.id, c.id) IN (SELECT userid, instanceid 
+                                           FROM {context} ctx
+                                           JOIN {role_assignments} r ON ctx.id = r.contextid
+                                          WHERE ctx.contextlevel = 50 $sql)";
+        }
+
+        $sqlFilter .= $this->get_filterdate_sql($params, "lit.firstaccess");
+
+        $sqlJoin = $this->get_suspended_sql($params);
+
+        $sqlOrder = $this->get_order_sql($params, $columns);
+
+        $sql = "SELECT
+               " . ($CFG->dbtype == 'pgsql' ?  "ROW_NUMBER () OVER ()" : " @rowid := @rowid + 1") . " AS rowid,
+                    u.firstname,
+                    u.lastname,
+                    u.email,
+                    c.fullname AS coursename,
+                    SEC_TO_TIME(timespend) AS timespend,
+                    lit.firstaccess,
+                    lit.firstaccess + timespend AS lastaccess,
+                    userip
+                FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "{local_intelliboard_tracking} lit
+                JOIN {user} u ON lit.userid = u.id
+                JOIN {course} c ON lit.courseid = c.id
+                $sqlJoin
+               WHERE lit.page='course' $sqlFilter $sqlOrder";
+
+        return $this->get_report_data($sql, $params);
     }
 }
