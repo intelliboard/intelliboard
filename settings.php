@@ -418,10 +418,13 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
-        $name = 'local_intelliboard/n17';
-        $title = new lang_string('n17', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+        // Option analytics page - commented out.
+        /*
+         *$name = 'local_intelliboard/n17';
+         *$title = new lang_string('n17', 'local_intelliboard');
+         *$setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+         *$settings->add($setting);
+         */
 
         $name = 'local_intelliboard/n1';
         $title = new lang_string('n1', 'local_intelliboard');
@@ -1033,117 +1036,121 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
-        $name = 'local_intelliboard/course_chart';
-        $title = new lang_string('course_chart', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    // Option course chart - commented out.
+    /*
+     *$name = 'local_intelliboard/course_chart';
+     *$title = new lang_string('course_chart', 'local_intelliboard');
+     *$setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+     *$settings->add($setting);
+     */
 
-        $name = 'local_intelliboard/course_activities';
-        $title = new lang_string('course_activities', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/course_activities';
+    $title = new lang_string('course_activities', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $settings->add(new admin_setting_heading('local_intelliboard/ts4', new lang_string('ts4', 'local_intelliboard'), ''));
+    $settings->add(new admin_setting_heading('local_intelliboard/ts4', new lang_string('ts4', 'local_intelliboard'), ''));
 
-        $name = 'local_intelliboard/grades_alt_text';
-        $title = new lang_string('grades_alt_text', 'local_intelliboard');
-        $setting = new admin_setting_configtext($name, $title, '', '');
-        $settings->add($setting);
+    $name = 'local_intelliboard/grades_alt_text';
+    $title = new lang_string('grades_alt_text', 'local_intelliboard');
+    $setting = new admin_setting_configtext($name, $title, '', '');
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t4';
-        $title = new lang_string('t4', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t4';
+    $title = new lang_string('t4', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t23';
-        $title = new lang_string('t23', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t23';
+    $title = new lang_string('t23', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t24';
-        $title = new lang_string('t24', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t24';
+    $title = new lang_string('t24', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t25';
-        $title = new lang_string('t25', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t25';
+    $title = new lang_string('t25', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t39';
-        $title = new lang_string('t39', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t39';
+    $title = new lang_string('t39', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t40';
-        $title = new lang_string('t40', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t40';
+    $title = new lang_string('t40', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t26';
-        $title = new lang_string('t26', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t26';
+    $title = new lang_string('t26', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t27';
-        $title = new lang_string('t27', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t27';
+    $title = new lang_string('t27', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t28';
-        $title = new lang_string('t28', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t28';
+    $title = new lang_string('t28', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/t29';
-        $title = new lang_string('t29', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
-
-
-        $name = 'local_intelliboard/t41';
-        $title = new lang_string('t41', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/t42';
-        $title = new lang_string('t42', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/t43';
-        $title = new lang_string('t43', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/t44';
-        $title = new lang_string('t44', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/t45';
-        $title = new lang_string('t45', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/t46';
-        $title = new lang_string('t46', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/t54';
-        $title = new lang_string('t54', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
-
-        $settings->add(new admin_setting_heading('local_intelliboard/ts5', new lang_string('ts5', 'local_intelliboard'), ''));
-
-        $name = 'local_intelliboard/t48';
-        $title = new lang_string('t48', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/t29';
+    $title = new lang_string('t29', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
 
+    $name = 'local_intelliboard/t41';
+    $title = new lang_string('t41', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/t42';
+    $title = new lang_string('t42', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/t43';
+    $title = new lang_string('t43', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/t44';
+    $title = new lang_string('t44', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/t45';
+    $title = new lang_string('t45', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/t46';
+    $title = new lang_string('t46', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/t54';
+    $title = new lang_string('t54', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
+
+    $settings->add(new admin_setting_heading('local_intelliboard/ts5', new lang_string('ts5', 'local_intelliboard'), ''));
+
+    // Option analytics page - commented out.
+    /*
+     *$name = 'local_intelliboard/t48';
+     *$title = new lang_string('t48', 'local_intelliboard');
+     *$setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+     *$settings->add($setting);
+     */
 
         $settings->add(new admin_setting_heading('local_intelliboard/competency', new lang_string('a0', 'local_intelliboard'), ''));
 
