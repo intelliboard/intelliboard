@@ -43,31 +43,30 @@ require_login();
 
 $PAGE->set_context(context_system::instance());
 
-if($action == 'get_total_students'){
+if (!$daterange) {
+    $timestart = strtotime('-7 days');
+    $timefinish = time();
+} else {
+    $range = preg_split("/ (.)+ /", $daterange);
 
-    if (!$daterange) {
-        $timestart = strtotime('-7 days');
-        $timefinish = time();
+    if(isset($range[0]) && $range[0]) {
+        $timestart = date_create_from_format(
+            intelli_date_format(), trim($range[0])
+        )->getTimestamp();
     } else {
-        $range = preg_split("/ (.)+ /", $daterange);
-
-        if(isset($range[0]) && $range[0]) {
-            $timestart = date_create_from_format(
-                intelli_date_format(), trim($range[0])
-            )->getTimestamp();
-        } else {
-            $timestart = strtotime('-7 days');
-        }
-
-        if(isset($range[1]) && $range[1]) {
-            $timefinish = date_create_from_format(
-                intelli_date_format(), trim($range[1])
-            )->getTimestamp();
-        } else {
-            $timefinish = time();
-        }
+        $timestart = strtotime('-7 days');
     }
 
+    if(isset($range[1]) && $range[1]) {
+        $timefinish = date_create_from_format(
+            intelli_date_format(), trim($range[1])
+        )->getTimestamp();
+    } else {
+        $timefinish = time();
+    }
+}
+
+if($action == 'get_total_students'){
     $learner_roles = get_config('local_intelliboard', 'filter11');
     $params = array('userid1'=>$USER->id,'userid2'=>$USER->id,'userid3'=>$USER->id,'timestart1'=>$timestart, 'timefinish1'=>$timefinish,'timestart2'=>$timestart, 'timefinish2'=>$timefinish,'timestart3'=>$timestart, 'timefinish3'=>$timefinish);
 
@@ -148,28 +147,6 @@ if($action == 'get_total_students'){
 }elseif($action == 'get_learner_engagement'){
     if(!$course){
         die(json_encode(array()));
-    }
-    if (!$daterange) {
-        $timestart = strtotime('-7 days');
-        $timefinish = time();
-    } else {
-        $range = preg_split("/ (.)+ /", $daterange);
-
-        if(isset($range[0]) && $range[0]) {
-            $timestart = date_create_from_format(
-                intelli_date_format(), trim($range[0])
-            )->getTimestamp();
-        } else {
-            $timestart = strtotime('-7 days');
-        }
-
-        if(isset($range[1]) && $range[1]) {
-            $timefinish = date_create_from_format(
-                intelli_date_format(), trim($range[1])
-            )->getTimestamp();
-        } else {
-            $timefinish = time();
-        }
     }
 
     $learner_roles = get_config('local_intelliboard', 'filter11');
@@ -253,29 +230,6 @@ if($action == 'get_total_students'){
         die(json_encode(array()));
     }
 
-    if (!$daterange) {
-        $timestart = strtotime('-7 days');
-        $timefinish = time();
-    } else {
-        $range = preg_split("/ (.)+ /", $daterange);
-
-        if(isset($range[0]) && $range[0]) {
-            $timestart = date_create_from_format(
-                intelli_date_format(), trim($range[0])
-            )->getTimestamp();
-        } else {
-            $timestart = strtotime('-7 days');
-        }
-
-        if(isset($range[1]) && $range[1]) {
-            $timefinish = date_create_from_format(
-                intelli_date_format(), trim($range[1])
-            )->getTimestamp();
-        } else {
-            $timefinish = time();
-        }
-    }
-
     $learner_roles = get_config('local_intelliboard', 'filter11');
     $params = array('course'=>$course,'timestart'=>$timestart, 'timefinish'=>$timefinish);
     list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
@@ -337,29 +291,6 @@ if($action == 'get_total_students'){
         die(json_encode(array()));
     }
 
-    if (!$daterange) {
-        $timestart = strtotime('-7 days');
-        $timefinish = time();
-    } else {
-        $range = preg_split("/ (.)+ /", $daterange);
-
-        if(isset($range[0]) && $range[0]) {
-            $timestart = date_create_from_format(
-                intelli_date_format(), trim($range[0])
-            )->getTimestamp();
-        } else {
-            $timestart = strtotime('-7 days');
-        }
-
-        if(isset($range[1]) && $range[1]) {
-            $timefinish = date_create_from_format(
-                intelli_date_format(), trim($range[1])
-            )->getTimestamp();
-        } else {
-            $timefinish = time();
-        }
-    }
-
     $params = array('course' => $course, 'course1' => $course, 'timestart' => $timestart, 'timefinish' => $timefinish);
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
     $learner_roles = get_config('local_intelliboard', 'filter11');
@@ -419,7 +350,9 @@ if($action == 'get_total_students'){
     if ($view == 'topic') {
         $params = array(
             'courseid2' => $course,
-            'courseid3' => $course
+            'courseid3' => $course,
+            'timestart' => $timestart,
+            'timefinish' => $timefinish,
         );
         $learner_roles = get_config('local_intelliboard', 'filter11');
         list($sql1, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
@@ -428,7 +361,7 @@ if($action == 'get_total_students'){
         $courses = $DB->get_records_sql(
             "SELECT cs.id,
                     MAX(cs.section) AS section,
-                    SUM(lit.timespend) AS timespend
+                    SUM(lil.timespend) AS timespend
                FROM {course_modules} cm
           LEFT JOIN {modules} m ON m.id = cm.module
           LEFT JOIN {course_sections} cs ON cs.id = cm.section
@@ -438,8 +371,9 @@ if($action == 'get_total_students'){
                             {$join_sql1}
                       WHERE ctx.contextlevel = 50 {$sql1}
                    GROUP BY ctx.instanceid, ra.userid
-                    ) stud ON stud.course_id = cm.course
-          LEFT JOIN {local_intelliboard_tracking} lit ON lit.param = cm.id AND lit.page = 'module' AND lit.userid = stud.userid
+          ) stud ON stud.course_id = cm.course
+          LEFT JOIN {local_intelliboard_tracking} lit ON lit.page = 'module' AND lit.userid = stud.userid AND lit.param = cm.id
+          LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id AND lil.timepoint BETWEEN :timestart AND :timefinish
               WHERE cm.course = :courseid2
            GROUP BY cs.id",
             $params
