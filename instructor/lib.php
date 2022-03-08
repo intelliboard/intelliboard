@@ -267,9 +267,14 @@ function intelliboard_activity_data($cmid, $courseid)
 }
 
 
-function intelliboard_instructor_correlations($page, $length)
+function intelliboard_instructor_correlations($page, $length, $timestart, $timefinish)
 {
     global $DB, $USER;
+
+    $params = array(
+        'timestart' => $timestart,
+        'timefinish' => $timefinish,
+    );
 
     $teacher_roles = get_config('local_intelliboard', 'filter10');
     $learner_roles = get_config('local_intelliboard', 'filter11');
@@ -280,20 +285,27 @@ function intelliboard_instructor_correlations($page, $length)
     $sql = intelliboard_instructor_getcourses('c.id', false, 'g.userid');
 
     $items = $DB->get_records_sql("
-            SELECT
+          SELECT
                 c.id,
                 c.fullname,
                 $grade_avg_percent AS grade,
                 $grade_avg AS grade_real,
                 SUM(l.duration) as duration, '0' AS duration_calc
             FROM {course} c
-                LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
-                LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
-                LEFT JOIN (SELECT courseid, userid, sum(timespend) AS duration FROM {local_intelliboard_tracking} WHERE courseid > 0 GROUP BY courseid, userid) l ON l.courseid = c.id AND l.userid = g.userid
-                $join_sql
-            WHERE c.id > 0 $sql GROUP BY c.id", [], $page, $length);
+       LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
+       LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.finalgrade IS NOT NULL
+       LEFT JOIN (
+           SELECT lit.userid, lit.courseid, SUM(lil.timespend) AS duration
+             FROM {local_intelliboard_tracking} lit  
+             JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id AND lit.courseid > 0 
+                    AND lil.timepoint BETWEEN :timestart AND :timefinish  
+         GROUP BY lit.userid, lit.courseid
+       ) l ON l.userid = g.userid AND l.courseid = c.id
+       $join_sql
+           WHERE c.id > 0 $sql 
+        GROUP BY c.id", $params, $page, $length);
 
-     $d = 0;
+    $d = 0;
     foreach($items as $c){
         $d = ($c->duration > $d)?$c->duration:$d;
     }
@@ -319,32 +331,37 @@ function intelliboard_instructor_correlations($page, $length)
 
     return $data;
 }
-function intelliboard_instructor_modules()
+function intelliboard_instructor_modules($timestart, $timefinish)
 {
     global $DB, $USER;
+
+    $params = array(
+        'timestart' => $timestart,
+        'timefinish' => $timefinish,
+    );
 
     $learner_roles = get_config('local_intelliboard', 'filter11');
     $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c.id');
     $join_sql1 .= intelliboard_instructor_hide_suspended_enrollments_joinsql('ctx.instanceid', 'ra.userid');
     $sql = intelliboard_instructor_getcourses('c.id', false, 'ra.userid');
-    list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", []);
-
-
+    list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
 
     $items = $DB->get_records_sql("
-        SELECT
-            m.id,
-            m.name,
-            sum(l.timespend) as visits,
-            sum(l.timespend) as timespend
-        FROM {role_assignments} ra
-            LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-            LEFT JOIN {course} c ON c.id = ctx.instanceid
-            LEFT JOIN {course_modules} cm ON cm.course = c.id
-            LEFT JOIN {modules} m ON m.id = cm.module
-            LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = ra.userid AND l.param = cm.id
-            $join_sql1
-        WHERE c.id > 0 AND m.name IS NOT NULL $sql $sql2 GROUP BY m.id", $params);
+            SELECT
+                m.id,
+                m.name,
+                SUM(lil.visits) as visits,
+                SUM(lil.timespend) as timespend
+              FROM {role_assignments} ra
+         LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+         LEFT JOIN {course} c ON c.id = ctx.instanceid
+         LEFT JOIN {course_modules} cm ON cm.course = c.id
+         LEFT JOIN {modules} m ON m.id = cm.module
+         LEFT JOIN {local_intelliboard_tracking} lit ON lit.page = 'module' AND lit.userid = ra.userid AND lit.param = cm.id
+         LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id AND lil.timepoint BETWEEN :timestart AND :timefinish
+         $join_sql1
+             WHERE c.id > 0 AND m.name IS NOT NULL $sql $sql2 
+          GROUP BY m.id", $params);
 
     $data = array(array(get_string('in6', 'local_intelliboard'), get_string('time_spent', 'local_intelliboard')));
     foreach($items as $item){

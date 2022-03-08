@@ -147,7 +147,7 @@
  $string['t19'] = 'Enable course grade';
  $string['t20'] = 'Enable course class average';
  $string['t21'] = 'Enable course time spent';
- $string['t22'] = 'Enable course start date';
+ $string['t22'] = 'Enable enrollment date';
  $string['t23'] = 'Enable [Course start date] column';
  $string['t24'] = 'Enable [Enrolled date] column';
  $string['t25'] = 'Enable [Progress] column';

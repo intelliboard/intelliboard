@@ -87,15 +87,15 @@ if (!$daterange) {
 
 
 if($action == 'modules'){
-	$data = intelliboard_instructor_modules();
+	$data = intelliboard_instructor_modules($timestart, $timefinish);
 	die(json_encode($data));
 }elseif ($action == 'correlations') {
-	$data = intelliboard_instructor_correlations($page, $length);
+    $data = intelliboard_instructor_correlations($page, $length, $timestart, $timefinish);
 	die(json_encode($data));
 }
 
 $PAGE->set_url(new moodle_url(
-    "/local/intelliboard/instructor/index.php", array("type"=>$type, "search"=>$search)
+    "/local/intelliboard/instructor/index.php", array("type"=>$type, "search"=>$search, "daterange"=>$daterange)
 ));
 $PAGE->set_pagetype('home');
 $PAGE->set_pagelayout('report');

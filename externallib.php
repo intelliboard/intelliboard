@@ -428,7 +428,7 @@ class local_intelliboard_external extends external_api {
                     $key = "column$column" . $this->prfx;
                     $this->params[$key] = $column;
                     $this->groupAdditionalColumns .= ", field$column";
-                    $data .= ", (SELECT CASE WHEN d.data = '' THEN NULL ELSE CONCAT(d.data,'[[[field_type]]]',f.datatype) END FROM {user_info_data} d, {user_info_field} f WHERE f.id = :$key AND d.fieldid = f.id AND d.userid = $field) AS field$column";
+                    $data .= ", (SELECT CASE WHEN d.data = '' THEN NULL ELSE CONCAT(d.data,'[[[field_type]]]',CASE WHEN f.datatype = 'datetime' AND f.param3 IS NULL THEN 'date' ELSE f.datatype END) END FROM {user_info_data} d, {user_info_field} f WHERE f.id = :$key AND d.fieldid = f.id AND d.userid = $field) AS field$column";
                 } else {
                     $alias = explode('.',$field);
                     $column = clean_param($column, PARAM_ALPHANUM);
@@ -5638,6 +5638,7 @@ class local_intelliboard_external extends external_api {
         $sql_enrolfilter = $this->get_filter_enrol_sql($params, "ue.");
         $sql_enrolfilter .= $this->get_filter_enrol_sql($params, "e.");
         $sql_timefilter = $this->get_filterdate_sql($params, "l.timepoint");
+        $sql_timefilter .= $this->get_filterdate_sql($params, "t.lastaccess");
 
         $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
         if ($CFG->dbtype == 'pgsql') {
@@ -12502,10 +12503,12 @@ class local_intelliboard_external extends external_api {
                     qa.name AS questionnaire,
                     qaq.content AS question,
                     CASE WHEN qqt.response_table = 'response_bool' THEN bt.answer{$typecast}
-                         WHEN qqt.response_table = 'resp_multiple' THEN mst.answer{$typecast}
+                         WHEN qqt.response_table = 'resp_multiple' THEN 
+                            CONCAT(mst.answer{$typecast}, ' ', mst.response{$typecast})
                          WHEN qqt.response_table = 'response_text' THEN tt.answer{$typecast}
                          WHEN qqt.response_table = 'response_date' THEN dt.answer{$typecast}
-                         WHEN qqt.response_table = 'resp_single' THEN sst.answer{$typecast}
+                         WHEN qqt.response_table = 'resp_single'   THEN 
+                            CONCAT(sst.answer{$typecast}, ' ', sst.response{$typecast})
                          WHEN qqt.response_table = 'response_rank' THEN rst.answer{$typecast}
                          ELSE '-'
                      END AS answer,
@@ -12526,9 +12529,12 @@ class local_intelliboard_external extends external_api {
                             qqt.response_table = 'response_bool' AND
                             bt.question_id = qaq.id
           LEFT JOIN (SELECT rp.response_id, rp.question_id,
-                            {$multipleanswergroup} AS answer
+                            {$multipleanswergroup} AS answer, qr.response AS response
                        FROM {questionnaire_resp_multiple} rp
                        JOIN {questionnaire_quest_choice} qc ON qc.id = rp.choice_id
+                  LEFT JOIN {questionnaire_response_other} qr
+                         ON qr.response_id = rp.response_id AND
+                         qr.question_id = rp.question_id
                    GROUP BY rp.response_id, rp.question_id
                     ) mst ON mst.response_id = qar.id AND
                              qqt.response_table = 'resp_multiple' AND
@@ -12543,9 +12549,12 @@ class local_intelliboard_external extends external_api {
                     ) dt ON dt.response_id = qar.id AND
                             qqt.response_table = 'response_date' AND
                             dt.question_id = qaq.id
-          LEFT JOIN (SELECT rp.response_id, rp.question_id, qc.content AS answer
+          LEFT JOIN (SELECT rp.response_id, rp.question_id, qc.content AS answer, qr.response AS response
                        FROM {questionnaire_resp_single} rp
                        JOIN {questionnaire_quest_choice} qc ON qc.id = rp.choice_id
+                  LEFT JOIN {questionnaire_response_other} qr
+                         ON qr.response_id = rp.response_id AND
+                         qr.question_id = rp.question_id
                     ) sst ON sst.response_id = qar.id AND
                              qqt.response_table = 'resp_single' AND
                              sst.question_id = qaq.id
@@ -17827,7 +17836,7 @@ class local_intelliboard_external extends external_api {
                     ) AS graduated,
                     (SELECT COUNT(DISTINCT ue.userid) FROM {enrol} e, {user_enrolments} ue WHERE e.id = ue.enrolid $sql7) AS enrolled,
                     (SELECT COUNT(DISTINCT ue.userid) FROM {enrol} e, {user_enrolments} ue WHERE e.enrol = 'cohort' AND ue.enrolid = e.id $sql8) AS enrol_cohort,
-                    (SELECT COUNT(DISTINCT ue.userid) FROM {enrol} e, {user_enrolments} ue WHERE e.enrol = 'manual' AND ue.enrolid = e.id $sql9) AS enrol_manual,
+                    (SELECT COUNT(DISTINCT ue.userid) FROM {enrol} e, {user_enrolments} ue WHERE (e.enrol = 'manual' OR e.enrol = 'attributes') AND ue.enrolid = e.id $sql9) AS enrol_manual,
                     (SELECT COUNT(DISTINCT ue.userid) FROM {enrol} e, {user_enrolments} ue WHERE e.enrol = 'self' AND ue.enrolid = e.id $sql10) AS enrol_self",
             $this->params
         );
@@ -19239,7 +19248,7 @@ class local_intelliboard_external extends external_api {
                           FROM {logstore_standard_log} lg1
                          WHERE lg1.id > 0 {$sql_time_filter}
                        ) lg
-                 WHERE lg.action = 'loggedin' OR lg.other LIKE '%\"tool_mobile_get_config\";}' {$sql_filter}
+                 WHERE lg.action = 'loggedin' OR lg.other LIKE '%\"tool_mobile_get_config\"}' {$sql_filter}
               GROUP BY 2
               ORDER BY MAX(lg.timecreated)";
 
@@ -19909,7 +19918,7 @@ class local_intelliboard_external extends external_api {
         global $DB;
 
         return $DB->get_records_sql("
-            SELECT uif.id, uif.name, uif.datatype AS type, uif.shortname, uic.name AS category
+            SELECT uif.id, uif.name, CASE WHEN uif.datatype = 'datetime' AND uif.param3 IS NULL THEN 'date' ELSE uif.datatype END AS type, uif.shortname, uic.name AS category
             FROM {user_info_field} uif, {user_info_category} uic
             WHERE uif.categoryid = uic.id
             ORDER BY uif.name");
@@ -20215,6 +20224,52 @@ class local_intelliboard_external extends external_api {
             return $DB->get_records_sql("SELECT c.id, c.fullname, c.shortname, ca.name FROM {course} c, {course_categories} ca WHERE ca.id = c.category $sql_filter", $this->params);
         }
     }
+
+    public function get_deleted_assigns($params)
+    {
+        global $DB, $CFG;
+
+        $type = "";
+        if ($CFG->dbtype == 'pgsql') {
+            $type = "::text";
+        }
+
+        $this->params['userid'] = (int) $params->userid;
+        $this->params['typename'] = (string) $params->custom4;
+
+        $joinsql = '';
+        $wheresql = '';
+
+        if ($this->params['typename'] == 'courses') {
+            $joinsql .= "LEFT JOIN {course} c ON c.id{$type} = lia.instance" ;
+            $wheresql .= " AND c.id IS NULL";
+        } elseif ($this->params['typename'] == 'users') {
+            $joinsql .= "LEFT JOIN {user} u ON u.id{$type} = lia.instance" ;
+            $wheresql .= " AND u.id IS NULL";
+        } elseif ($this->params['typename'] == 'categories') {
+            $joinsql .= "LEFT JOIN {course_categories} c ON c.id{$type} = lia.instance" ;
+            $wheresql .= " AND c.id IS NULL";
+        } elseif ($this->params['typename'] == 'cohorts') {
+            $joinsql .= "LEFT JOIN {cohort} c ON c.id{$type} = lia.instance" ;
+            $wheresql .= " AND c.id IS NULL";
+        } elseif ($this->params['typename'] == 'fields') {
+            $joinsql .= "LEFT JOIN {user_info_data} f ON CONCAT(f.fieldid, '|', f.data) = lia.instance" ;
+
+            if ($CFG->dbtype == 'pgsql') {
+                $wheresql .= " AND CONCAT(f.fieldid, '|', f.data) = '|'";
+            } else {
+                $wheresql .= " AND CONCAT(f.fieldid, '|', f.data) IS NULL";
+            }
+        }
+
+        return $DB->get_records_sql("
+            SELECT lia.instance 
+            FROM {local_intelliboard_assign} lia
+            {$joinsql}
+            WHERE lia.userid = :userid AND lia.rel = 'external' AND lia.type= :typename {$wheresql} ", $this->params);
+
+    }
+
     public function get_assign_categories($params)
     {
         global $DB, $CFG;
@@ -21437,13 +21492,15 @@ class local_intelliboard_external extends external_api {
                                                   cfc.area = 'course' AND
                                                   cfc.contextid = :systemcontext
                JOIN {customfield_field} cf ON cf.shortname = 'credits' AND cf.categoryid = cfc.id
+               JOIN {enrol} e ON e.courseid = c.id
+               JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.status = 0 AND ue.userid = :userid2
           LEFT JOIN {customfield_data} cd ON cd.fieldid = cf.id AND cd.contextid = cx.id
           LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = cc.course
           LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = cc.userid
               WHERE cc.userid = :userid {$sqlfilter}
            ORDER BY ccat.sortorder",
             array_merge(
-                ['userid' => $params->custom, 'systemcontext' => context_system::instance()->id],
+                ['userid' => $params->custom, 'userid2' => $params->custom, 'systemcontext' => context_system::instance()->id],
                 $this->params
             )
         );
@@ -23883,6 +23940,7 @@ class local_intelliboard_external extends external_api {
         }
 
         $sqlFilterDate = $this->get_filterdate_sql($params, "tpu.timecreated");
+        $sqlFilterDate1 = $this->get_filterdate_sql($params, "tpu.timecreated");
 
         $sqlOrder = $this->get_order_sql($params, $columns);
 
@@ -23976,7 +24034,7 @@ class local_intelliboard_external extends external_api {
                                      WHERE parent = 0 AND cc.timecompleted > 0
                              ) as pcc ON pcc.userid = tpu.userid AND pcc.course = tpc.courseid
                              LEFT JOIN {local_intelliboard_tracking} lit ON lit.courseid = tpc.courseid AND lit.userid = tpu.userid
-                             WHERE tpu.id > 0 $sqlFilterDate
+                             WHERE tpu.id > 0 $sqlFilterDate1
                              GROUP BY 1,2) AS a
                           GROUP BY 1  
                        ) as prm ON prm.programid = tp.id  
