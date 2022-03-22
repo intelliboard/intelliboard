@@ -206,6 +206,18 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
+        if (get_config('local_intelliboard', 'coursecontainer_available')) {
+            $name = 'local_intelliboard/coursecontainer_filter';
+            $title = new lang_string('coursecontainer_filter', 'local_intelliboard');
+            $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+            $settings->add($setting);
+        }
+
+        $name = 'local_intelliboard/enableexportcustomfont';
+        $title = new lang_string('enableexportcustomfont', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading(
             'local_intelliboard/intellicart_integration',
             new lang_string('intellicart', 'local_intelliboard'),
