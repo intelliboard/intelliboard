@@ -1029,3 +1029,5 @@ $string['cache_compresstracking'] = 'Сохранить в кэш Moodle';
 $string['file_compresstracking'] = 'Сохранить в MoodleData';
 $string['cachedef_tracking'] = 'Данные отслеживания Intelliboard';
 $string['cachedef_track_config'] = 'Общие данные отслеживания Intelliboard';
+$string['coursecontainer_filter'] = 'Использовать фильтр для course container';
+$string['enableexportcustomfont'] = 'Японский/китайский совместимый шрифт';
