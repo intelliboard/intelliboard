@@ -1029,3 +1029,5 @@ $string['cache_compresstracking'] = 'Im Moodle-Cache speichern';
 $string['file_compresstracking'] = 'In MoodleData speichern';
 $string['cachedef_tracking'] = 'Intelliboard Tracking-Daten';
 $string['cachedef_track_config'] = 'Intelliboard Tracking total data';
+$string['coursecontainer_filter'] = 'Enable course container filter';
+$string['enableexportcustomfont'] = 'Japanisch/China-kompatible Schriftart';

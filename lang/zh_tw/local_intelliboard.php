@@ -1029,3 +1029,5 @@ $string['cache_compresstracking'] = '保存到Moodle快取';
 $string['file_compresstracking'] = '保存到MoodleData';
 $string['cachedef_tracking'] = 'Intelliboard追蹤數據';
 $string['cachedef_track_config'] = 'Intelliboard追蹤總數據';
+$string['coursecontainer_filter'] = 'Enable course container filter';
+$string['enableexportcustomfont'] = '日本/中國兼容字體';
