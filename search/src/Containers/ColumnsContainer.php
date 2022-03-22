@@ -475,6 +475,7 @@ class ColumnsContainer extends BaseContainer {
             234 => array("name" => "role", "sql" => "role"),
             235 => array("name" => "modified", "sql" => "modified"),
             236 => array("name" => "enrolment_date", "sql" => "CASE WHEN MIN(ue.timestart) > 0 THEN MIN(ue.timestart) ELSE MIN(ue.timecreated) END"),
+            237 => array("name" => "containertype", "sql" => "containertype")
         );
 
         static::$modifiers = array_map(function($modifier) use ($mode) {

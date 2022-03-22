@@ -832,6 +832,7 @@ $string['tracktotals'] = 'Track Time Aggregate - Daily';
 $string['enable_badges_report'] = 'Enable "Badges" report';
 $string['sizemode'] = 'Size Mode: Large ( > 5,000 Users)';
 $string['cachedef_bb_collaborate_access_token'] = 'BB collaborate access token';
+$string['coursecontainer_filter'] = 'Enable course container filter';
 
 
 $string['learner_menu'] = 'Show "Learner Dashboard" in Navigation Block menu only for enrolled learners';
@@ -1029,3 +1030,4 @@ $string['cache_compresstracking'] = 'Save to Moodle Cache';
 $string['file_compresstracking'] = 'Save to MoodleData';
 $string['cachedef_tracking'] = 'Intelliboard Tracking data';
 $string['cachedef_track_config'] = 'Intelliboard Tracking total data';
+$string['enableexportcustomfont'] = 'Japanish/China compatible font';

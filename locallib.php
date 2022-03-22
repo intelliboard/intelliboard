@@ -478,6 +478,13 @@ function intelliboard_csv_quote($value) {
 }
 function intelliboard_export_report($json, $itemname, $format = 'csv', $output_type = 1)
 {
+    global $CFG;
+
+    // Activating Japanish/China compatible font.
+    if(get_config('local_intelliboard', 'enableexportcustomfont')) {
+        define('PDF_CUSTOM_FONT_PATH', $CFG->dirroot . "/local/intelliboard/assets/fonts/tcpdf/");
+        define('PDF_DEFAULT_FONT', 'cid0jp');
+    }
 
     $name =  clean_filename($itemname . '-' . gmdate("Y-m-d"));
 

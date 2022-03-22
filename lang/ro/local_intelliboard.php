@@ -1029,3 +1029,5 @@ $string['cache_compresstracking'] = 'Salvați în memoria Cache Moodle';
 $string['file_compresstracking'] = 'Salvați în MoodleData';
 $string['cachedef_tracking'] = 'Date de Urmărire Intelliboard';
 $string['cachedef_track_config'] = 'Urmărirea datelor totale al Intelliboard';
+$string['coursecontainer_filter'] = 'Enable course container filter';
+$string['enableexportcustomfont'] = 'Font compatibil japonez/China';

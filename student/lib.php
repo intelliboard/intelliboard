@@ -63,6 +63,10 @@ function intelliboard_data($type, $userid, $showing_user) {
 
         $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
 
+        if (get_config('local_intelliboard', 'coursecontainer_available') && get_config('local_intelliboard', 'coursecontainer_filter')) {
+            $sql .=  " AND c.containertype = 'container_course'";
+        }
+
         $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $query = "SELECT a.id, a.name, a.duedate, c.id AS course_id, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
                     FROM {course} c, {assign} a
@@ -112,6 +116,11 @@ function intelliboard_data($type, $userid, $showing_user) {
             $params['timefinish'] = $timefinish;
         }
         $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
+
+        if (get_config('local_intelliboard', 'coursecontainer_available') && get_config('local_intelliboard', 'coursecontainer_filter')) {
+            $sql .=  " AND c.containertype = 'container_course'";
+        }
+
         $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
 
         $query = "SELECT gi.id, a.name, a.timeclose, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
@@ -153,6 +162,10 @@ function intelliboard_data($type, $userid, $showing_user) {
         }
 
         $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
+
+        if (get_config('local_intelliboard', 'coursecontainer_available') && get_config('local_intelliboard', 'coursecontainer_filter')) {
+            $sql .=  " AND c.containertype = 'container_course'";
+        }
 
         $query = "SELECT MAX(c.id) AS id, c.fullname,
                          MIN(ue.timemodified) AS timemodified,
@@ -261,6 +274,9 @@ function intelliboard_data($type, $userid, $showing_user) {
         $teacher_roles = get_config('local_intelliboard', 'filter10');
         list($sql_teacher_roles, $params) = intelliboard_filter_in_sql($teacher_roles, "ra.roleid", $params);
         $sql .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
+        if (get_config('local_intelliboard', 'coursecontainer_available') && get_config('local_intelliboard', 'coursecontainer_filter')) {
+            $sql .=  " AND c.containertype = 'container_course'";
+        }
 
         $query = "SELECT c.id, c.fullname, MIN(ue.timemodified) AS timemodified,
                 (SELECT $grade_single FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND g.userid = :userid6 AND gi.hidden <> 1) AS grade,
@@ -427,7 +443,9 @@ function intelliboard_learner_courses($userid, $time = null){
 
     $scale_real = get_config('local_intelliboard', 'scale_real');
     $sql = (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
-
+    if (get_config('local_intelliboard', 'coursecontainer_available') && get_config('local_intelliboard', 'coursecontainer_filter')) {
+        $sql .=  " AND c.containertype = 'container_course'";
+    }
     if($scale_real){
         $params['userid4'] = $userid;
         $params = array_merge([
@@ -584,7 +602,9 @@ function intelliboard_learner_totals($userid){
             $where = " AND c.id IN($sum_courses)";
         }
         $where .= (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
-
+        if (get_config('local_intelliboard', 'coursecontainer_available') && get_config('local_intelliboard', 'coursecontainer_filter')) {
+            $where .=  " AND c.containertype = 'container_course'";
+        }
         $sum_grade = $DB->get_record_sql("SELECT
                           (CASE WHEN (AVG({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end})=MIN({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end}))
                                      OR (AVG({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end}) IS NULL AND MIN({$cast_as_int_start}(SELECT value FROM {grade_settings} WHERE courseid=gi.courseid AND name='displaytype'){$cast_as_int_end}) IS NULL)

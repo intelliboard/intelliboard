@@ -567,6 +567,10 @@ function intelliboard_instructor_getcourses(
     $roles = get_config('local_intelliboard', 'filter10');
     $instructor_custom_groups = get_config('local_intelliboard', 'instructor_custom_groups');
     $coursefilter = [" > 0", []];
+    $coursecontainer_filter = "";
+    if (get_config('local_intelliboard', 'coursecontainer_available') && get_config('local_intelliboard', 'coursecontainer_filter')) {
+        $coursecontainer_filter =  " AND c.containertype = 'container_course'";
+    }
 
     if($filtercoursesbysettings) {
         $usrcourses = array_keys(user_settings::getInstructorDashboardCourses($USER->id));
@@ -625,7 +629,7 @@ function intelliboard_instructor_getcourses(
                 "SELECT c.*
                    FROM {role_assignments} ra, {context} ctx, {course} c
                   WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND c.id=ctx.instanceid $sql AND
-                        c.id {$coursefilter[0]}
+                        c.id {$coursefilter[0]} {$coursecontainer_filter}
                GROUP BY c.id",
                 array_merge($params, $coursefilter[1])
             );
@@ -636,7 +640,7 @@ function intelliboard_instructor_getcourses(
         }
     } elseif ($mode) {
         $courses = $DB->get_records_sql(
-            "SELECT * FROM {course} WHERE category > 0 AND id {$coursefilter[0]}",
+            "SELECT * FROM {course} c WHERE c.category > 0 AND c.id {$coursefilter[0]} {$coursecontainer_filter}",
             $coursefilter[1]
         );
     } else {
@@ -647,7 +651,7 @@ function intelliboard_instructor_getcourses(
                FROM {role_assignments} ra, {context} ctx, {course} c
               WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND
                     c.id=ctx.instanceid AND ra.userid = :userid $sql AND
-                    c.id {$coursefilter[0]}",
+                    c.id {$coursefilter[0]} {$coursecontainer_filter}",
             array_merge($params, $coursefilter[1])
         );
     }
@@ -663,7 +667,7 @@ function intelliboard_instructor_getcourses(
         $catcourses = $DB->get_records_sql(
             "SELECT c.*
                FROM {course} c
-              WHERE c.id > 0 {$categoriesfilter}",
+              WHERE c.id > 0 {$categoriesfilter} {$coursecontainer_filter}",
             $params
         );
 

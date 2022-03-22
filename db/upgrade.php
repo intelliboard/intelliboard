@@ -785,5 +785,15 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2021031508, 'local', 'intelliboard');
     }
 
+    if ($oldversion > 2022021700) {
+        $table = new xmldb_table('course');
+        $field = new xmldb_field('containertype');
+        if ($dbman->field_exists($table, $field)) {
+            set_config('coursecontainer_available','1','local_intelliboard');
+        } else {
+            set_config('coursecontainer_available', '0','local_intelliboard');
+        }
+    }
+
     return true;
 }

@@ -278,7 +278,11 @@ class local_intelliboard_external extends external_api {
 
     private function get_filter_course_sql($params, $prefix)
     {
-        return ($params->filter_course_visible) ? "" : " AND {$prefix}visible = 1";
+        $filter = ($params->filter_course_visible) ? "" : " AND {$prefix}visible = 1";
+        if (get_config('local_intelliboard', 'coursecontainer_available') && get_config('local_intelliboard', 'coursecontainer_filter')) {
+            $filter .=  " AND {$prefix}containertype = 'container_course'";
+        }
+        return $filter;
     }
 
     private function get_filter_hidden_cohort_sql($params, $prefix = "", $sep = true)
@@ -6339,7 +6343,7 @@ class local_intelliboard_external extends external_api {
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter .= $this->get_filterdate_sql($params, "bi.dateissued");
-        $sql_filter .= $this->get_filter_in_sql($params->courseid, 'c.id');
+        $sql_course_filter = $this->get_filter_in_sql($params->courseid, 'c.id');
 
         $system_b = ($params->custom == 1)?' OR b.courseid IS NULL ':'';
         if(!empty($params->courseid)){
@@ -6366,7 +6370,7 @@ class local_intelliboard_external extends external_api {
             FROM {badge} b
               LEFT JOIN {badge_issued} bi ON bi.badgeid=b.id
               LEFT JOIN {user} u ON u.id=bi.userid
-              LEFT JOIN {course} c ON c.id=b.courseid
+              LEFT JOIN {course} c ON c.id=b.courseid {$sql_course_filter}
               $sql_join
             WHERE bi.id IS NOT NULL AND bi.visible = 1 $sql_filter $sql_having $sql_order", $params);
     }
@@ -12504,13 +12508,13 @@ class local_intelliboard_external extends external_api {
                     qaq.content AS question,
                     CASE WHEN qqt.response_table = 'response_bool' THEN bt.answer{$typecast}
                          WHEN qqt.response_table = 'resp_multiple' THEN 
-                            CONCAT(mst.answer{$typecast}, ' ', mst.response{$typecast})
+                             CONCAT(REPLACE(mst.answer,'!other', ''), ' ', mst.response{$typecast})
                          WHEN qqt.response_table = 'response_text' THEN tt.answer{$typecast}
                          WHEN qqt.response_table = 'response_date' THEN dt.answer{$typecast}
                          WHEN qqt.response_table = 'resp_single'   THEN 
-                            CONCAT(sst.answer{$typecast}, ' ', sst.response{$typecast})
+                             CONCAT(REPLACE(sst.answer,'!other', ''), ' ', sst.response{$typecast})
                          WHEN qqt.response_table = 'response_rank' THEN rst.answer{$typecast}
-                         ELSE '-'
+                         ELSE '-' 
                      END AS answer,
                     qar.submitted AS answer_time,
                     c.fullname AS course_name
@@ -21483,24 +21487,25 @@ class local_intelliboard_external extends external_api {
                     {$gradesql} AS grade,
                     gi.scaleid,
                     cc.timecompleted
-               FROM {course_completions} cc
-               JOIN {course} c ON c.id = cc.course
+               FROM {course} c
+               JOIN {enrol} e ON e.courseid = c.id
+               JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.status = 0
                JOIN {course_categories} ccat ON ccat.id = c.category
                JOIN {context} cx ON cx.instanceid = c.id AND cx.contextlevel = 50
-               JOIN {role_assignments} ra ON ra.contextid = cx.id AND ra.userid = cc.userid $sql_learners_filter
+               JOIN {role_assignments} ra ON ra.contextid = cx.id AND ra.userid = ue.userid $sql_learners_filter
                JOIN {customfield_category} cfc ON cfc.component = 'core_course' AND
                                                   cfc.area = 'course' AND
                                                   cfc.contextid = :systemcontext
                JOIN {customfield_field} cf ON cf.shortname = 'credits' AND cf.categoryid = cfc.id
-               JOIN {enrol} e ON e.courseid = c.id
-               JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.status = 0 AND ue.userid = :userid2
+
           LEFT JOIN {customfield_data} cd ON cd.fieldid = cf.id AND cd.contextid = cx.id
-          LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = cc.course
-          LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = cc.userid
-              WHERE cc.userid = :userid {$sqlfilter}
+          LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
+          LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.userid = ue.userid
+          LEFT JOIN {course_completions} cc ON cc.course = c.id
+              WHERE ue.userid = :userid {$sqlfilter}
            ORDER BY ccat.sortorder",
             array_merge(
-                ['userid' => $params->custom, 'userid2' => $params->custom, 'systemcontext' => context_system::instance()->id],
+                ['userid' => $params->custom, 'systemcontext' => context_system::instance()->id],
                 $this->params
             )
         );
@@ -21714,6 +21719,7 @@ class local_intelliboard_external extends external_api {
         if ($params->timefinish) {
             $max_date_filter = "AND cc.timecompleted < {$params->timefinish} + 86400";
         }
+        $cohort= $DB->get_record_sql("SELECT * FROM {local_management_cohort} ch WHERE ch.cohortid = :cohortid", ['cohortid' => $params->cohortid]);
         $sql = "  SELECT id, cohort_id, cohortname, categoryname, category, uenrolled, ucompleted, completed_at, percent_completed
                   FROM (
                   SELECT t1.*,
@@ -21757,6 +21763,7 @@ class local_intelliboard_external extends external_api {
         $data = $DB->get_records_sql($sql,$this->params);
         return [
             'data' => $data,
+            'cohort' => $cohort
         ];
     }
 
@@ -23915,8 +23922,8 @@ class local_intelliboard_external extends external_api {
                 "program_name",
                 "count_users",
                 "count_users_completed",
-                "count_required_courses",
                 "count_courses",
+                "count_required_courses",
                 "spent_time",
             ),
             $this->get_filter_columns($params)
@@ -24203,6 +24210,10 @@ class local_intelliboard_external extends external_api {
         $sqlFilter = $this->get_filter_in_sql($params->custom2, "tp.id");
         $sqlFilter .= $this->get_filter_in_sql($params->custom3, "crs.courseid");
         $sqlFilter .= $this->get_filter_sql($params, $columns, true);
+
+        if ($params->courseid) {
+            $sqlFilter .= $this->get_filter_in_sql($params->courseid, 'crs.courseid');
+        }
 
         $sqlInlineFilter = $this->get_filter_in_sql($params->custom4, "aa.module");
         $sqlInlineFilter .= $this->get_filter_in_sql($params->custom3, "aa.course");

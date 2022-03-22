@@ -76,7 +76,9 @@ class intelliboard_courses_grades_table extends table_sql {
         $grade_avg = intelliboard_grade_sql(true, null, 'g.',0, 'gi.',true);
         $completion = intelliboard_compl_sql("cmc.");
         $sql2 = (get_config('local_intelliboard', 'student_course_visibility')) ? "" : " AND c.visible = 1";
-
+        if (get_config('local_intelliboard', 'coursecontainer_available') && get_config('local_intelliboard', 'coursecontainer_filter')) {
+            $sql2 .=  " AND c.containertype = 'container_course'";
+        }
         $fields = "c.id, c.fullname AS course, c.timemodified, c.startdate, c.enablecompletion,
                    cri.gradepass, {$grade_single} AS grade, gc.average, cc.timecompleted, m.modules,
                    cm.completedmodules, '' AS actions, '' AS letter";
