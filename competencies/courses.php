@@ -84,21 +84,24 @@ if ($action == 'learner') {
     $table = new intelliboard_learner_table('table', $courseid, $userid, $search);
     $data = intelliboard_learner_total($userid, $courseid);
     $user = $DB->get_record('user', array('id'=>$userid));
-    $PAGE->navbar->add(get_string('a12','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
-        "id"=>$courseid,
-        "action"=> 'proficient'
+    $PAGE->navbar->add(get_string('a12','local_intelliboard'),
+        new moodle_url('/local/intelliboard/competencies/courses.php', array(
+            "id"=>$courseid,
+            "action"=> 'proficient'
     )));
-    $PAGE->navbar->add(get_string('a28','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
-        "id"=>$courseid,
-        "userid"=>$userid,
-        "action"=> 'learner'
+    $PAGE->navbar->add(get_string('a28','local_intelliboard'),
+        new moodle_url('/local/intelliboard/competencies/courses.php', array(
+            "id"=>$courseid,
+            "userid"=>$userid,
+            "action"=> 'learner'
     )));
 } elseif($action == 'activities') {
     $table = new intelliboard_activities_table('table', $courseid, $competencyid, $search);
     $data = intelliboard_learners_total($courseid, $competencyid);
-    $PAGE->navbar->add(get_string('a1','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
-        "id"=>$courseid,
-        "action"=> 'competencies'
+    $PAGE->navbar->add(get_string('a1','local_intelliboard'),
+        new moodle_url('/local/intelliboard/competencies/courses.php', array(
+            "id"=>$courseid,
+            "action"=> 'competencies'
     )));
     $PAGE->navbar->add(get_string('activities','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
         "id"=>$courseid,
@@ -108,28 +111,32 @@ if ($action == 'learner') {
 } elseif($action == 'learners') {
     $table = new intelliboard_learners_table('table', $courseid, $competencyid, $search,  $cohortid);
     $data = intelliboard_learners_total($courseid, $competencyid);
-    $PAGE->navbar->add(get_string('a1','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
-        "id"=>$courseid,
-        "action"=> 'competencies'
+    $PAGE->navbar->add(get_string('a1','local_intelliboard'),
+        new moodle_url('/local/intelliboard/competencies/courses.php', array(
+            "id"=>$courseid,
+            "action"=> 'competencies'
     )));
-    $PAGE->navbar->add(get_string('learners','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
-        "id"=>$courseid,
-        'competencyid'=> $competencyid,
-        "action"=> 'learners'
+    $PAGE->navbar->add(get_string('learners','local_intelliboard'),
+        new moodle_url('/local/intelliboard/competencies/courses.php', array(
+            "id"=>$courseid,
+            'competencyid'=> $competencyid,
+            "action"=> 'learners'
     )));
 } elseif ($action == 'proficient') {
     $table = new intelliboard_proficient_table('table', $courseid, $search, $cohortid);
     $course = intelliboard_course_total($courseid);
-    $PAGE->navbar->add(get_string('a12','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
-        "id"=>$courseid,
-        "action"=> 'proficient'
+    $PAGE->navbar->add(get_string('a12','local_intelliboard'),
+        new moodle_url('/local/intelliboard/competencies/courses.php', array(
+            "id"=>$courseid,
+            "action"=> 'proficient'
     )));
 } elseif ($action == 'competencies') {
-    $table = new intelliboard_competencies_table('table', $courseid, $search, $cohortid);
+	$table = new intelliboard_competencies_table('table', $courseid, $search, $cohortid);
     $course = intelliboard_course_total($courseid);
-    $PAGE->navbar->add(get_string('a1','local_intelliboard'), new moodle_url('/local/intelliboard/competencies/courses.php', array(
-        "id"=>$courseid,
-        "action"=> 'competencies'
+    $PAGE->navbar->add(get_string('a1','local_intelliboard'),
+        new moodle_url('/local/intelliboard/competencies/courses.php', array(
+            "id"=>$courseid,
+            "action"=> 'competencies'
     )));
 } else {
     $table = new intelliboard_courses_table('table', $search, $cohortid);
@@ -141,7 +148,9 @@ $table->is_downloading('', '', '');
 echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
-    <div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+    <div class="alert alert-error alert-block" role="alert">
+        <?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?>
+    </div>
 <?php else: ?>
 
     <div class="intelliboard-page intelliboard-competencies">
@@ -177,7 +186,11 @@ echo $OUTPUT->header();
                         <ul class="totals">
                             <li><?php echo (int)$data->competencycount; ?><span><?php echo get_string('a1', 'local_intelliboard'); ?></span></li>
                             <li><?php echo (int)$data->proficientcompetencycount; ?><span><?php echo get_string('a2', 'local_intelliboard'); ?></span></li>
-                            <li><?php echo (int)$data->users_rated; ?><span><?php echo get_string('a5', 'local_intelliboard'); ?></span></li>
+                            <?php if (!isset($CFG->totara_version)) { ?>
+                            <li><?php echo (int)$data->users_rated; ?>
+                                <span><?php echo get_string('a5', 'local_intelliboard'); ?></span>
+                            </li>
+                            <?php } ?>
                         </ul>
                     <?php elseif($action === 'activities'): ?>
                         <div class="activity"><?php echo substr($data->shortname, 0,1); ?></div>
@@ -196,8 +209,12 @@ echo $OUTPUT->header();
                         </div>
                         <ul class="totals">
                             <li><?php echo (int)$data->proficient; ?><span><?php echo get_string('a16', 'local_intelliboard'); ?></span></li>
-                            <li><?php echo (int)$data->rated; ?><span><?php echo get_string('a7', 'local_intelliboard'); ?></span></li>
-                            <li><?php echo (int)$data->activities; ?><span><?php echo get_string('a21', 'local_intelliboard'); ?></span></li>
+                            <li><?php echo (int)$data->rated; ?><span><?php if (!isset($CFG->totara_version)) { echo get_string('a7', 'local_intelliboard'); } else { echo get_string('a7b', 'local_intelliboard');}?></span></li>
+                            <?php if (!isset($CFG->totara_version)) { ?>
+                            <li><?php echo (int)$data->activities; ?>
+                                <span><?php echo get_string('a21', 'local_intelliboard'); ?></span>
+                            </li>
+                            <?php } ?>
                         </ul>
                     <?php endif; ?>
                 </div>
