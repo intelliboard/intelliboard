@@ -65,8 +65,10 @@ class intelliboard_courses_table extends table_sql {
         $columns[] =  'learners';
         $headers[] =  get_string('a10','local_intelliboard');
 
-        $columns[] =  'rated';
-        $headers[] =  get_string('a7','local_intelliboard');
+	if (!isset($CFG->totara_version)) {
+        	$columns[] =  'rated';
+		$headers[] =  get_string('a7','local_intelliboard');
+	}
 
         $columns[] =  'proficiency';
         $headers[] =  get_string('a9','local_intelliboard');
@@ -97,49 +99,70 @@ class intelliboard_courses_table extends table_sql {
             $sql .= " AND cl.cnt_learners > 0";
         }
 
-        $fields = "c.id, c.fullname AS course,
+        if (isset($CFG->totara_version)) { 
+            $fields = "c.id, c.fullname AS course, cu.cnt_proficiency AS proficiency, 
+                (SELECT COUNT(DISTINCT cc.competencyid) FROM {comp_criteria} cc WHERE cc.iteminstance = c.id) 
+                AS competencies, 
+                cl.cnt_learners AS learners,
+                '' AS Actions";
+
+            $from = "{course} c
+                    LEFT JOIN (SELECT ctx.instanceid AS courseid, COUNT(DISTINCT ra.userid) AS cnt_learners 
+           	                    FROM {role_assignments} ra 
+			                    JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.id = ra.contextid 
+			                    LEFT JOIN (SELECT userid FROM {cohort_members} WHERE id > 0 AND cohortid IN (-1) 
+			                                GROUP BY userid) cm ON cm.userid = ra.userid
+                                            WHERE ra.id > 0 AND ra.roleid = 5 GROUP BY ctx.instanceid) 
+                                cl ON cl.courseid = c.id   
+                                LEFT JOIN (SELECT iteminstance, COUNT(user_id) AS cnt_proficiency  
+                                            FROM (SELECT iteminstance, user_id from {totara_competency_achievement} ca 
+					                                LEFT JOIN {comp_criteria} cc ON cc.competencyid = ca.competency_id 
+		                                            JOIN {enrol} e ON e.courseid = cc.iteminstance AND e.status = 0
+                                                    JOIN {user_enrolments} ue ON ue.enrolid = e.id 
+                                                                                 AND ue.userid = ca.user_id
+                                                    WHERE proficient = 1 
+                                                    GROUP BY iteminstance, user_id) x 
+                                            GROUP BY iteminstance) cu ON cu.iteminstance = c.id";
+
+            $where = "c.id IN (SELECT iteminstance FROM {comp_criteria}) AND c.visible = 1";
+        } else {
+            $fields = "c.id, c.fullname AS course,
             cu.cnt_proficiency AS proficiency,
             (SELECT COUNT(DISTINCT cc.competencyid) FROM {competency_coursecomp} cc WHERE cc.courseid = c.id) AS competencies,
             cl.cnt_learners AS learners,
             cr.cnt_related AS rated,
             '' AS Actions";
-        $from = "{course} c
-       LEFT JOIN (SELECT ctx.instanceid AS courseid, COUNT(DISTINCT ra.userid) AS cnt_learners
-                    FROM {role_assignments} ra
-                    JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.id = ra.contextid
-               LEFT JOIN (SELECT userid
-                            FROM {cohort_members}
-                           WHERE id > 0 AND cohortid {$cohortfilter}
-                        GROUP BY userid
-                         ) cm ON cm.userid = ra.userid
-                   WHERE ra.id > 0 {$sql2}
-                GROUP BY ctx.instanceid
-                 ) cl ON cl.courseid = c.id
-       LEFT JOIN (SELECT cu.courseid, COUNT(DISTINCT cu.id) AS cnt_related
-                    FROM {competency_usercompcourse} cu
-               LEFT JOIN (SELECT userid
-                            FROM {cohort_members}
-                           WHERE id > 0 AND cohortid {$cohortfilter1}
-                        GROUP BY userid
-                         ) cm ON cm.userid = cu.userid
-                   WHERE cu.grade IS NOT NULL
-                GROUP BY cu.courseid
-                 ) cr ON cr.courseid = c.id
-       LEFT JOIN (SELECT cu.courseid, COUNT(DISTINCT cu.id) AS cnt_proficiency
-                    FROM {competency_usercompcourse} cu
-               LEFT JOIN (SELECT userid
-                            FROM {cohort_members}
-                           WHERE id > 0 AND cohortid {$cohortfilter2}
-                        GROUP BY userid
-                         ) cm ON cm.userid = cu.userid
-                   WHERE cu.proficiency = 1
-                GROUP BY cu.courseid
-                 ) cu ON cu.courseid = c.id";
-        $where = "c.id IN (SELECT courseid FROM {competency_coursecomp}) AND c.visible = 1 $sql";
+            $from = "{course} c
+                    LEFT JOIN (SELECT ctx.instanceid AS courseid, COUNT(DISTINCT ra.userid) AS cnt_learners 
+           	        FROM {role_assignments} ra 
+			        JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.id = ra.contextid 
+			        LEFT JOIN (SELECT userid FROM {cohort_members} WHERE id > 0 AND cohortid IN (-1) 
+                        GROUP BY userid )
+                    cm ON cm.userid = ra.userid WHERE ra.id > 0 AND ra.roleid = 5 GROUP BY ctx.instanceid ) 
+           cl ON cl.courseid = c.id
+
+            LEFT JOIN (SELECT iteminstance, COUNT(user_id) AS cnt_related  
+                        FROM (SELECT iteminstance, user_id from {totara_competency_achievement} ca 
+                                LEFT JOIN {comp_criteria} cc ON cc.competencyid = ca.competency_id 
+                                WHERE scale_value_id IS NOT NULL = 1 
+                                GROUP BY iteminstance, user_id) x 
+                        GROUP BY iteminstance) 
+                        cr ON cr.iteminstance = c.id
+
+            LEFT JOIN (SELECT iteminstance, COUNT(user_id) AS cnt_proficiency  
+                        FROM (SELECT iteminstance, user_id from {totara_competency_achievement} ca 
+                                LEFT JOIN {comp_criteria} cc ON cc.competencyid = ca.competency_id 
+                                WHERE proficient = 1 
+                                GROUP BY iteminstance, user_id) x 
+                        GROUP BY iteminstance) 
+            cu ON cu.iteminstance = c.id";
+
+            $where = "c.id IN (SELECT courseid FROM {competency_coursecomp}) AND c.visible = 1 $sql";
+        }
         $this->set_sql($fields, $from, $where, array_merge($params, $cohortparams, $cohortparams1, $cohortparams2));
         $this->define_baseurl($PAGE->url);
     }
-     function col_course($values) {
+    function col_course($values) {
         global $CFG;
 
         return html_writer::link(new moodle_url($CFG->wwwroot.'/course/view.php', array('id'=>$values->id)), $values->course, array("target"=>"_blank"));
@@ -186,15 +209,21 @@ class intelliboard_competencies_table extends table_sql {
 
         $columns[] =  'created';
         $headers[] =  get_string('a14','local_intelliboard');
-
+        if (!isset($CFG->totara_version)) {
         $columns[] =  'asigned';
         $headers[] =  get_string('a15','local_intelliboard');
 
         $columns[] =  'activities';
         $headers[] =  get_string('a3','local_intelliboard');
+	}
 
-        $columns[] =  'rated';
-        $headers[] =  get_string('a7','local_intelliboard');
+	$columns[] =  'rated';
+        if (!isset($CFG->totara_version)) {
+		$headers[] =  get_string('a7','local_intelliboard');
+	} else {
+		$headers[] =  get_string('a7b','local_intelliboard');
+	}
+
 
         $columns[] =  'proficient';
         $headers[] =  get_string('a9','local_intelliboard');
@@ -230,8 +259,28 @@ class intelliboard_competencies_table extends table_sql {
 
         $learner_roles = get_config('local_intelliboard', 'filter11');
         list($sql2, $params) = intelliboard_filter_in_sql($learner_roles, "ra.roleid", $params);
+        if (isset($CFG->totara_version)) {
+            $fields = "c.id, cc.iteminstance AS courseid, c.fullname AS shortname, c.idnumber, 
+                        c.timecreated AS created,  c.timecreated AS asign,
+			            (SELECT COUNT(ca.id) FROM {totara_competency_achievement} ca
+			            LEFT JOIN (SELECT userid
+                                    FROM {cohort_members}
+			                        WHERE id > 0 AND cohortid {$cohortfilter}
+                                    GROUP BY userid
+                        ) cm ON cm.userid = ca.user_id
+		                JOIN {enrol} e ON e.courseid = cc.iteminstance AND ca.status = 0
+		                JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = ca.user_id
+                        WHERE competency_id = cc.competencyid AND proficient = 1) AS proficient,
+                        (SELECT COUNT(id) FROM {totara_competency_achievement} 
+                        WHERE competency_id = cc.competencyid AND proficient = 0) AS rated,
+			            '' AS Actions";
 
-        $fields = "c.id, cc.courseid, c.shortname, c.idnumber, c.timecreated AS created, cc.timecreated AS asigned,
+	    $from = "{comp_criteria} cc 
+		        LEFT JOIN {comp} c ON c.id = cc.competencyid
+";
+            $where = "cc.iteminstance = :courseid $sql";
+        } else {
+            $fields = "c.id, cc.courseid, c.shortname, c.idnumber, c.timecreated AS created, cc.timecreated AS asigned,
                   (SELECT COUNT(DISTINCT cu.id)
                      FROM {competency_usercompcourse} cu
                 LEFT JOIN (SELECT userid
@@ -251,18 +300,19 @@ class intelliboard_competencies_table extends table_sql {
                     WHERE cu.competencyid = c.id AND cu.courseid = cc.courseid AND cu.grade IS NOT NULL
                   ) AS rated,
                   (SELECT COUNT(DISTINCT m.cmid) FROM {course_modules} cm, {competency_modulecomp} m WHERE cm.visible = 1 AND m.cmid = cm.id AND cm.course = cc.courseid AND m.competencyid = cc.competencyid) AS activities, '' AS Actions";
-        $from = "{competency_coursecomp} cc
+            $from = "{competency_coursecomp} cc
             LEFT JOIN {competency} c ON c.id = cc.competencyid";
-        $where = "cc.courseid = :courseid $sql";
+            $where = "cc.courseid = :courseid $sql";
+        }
 
         $this->set_sql($fields, $from, $where, array_merge($params, $cohortparams, $cohortparams1));
         $this->define_baseurl($PAGE->url);
     }
     function col_created($values) {
-      return ($values->created) ? intelli_date($values->created) : '-';
+        return ($values->created) ? intelli_date($values->created) : '-';
     }
     function col_asigned($values) {
-      return ($values->asigned) ? intelli_date($values->asigned) : '-';
+        return ($values->asigned) ? intelli_date($values->asigned) : '-';
     }
     function col_proficient($values) {
         return intval($values->proficient);
@@ -271,12 +321,14 @@ class intelliboard_competencies_table extends table_sql {
         return intval($values->rated);
     }
     function col_actions($values) {
-        global  $PAGE;
+        global  $PAGE, $CFG;
 
         $html = html_writer::start_tag("div",array("style"=>"width:170px; margin: 5px 0;"));
         $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'learners', 'id'=>$values->courseid, 'competencyid'=>$values->id)), get_string('learners','local_intelliboard'), array('class' =>'btn btn-default'));
+	if (!isset($CFG->totara_version)) {
         $html .= "&nbsp";
-        $html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->courseid, 'competencyid'=>$values->id)), get_string('activities','local_intelliboard'), array('class' =>'btn btn-default'));
+	$html .= html_writer::link(new moodle_url($PAGE->url, array('action'=>'activities', 'id'=>$values->courseid, 'competencyid'=>$values->id)), get_string('activities','local_intelliboard'), array('class' =>'btn btn-default'));
+	}
         $html .= html_writer::end_tag("div");
         return $html;
     }
@@ -287,7 +339,6 @@ class intelliboard_learner_table extends table_sql {
 
     function __construct($uniqueid, $courseid = 0, $userid = 0, $search = '') {
         global $CFG, $PAGE, $DB, $USER;
-
         parent::__construct($uniqueid);
 
         $headers = array();
@@ -299,17 +350,23 @@ class intelliboard_learner_table extends table_sql {
         $columns[] =  'idnumber';
         $headers[] =  get_string('idnumber');
 
+	if (!isset($CFG->totara_version)) {
         $columns[] =  'grade';
-        $headers[] =  get_string('a17','local_intelliboard');
+	$headers[] =  get_string('a17','local_intelliboard');
+	}
 
         $columns[] =  'proficiency';
         $headers[] =  get_string('a16','local_intelliboard');
 
+	if (!isset($CFG->totara_version)) {
         $columns[] =  'rated';
-        $headers[] =  get_string('a19','local_intelliboard');
+	$headers[] =  get_string('a19','local_intelliboard');
+	}
 
+	if (!isset($CFG->totara_version)) {
         $columns[] =  'usermodified';
-        $headers[] =  get_string('a20','local_intelliboard');
+	$headers[] =  get_string('a20','local_intelliboard');
+	}
 
         $this->define_headers($headers);
         $this->define_columns($columns);
@@ -324,7 +381,28 @@ class intelliboard_learner_table extends table_sql {
             $params['shortname'] = "%$search%";
         }
 
-        $fields = "c.id,
+        if (isset($CFG->totara_version)) {
+		    $fields = "c.id,
+		            cc.iteminstance AS courseid,
+                    c.fullname AS shortname,
+                    c.description,
+                    c.idnumber,
+                    ca.proficient AS proficiency,
+                    u2.firstname AS u2firstname,
+                    u2.lastname AS u2lastname,
+                    u2.alternatename AS u2alternatename,
+                    u2.middlename AS u2middlename,
+                    u2.lastnamephonetic AS u2lastnamephonetic,
+	                u2.firstnamephonetic AS u2firstnamephonetic";
+
+            $from = "{comp_criteria} cc
+                    LEFT JOIN {comp} c ON c.id = cc.competencyid
+                    LEFT JOIN {totara_competency_achievement} ca ON ca.competency_id = c.id AND ca.user_id = :userid
+                    LEFT JOIN {user} u2 ON u2.id = ca.user_id";
+
+            $where = "cc.iteminstance = :courseid";
+        } else {
+            $fields = "c.id,
                    cc.courseid,
                    c.shortname,
                    c.description,
@@ -340,13 +418,14 @@ class intelliboard_learner_table extends table_sql {
                    u2.firstnamephonetic AS u2firstnamephonetic,
                    cu.timemodified AS rated,
                    cf.scaleid";
-        $from = "{competency_coursecomp} cc
+            $from = "{competency_coursecomp} cc
             LEFT JOIN {user} u ON u.id = :userid
             LEFT JOIN {competency} c ON c.id = cc.competencyid
             LEFT JOIN {competency_framework} cf ON cf.id = c.competencyframeworkid
             LEFT JOIN {competency_usercompcourse} cu ON cu.competencyid = c.id AND cu.courseid = cc.courseid AND cu.userid = u.id
             LEFT JOIN {user} u2 ON u2.id = cu.usermodified";
-        $where = "cc.courseid = :courseid $sql";
+            $where = "cc.courseid = :courseid $sql";
+        }
 
         $this->set_sql($fields, $from, $where, $params);
         $this->define_baseurl($PAGE->url);
@@ -493,6 +572,7 @@ class intelliboard_learners_table extends table_sql {
         $columns[] =  'proficiency';
         $headers[] =  get_string('a16','local_intelliboard');
 
+        if (!isset($CFG->totara_version)) {
         $columns[] =  'grade';
         $headers[] =  get_string('a17','local_intelliboard');
 
@@ -500,10 +580,13 @@ class intelliboard_learners_table extends table_sql {
         $headers[] =  get_string('a19','local_intelliboard');
 
         $columns[] =  'usermodified';
-        $headers[] =  get_string('a20','local_intelliboard');
+	$headers[] =  get_string('a20','local_intelliboard');
+	}
 
+        if (!isset($CFG->totara_version)) {
         $columns[] =  'evidences';
-        $headers[] =  get_string('a6','local_intelliboard');
+	$headers[] =  get_string('a6','local_intelliboard');
+	}
 
         $this->define_headers($headers);
         $this->define_columns($columns);
@@ -520,43 +603,48 @@ class intelliboard_learners_table extends table_sql {
             $sql .= " AND " . $DB->sql_like('u.firstname', ":firstname", false, false);
             $params['firstname'] = "%$search%";
         }
-        $fields = "u.id,
+
+        if (isset($CFG->totara_version)) {
+            $fields = "u.id, u.firstname, u.lastname, u.email, ca.proficient AS proficiency
+                        ";
+            $from = "{totara_competency_achievement} ca 
+                    JOIN {comp_criteria} cc ON cc.competencyid = ca.competency_id and cc.iteminstance = :courseid
+                    JOIN {enrol} e ON e.courseid = cc.iteminstance AND e.status = 0
+                                JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = ca.user_id
+                    LEFT JOIN {user} u ON u.id = ca.user_id";
+
+            $where = "ca.competency_id = :competencyid";
+        } else {
+            $fields = "u.id,
                    u.firstname,
                    u.lastname,
                    u.email,
                    cu.proficiency,
-                   cu.grade,
-                   cu.usermodified,
                    u2.firstname AS u2firstname,
                    u2.lastname AS u2lastname,
                    u2.alternatename AS u2alternatename,
                    u2.middlename AS u2middlename,
                    u2.lastnamephonetic AS u2lastnamephonetic,
                    u2.firstnamephonetic AS u2firstnamephonetic,
-                   cu.timemodified AS rated,
-                   cf.scaleid,
                    (SELECT COUNT(DISTINCT ce.id)
                       FROM {competency_usercomp} cu, {competency_evidence} ce
                      WHERE cu.competencyid = c.id AND ce.usercompetencyid = cu.id AND cu.userid = u.id AND
                            ce.contextid = ctx.id) AS evidences";
-        $from = "(SELECT userid, contextid
+            $from = "(SELECT userid, contextid
                     FROM {role_assignments}
                    WHERE id > 0 {$rolefilter}
                 GROUP BY userid, contextid
                  ) ra
-            JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-            JOIN {user} u ON u.id = ra.userid
-       LEFT JOIN (SELECT userid
+       		LEFT JOIN (SELECT userid
                     FROM {cohort_members}
                    WHERE id > 0 AND cohortid {$cohortfilter}
                 GROUP BY userid
                  ) cm ON cm.userid = ra.userid
             LEFT JOIN {competency} c ON c.id = :competencyid
             LEFT JOIN {competency_framework} cf ON cf.id = c.competencyframeworkid
-            LEFT JOIN {competency_usercompcourse} cu ON cu.courseid = ctx.instanceid AND cu.userid = u.id AND cu.competencyid = c.id
-            LEFT JOIN {user} u2 ON u2.id = cu.usermodified
         ";
-        $where = "ctx.instanceid = :courseid $sql";
+            $where = "ctx.instanceid = :courseid $sql";
+        }
 
         $this->set_sql($fields, $from, $where, array_merge($params, $cohortparams));
         $this->define_baseurl($PAGE->url);
@@ -634,9 +722,10 @@ class intelliboard_proficient_table extends table_sql {
             $columns[] =  'firstname';
             $headers[] =  get_string('te12','local_intelliboard');
         }
-
+	if (!isset($CFG->totara_version)) {
         $columns[] =  'users_rated';
-        $headers[] =  get_string('a23','local_intelliboard');
+	$headers[] =  get_string('a23','local_intelliboard');
+	}
 
         $columns[] =  'proficientcompetencycount';
         $headers[] =  '% ' . get_string('a16','local_intelliboard');
@@ -644,8 +733,10 @@ class intelliboard_proficient_table extends table_sql {
         $columns[] =  'competencycount';
         $headers[] =  get_string('a22','local_intelliboard');
 
+	if (!isset($CFG->totara_version)) {
         $columns[] =  'users_evidences';
-        $headers[] =  get_string('a24','local_intelliboard');
+	$headers[] =  get_string('a24','local_intelliboard');
+	}
 
         $columns[] =  'actions';
         $headers[] =  get_string('actions','local_intelliboard');
@@ -662,7 +753,25 @@ class intelliboard_proficient_table extends table_sql {
             $params['firstname'] = "%$search%";
         }
 
-        $fields = "DISTINCT(u.id), u.firstname,  u.lastname, u.email, ctx.instanceid AS courseid, '' AS actions,
+        if (isset($CFG->totara_version)) {
+            $fields = "DISTINCT(u.id), u.firstname, u.lastname, u.email, cc.iteminstance as courseid, '' AS actions, 
+                        COUNT(ca.competency_id) AS competencycount, SUM(ca.proficient) AS proficientcompetencycount";
+
+            $from = "{comp_criteria} cc
+                JOIN {totara_competency_achievement} ca ON ca.competency_id = cc.competencyid 
+                JOIN {enrol} e ON e.courseid = cc.iteminstance AND e.status = 0
+                        JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = ca.user_id
+                        LEFT JOIN {user} u ON u.id = ue.userid
+                        LEFT JOIN (SELECT userid
+                                FROM {cohort_members}
+                            WHERE id > 0 AND cohortid {$cohortfilter}
+                            GROUP BY userid
+                             ) cm ON cm.userid = ue.userid";
+
+                $where = "cc.iteminstance = :courseid  
+                            GROUP BY u.id, u.firstname, u.lastname, u.email, cc.iteminstance";
+        } else {
+            $fields = "DISTINCT(u.id), u.firstname,  u.lastname, u.email, ctx.instanceid AS courseid, '' AS actions,
             (SELECT COUNT(DISTINCT comp.id)
                 FROM {competency_coursecomp} coursecomp
                     JOIN {competency} comp ON coursecomp.competencyid = comp.id
@@ -671,7 +780,7 @@ class intelliboard_proficient_table extends table_sql {
                 FROM {competency_usercompcourse} cu WHERE cu.courseid = ctx.instanceid AND cu.userid = u.id AND cu.proficiency = 1) AS proficientcompetencycount,
             (SELECT COUNT(DISTINCT cu.id) FROM {competency_usercompcourse} cu WHERE cu.courseid = ctx.instanceid AND cu.userid = u.id AND cu.grade IS NOT NULL) AS users_rated,
             (SELECT COUNT(DISTINCT ce.id) FROM {competency_coursecomp} c, {competency_usercomp} cu, {competency_evidence} ce WHERE c.courseid = ctx.instanceid AND cu.competencyid = c.competencyid AND ce.usercompetencyid = cu.id AND cu.userid = u.id AND ce.contextid = ctx.id) AS users_evidences";
-        $from = "{role_assignments} ra
+            $from = "{role_assignments} ra
             JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
             JOIN {user} u ON u.id = ra.userid
             LEFT JOIN (SELECT userid
@@ -679,7 +788,8 @@ class intelliboard_proficient_table extends table_sql {
                    WHERE id > 0 AND cohortid {$cohortfilter}
                 GROUP BY userid
                  ) cm ON cm.userid = ra.userid";
-        $where = "ctx.instanceid = :courseid $sql";
+            $where = "ctx.instanceid = :courseid $sql";
+        }
 
         $this->set_sql($fields, $from, $where, array_merge($params, $cohortparams));
         $this->define_baseurl($PAGE->url);
@@ -708,3 +818,4 @@ class intelliboard_proficient_table extends table_sql {
 
     }
 }
+
