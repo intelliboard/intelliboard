@@ -88,6 +88,7 @@ class local_intelliboard_external extends external_api {
                             'courseid' => new external_value(PARAM_SEQUENCE, 'Course IDs SEQUENCE', VALUE_OPTIONAL, 0),
                             'cohortid' => new external_value(PARAM_SEQUENCE, 'Cohort IDs SEQUENCE', VALUE_OPTIONAL, 0),
                             'filter_user_deleted' => new external_value(PARAM_INT, 'filter_user_deleted', VALUE_OPTIONAL, 0),
+                            'filter_user_not_current' => new external_value(PARAM_INT, 'filter_user_not_current', VALUE_OPTIONAL, 0),
                             'filter_user_suspended' => new external_value(PARAM_INT, 'filter_user_suspended', VALUE_OPTIONAL, 0),
                             'filter_user_guest' => new external_value(PARAM_INT, 'filter_user_guest', VALUE_OPTIONAL, 0),
                             'filter_user_active' => new external_value(PARAM_INT, 'filter_user_active', VALUE_OPTIONAL, 0),
@@ -157,6 +158,7 @@ class local_intelliboard_external extends external_api {
         $params->request = (isset($params->request)) ? (int)$params->request : 0;
         $params->userfilter = (isset($params->userfilter)) ? (int)$params->userfilter : 0;
         $params->filter_user_deleted = (isset($params->filter_user_deleted)) ? $params->filter_user_deleted : 0;
+        $params->filter_user_not_current = (isset($params->filter_user_not_current)) ? $params->filter_user_not_current : 0;
         $params->filter_user_suspended = (isset($params->filter_user_suspended)) ? $params->filter_user_suspended : 0;
         $params->filter_user_guest = (isset($params->filter_user_guest)) ? $params->filter_user_guest : 0;
         $params->filter_user_active = (isset($params->filter_user_active)) ? $params->filter_user_active : 0;
@@ -298,6 +300,21 @@ class local_intelliboard_external extends external_api {
         }
 
         return ($params->filter_enrol_status) ? "" : " AND {$field} = 0";
+    }
+
+    private function get_filter_user_not_current_sql($params, $prefix = '')
+    {
+        global $CFG;
+
+        $field = "{$prefix}timeend";
+
+        if ($CFG->dbtype == 'pgsql') {
+            $sql = " AND ({$field} = 0 OR ({$field} > 0 AND {$field} > EXTRACT(epoch from now())))";
+        } else {
+            $sql = " AND ({$field} = 0 OR ({$field} > 0 AND {$field} > UNIX_TIMESTAMP()))";
+        }
+
+        return ($params->filter_user_not_current) ? $sql : "";
     }
 
     private function get_filter_module_sql($params, $prefix)
@@ -817,6 +834,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter .= $this->vendor_filter('ue.userid', 'c.id', $params);
         $courseroles = get_operator('GROUP_CONCAT', 'DISTINCT(r.shortname)', ['separator' => ', ']);
 
@@ -970,6 +988,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses", "ue.userid" => "users"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sqluenrfilter = $this->get_filter_enrol_sql($params, "ue.");
         $sqlenrfilter = $this->get_filter_enrol_sql($params, "e.");
         $sql_having = $this->get_filter_sql($params, $columns);
@@ -1312,6 +1331,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
@@ -1396,6 +1416,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_order = $this->get_order_sql($params, $columns);
         $grade_single = intelliboard_grade_sql(false, $params);
         $completion1 = $this->get_completion($params, "cmc.");
@@ -1692,6 +1713,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $grade_single = intelliboard_grade_sql(false, $params);
 
         $sql_join = "";
@@ -1765,6 +1787,7 @@ class local_intelliboard_external extends external_api {
         $sql_inner_filter1 .= $this->get_filter_enrolled_users_sql($params, "ra.userid");
         $sql_inner_filter1 .= $this->get_filter_enrol_sql($params, "e.");
         $sql_inner_filter1 .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_inner_filter1 .= $this->get_filter_user_not_current_sql($params, "ue.");
 
         $sql_inner_filter2 = $this->vendor_filter('g.userid', 'gi.courseid', $params);
         $sql_inner_filter2 .= $this->get_filter_in_sql($params->courseid, "gi.courseid");
@@ -2003,6 +2026,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_teacher_sql($params, ["ue.userid" => "users", "e.courseid" => "courses"]);
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
 
         return $this->get_report_data("
             SELECT MAX(e.id) AS id,
@@ -2405,6 +2429,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $sql_filter .= $this->vendor_filter('ue.userid', 'c.id', $params);
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sqltimefilter = $this->get_filterdate_sql($params, "sst.timemodified");
         $grade_single = intelliboard_grade_sql(false, $params);
 
@@ -2867,6 +2892,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter .= $this->vendor_filter('u.id', 'c.id', $params);
         $grade_single = intelliboard_grade_sql(false, $params);
         $grade_course_single = intelliboard_grade_sql(false, $params, 'g_c.', 0, 'gi_c.');
@@ -3297,6 +3323,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
 
@@ -3366,6 +3393,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
 
         if ($CFG->version < 2016120509) {
             $sql_columns .= ", '' AS startdate, '' AS enddate";
@@ -3539,6 +3567,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter .= $this->vendor_filter('u.id', 'c.id', $params);
         $sql1 = $this->get_filterdate_sql($params, "l.timepoint");
         $grade_single = intelliboard_grade_sql(false, $params);
@@ -3775,6 +3804,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_order = $this->get_order_sql($params, $columns);
 
         return $this->get_report_data("
@@ -3805,6 +3835,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_filter_sql($params, $columns);
         $sql_filter .= $this->get_teacher_sql($params, ["u.id" => "users", "q.course" => "courses"]);
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter .= $this->vendor_filter('u.id', 'q.course', $params);
         $completion = $this->get_completion($params, "cmc.");
 
@@ -3902,6 +3933,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter     = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
         $sql_filter    .= $this->get_filter_user_sql($params, "u.");
         $sql_filter    .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $grade_avg      = intelliboard_grade_sql(true, $params, 'g.', 2, 'gi.',true);
         $grade_single   = intelliboard_grade_sql(false, $params, 'g.', 2, 'gi.');
         $grade_single_percent   = intelliboard_grade_sql(false, $params, 'g.', 2, 'gi.', true);
@@ -4134,6 +4166,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $sql_filter .= $this->get_filterdate_sql($params, "a.duedate");
+        $sql_filter1 = $this->get_filter_user_not_current_sql($params, "ue.");
 
         if (!$params->custom) {
           $sql_filter .= " AND (s.timemodified > a.duedate or s.timemodified IS NULL)";
@@ -4192,8 +4225,11 @@ class local_intelliboard_external extends external_api {
                 $grade_single AS grade
                 $sql_columns
             FROM $row_number_select {assign} a
-                LEFT JOIN (SELECT e.courseid, ue.userid FROM {user_enrolments} ue, {enrol} e WHERE e.id=ue.enrolid GROUP BY e.courseid, ue.userid) ue
-                ON ue.courseid = a.course
+                LEFT JOIN (SELECT e.courseid, ue.userid
+                             FROM {user_enrolments} ue, {enrol} e 
+                            WHERE e.id=ue.enrolid {$sql_filter1}
+                         GROUP BY e.courseid, ue.userid
+                           ) ue ON ue.courseid = a.course
                 LEFT JOIN {user} u ON u.id = ue.userid
                 LEFT JOIN {assign_submission} s ON s.assignment = a.id AND s.userid = u.id
                 LEFT JOIN {course} c ON c.id = a.course
@@ -5511,6 +5547,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $completion = $this->get_completion($params, "x.");
         $grade_avg = intelliboard_grade_sql(true, $params);
         $joins = $this->group_aggregation('u.id', 'c.id', $params);
@@ -5641,6 +5678,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->vendor_filter(null, 'c.id', $params);
         $sql_enrolfilter = $this->get_filter_enrol_sql($params, "ue.");
         $sql_enrolfilter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_enrolfilter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_timefilter = $this->get_filterdate_sql($params, "l.timepoint");
         $sql_timefilter .= $this->get_filterdate_sql($params, "t.lastaccess");
 
@@ -5867,6 +5905,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
 
         $data = $this->get_report_data("
             SELECT ue.id,
@@ -6730,6 +6769,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter1 .= $this->get_filter_course_sql($params, "c.");
         $sql_filter1 .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter1 .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter1 .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter1 .= $this->get_filterdate_sql($params, "s.timemodified");
         $sql_teacher_roles1 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
 
@@ -6738,6 +6778,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter2 .= $this->get_filter_course_sql($params, "c.");
         $sql_filter2 .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter2 .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter2 .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter2 .= $this->get_filterdate_sql($params, "quiz_attempt.timefinish");
         $sql_teacher_roles2 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
 
@@ -6746,6 +6787,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter3 .= $this->get_filter_course_sql($params, "c.");
         $sql_filter3 .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter3 .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter3 .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter3 .= $this->get_filterdate_sql($params, "trs.submission_modified");
         $sql_teacher_roles3 = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
 
@@ -7357,6 +7399,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter .= $this->get_filterdate_sql($params, "s.timemodified");
 
         return $this->get_report_data("
@@ -9862,6 +9905,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
         $sql_filter .= $this->get_teacher_sql($params, array("c.id"=>"courses", "u.id"=>"users"));
         $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
@@ -10585,6 +10629,7 @@ class local_intelliboard_external extends external_api {
         $sql_ra_filter  = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $sql_ra_filter .= $this->get_filter_enrol_sql($params, 'e.');
         $sql_ra_filter .= $this->get_filter_enrol_sql($params, 'ue.');
+        $sql_ra_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_ra_filter .= $this->get_filterdate_sql($params, "ra.timemodified");
         $sql_ra_filter .= $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
 
@@ -10942,6 +10987,7 @@ class local_intelliboard_external extends external_api {
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users"]);
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $sql.= $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
         $sqljoins = $this->group_aggregation('u.id', 'c.id', $params);
@@ -11269,6 +11315,7 @@ class local_intelliboard_external extends external_api {
         $completion = $this->get_completion($params, "cmc.");
         $enrolfilter = $this->get_filter_enrol_sql($params, 'e1.');
         $enrolfilter .= $this->get_filter_enrol_sql($params, 'ue1.');
+        $enrolfilter .= $this->get_filter_user_not_current_sql($params, "ue1.");
         $sqljoins = $this->group_aggregation('u.id', 'c.id', $params);
 
         if ($CFG->dbtype == 'pgsql') {
@@ -12123,6 +12170,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_filter .= $this->get_filter_in_sql($params->custom2, "cm.id");
         $sql_filter .= $this->get_filter_in_sql($params->custom3, "ra.roleid");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $gradesql = intelliboard_grade_sql(false, $params);
         $teachersnames = get_operator("GROUP_CONCAT", "DISTINCT CONCAT(u.firstname,' ',u.lastname)", ["separator" => ", "]);
 
@@ -12306,6 +12354,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->custom, "m.id");
         $sql_filter .= $this->get_filter_in_sql($params->custom2, "cm.id");
         $sql_filter .= $this->get_filter_in_sql($params->custom3, "ra.roleid");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
 
         $sql_join = '';
         if (!empty($params->custom3)) {
@@ -12508,11 +12557,17 @@ class local_intelliboard_external extends external_api {
                     qaq.content AS question,
                     CASE WHEN qqt.response_table = 'response_bool' THEN bt.answer{$typecast}
                          WHEN qqt.response_table = 'resp_multiple' THEN 
-                             CONCAT(REPLACE(mst.answer,'!other', ''), ' ', mst.response{$typecast})
+                            CASE 
+                                WHEN mst.response IS NULL THEN mst.answer
+                                ELSE REPLACE(mst.response,'!other', '')
+                            END
                          WHEN qqt.response_table = 'response_text' THEN tt.answer{$typecast}
                          WHEN qqt.response_table = 'response_date' THEN dt.answer{$typecast}
                          WHEN qqt.response_table = 'resp_single'   THEN 
-                             CONCAT(REPLACE(sst.answer,'!other', ''), ' ', sst.response{$typecast})
+                            CASE 
+                                WHEN sst.response IS NULL THEN sst.answer
+                                ELSE REPLACE(sst.response,'!other', '')
+                            END
                          WHEN qqt.response_table = 'response_rank' THEN rst.answer{$typecast}
                          ELSE '-' 
                      END AS answer,
@@ -13785,6 +13840,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter4 .= $this->get_filter_in_sql($params->courseid, "e.courseid");
         $sql_filter4 .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter4 .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter4 .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter4 .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
         $sqlfiltermodule = $this->get_filter_module_sql($params, "");
 
@@ -14005,6 +14061,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_filter .= $this->get_filterdate_sql($params, "sa.enddate");
         $sql_manager_filter = $this->vendor_manager_filter("u.id", $params);
 
@@ -19252,7 +19309,7 @@ class local_intelliboard_external extends external_api {
                           FROM {logstore_standard_log} lg1
                          WHERE lg1.id > 0 {$sql_time_filter}
                        ) lg
-                 WHERE lg.action = 'loggedin' OR lg.other LIKE '%\"tool_mobile_get_config\"}' {$sql_filter}
+                 WHERE lg.action = 'loggedin' OR lg.other LIKE '%\"tool_mobile_get_config\"%' {$sql_filter}
               GROUP BY 2
               ORDER BY MAX(lg.timecreated)";
 
@@ -22449,6 +22506,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
         $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $completion = $this->get_completion($params, "x.");
 
         if ($params->custom2 == 1) {
@@ -24435,6 +24493,7 @@ class local_intelliboard_external extends external_api {
                 "u.email",
                 "coursename",
                 "timespend",
+                "lid.timepoint",
                 "lit.firstaccess",
                 "lastaccess",
                 "userip",
@@ -24445,36 +24504,31 @@ class local_intelliboard_external extends external_api {
         $sqlFilter = $this->get_filter_sql($params, $columns, true);
         $sqlFilter .= $this->get_filter_user_sql($params, "u.");
         $sqlFilter .= $this->get_filter_in_sql($params->courseid, "c.id");
-
-        if($params->custom2){
-            $sql = $this->get_filter_in_sql($params->custom2, 'r.roleid');
-            $sqlFilter .= " AND (u.id, c.id) IN (SELECT userid, instanceid 
-                                           FROM {context} ctx
-                                           JOIN {role_assignments} r ON ctx.id = r.contextid
-                                          WHERE ctx.contextlevel = 50 $sql)";
-        }
-
-        $sqlFilter .= $this->get_filterdate_sql($params, "lit.firstaccess");
-
-        $sqlJoin = $this->get_suspended_sql($params);
-
+        $sqlFilter .= $this->get_filter_in_sql($params->custom2, 'ra.roleid');
+        $sqlFilter .= $this->get_filterdate_sql($params, "lil.timepoint");
         $sqlOrder = $this->get_order_sql($params, $columns);
-
         $sql = "SELECT
                " . ($CFG->dbtype == 'pgsql' ?  "ROW_NUMBER () OVER ()" : " @rowid := @rowid + 1") . " AS rowid,
                     u.firstname,
                     u.lastname,
                     u.email,
                     c.fullname AS coursename,
-                    SEC_TO_TIME(timespend) AS timespend,
+                    SEC_TO_TIME(SUM(lid.timespend)) AS timespend,
+                    lid.timepoint,
                     lit.firstaccess,
-                    lit.firstaccess + timespend AS lastaccess,
+                    lit.lastaccess,
                     userip
-                FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "{local_intelliboard_tracking} lit
-                JOIN {user} u ON lit.userid = u.id
-                JOIN {course} c ON lit.courseid = c.id
-                $sqlJoin
-               WHERE lit.page='course' $sqlFilter $sqlOrder";
+                FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . " {user} u
+                     JOIN {role_assignments} ra ON ra.userid = u.id
+                     JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+                     JOIN {course} c ON c.id = ctx.instanceid
+                LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid = u.id AND lit.courseid = ctx.instanceid
+                     JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id
+                     JOIN {local_intelliboard_details} lid ON lid.logid = lil.id
+                WHERE u.id > 0 $sqlFilter
+                GROUP BY c.id, u.id, lid.timepoint
+                $sqlOrder
+        ";
 
         return $this->get_report_data($sql, $params);
     }
