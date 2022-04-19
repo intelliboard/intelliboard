@@ -1031,3 +1031,4 @@ $string['cachedef_tracking'] = 'Данные отслеживания Intelliboa
 $string['cachedef_track_config'] = 'Общие данные отслеживания Intelliboard';
 $string['coursecontainer_filter'] = 'Использовать фильтр для course container';
 $string['enableexportcustomfont'] = 'Японский/китайский совместимый шрифт';
+$string['all_selected'] = 'Все выбраны';

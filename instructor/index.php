@@ -165,7 +165,7 @@ $courses = intelliboard_instructor_courses($view, $page, $length, $course, $date
 $renderer = $PAGE->get_renderer("local_intelliboard");
 
 $PAGE->requires->js_call_amd(
-    'local_intelliboard/instructor', 'dashboardSettings', [get_string('all_courses', 'local_intelliboard')]
+    'local_intelliboard/instructor', 'dashboardSettings', [get_string('all_courses', 'local_intelliboard'), get_string('all_selected', 'local_intelliboard'), get_string('selectall', 'local_intelliboard')]
 );
 
 echo $OUTPUT->header();
@@ -182,7 +182,7 @@ echo $OUTPUT->header();
                     placeholder="<?php echo get_string('select_date', 'local_intelliboard'); ?>">
         </div>
     </div>
-    
+
     <?php
         echo $renderer->render(new \local_intelliboard\output\instructor_index([
             "pluginsettings" => (object) [
