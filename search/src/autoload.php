@@ -51,7 +51,7 @@ function d($arg, $stop = true, $backtrace = false) {
     print "</pre>";
 
     if ($backtrace) {
-        debug_print_backtrace();
+        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
     }
     if ($stop) {
         die();

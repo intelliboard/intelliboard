@@ -1,18 +1,22 @@
-define(['jquery'], function($) {
+define(['jquery'], function ($) {
     (function ($) {
         'use strict';
+
         function MultipleSelect($el, options) {
             var that = this,
-                name = $el.attr('name') || options.name || ''
+                name = $el.attr('name') || options.name || '';
 
             $el.parent().hide();
             var elWidth = $el.css("width");
             $el.parent().show();
-            if (elWidth=="0px") {elWidth = $el.outerWidth()+20}
+            if (elWidth == "0px") {
+                elWidth = $el.outerWidth() + 20;
+            }
 
             this.$el = $el.hide();
             this.options = options;
-            this.$parent = $('<div' + $.map(['class', 'title'],function (att) {
+
+            this.$parent = $('<div' + $.map(['class', 'title'], function (att) {
                 var attValue = that.$el.attr(att) || '';
                 attValue = (att === 'class' ? ('ms-parent' + (attValue ? ' ' : '')) : '') + attValue;
                 return attValue ? (' ' + att + '="' + attValue + '"') : '';
@@ -104,7 +108,7 @@ define(['jquery'], function($) {
                     html = [],
                     multiple = this.options.multiple,
                     optAttributesToCopy = ['class', 'title'],
-                    clss = $.map(optAttributesToCopy, function (att, i) {
+                    clss = $.map(optAttributesToCopy, function (att) {
                         var isMultiple = att === 'class' && multiple;
                         var attValue = $elm.attr(att) || '';
                         return (isMultiple || attValue) ?
@@ -117,13 +121,15 @@ define(['jquery'], function($) {
                 if ($elm.is('option')) {
                     var value = $elm.val(),
                         text = that.options.textTemplate($elm),
-                        selected = (that.$el.attr('multiple') != undefined) ? $elm.prop('selected') : ($elm.attr('selected') == 'selected'),
+                        selected = (that.$el.attr('multiple') != undefined)
+                            ? $elm.prop('selected')
+                            : ($elm.attr('selected') == 'selected'),
                         style = this.options.styler(value) ? ' style="' + this.options.styler(value) + '"' : '';
 
                     disabled = groupDisabled || $elm.prop('disabled');
                     if ((this.options.blockSeparator > "") && (this.options.blockSeparator == $elm.val())) {
                         html.push(
-                            '<li  title="'+text+'" ' + clss + style + '>',
+                            '<li  title="' + text + '" ' + clss + style + '>',
                             '<label class="' + this.options.blockSeparator + (disabled ? 'disabled' : '') + '">',
                             text,
                             '</label>',
@@ -131,7 +137,7 @@ define(['jquery'], function($) {
                         );
                     } else {
                         html.push(
-                            '<li  title="'+text+'" ' + clss + style + '>',
+                            '<li  title="' + text + '" ' + clss + style + '>',
                             '<label' + (disabled ? ' class="disabled"' : '') + '>',
                             '<input type="' + type + '" ' + this.selectItemName + ' value="' + value + '"' +
                             (selected ? ' checked="checked"' : '') +
@@ -196,7 +202,7 @@ define(['jquery'], function($) {
                             break;
                     }
                 });
-                this.$searchInput.off('keydown').on('keydown',function (e) {
+                this.$searchInput.off('keydown').on('keydown', function (e) {
                     if (e.keyCode === 9 && e.shiftKey) { // Ensure shift-tab causes lost focus from filter as with clicking away
                         that.close();
                     }
@@ -275,7 +281,7 @@ define(['jquery'], function($) {
                 if (this.options.container) {
                     var offset = this.$drop.offset();
                     this.$drop.appendTo($(this.options.container));
-                    this.$drop.offset({ top: offset.top, left: offset.left });
+                    this.$drop.offset({top: offset.top, left: offset.left});
                 }
                 if (this.options.filter) {
                     this.$searchInput.val('');
@@ -312,11 +318,16 @@ define(['jquery'], function($) {
                 } else if (this.options.allSelected &&
                     selects.length === this.$selectItems.length + this.$disableItems.length) {
                     $span.removeClass('placeholder').html(this.options.allSelected);
-                } else if ((this.options.countSelected || this.options.etcaetera) && selects.length > this.options.minimumCountSelected) {
+                } else if ((this.options.countSelected || this.options.etcaetera)
+                    && selects.length > this.options.minimumCountSelected) {
                     if (this.options.etcaetera) {
-                        $span.removeClass('placeholder').html((this.options.displayValues ? selects : this.getSelects('text').slice(0, this.options.minimumCountSelected)).join(this.options.delimiter) + '...');
-                    }
-                    else {
+                        $span.removeClass('placeholder')
+                            .html(
+                                (this.options.displayValues
+                                        ? selects
+                                        : this.getSelects('text').slice(0, this.options.minimumCountSelected)
+                                ).join(this.options.delimiter) + '...');
+                    } else {
                         $span.removeClass('placeholder').html(this.options.countSelected
                             .replace('#', selects.length)
                             .replace('%', this.$selectItems.length + this.$disableItems.length));
@@ -343,7 +354,9 @@ define(['jquery'], function($) {
 
             updateSelectAll: function (Init) {
                 var $items = this.$selectItems;
-                if (!Init) { $items = $items.filter(':visible'); }
+                if (!Init) {
+                    $items = $items.filter(':visible');
+                }
                 this.$selectAll.prop('checked', $items.length &&
                     $items.length === $items.filter(':checked').length);
                 if (this.$selectAll.prop('checked')) {
