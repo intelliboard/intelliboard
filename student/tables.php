@@ -312,32 +312,174 @@ class intelliboard_activities_grades_table extends table_sql {
     }
 }
 
-class intelliboard_user_orders_table extends table_sql {
+/**
+ * IntelliCart custom tables.
+ */
+class intelliboard_custom_intellicart_table extends table_sql {
+
+    public $context;
+    public $page;
+
+    // Statuses for display payment methods.
+    public $ordersstatuses = [
+        \local_intellicart\payment::STATUS_COMPLETED,
+        \local_intellicart\payment::STATUS_PENDING,
+        \local_intellicart\payment::STATUS_SUSPENDED,
+        \local_intellicart\payment::STATUS_REFUND,
+        \local_intellicart\payment::STATUS_WAITING,
+        \local_intellicart\payment::STATUS_REFUNDPARTIAL,
+        \local_intellicart\payment::STATUS_REJECTED,
+        \local_intellicart\payment::STATUS_INCART,
+        \local_intellicart\payment::STATUS_DELETED,
+        \local_intellicart\payment::STATUS_EXPIRED,
+    ];
+
+    // Statuses for display payment methods.
+    public $activeordersstatuses = [
+        \local_intellicart\payment::STATUS_COMPLETED,
+        \local_intellicart\payment::STATUS_PENDING,
+        \local_intellicart\payment::STATUS_SUSPENDED,
+        \local_intellicart\payment::STATUS_REFUND,
+        \local_intellicart\payment::STATUS_WAITING,
+        \local_intellicart\payment::STATUS_REFUNDPARTIAL,
+        \local_intellicart\payment::STATUS_REJECTED
+    ];
+
+    public function __construct($uniqueid) {
+        global $PAGE;
+
+        parent::__construct($uniqueid);
+        $this->page = $PAGE;
+        $this->context = \context_system::instance();
+    }
+
+    /**
+     * @param $value
+     * @return string
+     * @throws coding_exception
+     */
+    public function format_date($value) {
+        return (!empty($value)) ? userdate($value, get_string('strftimedatefullshort', 'langconfig')) : '-';
+    }
+
+    /**
+     * @param $value
+     * @param null $format
+     * @return string
+     * @throws coding_exception
+     */
+    public function format_datetime($value, $format = null) {
+        $format = ($format) ? $format : get_string('strftimedatetime', 'langconfig');
+        return ($value) ? userdate($value, $format) : '-';
+    }
+
+    /**
+     * @param $value
+     * @param $currency
+     * @return string
+     */
+    public function format_amount($value, $currency) {
+        return ($value && $value != 'NULL') ? $currency.format_float($value, 2, true) : '-';
+    }
+
+    /**
+     * @param $value
+     * @return string
+     */
+    public function format_notempty($value) {
+        return ($value && $value != 'NULL') ? $value : '-';
+    }
+
+    /**
+     * @param $values
+     * @param $download
+     * @return false|mixed|object|string|null
+     * @throws dml_exception
+     */
+    public function get_currency($values, $download) {
+
+        if (get_config('local_intellicart', 'enablemulticurrency') and
+            get_config('local_intellicart', 'displayusercurrencyinreports') and
+            !empty($values->currency)) {
+
+            return ($download) ? $values->currency : \local_intellicart\payment::get_current_currency_code($values->currency);
+        }
+
+        $type = ($download) ? 'code' : 'symbol';
+        return \local_intellicart\payment::get_currency($type);
+    }
+
+    /**
+     * @param $values
+     * @param $fieldname
+     * @return string
+     * @throws dml_exception
+     */
+    public function get_price($values, $fieldname) {
+
+        if (get_config('local_intellicart', 'enablemulticurrency') and
+            get_config('local_intellicart', 'displayusercurrencyinreports') and
+            !empty($values->currencyrate)) {
+
+            $value = str_replace(',', '.', $values->{$fieldname});
+            return \local_intellicart\helpers\PriceHelper::formatted_price($value,
+                $values->currencyrate, false, true, false, true);
+        }
+
+        return $values->{$fieldname};
+    }
+}
+
+/**
+ * IntelliCart Sales table.
+ */
+class intelliboard_user_orders_table extends intelliboard_custom_intellicart_table {
+
     public $currency = '';
+    public $download = false;
 
     function __construct($uniqueid, $search) {
         global $USER, $PAGE, $DB;
 
         parent::__construct($uniqueid);
-        $this->currency = \local_intellicart\payment::get_currency();
+        $stringingnvoice = get_string('invoice', 'local_intellicart');
 
         $columns = array(
-            'orderid', 'products', 'timeupdated', 'amount', 'subtotal', 'discount', 'status', 'paymenttype'
+            'orderid', 'products', 'timeupdated', 'amountpaid', 'subtotal', 'discount', 'tax', 'total', 'refund', 'status', 'paymenttype'
         );
         $headers = array(
             get_string('orderid', 'local_intellicart'),
             get_string('products', 'local_intellicart'),
-            get_string('paidon', 'local_intellicart'),
+            get_string('created', 'local_intellicart'),
             get_string('amountpaid', 'local_intellicart'),
-            get_string('total', 'local_intellicart'),
+            get_string('subtotal', 'local_intellicart'),
             get_string('discount', 'local_intellicart'),
+            get_string('taxes', 'local_intellicart'),
+            get_string('total', 'local_intellicart'),
+            get_string('refunded', 'local_intellicart'),
             get_string('status', 'local_intellicart'),
             get_string('paymenttype', 'local_intellicart'),
         );
 
-        if(get_config('local_intellicart', 'enablesubscription')) {
+        if (\local_intellicart\checkout::display_bililngtypes()) {
             $columns[] = 'billingtype';
             $headers[] = get_string('billingtype', 'local_intellicart');
+        }
+
+        if (!\local_intellicart\taxes::enabled()) {
+            // Remove taxes column.
+            $taxescolumn_key = array_search('tax', $columns);
+            unset($columns[$taxescolumn_key]); unset($headers[$taxescolumn_key]);
+            $columns = array_values($columns); $headers = array_values($headers);
+        }
+
+        if (!get_config('local_intellicart', 'enablerefunds')) {
+            // Remove refunded column.
+            $refundcolumnkey = array_search('refund', $columns);
+            unset($columns[$refundcolumnkey]);
+            unset($headers[$refundcolumnkey]);
+            $columns = array_values($columns);
+            $headers = array_values($headers);
         }
 
         array_push($columns, 'actions');
@@ -349,79 +491,153 @@ class intelliboard_user_orders_table extends table_sql {
         $this->sortable(false);
         $this->is_collapsible = false;
 
-        $params = array(
+        $sqlparams = [
             'userid' => $USER->id,
-        );
+        ];
 
-        $where = '';
-        if($search) {
-            $where = ' AND '.$DB->sql_like('ch.item_name', ':search1', false, false, false);
-            $params['search1'] = "%{$search}%";
+        // Prepare correct statuses.
+        $activestatusin = $DB->get_in_or_equal($this->activeordersstatuses, SQL_PARAMS_NAMED);
+        $sqlparams += $activestatusin[1];
+        $where = ' AND ch.payment_status ' . $activestatusin[0];
+
+        if ($search) {
+            $where .= ' AND '.$DB->sql_like('ch.item_name', ':search1', false, false, false);
+            $sqlparams['search1'] = "%{$search}%";
         }
 
+        // Prepare status column.
+        $statusfield = "(CASE ch.payment_status ";
+        foreach ($this->ordersstatuses as $status) {
+            $statusfield .= "WHEN '$status' THEN '" . get_string('status_' . $status, 'local_intellicart') . "' ";
+        }
+        $statusfield .= "ELSE '" . get_string('undefined', 'local_intellicart') . "'" . "END) AS status";
+
+        // Prepare billing type column.
+        $statusin = $DB->get_in_or_equal($this->ordersstatuses, SQL_PARAMS_NAMED);
+        $sqlparams += $statusin[1];
+
         $fields = "ch.id as orderid, ch.item_name as products, ch.timeupdated, ch.paymentid, ch.billingtype,
-                   ch.amount, ch.subtotal, ch.discount, ch.payment_type, ch.payment_status as status,
-                   ch.invoicepayment, ch.items";
+                   ch.amount, ch.amount as total, ch.subtotal, ch.discount, ch.payment_type, ch.payment_status as status,
+                   ch.invoicepayment, ch.items, $statusfield, ch.tax, ch.currency, ch.currencyrate,
+                   (CASE
+                        WHEN ch.payment_status {$statusin[0]}
+                        THEN
+                            CASE
+                                WHEN (ch.paymentid > 0 AND p.name <> '')
+                                THEN p.name
+                                ELSE '{$stringingnvoice}'
+                            END
+                        ELSE
+                            CASE
+                                WHEN ch.invoicepayment > 0
+                                THEN '{$stringingnvoice}'
+                                ELSE '-'
+                            END
+                   END) AS paymenttype, ch.payment_status";
+
+        if (get_config('local_intellicart', 'enablerefunds')) {
+            $tofloatfefund = \local_intellicart\helpers\DBHelper::get_operator('CAST_FLOAT', '12,2', ['field' => 'ch.refund']);
+            $tofloatamount = \local_intellicart\helpers\DBHelper::get_operator('CAST_FLOAT', '12,2', ['field' => 'ch.amount']);
+            $fields .= ", {$tofloatfefund} AS refund, 
+                ($tofloatamount - refund) as amountpaid";
+        } else {
+            $fields .= ", ch.amount as amountpaid";
+        }
+
         $from = "{local_intellicart_checkout} ch";
+        $from .= " LEFT JOIN {local_intellicart_payments} p ON p.id = ch.paymentid";
 
         $where = "ch.userid = :userid {$where}";
         $where .= "ORDER BY ch.id DESC";
 
-        $this->set_sql($fields, $from, $where, $params);
+        $this->set_sql($fields, $from, $where, $sqlparams);
         $this->define_baseurl($PAGE->url);
     }
 
+    /**
+     * @param $values
+     * @return string
+     * @throws coding_exception
+     */
     function col_timeupdated($values) {
         return ($values->timeupdated) ? userdate($values->timeupdated, get_string('strftimedate', 'langconfig')) : '-';
     }
 
-    function col_amount($values) {
-        return ($values->amount) ? $this->currency.$values->amount : '-';
-    }
+    /**
+     * @param $values
+     * @return string
+     * @throws dml_exception
+     */
+    public function col_amountpaid($values) {
 
-    function col_subtotal($values) {
-        return ($values->subtotal) ? $this->currency.$values->subtotal : '-';
-    }
+        $amount = '-';
 
-    function col_discount($values) {
-        return ($values->discount) ? $this->currency.$values->discount : '-';
-    }
-
-    function col_status($values) {
-        switch($values->status) {
-            case \local_intellicart\payment::STATUS_PENDING:
-                return get_string('status_pending', 'local_intellicart');
-            case \local_intellicart\payment::STATUS_COMPLETED:
-                return get_string('status_completed', 'local_intellicart');
-            case \local_intellicart\payment::STATUS_REJECTED:
-                return get_string('status_rejected', 'local_intellicart');
-            default:
-                return '-';
-        }
-    }
-
-    function col_paymenttype($values) {
-        if ($values->status == \local_intellicart\payment::STATUS_COMPLETED) {
-            return ($values->paymentid AND isset($values->paymenttype) && $values->paymenttype) ?
-                   $values->paymenttype :
-                   get_string('invoice', 'local_intellicart');
-        } else if ($values->status == \local_intellicart\payment::STATUS_PENDING and $values->invoicepayment) {
-            return get_string('invoice', 'local_intellicart');
-        } else {
-            return '-';
-        }
-    }
-
-    function col_billingtype($values) {
-        if($values->billingtype == \local_intellicart\checkout::BILLING_TYPE_REGULAR) {
-            return get_string('regular', 'local_intellicart');
+        if (in_array($values->payment_status, [
+            \local_intellicart\payment::STATUS_REFUND,
+            \local_intellicart\payment::STATUS_REFUNDPARTIAL,
+            \local_intellicart\payment::STATUS_COMPLETED
+        ])) {
+            $values->amountpaid = format_float($values->amountpaid, 2, false);
+            $amount = $this->get_currency($values, $this->download).$this->get_price($values, 'amountpaid');
         }
 
-        if($values->billingtype == \local_intellicart\checkout::BILLING_TYPE_SUBSCRIPTION) {
-            return get_string('subscription', 'local_intellicart');
-        }
+        return $amount;
+    }
 
-        return $values->billingtype;
+    /**
+     * @param $values
+     * @return string
+     * @throws dml_exception
+     */
+    public function col_subtotal($values) {
+        return ($values->subtotal) ? $this->get_currency($values, $this->download).$this->get_price($values, 'subtotal') : '-';
+    }
+
+    /**
+     * @param $values
+     * @return mixed
+     */
+    public function col_status($values) {
+        return $values->status;
+    }
+
+    /**
+     * @param $values
+     * @return string
+     * @throws dml_exception
+     */
+    public function col_total($values) {
+        return ($values->amount) ? $this->get_currency($values, $this->download).$this->get_price($values, 'amount') : '-';
+    }
+
+    public function col_refund($values) {
+        return ($values->refund > 0) ? $this->get_currency($values, $this->download).$this->get_price($values, 'refund') : '-';
+    }
+
+    /**
+     * @param $values
+     * @return string
+     * @throws dml_exception
+     */
+    public function col_discount($values) {
+        return ($values->discount) ? $this->get_currency($values, $this->download).$this->get_price($values, 'discount') : '-';
+    }
+
+    /**
+     * @param $values
+     * @return string
+     * @throws dml_exception
+     */
+    public function col_tax($values) {
+        return ($values->tax && $values->tax != 'NULL') ? $this->get_currency($values, $this->download).$this->get_price($values, 'tax') : '-';
+    }
+
+    /**
+     * @param $values
+     * @return lang_string|string
+     */
+    public function col_billingtype($values) {
+        return \local_intellicart\checkout::get_bililngtype($values->billingtype);
     }
 
     function col_actions($values) {
@@ -930,6 +1146,8 @@ class intelliboard_user_subscriptions_table extends table_sql {
                 return get_string('canceled', 'local_intelliboard');
             case \local_intellicart\subscription::STATUS_EXPIRED:
                 return get_string('expired', 'local_intelliboard');
+            case \local_intellicart\subscription::STATUS_PENDING:
+                return get_string('pending', 'local_intellicart');
             default:
                 return '-';
         }

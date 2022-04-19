@@ -932,14 +932,14 @@ function lineWidgetSetup($data, $colums, $params = array(), $height = 250){
             drawChart'.$params['id'].'();
             </script><div id="widget'.$params['id'].'"></div>';
 }
-function getWidgetFilters($id, $filters = array(), $params)
+function getWidgetFilters($id, $filters, $params)
 {
     global $DB;
 
     $html = '<form class="widget-filters clearfix" id="widgetform'.$id.'">';
     $html .= '<input type="hidden" name="widget" value="'.$id.'"/>';
     $html .= '<input type="hidden" name="trigger" value="1"/>';
-
+    $filters = !empty($filters) ? $filters : array();
     foreach ($filters as $filter) {
         if($filter == 'daterange'){
             if($params->timestart and $params->timefinish){

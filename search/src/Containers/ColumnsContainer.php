@@ -67,7 +67,8 @@ class ColumnsContainer extends BaseContainer {
             9 => 'ROUND',
             10 => 'LOWER',
             11 => array(
-                DataExtractor::MYSQL_MODE => function($value, $params = array('separator' => ', '), DataExtractor $extractor) {
+                DataExtractor::MYSQL_MODE => function($value, $params, DataExtractor $extractor) {
+                    $params = !empty($params) ? $params : array('separator' => ', ');
                     if (!empty($params['order'])) {
                         $params['order'] = OrdersContainer::release($params['order'], $extractor);
                     } else {
@@ -82,7 +83,8 @@ class ColumnsContainer extends BaseContainer {
 
                     return "GROUP_CONCAT({$distinct}{$value} SEPARATOR '{$params['separator']}')";
                 },
-                DataExtractor::POSTGRES_MODE => function($value, $params = array('separator' => ', '), DataExtractor $extractor) {
+                DataExtractor::POSTGRES_MODE => function($value, $params, DataExtractor $extractor) {
+                    $params = !empty($params) ? $params : array('separator' => ', ');
                     if (!empty($params['order'])) {
                         $params['order'] = OrdersContainer::release($params['order'], $extractor);
                     } else {
@@ -184,7 +186,7 @@ class ColumnsContainer extends BaseContainer {
                         "REPLACE (SUBSTRING(
                             SUBSTRING_INDEX($value, '" . $params['separator'] . "', " . $params['count'] . "),
                             CHAR_LENGTH(
-                                SUBSTRING_INDEX($value, '{$params['separator']}', " . $params['count'] - 1 . ")
+                                SUBSTRING_INDEX($value, '{$params['separator']}', " . ($params['count'] - 1) . ")
                             ) + 1
                         ), '{$params['separator']}', '')";
                 },

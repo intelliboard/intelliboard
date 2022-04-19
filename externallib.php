@@ -614,7 +614,7 @@ class local_intelliboard_external extends external_api {
 
                         $unickey = "field{$this->prfx}_{$params->filter_profile}_{$i}";
                         $fields_filter[] = $DB->sql_like($key . $texttypecast, ":$unickey", false, false);
-                        $this->params[$unickey] = "{$cupfvalue}%";
+                        $this->params[$unickey] = "{$cupfvalue}[[[field_type]]]%";
                     }
 
                     $filter = ($fields_filter and $filter) ? "($filter) AND " : $filter;
@@ -4960,8 +4960,11 @@ class local_intelliboard_external extends external_api {
         $coursefiltersql = $this->get_filter_in_sql($params->courseid, "c.id");
         $teacherfiltersql = $this->get_filter_in_sql($params->teacher_roles,'ra.roleid');
         $sql1 = $this->get_filter_in_sql($params->learner_roles, 'ra1.roleid', false);
+        $sql1 .= $this->get_filter_in_sql($params->courseid, "ctx1.instanceid");
         $sql2 = '';
+        $sql2 .= $this->get_filter_in_sql($params->courseid, "cc1.course");
         $sql3 = '';
+        $sql4 = '';
         $groupby = 'ra.id, u.id, c.id, e.enrolled, cc.completed, u.firstname, u.lastname, u.email, c.fullname, c.shortname';
 
         if ($params->sizemode) {
@@ -4973,10 +4976,11 @@ class local_intelliboard_external extends external_api {
                                CASE WHEN l.last_access IS NULL THEN mla.timeaccess ELSE l.last_access END AS last_access";
             $groupby .= ', l.timespend, l.visits, l.last_access, mla.timeaccess';
             $counttrackingselectsql = 'SUM(t1.timespend) AS timespend, SUM(t1.visits) AS visits, MAX(t1.lastaccess) AS last_access';
+            $sql4 .= $this->get_filter_in_sql($params->courseid, "t1.courseid");
 
             $sql_mla_filter = "";
             if ($params->custom == 3) { // filter by last access
-                $sql3 = ($params->timestart) ? "WHERE " . $this->get_filterdate_sql($params, 't1.lastaccess', false) : '';
+                $sql4 .= ($params->timestart) ? $this->get_filterdate_sql($params, 't1.lastaccess') : '';
                 $sql_mla_filter = ($params->timestart) ? " AND " . $this->get_filterdate_sql($params, 'mla.timeaccess', false) : '';
             } elseif ($params->custom == 2) { // filter by time spent
                 $sql3 = "JOIN {local_intelliboard_logs} l1 ON l1.trackid = t1.id ";
@@ -4990,6 +4994,7 @@ class local_intelliboard_external extends external_api {
                                           {$counttrackingselectsql}
                                      FROM {local_intelliboard_tracking} t1
                                      $sql3
+                                     WHERE t1.id > 0 {$sql4}
                                  GROUP BY t1.courseid, t1.userid
                          ) l ON l.userid = u.id AND l.courseid = c.id";
             $sql_join .= "
@@ -5027,7 +5032,7 @@ class local_intelliboard_external extends external_api {
                         ) e ON e.instanceid = c.id
               LEFT JOIN (
                         SELECT course, COUNT(id) AS completed
-                          FROM {course_completions}
+                          FROM {course_completions} cc1
                          WHERE timecompleted > 0 $sql2
                       GROUP BY course
                         ) cc ON cc.course = c.id
@@ -9733,16 +9738,22 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filterdate_sql($params, "fc.timemodified");
 
         if ($CFG->dbtype == 'pgsql') {
-            $avg_val = 'CAST (fv.value AS numeric)';
+            $avg_val = "CASE WHEN fi.typ = 'multichoicerated' 
+                             THEN AVG((regexp_match(SPLIT_PART(fi.presentation, '####', ABS(fv.value::INT)), '[0-9]+$'))[1]::INT)  
+                             ELSE  AVG(fv.value::INT) 
+                         END AS avg_value";
         } else {
-            $avg_val = 'fv.value';
+            $avg_val = "CASE WHEN fi.typ = 'multichoicerated' 
+                             THEN AVG(SUBSTRING_INDEX(SUBSTRING_INDEX(REPLACE(fi.presentation, '>>>>>', '|'), '####', fv.value), '|', -1)) 
+                             ELSE  AVG(fv.value) 
+                         END AS avg_value";
         }
 
         return $this->get_report_data("
         	SELECT
               fi.id,
               fi.name,
-			  AVG($avg_val) as avg_value
+			  {$avg_val}
               $sql_columns
 			FROM {feedback} f
 			  JOIN {feedback_completed} fc ON fc.feedback=f.id
@@ -10640,6 +10651,8 @@ class local_intelliboard_external extends external_api {
         $sql_data_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
 
         $this->params['course1'] = (int) $params->courseid;
+        $this->params['course2'] = (int) $params->courseid;
+        $this->params['course3'] = (int) $params->courseid;
 
         if ($params->custom and $CFG->dbtype != 'pgsql') {
           $sql_arr = [];
@@ -10698,21 +10711,23 @@ class local_intelliboard_external extends external_api {
                   WHERE ctx.instanceid > 0 {$sql_ra_filter}
                   GROUP BY ctx.instanceid, ra.userid
           ) ra
-          LEFT JOIN {user} u ON u.id=ra.userid
-          LEFT JOIN {course} c ON c.id=ra.courseid
+          JOIN {user} u ON u.id=ra.userid
+          JOIN {course} c ON c.id=ra.courseid
           LEFT JOIN {user_lastaccess} l ON l.courseid = c.id AND l.userid = ra.userid
           LEFT JOIN (SELECT m.userid, g.courseid, $group_concat2 AS usr_groups
-                       FROM {groups} g, {groups_members} m
-                      WHERE m.groupid = g.id
+                       FROM {groups} g
+                       JOIN {groups_members} m ON m.groupid = g.id
+                      WHERE g.courseid = :course1
                    GROUP BY m.userid, g.courseid
                     ) gr ON gr.userid = u.id AND gr.courseid = c.id
           LEFT JOIN (SELECT t.userid,t.courseid, sum(t.timespend) as timespend, sum(t.visits) as visits
                             FROM {local_intelliboard_tracking} t
+                            WHERE t.courseid = :course2
                         GROUP BY t.courseid, t.userid
                ) itr ON itr.userid = u.id AND itr.courseid = c.id
           LEFT JOIN (SELECT lit.userid, {$modulesids} AS visited_modules
                        FROM {local_intelliboard_tracking} lit
-                      WHERE lit.courseid = :course1 AND lit.page = 'module'
+                      WHERE lit.courseid = :course3 AND lit.page = 'module'
                    GROUP BY lit.userid
                     ) macc ON macc.userid = u.id
           LEFT JOIN {course_completions} cc ON cc.userid = u.id AND cc.course = c.id
