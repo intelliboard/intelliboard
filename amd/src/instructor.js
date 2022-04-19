@@ -28,13 +28,15 @@ define(['jquery', 'core/ajax', 'local_intelliboard/intb_multipleselect'], functi
         /**
          * Modal window for settings of instructor dashboard
          */
-        dashboardSettings: function(selectCoursesString) {
+        dashboardSettings: function(selectCoursesString, allSelectedString, selectAllString) {
             var select = $('.instructor-courses-settings');
             var wrapper = $('.instructor-dashboard-settings-wrapper');
 
             select.multipleSelect({
                 multiple: true,
                 placeholder: selectCoursesString,
+                allSelected: allSelectedString,
+                selectAllText: selectAllString,
                 multipleWidth: 350,
                 filter: true
             });

@@ -334,7 +334,7 @@ class bb_collaborate_adapter {
         $this->httpclient->setHeader($headers);
 
         if(strtolower($method) === 'post') {
-            $response = $this->httpclient->post($url, implode($params, '&'), $options);
+            $response = $this->httpclient->post($url, implode('&', $params), $options);
         } elseif(strtolower($method) === 'get') {
             $response = $this->httpclient->get($url, $params, $options);
         } else {

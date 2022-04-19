@@ -1031,3 +1031,4 @@ $string['cachedef_tracking'] = 'Date de Urmărire Intelliboard';
 $string['cachedef_track_config'] = 'Urmărirea datelor totale al Intelliboard';
 $string['coursecontainer_filter'] = 'Enable course container filter';
 $string['enableexportcustomfont'] = 'Font compatibil japonez/China';
+$string['all_selected'] = 'Toate selectate';
