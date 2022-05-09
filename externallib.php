@@ -10028,6 +10028,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid,'ctx.instanceid');
         $sql_filter .= $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
+        $sql_filter .= $this->get_filterdate_sql($params, "ra.timemodified");
         $sql_join = $this->get_suspended_sql($params);
         $sql_join .= $this->group_aggregation('u.id', 'c.id', $params);
 
@@ -19993,11 +19994,29 @@ class local_intelliboard_external extends external_api {
     {
         global $DB;
 
+        $sql = '';
+        if ($params->custom4) {
+            $items = explode(',', $params->custom4);
+            $cupffilter = [];
+
+            for ($i = 0; $i < count($items); $i++) {
+                $rawitem = explode('|', $items[$i]);
+
+                if (count($rawitem) === 2) {
+                    $cupffilter[] = $rawitem[0];
+                }
+            }
+
+            if ($cupffilter) {
+                $sql .= $this->get_filter_in_sql($cupffilter, 'uif.id');
+            }
+        }
+
         return $DB->get_records_sql("
             SELECT uif.id, uif.name, CASE WHEN uif.datatype = 'datetime' AND uif.param3 IS NULL THEN 'date' ELSE uif.datatype END AS type, uif.shortname, uic.name AS category
             FROM {user_info_field} uif, {user_info_category} uic
-            WHERE uif.categoryid = uic.id
-            ORDER BY uif.name");
+            WHERE uif.categoryid = uic.id {$sql}
+            ORDER BY uif.name", $this->params);
     }
     public function get_site_avg($params)
     {
@@ -21791,7 +21810,19 @@ class local_intelliboard_external extends external_api {
         if ($params->timefinish) {
             $max_date_filter = "AND cc.timecompleted < {$params->timefinish} + 86400";
         }
-        $cohort= $DB->get_record_sql("SELECT * FROM {local_management_cohort} ch WHERE ch.cohortid = :cohortid", ['cohortid' => $params->cohortid]);
+        $cohortSql ="
+            SELECT
+                   mc.id,
+                   CASE WHEN (mc.formatver = 1) THEN mh.golivedate ELSE mc.golivedate END AS golivedate,
+                   mc.penalty,
+                   c.name AS cohortname
+              FROM {local_management_cohort} mc
+              JOIN {local_management_hospital} mh ON mh.id = mc.hospitalid
+              JOIN {cohort} c ON c.id = mc.cohortid
+             WHERE mc.cohortid = :cohortid
+        ";
+        $cohort= $DB->get_record_sql($cohortSql, ['cohortid' => $params->cohortid]);
+
         $sql = "  SELECT id, cohort_id, cohortname, categoryname, category, uenrolled, ucompleted, completed_at, percent_completed
                   FROM (
                   SELECT t1.*,
@@ -24528,6 +24559,7 @@ class local_intelliboard_external extends external_api {
                     u.lastname,
                     u.email,
                     c.fullname AS coursename,
+                    lil.timepoint AS session_date,
                     SEC_TO_TIME(SUM(lid.timespend)) AS timespend,
                     lid.timepoint,
                     lit.firstaccess,
@@ -24541,7 +24573,7 @@ class local_intelliboard_external extends external_api {
                      JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id
                      JOIN {local_intelliboard_details} lid ON lid.logid = lil.id
                 WHERE u.id > 0 $sqlFilter
-                GROUP BY c.id, u.id, lid.timepoint
+                GROUP BY c.id, u.id, lil.timepoint, lid.timepoint
                 $sqlOrder
         ";
 

@@ -99,7 +99,7 @@ class intelliboard_courses_table extends table_sql {
             $sql .= " AND cl.cnt_learners > 0";
         }
 
-        if (isset($CFG->totara_version)) { 
+        if (isset($CFG->totara_version)) {
             $fields = "c.id, c.fullname AS course, cu.cnt_proficiency AS proficiency, 
                 (SELECT COUNT(DISTINCT cc.competencyid) FROM {comp_criteria} cc WHERE cc.iteminstance = c.id) 
                 AS competencies, 
@@ -133,29 +133,37 @@ class intelliboard_courses_table extends table_sql {
             cr.cnt_related AS rated,
             '' AS Actions";
             $from = "{course} c
-                    LEFT JOIN (SELECT ctx.instanceid AS courseid, COUNT(DISTINCT ra.userid) AS cnt_learners 
-           	        FROM {role_assignments} ra 
-			        JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.id = ra.contextid 
-			        LEFT JOIN (SELECT userid FROM {cohort_members} WHERE id > 0 AND cohortid IN (-1) 
-                        GROUP BY userid )
-                    cm ON cm.userid = ra.userid WHERE ra.id > 0 AND ra.roleid = 5 GROUP BY ctx.instanceid ) 
-           cl ON cl.courseid = c.id
-
-            LEFT JOIN (SELECT iteminstance, COUNT(user_id) AS cnt_related  
-                        FROM (SELECT iteminstance, user_id from {totara_competency_achievement} ca 
-                                LEFT JOIN {comp_criteria} cc ON cc.competencyid = ca.competency_id 
-                                WHERE scale_value_id IS NOT NULL = 1 
-                                GROUP BY iteminstance, user_id) x 
-                        GROUP BY iteminstance) 
-                        cr ON cr.iteminstance = c.id
-
-            LEFT JOIN (SELECT iteminstance, COUNT(user_id) AS cnt_proficiency  
-                        FROM (SELECT iteminstance, user_id from {totara_competency_achievement} ca 
-                                LEFT JOIN {comp_criteria} cc ON cc.competencyid = ca.competency_id 
-                                WHERE proficient = 1 
-                                GROUP BY iteminstance, user_id) x 
-                        GROUP BY iteminstance) 
-            cu ON cu.iteminstance = c.id";
+            LEFT JOIN (SELECT ctx.instanceid AS courseid, COUNT(DISTINCT ra.userid) AS cnt_learners
+                        FROM {role_assignments} ra
+                        JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.id = ra.contextid
+                LEFT JOIN (SELECT userid
+                                FROM {cohort_members}
+                            WHERE id > 0 AND cohortid {$cohortfilter}
+                            GROUP BY userid
+                            ) cm ON cm.userid = ra.userid
+                    WHERE ra.id > 0 {$sql2}
+                    GROUP BY ctx.instanceid
+                    ) cl ON cl.courseid = c.id
+            LEFT JOIN (SELECT cu.courseid, COUNT(DISTINCT cu.id) AS cnt_related
+                            FROM {competency_usercompcourse} cu
+                    LEFT JOIN (SELECT userid
+                                    FROM {cohort_members}
+                                WHERE id > 0 AND cohortid {$cohortfilter1}
+                                GROUP BY userid
+                                ) cm ON cm.userid = cu.userid
+                        WHERE cu.grade IS NOT NULL
+                        GROUP BY cu.courseid
+                        ) cr ON cr.courseid = c.id
+            LEFT JOIN (SELECT cu.courseid, COUNT(DISTINCT cu.id) AS cnt_proficiency
+                            FROM {competency_usercompcourse} cu
+                    LEFT JOIN (SELECT userid
+                                    FROM {cohort_members}
+                                WHERE id > 0 AND cohortid {$cohortfilter2}
+                                GROUP BY userid
+                                ) cm ON cm.userid = cu.userid
+                        WHERE cu.proficiency = 1
+                        GROUP BY cu.courseid
+                        ) cu ON cu.courseid = c.id";
 
             $where = "c.id IN (SELECT courseid FROM {competency_coursecomp}) AND c.visible = 1 $sql";
         }
@@ -620,12 +628,16 @@ class intelliboard_learners_table extends table_sql {
                    u.lastname,
                    u.email,
                    cu.proficiency,
+                   cu.grade,
+                   cu.usermodified,
                    u2.firstname AS u2firstname,
                    u2.lastname AS u2lastname,
                    u2.alternatename AS u2alternatename,
                    u2.middlename AS u2middlename,
                    u2.lastnamephonetic AS u2lastnamephonetic,
                    u2.firstnamephonetic AS u2firstnamephonetic,
+                   cu.timemodified AS rated,
+                   cf.scaleid,
                    (SELECT COUNT(DISTINCT ce.id)
                       FROM {competency_usercomp} cu, {competency_evidence} ce
                      WHERE cu.competencyid = c.id AND ce.usercompetencyid = cu.id AND cu.userid = u.id AND
@@ -635,6 +647,8 @@ class intelliboard_learners_table extends table_sql {
                    WHERE id > 0 {$rolefilter}
                 GROUP BY userid, contextid
                  ) ra
+            JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+            JOIN {user} u ON u.id = ra.userid
        		LEFT JOIN (SELECT userid
                     FROM {cohort_members}
                    WHERE id > 0 AND cohortid {$cohortfilter}
@@ -642,6 +656,8 @@ class intelliboard_learners_table extends table_sql {
                  ) cm ON cm.userid = ra.userid
             LEFT JOIN {competency} c ON c.id = :competencyid
             LEFT JOIN {competency_framework} cf ON cf.id = c.competencyframeworkid
+            LEFT JOIN {competency_usercompcourse} cu ON cu.courseid = ctx.instanceid AND cu.userid = u.id AND cu.competencyid = c.id
+            LEFT JOIN {user} u2 ON u2.id = cu.usermodified
         ";
             $where = "ctx.instanceid = :courseid $sql";
         }
