@@ -25,6 +25,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="userid_page_param_idx" UNIQUE="false" FIELDS="userid, page, param"/>
+        <INDEX NAME="userid_courseid_idx" UNIQUE="false" FIELDS="userid, courseid"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_intelliboard_logs" COMMENT="intelliboard logs">

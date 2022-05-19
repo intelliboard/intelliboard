@@ -795,5 +795,15 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         }
     }
 
+		if ($oldversion < 2022051800) {
+			// Add index to local_intelliboard_tracking
+			$table = new xmldb_table('local_intelliboard_tracking');
+			$index = new xmldb_index('userid_courseid_idx', XMLDB_INDEX_NOTUNIQUE, array('userid', 'courseid'));
+			if (!$dbman->index_exists($table, $index)) {
+				$dbman->add_index($table, $index);
+			}
+			upgrade_plugin_savepoint(true, 2022051800, 'local', 'intelliboard');
+		}
+
     return true;
 }
