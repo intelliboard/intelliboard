@@ -27,6 +27,7 @@
 use local_intelliboard\helpers\DBHelper;
 use local_intelliboard\reports\entities\reportColumnOrder;
 use local_intelliboard\reports\entities\reportColumnFilter;
+use local_intelliboard\helpers\QuizModHelper;
 
 require_once($CFG->libdir . "/externallib.php");
 require_once($CFG->dirroot .'/course/lib.php');
@@ -12444,12 +12445,10 @@ class local_intelliboard_external extends external_api {
                         COALESCE(ch.submitted,0) {$sqlsubmissiondate}
                     ) AS overal_submission_date,
                     GREATEST(
-                        COALESCE(ass.graded,0), COALESCE(f.graded,0), COALESCE(q.graded,0), COALESCE(gl.graded,0),
-                        COALESCE(ch.graded,0) {$sqlgraded}
+                        COALESCE(ass.graded,0), COALESCE(q.graded,0) {$sqlgraded}
                     ) AS overal_submission_graded,
                     GREATEST(
-                        COALESCE(ass.grade,0), COALESCE(f.grade,0), COALESCE(q.grade,0), COALESCE(gl.grade,0),
-                        COALESCE(ch.grade,0) {$sqlgrade}
+                        COALESCE(ass.grade,0), COALESCE(q.grade,0) {$sqlgrade}
                     ) AS overal_submission_grade,
                     teachers.teacher
                     {$sql_columns}
@@ -13047,8 +13046,11 @@ class local_intelliboard_external extends external_api {
             "u.email",
             "products",
             "pc.courses",
+            "pc.coursesids",
             "ch.timeupdated",
             "ch.amount",
+            "ch.tax",
+            "ch.payment_type",
             "ch.subtotal",
             "ch.discount",
             "status",
@@ -13063,6 +13065,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_filterdate_sql($params, "ch.timeupdated");
         $currency = \local_intellicart\payment::get_currency('code');
         $coursesnames = get_operator('GROUP_CONCAT', 'DISTINCT c.fullname', ['separator' => ', ']);
+        $coursesids = get_operator('GROUP_CONCAT', 'DISTINCT c.id', ['separator' => ', ']);
 
         $coursefilter = '';
         if($params->courseid) {
@@ -13082,6 +13085,8 @@ class local_intelliboard_external extends external_api {
                     ch.item_name AS products,
                     ch.timeupdated,
                     ch.amount,
+                    ch.tax,
+                    ch.payment_type,
                     ch.subtotal,
                     ch.discount,
                     ch.payment_status AS status,
@@ -13094,6 +13099,7 @@ class local_intelliboard_external extends external_api {
                     ch.billingtype,
                     s.quantity,
                     pc.courses,
+                    pc.coursesids,
                     v.vendors,
                     cp.code AS couponcode,
                     '{$currency}' AS currency
@@ -13106,7 +13112,7 @@ class local_intelliboard_external extends external_api {
                       WHERE type = :ltype
                    GROUP BY checkoutid
                     ) s ON s.checkoutid = ch.id
-          LEFT JOIN (SELECT il.checkoutid, {$coursesnames} AS courses
+          LEFT JOIN (SELECT il.checkoutid, {$coursesnames} AS courses, {$coursesids} AS coursesids
                        FROM {local_intellicart_logs} il
                        JOIN {local_intellicart_relations} lr ON lr.productid = il.instanceid AND
                                                                 lr.type = 'course'
@@ -19971,7 +19977,7 @@ class local_intelliboard_external extends external_api {
             for ($i = 0; $i < count($items); $i++) {
                 $rawitem = explode('|', $items[$i]);
 
-                if (count($rawitem) === 2) {
+                if (count($rawitem) === 2 && $rawitem[0] === $params->filter) {
                     $cupffilter[] = $rawitem[1];
                 }
             }
@@ -22312,9 +22318,10 @@ class local_intelliboard_external extends external_api {
         }
 
         $sql_join .= $this->get_suspended_sql($params);
+        $uniqueid = $CFG->dbtype == 'pgsql' ? 'FLOOR(RANDOM() * 10000)::TEXT' : 'FLOOR(RAND() * 10000)';
 
         return $this->get_report_data(
-            "SELECT CONCAT(ue.id, '_', cm.id, '_', FLOOR(RAND()*(10000))) AS id,
+            "SELECT CONCAT(ue.id, '_', cm.id, '_', {$uniqueid}) AS id,
                     ue.userid,
                     u.email,
                     u.firstname,
@@ -24000,7 +24007,7 @@ class local_intelliboard_external extends external_api {
 
     private function get_filter_program_sql($params, $prefix)
     {
-        return ($params->filter_program_visible) ? "" : " AND {$prefix}visible = 1";
+        return empty($params->filter_program_visible) ? "" : " AND {$prefix}visible = 1";
     }
 
     public function get_programs($params){
@@ -24597,17 +24604,16 @@ class local_intelliboard_external extends external_api {
 
         $quizFilterSQL = $this->get_filter_in_sql($params->courseid, "q.course");
         $quizFilterSQL .= $this->get_filter_in_sql(array_unique([$params->custom2, $params->custom3]), "q.id");
+        $quizHelper= new QuizModHelper();
+        $questionsJoin = $quizHelper->getJoinSQLQuizQuestions();
         $quizQuestionsSQL = "
             SELECT
                    CONCAT(q.id, '_', qq.id) AS id,
                    q.id AS quizid,
-                   qq.id AS questionid,
-                   q.name AS quizname,
-                   qq.name AS quiestion
+                   qq.id AS questionid
               FROM {quiz} q
-              JOIN {quiz_slots} qs ON qs.quizid = q.id
-              JOIN {question} qq ON qq.id = qs.questionid
-             WHERE qq.hidden = 0 $quizFilterSQL
+              $questionsJoin
+             WHERE q.id > 0 $quizFilterSQL
         ";
 
         $quizQuestions = $DB->get_records_sql($quizQuestionsSQL, $this->params);
@@ -24731,6 +24737,9 @@ class local_intelliboard_external extends external_api {
     {
         global $DB, $CFG;
 
+        $quizHelper= new QuizModHelper();
+        $questionsJoin = $quizHelper->getJoinSQLQuizQuestions();
+
         $filter = $this->get_filter_in_sql($params->courseid, "q.course");
         $filter .= $this->get_filter_in_sql($params->custom2, "q.id");
         $sql = "
@@ -24738,13 +24747,14 @@ class local_intelliboard_external extends external_api {
                    CONCAT(q.id, '_', qq.id) AS id,
                    qq.id AS questionid,
                    q.id AS quizid,
+                   qs.slot,
                    q.name AS quizname,
-                   qq.name AS question
+                   qq.name AS questionname,
+                   qq.questiontext AS question
               FROM {quiz} q
-              JOIN {quiz_slots} qs ON qs.quizid = q.id
-              JOIN {question} qq ON qq.id = qs.questionid
-             WHERE qq.hidden = 0 $filter
-          ORDER BY q.id
+              $questionsJoin
+             WHERE q.id > 0 $filter
+          ORDER BY qs.page, qs.slot
         ";
 
         return $DB->get_records_sql($sql, $this->params);

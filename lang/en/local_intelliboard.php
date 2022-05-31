@@ -1032,3 +1032,4 @@ $string['cachedef_tracking'] = 'Intelliboard Tracking data';
 $string['cachedef_track_config'] = 'Intelliboard Tracking total data';
 $string['enableexportcustomfont'] = 'Japanese/China compatible font';
 $string['all_selected'] = 'All selected';
+$string['custommenuitem'] = 'Display in Custom Menu';

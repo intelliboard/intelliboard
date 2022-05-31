@@ -1024,3 +1024,4 @@ $string['cachedef_track_config'] = 'Intelliboard Tracking total data';
 $string['coursecontainer_filter'] = 'Enable course container filter';
 $string['enableexportcustomfont'] = 'Fuente compatible japonesa/china';
 $string['all_selected'] = 'Todo seleccionado';
+$string['custommenuitem'] = 'Display in Custom Menu';

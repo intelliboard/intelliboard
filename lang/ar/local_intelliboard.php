@@ -996,3 +996,4 @@ $string['you_need_to_enable_at_least_one_protocol'] = 'تحتاج إلى تمك�
 $string['coursecontainer_filter'] = 'Enable course container filter';
 $string['enableexportcustomfont'] = 'خط متوافق مع اليابان / الصين';
 $string['all_selected'] = 'تم تحديد كل شيء';
+$string['custommenuitem'] = 'Display in Custom Menu';
