@@ -27,6 +27,12 @@
 const MYSQL_TYPE = 'mysqli';
 const POSTGRES_TYPE = 'pgsql';
 
+// Activating Japanish/China compatible font.
+if(get_config('local_intelliboard', 'enableexportcustomfont')) {
+    define('PDF_CUSTOM_FONT_PATH', $CFG->dirroot . "/local/intelliboard/assets/fonts/tcpdf/");
+    define('PDF_DEFAULT_FONT', 'cid0jp');
+}
+
 function clean_raw($value, $mode = true)
 {
 	$params = array("'","`");
@@ -480,12 +486,6 @@ function intelliboard_export_report($json, $itemname, $format = 'csv', $output_t
 {
     global $CFG;
 
-    // Activating Japanish/China compatible font.
-    if(get_config('local_intelliboard', 'enableexportcustomfont')) {
-        define('PDF_CUSTOM_FONT_PATH', $CFG->dirroot . "/local/intelliboard/assets/fonts/tcpdf/");
-        define('PDF_DEFAULT_FONT', 'cid0jp');
-    }
-
     $name =  clean_filename($itemname . '-' . gmdate("Y-m-d"));
 
 	if($format == 'csv'){
@@ -610,6 +610,8 @@ function intelliboard_export_pdf($json, $name, $type = 1)
 	require_once($CFG->libdir . '/pdflib.php');
 
     $fontfamily = PDF_FONT_NAME_MAIN;
+
+    raise_memory_limit(MEMORY_EXTRA);
 
     $doc = new pdf();
     $doc->SetTitle($name);

@@ -795,15 +795,118 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         }
     }
 
-		if ($oldversion < 2022051800) {
-			// Add index to local_intelliboard_tracking
-			$table = new xmldb_table('local_intelliboard_tracking');
-			$index = new xmldb_index('userid_courseid_idx', XMLDB_INDEX_NOTUNIQUE, array('userid', 'courseid'));
-			if (!$dbman->index_exists($table, $index)) {
-				$dbman->add_index($table, $index);
-			}
-			upgrade_plugin_savepoint(true, 2022051800, 'local', 'intelliboard');
-		}
+    if ($oldversion < 2022051800) {
+        // Add index to local_intelliboard_tracking
+        $table = new xmldb_table('local_intelliboard_tracking');
+        $index = new xmldb_index('userid_courseid_idx', XMLDB_INDEX_NOTUNIQUE, array('userid', 'courseid'));
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        upgrade_plugin_savepoint(true, 2022051800, 'local', 'intelliboard');
+    }
+
+    if ($oldversion < 2022060204) {
+
+        // Update local_intelliboard_trns_c table.
+        $table = new xmldb_table("local_intelliboard_trns_c");
+
+        try {
+            $field = new xmldb_field('useremail', XMLDB_TYPE_CHAR, '255', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('firstname', XMLDB_TYPE_CHAR, '255', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('lastname', XMLDB_TYPE_CHAR, '255', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('enroltype', XMLDB_TYPE_CHAR, '100', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('coursename', XMLDB_TYPE_CHAR, '255', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('formattedgrade', XMLDB_TYPE_CHAR, '100', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('rolesids', XMLDB_TYPE_CHAR, '100', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('groupsids', XMLDB_TYPE_CHAR, '100', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('finalgrade', XMLDB_TYPE_NUMBER, '10, 5', null, null, null, '0');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        // Update local_intelliboard_trns_m table.
+        $table = new xmldb_table("local_intelliboard_trns_m");
+
+        try {
+            $field = new xmldb_field('modulename', XMLDB_TYPE_CHAR, '255', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('moduletype', XMLDB_TYPE_CHAR, '100', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('formattedgrade', XMLDB_TYPE_CHAR, '100', null, false, null, '');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        // Update local_intelliboard_details table.
+        $table = new xmldb_table("local_intelliboard_details");
+
+        $index = new xmldb_index('logid_timepoint_idx', XMLDB_INDEX_NOTUNIQUE, ['logid', 'timepoint']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        try {
+            $field = new xmldb_field('logid', XMLDB_TYPE_INTEGER, '10', null, false, null, '0');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('visits', XMLDB_TYPE_INTEGER, '10', null, false, null, '0');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('timespend', XMLDB_TYPE_INTEGER, '10', null, false, null, '0');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        try {
+            $field = new xmldb_field('timepoint', XMLDB_TYPE_INTEGER, '10', null, false, null, '0');
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {}
+
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        upgrade_plugin_savepoint(true, 2022060204, 'local', 'intelliboard');
+    }
 
     return true;
 }
