@@ -41,6 +41,7 @@ class local_intelliboard_intelli_table extends table_sql {
      * @param string $sheettitle title for downloaded data.
      */
     function is_downloading($download = null, $filename='', $sheettitle='', $action = '', $pagesize = 10) {
+        $filename = str_replace(',', ' ', $filename);
         if ($download === 'pdf') {
             $this->setup();
             $this->query_db($pagesize, true);
