@@ -1435,6 +1435,14 @@ class local_intelliboard_external extends external_api {
                     GROUP BY gi.courseid, g.userid, g.finalgrade, g.rawgrademax) as gc ON gc.courseid = c.id AND gc.userid = u.id";
         }
         $sql_join .= $this->extra_columns_joins($params);
+        $group_by_sql = '';
+
+        if (isset($this->selectedExtraColumns[12])) {
+            $group_by_sql .= ', course_roles.roles';
+        }
+        if (isset($this->selectedExtraColumns[13])) {
+            $group_by_sql .= ', system_roles.roles';
+        }
 
         return $this->get_report_data(
             "SELECT MIN(ue.id) AS id,
@@ -1469,7 +1477,7 @@ class local_intelliboard_external extends external_api {
           LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as cmcnuma FROM {course_modules} cm, {course_modules_completion} cmc WHERE cmc.coursemoduleid = cm.id AND cm.module = 1 AND cm.visible  =  1 $completion2 GROUP BY cm.course, cmc.userid) as cmca ON cmca.course = c.id AND cmca.userid = u.id
                     $sql_join
               WHERE ue.id > 0 $sql_filter {$sql_vendor_filter}
-           GROUP BY u.id,c.id $sql_having $sql_order",
+           GROUP BY u.id,c.id $group_by_sql $sql_having $sql_order",
               $params
           );
     }
@@ -3187,7 +3195,7 @@ class local_intelliboard_external extends external_api {
             } else {
                 $cohorts = "GROUP_CONCAT( DISTINCT coh.name)";
             }
-            $sql_columns .= ", coo.cohortname AS cohortname";
+            $sql_columns .= ", MAX(coo.cohortname) AS cohortname";
             $sql_cohort = $this->get_filter_in_sql($params->cohortid, "ch.cohortid");
             $sql_join = " LEFT JOIN (SELECT ch.userid, $cohorts as cohortname FROM {cohort} coh, {cohort_members} ch WHERE coh.id = ch.cohortid $sql_cohort GROUP BY ch.userid) coo ON coo.userid = u.id";
             $sql_filter .= " AND coo.cohortname IS NOT NULL";
@@ -13086,7 +13094,9 @@ class local_intelliboard_external extends external_api {
                     ch.timeupdated,
                     ch.amount,
                     ch.tax,
-                    ch.payment_type,
+                    CASE
+                        WHEN (ch.paymentid > 0 AND p.name <> '') THEN p.name ELSE 'Invoice'
+                    END as payment_type,
                     ch.subtotal,
                     ch.discount,
                     ch.payment_status AS status,
@@ -13133,6 +13143,7 @@ class local_intelliboard_external extends external_api {
                       WHERE l.type = 'coupon'
                     ) cp ON cp.checkoutid = ch.id AND
                             cp.userid = ch.userid
+         LEFT JOIN {local_intellicart_payments} p ON p.id = ch.paymentid
                WHERE ch.id > 0 {$sql_filter} {$sql_having} {$sql_order}",
             $params
         );
@@ -18250,7 +18261,7 @@ class local_intelliboard_external extends external_api {
 
         $this->params['timestart'] = $params->timestart;
         $this->params['timefinish'] = $params->timefinish;
-        $role_filter = $this->get_filter_in_sql($params->custom4,'ra.roleid', false);
+        $role_filter = $this->get_filter_in_sql($params->custom4,'ra.roleid', true);
 
         return $DB->get_records_sql(
             "SELECT {$groupfield} AS timepointval, SUM(t.users) AS users
@@ -18260,7 +18271,7 @@ class local_intelliboard_external extends external_api {
                        JOIN (SELECT ra.userid, ctx.instanceid
                                FROM {role_assignments} ra
                                JOIN {context} ctx ON ctx.id = ra.contextid AND contextlevel = 50
-                              WHERE {$role_filter}
+                              WHERE ctx.instanceid > 0 {$role_filter}
                            GROUP BY ra.userid, ctx.instanceid
                             ) ur ON ur.userid = lit.userid AND ur.instanceid = lit.courseid
                       WHERE lit.id > 0 {$sql_filter}
