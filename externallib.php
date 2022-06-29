@@ -4136,8 +4136,10 @@ class local_intelliboard_external extends external_api {
           LEFT JOIN {course} c ON c.id = ctx.instanceid
           LEFT JOIN (SELECT lsl.courseid, lsl.relateduserid, MAX(lsl.id) AS last_change, COUNT(lsl.id) AS all_count
                        FROM {logstore_standard_log} lsl
+                       JOIN {role_assignments} ra1 ON ra1.userid = lsl.relateduserid
+                       JOIN {context} ctx1 ON ctx1.id = ra1.contextid AND ctx1.instanceid = lsl.courseid
                       WHERE (lsl.action = 'assigned' OR lsl.action = 'unassigned') AND
-                            lsl.target = 'role' AND lsl.contextlevel = 50
+                            lsl.target = 'role' AND lsl.contextlevel = 50 AND ctx1.contextlevel = 50
                    GROUP BY lsl.courseid,lsl.relateduserid
                     ) lsl ON lsl.courseid = c.id AND lsl.relateduserid = ra.userid
           LEFT JOIN {logstore_standard_log} log ON log.id = lsl.last_change
@@ -8216,17 +8218,17 @@ class local_intelliboard_external extends external_api {
                                 SELECT userid, courseid, day, MAX(dayspent) as maxdayspent
                                     FROM (
                                         SELECT lit.userid, lit.courseid,
-                                                MAX({$day_of_week}) AS day,
+                                                {$day_of_week} AS day,
                                                 SUM(lil.timespend) AS dayspent
                                             FROM {local_intelliboard_tracking} lit
                                     LEFT JOIN {local_intelliboard_logs} lil ON lil.trackid = lit.id
                                     LEFT JOIN {course} c ON c.id = lit.courseid
                                     LEFT JOIN {user} u ON u.id=lit.userid
                                         WHERE lit.courseid>1 AND c.id IS NOT NULL {$datefilter} $sql_filter4
-                                        GROUP BY userid, courseid
-                                        ORDER BY courseid, userid
+                                        GROUP BY userid, courseid, lil.timepoint
+                                        ORDER BY courseid, userid, dayspent desc
                                     ) ds
-                                GROUP BY userid, courseid, day
+                                GROUP BY userid, courseid
                         ) AS popular_day ON popular_day.courseid=daystat.courseid AND popular_day.userid=daystat.userid
                         LEFT JOIN (
                                     SELECT
