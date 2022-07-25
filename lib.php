@@ -40,10 +40,22 @@ function local_intelliboard_extends_navigation(global_navigation $nav)
 
 
 		$learner_menu = get_config('local_intelliboard', 'learner_menu');
+        $learner_roles = get_config('local_intelliboard', 'filter11');
+        $access = false;
+        $roles = $learner_roles ? explode(',', $learner_roles) : [];
+
 		if ($learner_menu) {
-			if($courses = enrol_get_users_courses($USER->id)) {
-				$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
-				$customMenu->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+			if(!empty($roles)) {
+                foreach ($roles as $role) {
+                    if ($role and user_has_role_assignment($USER->id, $role)){
+                        $access = true;
+                        break;
+                    }
+                }
+                if ($access) {
+                    $nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+                    $customMenu->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+                }
 			}
 		} else {
 			$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
@@ -101,21 +113,33 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
         $node->showinflatnavigation = true;
     }
 
-		if (isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)) {
+		if (isloggedin() and get_config('local_intelliboard', 't1')) {
 			$alt_name = get_config('local_intelliboard', 't0');
 			$def_name = get_string('ts1', 'local_intelliboard');
 			$name = ($alt_name) ? $alt_name : $def_name;
 
 			$learner_menu = get_config('local_intelliboard', 'learner_menu');
+            $learner_roles = get_config('local_intelliboard', 'filter11');
+            $access = false;
+            $roles = $learner_roles ? explode(',', $learner_roles) : [];
+
 			if ($learner_menu) {
-				if($courses = enrol_get_users_courses($USER->id)) {
-					$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
-					$nav->add($name, $url);
-					$customMenu->add($name, $url);
-					$node = $mynode->add($name, $url, 0, null, 'intelliboard_student', new pix_icon('i/line_chart', '', 'local_intelliboard'));
-					$node->showinflatnavigation = true;
+				if(!empty($roles)) {
+                    foreach ($roles as $role) {
+                        if ($role and user_has_role_assignment($USER->id, $role)){
+                            $access = true;
+                            break;
+                        }
+                    }
+                    if ($access) {
+                        $url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
+                        $nav->add($name, $url);
+                        $customMenu->add($name, $url);
+                        $node = $mynode->add($name, $url, 0, null, 'intelliboard_student', new pix_icon('i/line_chart', '', 'local_intelliboard'));
+                        $node->showinflatnavigation = true;
+                    }
 				}
-			} else {
+			} elseif (has_capability('local/intelliboard:students', $context)) {
 				$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
 				$nav->add($name, $url);
 				$customMenu->add($name, $url);
