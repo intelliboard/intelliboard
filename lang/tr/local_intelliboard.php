@@ -1029,3 +1029,4 @@ $string['cachedef_track_config'] = 'Intelliboard İzleme toplam verileri';
 $string['coursecontainer_filter'] = 'Enable course container filter';
 $string['enableexportcustomfont'] = 'Japonca/Çin uyumlu yazı tipi';
 $string['all_selected'] = 'Hepsi seçili';
+$string['custommenuitem'] = 'Display in Custom Menu';

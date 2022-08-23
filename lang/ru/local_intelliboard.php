@@ -1032,3 +1032,4 @@ $string['cachedef_track_config'] = 'Общие данные отслеживан
 $string['coursecontainer_filter'] = 'Использовать фильтр для course container';
 $string['enableexportcustomfont'] = 'Японский/китайский совместимый шрифт';
 $string['all_selected'] = 'Все выбраны';
+$string['custommenuitem'] = 'Display in Custom Menu';

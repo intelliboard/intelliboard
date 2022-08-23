@@ -493,7 +493,7 @@ class local_intelliboard_notification
         }
 
         $filterCohort = '';
-        if (!empty($notification['params']['cohort'])) {
+        if (!empty($notification['params']['cohort']) && array_filter($notification['params']['cohort'])) {
             $filterCohort = 'AND u.id IN(SELECT cm.userid
                 FROM {cohort_members} cm
                 WHERE cm.cohortid IN(' . rtrim(str_repeat('?,', count($notification['params']['cohort'])), ',') . ')
@@ -517,8 +517,8 @@ class local_intelliboard_notification
                     WHERE cm.id IN(' . rtrim(str_repeat('?,', count($notification['params']['activities'])), ',') . ')
                     GROUP BY cm.id, m.name HAVING MIN(me.timestart) < ?
                   ) cm ON cm.course = c.id
-                LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id
-                WHERE cmc.completionstate IS NULL OR cmc.completionstate NOT IN (1)
+                LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
+                WHERE cmc.completionstate IS NULL OR cmc.completionstate NOT IN (1) 
                 ' . $filterUser . ' ' . $filterCohort . '
                GROUP BY u.id
         ';

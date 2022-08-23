@@ -30,7 +30,7 @@ require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 
 require_login();
-require_capability('local/intelliboard:students', context_system::instance());
+intelliboard_learner_access();
 
 if(!get_config('local_intelliboard', 't1')){
     throw new moodle_exception('invalidaccess', 'error');

@@ -218,6 +218,11 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/custommenuitem';
+        $title = new lang_string('custommenuitem', 'local_intelliboard');
+        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading(
             'local_intelliboard/intellicart_integration',
             new lang_string('intellicart', 'local_intelliboard'),

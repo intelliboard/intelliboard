@@ -784,3 +784,36 @@ function intelliboard_learner_modules($userid){
                                   WHERE cm.visible = 1 AND cm.module = m.id and cm.course IN (
                                     SELECT distinct e.courseid FROM {enrol} e, {user_enrolments} ue WHERE ue.userid = :userid3 AND e.id = ue.enrolid AND ue.status = 0) GROUP BY m.id", $params);
 }
+function intelliboard_learner_access()
+{
+    if(!get_config('local_intelliboard', 't1')){
+        throw new moodle_exception('invalidaccessparameter', 'error');
+    }
+    $access = check_intelliboard_learner_access();
+    if (!$access) {
+        throw new moodle_exception('invalidaccess', 'error');
+    }
+}
+function check_intelliboard_learner_access()
+{
+    global $USER;
+
+    $learner_menu = get_config('local_intelliboard', 'learner_menu');
+    $access = false;
+    $learner_roles = get_config('local_intelliboard', 'filter11');
+    if (!empty($learner_roles) && $learner_menu) {
+        $roles = explode(',', $learner_roles);
+        if (!empty($roles)) {
+            foreach ($roles as $role) {
+                if ($role and user_has_role_assignment($USER->id, $role)){
+                    $access = true;
+                    break;
+                }
+            }
+        }
+    } elseif (has_capability('local/intelliboard:students', context_system::instance())) {
+        $access = true;
+    }
+
+    return $access;
+}

@@ -206,6 +206,7 @@ class instructor_index implements renderable, templatable {
             "course" => $course,
             "wwwroot" => $CFG->wwwroot,
             "pageurl" => $PAGE->url,
+            "totara_version" => isset($CFG->totara_version) ? $CFG->totara_version : null,
         ];
     }
 

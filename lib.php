@@ -24,11 +24,14 @@
  * @website    https://intelliboard.net/
  */
 
+use local_intelliboard\helpers\CustomMenuHelper;
+
 // In versions before Moodle 2.9, the supported callbacks have _extends_ (not imperative mood) in their names. This was a consistency bug fixed in MDL-49643.
 function local_intelliboard_extends_navigation(global_navigation $nav)
 {
 	global $CFG, $USER;
 
+    $customMenu = new CustomMenuHelper("Intelliboard");
 	$context = context_system::instance();
 	if (isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)) {
 		$alt_name = get_config('local_intelliboard', 't0');
@@ -37,17 +40,32 @@ function local_intelliboard_extends_navigation(global_navigation $nav)
 
 
 		$learner_menu = get_config('local_intelliboard', 'learner_menu');
+        $learner_roles = get_config('local_intelliboard', 'filter11');
+        $access = false;
+        $roles = $learner_roles ? explode(',', $learner_roles) : [];
+
 		if ($learner_menu) {
-			if($courses = enrol_get_users_courses($USER->id)) {
-				$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+			if(!empty($roles)) {
+                foreach ($roles as $role) {
+                    if ($role and user_has_role_assignment($USER->id, $role)){
+                        $access = true;
+                        break;
+                    }
+                }
+                if ($access) {
+                    $nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+                    $customMenu->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+                }
 			}
 		} else {
 			$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
+			$customMenu->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php'));
 		}
 	}
 
 	if(has_capability('local/intelliboard:view', $context) and get_config('local_intelliboard', 'ssomenu')){
 		$nav->add(get_string('ianalytics', 'local_intelliboard'), new moodle_url($CFG->wwwroot.'/local/intelliboard/index.php?action=sso'));
+		$customMenu->add(get_string('ianalytics', 'local_intelliboard'), new moodle_url($CFG->wwwroot.'/local/intelliboard/index.php?action=sso'));
 	}
 	if (isloggedin() and get_config('local_intelliboard', 'n10')){
 	    //Check if user is enrolled to any courses with "instructor" role(s)
@@ -67,6 +85,7 @@ function local_intelliboard_extends_navigation(global_navigation $nav)
 					$def_name = get_string('n10', 'local_intelliboard');
 					$name = ($alt_name) ? $alt_name : $def_name;
 					$nav->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/instructor/index.php'));
+					$customMenu->add($name, new moodle_url($CFG->wwwroot.'/local/intelliboard/instructor/index.php'));
 				}
 			}
 		}
@@ -81,6 +100,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
 	global $CFG, $DB, $USER, $PAGE;
 
 	try {
+        $customMenu = new CustomMenuHelper("Intelliboard");
 		$mynode = $PAGE->navigation->find('myprofile', navigation_node::TYPE_ROOTNODE);
 		$mynode->collapse = true;
 		$mynode->make_inactive();
@@ -90,26 +110,41 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
         $name = get_string('ianalytics', 'local_intelliboard');
         $url = new moodle_url($CFG->wwwroot.'/local/intelliboard/index.php?action=sso');
         $nav->add($name, $url);
+        $customMenu->add($name, $url);
         $node = $mynode->add($name, $url, 0, null, 'intelliboard_admin', new pix_icon('i/pie_chart', '', 'local_intelliboard'));
         $node->showinflatnavigation = true;
     }
 
-		if (isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)) {
+		if (isloggedin() and get_config('local_intelliboard', 't1')) {
 			$alt_name = get_config('local_intelliboard', 't0');
 			$def_name = get_string('ts1', 'local_intelliboard');
 			$name = ($alt_name) ? $alt_name : $def_name;
 
 			$learner_menu = get_config('local_intelliboard', 'learner_menu');
+            $learner_roles = get_config('local_intelliboard', 'filter11');
+            $access = false;
+            $roles = $learner_roles ? explode(',', $learner_roles) : [];
+
 			if ($learner_menu) {
-				if($courses = enrol_get_users_courses($USER->id)) {
-					$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
-					$nav->add($name, $url);
-					$node = $mynode->add($name, $url, 0, null, 'intelliboard_student', new pix_icon('i/line_chart', '', 'local_intelliboard'));
-					$node->showinflatnavigation = true;
+				if(!empty($roles)) {
+                    foreach ($roles as $role) {
+                        if ($role and user_has_role_assignment($USER->id, $role)){
+                            $access = true;
+                            break;
+                        }
+                    }
+                    if ($access) {
+                        $url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
+                        $nav->add($name, $url);
+                        $customMenu->add($name, $url);
+                        $node = $mynode->add($name, $url, 0, null, 'intelliboard_student', new pix_icon('i/line_chart', '', 'local_intelliboard'));
+                        $node->showinflatnavigation = true;
+                    }
 				}
-			} else {
+			} elseif (has_capability('local/intelliboard:students', $context)) {
 				$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/student/index.php');
 				$nav->add($name, $url);
+				$customMenu->add($name, $url);
 				$node = $mynode->add($name, $url, 0, null, 'intelliboard_student', new pix_icon('i/line_chart', '', 'local_intelliboard'));
 				$node->showinflatnavigation = true;
 			}
@@ -140,6 +175,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
 						$name = ($alt_name) ? $alt_name : $def_name;
 						$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/instructor/index.php');
 						$nav->add($name, $url);
+						$customMenu->add($name, $url);
 
 						$node = $mynode->add($name, $url, 0, null, 'intelliboard_instructor', new pix_icon('i/area_chart', '', 'local_intelliboard'));
 						$node->showinflatnavigation = true;
@@ -153,6 +189,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
 			$name = ($alt_name) ? $alt_name : $def_name;
 			$url = new moodle_url($CFG->wwwroot.'/local/intelliboard/competencies/index.php');
 			$nav->add($name, $url);
+			$customMenu->add($name, $url);
 
 			$node = $mynode->add($name, $url, 0, null, 'intelliboard_competency', new pix_icon('i/bar_chart', '', 'local_intelliboard'));
 			$node->showinflatnavigation = true;
@@ -167,6 +204,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
                 $name = get_string('attendance', 'local_intelliboard');
                 $url = new moodle_url('/local/intelliboard/attendance/index.php');
                 $nav->add($name, $url);
+                $customMenu->add($name, $url);
 
                 $node = $mynode->add($name, $url, 0, null, 'intelliboard_attendance', new pix_icon('i/book', '', 'local_intelliboard'));
                 $node->showinflatnavigation = true;
@@ -188,6 +226,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
                 $coursenode->add_node($node);
             }
         }
+        $customMenu->setupMenu();
 	} catch (Exception $e) {}
 }
 function local_intelliboard_extend_settings_navigation(settings_navigation $settingsnav, context $context)

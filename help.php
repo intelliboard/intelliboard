@@ -69,7 +69,7 @@ echo $OUTPUT->header();
 <div class="intelliboard-support">
     <div class="intelliboard-support-menu">
         <?php if (empty($intelliboard->token) && is_siteadmin()): ?>
-            <a href="<?php echo $connectlink->out(); ?>">
+            <a href="https://intelliboard.net/scheduledemo">
                 <?php echo get_string('support_trial', 'local_intelliboard'); ?>
             </a>
         <?php elseif (!empty($intelliboard->token) and false): ?>
@@ -91,7 +91,7 @@ echo $OUTPUT->header();
             <p>
                 <span><?php echo get_string('support_text3', 'local_intelliboard'); ?></span>
                 <span><?php echo get_string('support_text4', 'local_intelliboard'); ?></span>
-                <span><?php echo get_string('support_connect', 'local_intelliboard', ["connect_link" => $connectlink->out()]); ?></span>
+                <span><?php echo get_string('support_connect', 'local_intelliboard', ["connect_link" => 'https://intelliboard.net/scheduledemo']); ?></span>
             </p>
         </div>
 
@@ -116,7 +116,7 @@ echo $OUTPUT->header();
 
 
         <div class="intelliboard-support-links actions">
-            <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.acuityscheduling.com/schedule.php">
+            <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.net/scheduledemo">
                 <span><?php echo get_string('support_demo', 'local_intelliboard'); ?></span>
             </a>
             <a class="intelliboard-support-large-btn" target="_blank"
@@ -154,7 +154,7 @@ echo $OUTPUT->header();
 
 
         <div class="intelliboard-support-links actions">
-            <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.acuityscheduling.com/schedule.php">
+            <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.net/scheduledemo">
                 <span><?php echo get_string('support_demo', 'local_intelliboard'); ?></span>
             </a>
             <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.net/events">

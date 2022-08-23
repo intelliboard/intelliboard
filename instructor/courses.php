@@ -270,7 +270,7 @@ echo $OUTPUT->header();
 					<?php endif; ?>
 				</form>
                 <div class="report-export-panel">
-                    <?php echo $OUTPUT->render_from_template('local_intelliboard/instructor_export_buttons', ["items" => $exporturls]); ?>
+                    <?php echo $OUTPUT->render_from_template('local_intelliboard/instructor_export_buttons', ["items" => $exporturls, "totara_version" => isset($CFG->totara_version) ? $CFG->totara_version : null]); ?>
                 </div>
 			</div>
 			<div class="clear"></div>

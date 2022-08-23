@@ -464,6 +464,8 @@ class local_external_functions
             'get_program_courses',
             'report255',
             'get_deleted_assigns',
+            'report256',
+            'get_course_quiz_questions',
         ];
     }
     public function get_function($params = null)
