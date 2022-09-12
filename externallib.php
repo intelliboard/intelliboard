@@ -110,7 +110,8 @@ class local_intelliboard_external extends external_api {
                             'cupf_filter' => new external_value(PARAM_TEXT, 'CUPF filter', VALUE_OPTIONAL, ''),
                             'timezone' => new external_value(PARAM_INT, 'Timezone from Intelliboard User Settings', VALUE_OPTIONAL, 24),
                             'filter_hidden_cohort' => new external_value(PARAM_INT, 'filter_hidden_cohort', VALUE_OPTIONAL, 0),
-                            'intellicart_vendors' => new external_value(PARAM_TEXT, 'Intellicart vendors', VALUE_OPTIONAL, '')
+                            'intellicart_vendors' => new external_value(PARAM_TEXT, 'Intellicart vendors', VALUE_OPTIONAL, ''),
+                            'cupf_show_vendor_name' => new external_value(PARAM_TEXT, 'CUPF vendor name instead ID', VALUE_OPTIONAL, 0)
                         )
                     )
                 )
@@ -183,6 +184,7 @@ class local_intelliboard_external extends external_api {
         $params->timezone = (isset($params->timezone)) ? $params->timezone : 24;
         $params->filter_hidden_cohort = (isset($params->filter_hidden_cohort)) ? $params->filter_hidden_cohort : 0;
         $params->intellicart_vendors = (isset($params->intellicart_vendors)) ? $params->intellicart_vendors : '';
+        $params->cupf_show_vendor_name = (isset($params->cupf_show_vendor_name)) ? $params->cupf_show_vendor_name : 0;
 
         if ($params->debug) {
             $CFG->debug = (E_ALL | E_STRICT);
@@ -450,7 +452,27 @@ class local_intelliboard_external extends external_api {
                     $key = "column$column" . $this->prfx;
                     $this->params[$key] = $column;
                     $this->groupAdditionalColumns .= ", field$column";
-                    $data .= ", (SELECT CASE WHEN d.data = '' THEN NULL ELSE CONCAT(d.data,'[[[field_type]]]',CASE WHEN f.datatype = 'datetime' AND f.param3 IS NULL THEN 'date' ELSE f.datatype END) END FROM {user_info_data} d, {user_info_field} f WHERE f.id = :$key AND d.fieldid = f.id AND d.userid = $field) AS field$column";
+                    $vendor_name_sql = "";
+                    if ($params->cupf_show_vendor_name && get_config('local_intellicart', 'enabled')) {
+                        // show vendor name instead vendor id
+                        $vendor_name_sql = "
+                            WHEN f.datatype = 'vendor' AND f.param2 = '1' THEN
+                                CASE
+                                    WHEN f.param5 = '1' THEN (SELECT name FROM {local_intellicart_vendors} v WHERE v.idnumber = d.data)
+                                    WHEN f.param5 = '0' THEN (SELECT name FROM {local_intellicart_vendors} v WHERE v.id = CAST(d.data AS INTEGER))
+                                    ELSE NULL
+                                END";
+                    }
+                    $data .= ", (
+                        SELECT
+                               CASE
+                                WHEN d.data = '' THEN NULL
+                                $vendor_name_sql
+                                ELSE CONCAT(d.data,'[[[field_type]]]',CASE WHEN f.datatype = 'datetime' AND f.param3 IS NULL THEN 'date' ELSE f.datatype END)
+                               END
+                          FROM {user_info_data} d, {user_info_field} f
+                         WHERE f.id = :$key AND d.fieldid = f.id AND d.userid = $field
+                    ) AS field$column";
                 } else {
                     $alias = explode('.',$field);
                     $column = clean_param($column, PARAM_ALPHANUM);
@@ -16576,10 +16598,21 @@ class local_intelliboard_external extends external_api {
             ], $this->get_filter_columns($params));
 
             $sql_columns = '';
+            $responsesummary = get_operator('GROUP_CONCAT', 'responsesummary', ['separator' => '; ']);
+            $rightanswer = get_operator('GROUP_CONCAT', 'rightanswer', ['separator' => '; ']);
+
             foreach($questions as $question){
-                $sql_columns .= ",(SELECT responsesummary FROM {question_attempts} WHERE questionusageid=qa.uniqueid AND questionid=$question->questionid) AS useranswer_".$question->questionid;
+                $sql_columns .= ",(SELECT $responsesummary
+                                     FROM {question_attempts}
+                                    WHERE questionusageid=qa.uniqueid
+                                          AND questionid=$question->questionid
+                                   ) AS useranswer_".$question->questionid;
                 $columns[] = "useranswer_".$question->questionid;
-                $sql_columns .= ",(SELECT rightanswer FROM {question_attempts} WHERE questionusageid=qa.uniqueid AND questionid=$question->questionid) AS rightanswer_".$question->questionid;
+                $sql_columns .= ",(SELECT $rightanswer
+                                     FROM {question_attempts}
+                                    WHERE questionusageid=qa.uniqueid
+                                          AND questionid=$question->questionid
+                                   ) AS rightanswer_".$question->questionid;
                 $columns[] = "rightanswer_".$question->questionid;
             }
 
