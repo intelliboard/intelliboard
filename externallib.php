@@ -455,11 +455,12 @@ class local_intelliboard_external extends external_api {
                     $vendor_name_sql = "";
                     if ($params->cupf_show_vendor_name && get_config('local_intellicart', 'enabled')) {
                         // show vendor name instead vendor id
+                        $cast_int_type = $CFG->dbtype == 'pgsql' ? "INTEGER" : "UNSIGNED";
                         $vendor_name_sql = "
                             WHEN f.datatype = 'vendor' AND f.param2 = '1' THEN
                                 CASE
                                     WHEN f.param5 = '1' THEN (SELECT name FROM {local_intellicart_vendors} v WHERE v.idnumber = d.data)
-                                    WHEN f.param5 = '0' THEN (SELECT name FROM {local_intellicart_vendors} v WHERE v.id = CAST(d.data AS INTEGER))
+                                    WHEN f.param5 = '0' THEN (SELECT name FROM {local_intellicart_vendors} v WHERE v.id = CAST(d.data AS {$cast_int_type}))
                                     ELSE NULL
                                 END";
                     }
@@ -15250,6 +15251,7 @@ class local_intelliboard_external extends external_api {
         $sql_vendor_filter = $this->vendor_filter('trck.userid', 'trck.courseid', $params);
 
         $params->custom2 = clean_param($params->custom2, PARAM_TEXT);
+        $params->custom2 = preg_match('/^[+-][0-9]{2}:[0-9]{2}$/', $params->custom2) ? $params->custom2 : date('P');
 
         if(!empty($params->custom) || $params->custom === 0){
             $selectsql .= " JOIN {context} ctx ON ctx.instanceid = trck.courseid AND ctx.contextlevel = 50
@@ -20172,7 +20174,11 @@ class local_intelliboard_external extends external_api {
         } else {
             $sql_cache = '';
         }
-
+        if ($CFG->dbtype == 'pgsql') {
+            $timePointFmt = "to_timestamp(min(%s))::date";
+        } else {
+            $timePointFmt = "FROM_UNIXTIME(MIN(%s), '%%Y-%%m-%%d')";
+        }
         $group_time1 = $this->get_group_date_sql($params, 'l.timepoint');
         $group_time2 = $this->get_group_date_sql($params, 'timepoint');
         $group_time3 = $this->get_group_date_sql($params, 'timecreated');
@@ -20180,25 +20186,25 @@ class local_intelliboard_external extends external_api {
 
         if ($params->externalid) {
             $data->sessions = $DB->get_records_sql("
-                SELECT $sql_cache MIN(l.timepoint) AS timepointval, $group_time1 AS group_time, COUNT(DISTINCT t.userid) AS pointval
+                SELECT $sql_cache  " . sprintf($timePointFmt, "l.timepoint") . " AS timepointval, $group_time1 AS group_time, COUNT(DISTINCT t.userid) AS pointval
                 FROM {local_intelliboard_logs} l, {local_intelliboard_tracking} t
                 WHERE l.trackid = t.id AND l.timepoint BETWEEN :timestart AND :timefinish $sql3
                 GROUP BY group_time", $this->params);
         } else {
             $data->sessions = $DB->get_records_sql("
-                SELECT $sql_cache MIN(timepoint) AS timepointval, $group_time2 AS group_time, SUM(sessions) AS pointval
+                SELECT $sql_cache " . sprintf($timePointFmt, "timepoint") . " AS timepointval, $group_time2 AS group_time, SUM(sessions) AS pointval
                 FROM {local_intelliboard_totals}
                 WHERE timepoint BETWEEN :timestart AND :timefinish
                 GROUP BY group_time", $this->params);
         }
         $data->enrolments = $DB->get_records_sql("
-            SELECT $sql_cache MIN(timecreated) AS timepointval, $group_time3 AS group_time, COUNT(DISTINCT (userid)) AS pointval
+            SELECT $sql_cache " . sprintf($timePointFmt, "timecreated") . " AS timepointval, $group_time3 AS group_time, COUNT(DISTINCT (userid)) AS pointval
             FROM {user_enrolments}
             WHERE timecreated BETWEEN :timestart AND :timefinish $sql
             GROUP BY group_time", $this->params);
 
         $data->completions = $DB->get_records_sql("
-            SELECT $sql_cache MIN(timecompleted) AS timepointval, $group_time4 AS group_time, COUNT(DISTINCT (userid)) AS pointval
+            SELECT $sql_cache " . sprintf($timePointFmt, "timecompleted") . " AS timepointval, $group_time4 AS group_time, COUNT(DISTINCT (userid)) AS pointval
             FROM {course_completions}
             WHERE timecompleted BETWEEN :timestart AND :timefinish $sql2
             GROUP BY group_time", $this->params);
@@ -23709,6 +23715,8 @@ class local_intelliboard_external extends external_api {
             }
         }
 
+        $clname = "CONCAT(u.username, '/', u.email, ', ', u.firstname, ' ', u.lastname)";
+        $clnamesql =  ($CFG->dbtype == 'pgsql' ? "string_agg($clname, ';;')" : "GROUP_CONCAT($clname SEPARATOR ';;')") . " as centerlead";
         $sql = "SELECT v.id,
                        v.name,
                        ua.activeusers,
@@ -23727,12 +23735,12 @@ class local_intelliboard_external extends external_api {
                       WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 1 AND vr.type = 'vendor'
                    GROUP BY vr.instanceid
                     ) ui ON ui.instanceid = v.id
-          LEFT JOIN (SELECT vr.instanceid, CONCAT(u.username, '/', u.email, ', ', u.firstname, ' ', u.lastname) as centerlead
+          LEFT JOIN (SELECT vr.instanceid, $clnamesql
                        FROM {local_intellicart_users} vr
                        JOIN {user} u ON u.id = vr.userid
                       WHERE u.id > 2 AND u.deleted = 0 AND vr.type = 'vendor'
                             AND u.suspended = 0 AND vr.role = 'manager'
-                   GROUP BY vr.instanceid, u.id
+                   GROUP BY vr.instanceid
                     ) vm ON vm.instanceid = v.id
               WHERE $where $sql_having
            ORDER BY v.name";
