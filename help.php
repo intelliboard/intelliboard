@@ -53,6 +53,10 @@ $intelliboard = intelliboard([
 
 $event = optional_param('event', '', PARAM_RAW);
 $connectlink = new \moodle_url("/local/intelliboard/setup.php");
+$meetinglink = "https://intelliboard.net/scheduledemo";
+$joinwebinarlink = "https://intelliboard.net/events";
+$connectivityissue = "https://support.intelliboard.net/hc/en-us/articles/360012709012-Connectivity-Issue-";
+$supportemail = "HelpDesk@IntelliBoard.net";
 $intelliboard = intelliboard(['task'=>'dashboard']);
 
 $PAGE->set_pagetype('help');
@@ -67,17 +71,6 @@ echo $OUTPUT->header();
 ?>
 
 <div class="intelliboard-support">
-    <div class="intelliboard-support-menu">
-        <?php if (empty($intelliboard->token) && is_siteadmin()): ?>
-            <a href="https://intelliboard.net/scheduledemo">
-                <?php echo get_string('support_trial', 'local_intelliboard'); ?>
-            </a>
-        <?php elseif (!empty($intelliboard->token) and false): ?>
-            <a href="<?php echo $CFG->wwwroot ?>/local/intelliboard/<?php echo $event ?>/index.php?action=<?php echo ($event)?'':'dashboard' ?>">
-                <?php echo get_string('dashboard', 'local_intelliboard'); ?>
-            </a>
-        <?php endif; ?>
-    </div>
     <div class="intelliboard-support-logo">
         <a target="_blank" href="https://intelliboard.net/">
             <img src="<?php echo $CFG->wwwroot ?>/local/intelliboard/assets/img/logo@3x.png">
@@ -86,90 +79,20 @@ echo $OUTPUT->header();
 
     <div class="clear"></div>
 
-    <?php if (empty($intelliboard->token)): ?>
-        <div class="intelliboard-support-text">
-            <p>
-                <span><?php echo get_string('support_text3', 'local_intelliboard'); ?></span>
-                <span><?php echo get_string('support_text4', 'local_intelliboard'); ?></span>
-                <span><?php echo get_string('support_connect', 'local_intelliboard', ["connect_link" => 'https://intelliboard.net/scheduledemo']); ?></span>
-            </p>
-        </div>
-
-        <div class="intelliboard-support-links actions">
-            <a class="intelliboard-support-large-btn" href="<?php echo $CFG->wwwroot ?>/local/intelliboard/<?php echo $event ?>/index.php?action=<?php echo ($event)?'':'dashboard' ?>">
-                <span><?php echo get_string('dashboard_link', 'local_intelliboard'); ?></span>
-            </a>
-          </div>
-
-
-        <div class="intelliboard-support-links initial-reports">
-            <?php foreach(intelli_initial_reports() as $report): ?>
-                <a class="intelliboard-support-btn" href="<?php echo $report["url"]; ?>">
-                    <?php echo $report["name"]; ?>
-                </a>
-            <?php endforeach; ?>
-        </div>
-
-        <div class="intelliboard-support-links-header">
-          <?php echo get_string('support_text6', 'local_intelliboard'); ?>
-        </div>
-
-
-        <div class="intelliboard-support-links actions">
-            <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.net/scheduledemo">
-                <span><?php echo get_string('support_demo', 'local_intelliboard'); ?></span>
-            </a>
-            <a class="intelliboard-support-large-btn" target="_blank"
-               href="https://support.intelliboard.net/hc/en-us/categories/360000794431-IntelliBoard-for-Moodle-">
-                <span><?php echo get_string('support_page', 'local_intelliboard'); ?></span>
-            </a>
-            <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.net/events">
-                <span><?php echo get_string('join_a_webinar', 'local_intelliboard'); ?></span>
-            </a>
-        </div>
-    <?php else: ?>
-        <div class="intelliboard-support-text"><p>
-          <span><?php echo get_string('support_text3', 'local_intelliboard'); ?></span>
-          <span><?php echo get_string('support_text4', 'local_intelliboard'); ?></span>
-        </p></div>
-
-        <div class="intelliboard-support-links actions">
-            <a class="intelliboard-support-large-btn" href="<?php echo $CFG->wwwroot ?>/local/intelliboard/<?php echo $event ?>/index.php?action=<?php echo ($event)?'':'dashboard' ?>">
-                <span><?php echo get_string('dashboard_link', 'local_intelliboard'); ?></span>
-            </a>
-          </div>
-
-
-        <div class="intelliboard-support-links initial-reports">
-            <?php foreach(intelli_initial_reports() as $report): ?>
-                <a class="intelliboard-support-btn" href="<?php echo $report["url"]; ?>">
-                    <?php echo $report["name"]; ?>
-                </a>
-            <?php endforeach; ?>
-        </div>
-
-        <div class="intelliboard-support-links-header">
-          <?php echo get_string('support_text6', 'local_intelliboard'); ?>
-        </div>
-
-
-        <div class="intelliboard-support-links actions">
-            <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.net/scheduledemo">
-                <span><?php echo get_string('support_demo', 'local_intelliboard'); ?></span>
-            </a>
-            <a target="_blank" class="intelliboard-support-large-btn" href="https://intelliboard.net/events">
-                <span><?php echo get_string('join_a_webinar', 'local_intelliboard'); ?></span>
-            </a>
-            <a target="_blank" class="intelliboard-support-large-btn" href="https://support.intelliboard.net/hc/en-us/categories/360000794431-IntelliBoard-for-Moodle- ">
-                <span><?php echo get_string('review_support_doc', 'local_intelliboard'); ?></span>
-            </a>
-        </div>
-    <?php endif; ?>
-
+    <div class="intelliboard-support-text">
+        <span><?php echo get_string('support_text3', 'local_intelliboard'); ?></span>
+        <span><?php echo get_string('support_text4', 'local_intelliboard'); ?></span>
+    </div>
+    <div class="intelliboard-support-text">
+        <span><?php echo get_string('support_text7', 'local_intelliboard', ["meeting_link" => $meetinglink, "join_webinars_link" => $joinwebinarlink]); ?></span>
+    </div>
+    <div class="intelliboard-support-text">
+        <span><?php echo get_string('support_text8', 'local_intelliboard', ["connectivity_issue" => $connectivityissue, "email" => $supportemail]); ?></span>
+    </div>
     <div class="intelliboard-support-play"></div>
     <div class="intelliboard-support-player">
         <div style="padding:56.25% 0 0 0;position:relative;">
-            <iframe id="intelliboardvideo" src="https://player.vimeo.com/video/390827913?title=0&byline=0&portrait=0"
+            <iframe id="intelliboardvideo" src="https://player.vimeo.com/video/725229030?title=0&byline=0&portrait=0"
                     style="position:absolute;top:0;left:0;width:100%;height:100%;" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
         </div>
         <script src="https://player.vimeo.com/api/player.js"></script>
