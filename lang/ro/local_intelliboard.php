@@ -943,8 +943,8 @@ $string['enroled_on'] = 'Data Înscrierii';
 
 $string['dashboard_link'] = 'Faceți clic pentru a vedea Analiticile';
 $string['support_connect'] = 'Faceți clic pe butoanele de raportare din dreptunghiul de mai jos. Aruncați o privire asupra puterii IntelliBoard: acces cu 1 buton la informațiile dvs. LMS. Vreți mai mult? Faceți clic pe „Faceți clic pentru a vizualiza Analiticile”. Vreți și mai mult? <a href="{$a-> connect_link}">„Conectare și Upgrade”</a> în colțul din dreapta sus sau oriunde vedeți linkul.';
-$string['support_text3'] = 'Bine ați venit la IntelliBoard! Instituțiile din întreaga lume folosesc IntelliBoard pentru a monitoriza reținerea, progresul, finalizarea și implicarea. Toate datele dvs. LMS în rapoarte și grafice ușor de recuperat, intuitive, partajabile, ușor de înțeles și atractive.';
-$string['support_text4'] = 'Pluginul IntelliBoard vă informează deciziile de afaceri educaționale cu date direct din LMS, în timp real.';
+$string['support_text3'] = 'Thank you for your interest in IntelliBoard!';
+$string['support_text4'] = 'IntelliBoard is your comprehensive learning analytics platform designed for learning experts by learning experts. Take control of your data, empower your organizations, and achieve your education and training goals with powerful data insights.';
 $string['support_text6'] = 'Aveți nevoie de mai multe informații? Faceți clic pe oricare dintre butoanele albastre pentru a vă conecta.';
 
 $string['web_services_descr'] = 'IntelliBoard necesită activarea serviciilor web. Serviciile web permit altor sisteme (de exemplu, IntelliBoard) să acceseze acest sistem LMS și să preforme operațiunile. Din motive de securitate, acest lucru ar trebui să fie dezactivat atunci când nu este utilizat. Pentru o examinare suplimentară, accesați Administrarea Site-ului > Funcții avansate > Servicii web';
@@ -1033,3 +1033,5 @@ $string['coursecontainer_filter'] = 'Enable course container filter';
 $string['enableexportcustomfont'] = 'Font compatibil japonez/China';
 $string['all_selected'] = 'Toate selectate';
 $string['custommenuitem'] = 'Display in Custom Menu';
+$string['support_text7'] = 'If you are not yet a client, we\'d love to hear your data needs. <a href="{$a->meeting_link}">Schedule a meeting </a>with one of our eLearning Professionals or join one of our upcoming <a href="{$a->join_webinars_link}">webinars.</a>';
+$string['support_text8'] = 'If you are an existing client and see this message, the connection between Moodle and IntelliBoard needs to be re-established. Please follow the steps described <a href="{$a->connectivity_issue}">here </a>or reach out to us at <a href="mailto:{$a->email}" title="{$a->email}">{$a->email}</a>';

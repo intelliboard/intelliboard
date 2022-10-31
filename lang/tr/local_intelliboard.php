@@ -940,8 +940,8 @@ $string['enroled_on'] = 'Önkayıt Tarihi';
 
 $string['dashboard_link'] = 'Analitikleri görmek için tıklayın';
 $string['support_connect'] = 'Aşağıdaki dikdörtgenin içindeki rapor düğmelerini tıklayın. IntelliBoard\'un gücüne bir göz atın: LMS içgörülerinize 1 düğme erişimi. Daha fazla istemek? ”Analytics\'i görüntülemek için tıklayın\'ı tıklayın. Hala daha fazlasını istiyor musun? Sağ üstte veya bağlantıyı gördüğünüz herhangi bir yerde ”<a href="{$a->connect_link}">Bağlan ve Yükselt</a>”.';
-$string['support_text3'] = "IntelliBoard'a hoş geldiniz! Dünya çapındaki kurumlar, elde tutma, ilerleme, tamamlama ve katılımı izlemek için IntelliBoard'u kullanmaktadır. Tüm LMS verileriniz kolayca alınabilir ve sezgisel, paylaşılabilir, anlaşılabilir ve çekici rapor ve grafiklerle  sizlere sunulur.";
-$string['support_text4'] = 'IntelliBoard eklentisi, gerçek zamanlı olarak doğrudan ÖYS\'nizden gelen verilerle eğitimle ilgili iş kararlarınızı bildirir.';
+$string['support_text3'] = 'Thank you for your interest in IntelliBoard!';
+$string['support_text4'] = 'IntelliBoard is your comprehensive learning analytics platform designed for learning experts by learning experts. Take control of your data, empower your organizations, and achieve your education and training goals with powerful data insights.';
 $string['support_text6'] = 'Daha fazla bilgiye mi ihtiyacınız var? Bizimle bağlantı kurmak için mavi düğmelerden herhangi birine tıklayın.';
 
 $string['web_services_descr'] = 'IntelliBoard, Web hizmetlerinin etkinleştirilmesini gerektirir. Web hizmetleri, diğer sistemlerin (örn. IntelliBoard) bu LMS sistemine erişmesini ve işlemleri gerçekleştirmesini sağlar. Güvenlik amacıyla, kullanılmadığında bu devre dışı bırakılmalıdır. Ek inceleme için Site Yönetimi > Gelişmiş özellikler > Web hizmetleri\'ne gidin.';
@@ -1030,3 +1030,5 @@ $string['coursecontainer_filter'] = 'Enable course container filter';
 $string['enableexportcustomfont'] = 'Japonca/Çin uyumlu yazı tipi';
 $string['all_selected'] = 'Hepsi seçili';
 $string['custommenuitem'] = 'Display in Custom Menu';
+$string['support_text7'] = 'If you are not yet a client, we\'d love to hear your data needs. <a href="{$a->meeting_link}">Schedule a meeting </a>with one of our eLearning Professionals or join one of our upcoming <a href="{$a->join_webinars_link}">webinars.</a>';
+$string['support_text8'] = 'If you are an existing client and see this message, the connection between Moodle and IntelliBoard needs to be re-established. Please follow the steps described <a href="{$a->connectivity_issue}">here </a>or reach out to us at <a href="mailto:{$a->email}" title="{$a->email}">{$a->email}</a>';

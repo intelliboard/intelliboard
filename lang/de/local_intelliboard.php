@@ -943,8 +943,8 @@ $string['enroled_on'] = 'Registrierungsdatum';
 
 $string['dashboard_link'] = 'Klicken, um Analytics anzuzeigen';
 $string['support_connect'] = 'Klicken Sie auf die Berichtsschaltflächen im Rechteck unten. Erhalten Sie einen Einblick in die Leistungsfähigkeit von IntelliBoard: 1-Tasten-Zugriff auf Ihre LMS-Einblicke. Mehr wollen? Klicken Sie auf "Klicken, um Analytics anzuzeigen". Willst du noch mehr? <a href="{$a->connect_link} ">" Connect & Upgrade "</a> oben rechts oder an einer beliebigen Stelle, an der Sie den Link sehen';
-$string['support_text3'] = 'Willkommen bei IntelliBoard! Institutionen weltweit verwenden IntelliBoard, um die Bindung, den Fortschritt, die Fertigstellung und das Engagement zu überwachen. Alle Ihre LMS-Daten in leicht abrufbaren, intuitiven, gemeinsam nutzbaren, verständlichen und attraktiven Berichten und Grafiken';
-$string['support_text4'] = 'Das IntelliBoard-Plugin informiert Ihre Bildungsgeschäftsentscheidungen mit Daten direkt aus Ihrem LMS in Echtzeit';
+$string['support_text3'] = 'Thank you for your interest in IntelliBoard!';
+$string['support_text4'] = 'IntelliBoard is your comprehensive learning analytics platform designed for learning experts by learning experts. Take control of your data, empower your organizations, and achieve your education and training goals with powerful data insights.';
 $string['support_text6'] = 'Benötigen Sie weitere Informationen? Klicken Sie auf eine der blauen Schaltflächen, um eine Verbindung mit uns herzustellen';
 
 $string['web_services_descr'] = 'Für IntelliBoard müssen Webdienste aktiviert sein. Mit Webdiensten können andere Systeme (z. B. IntelliBoard) auf dieses LMS-System zugreifen und Vorgänge ausführen. Aus Sicherheitsgründen sollte dies deaktiviert werden, wenn es nicht verwendet wird. Weitere Informationen finden Sie unter Site Administration> Erweiterte Funktionen> Webdienste';
@@ -1033,3 +1033,5 @@ $string['coursecontainer_filter'] = 'Enable course container filter';
 $string['enableexportcustomfont'] = 'Japanisch/China-kompatible Schriftart';
 $string['all_selected'] = 'Alle ausgewählt';
 $string['custommenuitem'] = 'Display in Custom Menu';
+$string['support_text7'] = 'If you are not yet a client, we\'d love to hear your data needs. <a href="{$a->meeting_link}">Schedule a meeting </a>with one of our eLearning Professionals or join one of our upcoming <a href="{$a->join_webinars_link}">webinars.</a>';
+$string['support_text8'] = 'If you are an existing client and see this message, the connection between Moodle and IntelliBoard needs to be re-established. Please follow the steps described <a href="{$a->connectivity_issue}">here </a>or reach out to us at <a href="mailto:{$a->email}" title="{$a->email}">{$a->email}</a>';

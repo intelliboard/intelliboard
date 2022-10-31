@@ -70,6 +70,7 @@ class FiltersContainer extends BaseContainer {
             15 => function($param) {
                 return "IS NULL";
             },
+            16 => "LIKE", //left like
         );
 
 
@@ -150,6 +151,10 @@ class FiltersContainer extends BaseContainer {
 
                 } else if(in_array(11, $filter['operator'])) {
                     $extractor->setArguments($id, "%$checker%");
+                    $placeholder = $id;
+                    static::ignoreCase($prop, $placeholder, $checker, $extractor);
+                } else if(in_array(16, $filter['operator'])) {
+                    $extractor->setArguments($id, "%$checker");
                     $placeholder = $id;
                     static::ignoreCase($prop, $placeholder, $checker, $extractor);
                 } else {

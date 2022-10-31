@@ -153,15 +153,19 @@ if($settingUserEnrollmentsSession) {
     $stat = $plugin->get_dashboard_stats($params);
     $LineChart = $plugin->get_site_activity($params);
     ksort($LineChart->sessions);
+    $timePoints = array_merge(
+        array_keys($LineChart->sessions ?? []),
+        array_keys($LineChart->enrollments ?? []),
+        array_keys($LineChart->completions ?? [])
+    );
 
-    foreach($LineChart->sessions as $item){
-    	$d = date("j", $item->timepointval);
-    	$m = date("n", $item->timepointval) - 1;
-    	$y = date("Y", $item->timepointval);
-
-    	$l = $item->pointval;
-    	$v = (isset($LineChart->enrolments[$item->timepointval])) ? $LineChart->enrolments[$item->timepointval]->pointval : 0;
-    	$t = (isset($LineChart->completions[$item->timepointval])) ? $LineChart->completions[$item->timepointval]->pointval : 0;
+    foreach($timePoints as $timePoint) {
+        $d = date("j", strtotime($timePoint));
+        $m = date("n", strtotime($timePoint)) - 1;
+        $y = date("Y", strtotime($timePoint));
+        $l = (isset($LineChart->sessions[$timePoint])) ? $LineChart->sessions[$timePoint]->pointval : 0;
+        $v = (isset($LineChart->enrolments[$timePoint])) ? $LineChart->enrolments[$timePoint]->pointval : 0;
+        $t = (isset($LineChart->completions[$timePoint])) ? $LineChart->completions[$timePoint]->pointval : 0;
     	$json_data[] = "[new Date($y, $m, $d), $l, $t, $v]";
     }
 }
