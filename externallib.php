@@ -13123,6 +13123,7 @@ class local_intelliboard_external extends external_api {
         $currency = \local_intellicart\payment::get_currency('code');
         $coursesnames = get_operator('GROUP_CONCAT', 'DISTINCT c.fullname', ['separator' => ', ']);
         $coursesids = get_operator('GROUP_CONCAT', 'DISTINCT c.id', ['separator' => ', ']);
+        $vendornames = get_operator('GROUP_CONCAT', 'DISTINCT itlv.name', ['separator' => ', ']);
 
         $coursefilter = '';
         if($params->courseid) {
@@ -13179,7 +13180,7 @@ class local_intelliboard_external extends external_api {
                       WHERE il.type = 'product'
                    GROUP BY il.checkoutid
                     ) pc ON pc.checkoutid = ch.id
-          LEFT JOIN (SELECT itlu.userid, GROUP_CONCAT(DISTINCT itlv.name) vendors
+          LEFT JOIN (SELECT itlu.userid, {$vendornames} AS vendors
                        FROM {local_intellicart_users} itlu
                        JOIN {local_intellicart_vendors} itlv ON itlu.instanceid = itlv.id AND
                                                                 itlu.type = 'vendor'
