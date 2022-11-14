@@ -908,5 +908,72 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2022060204, 'local', 'intelliboard');
     }
 
+    if ($oldversion < 2022103104.01) {
+        $table = new xmldb_table('local_intelliboard_bbb_atten');
+        $field = new xmldb_field('userid', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_type($table, $field);
+        }
+
+        $table = new xmldb_table('local_intelliboard_trns_c');
+
+        // Make sure these fields match install.xml.
+        $field = new xmldb_field('useremail', XMLDB_TYPE_CHAR, '255', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('firstname', XMLDB_TYPE_CHAR, '255', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('lastname', XMLDB_TYPE_CHAR, '255', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('enroltype', XMLDB_TYPE_CHAR, '100', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('coursename', XMLDB_TYPE_CHAR, '255', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('finalgrade', XMLDB_TYPE_NUMBER, '10', null, null, null, '0');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('formattedgrade', XMLDB_TYPE_CHAR, '100', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('rolesids', XMLDB_TYPE_CHAR, '100', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('groupsids', XMLDB_TYPE_CHAR, '100', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+
+        $table = new xmldb_table('local_intelliboard_trns_m');
+
+        // Make sure these fields match install.xml.
+        $field = new xmldb_field('modulename', XMLDB_TYPE_CHAR, '255', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('moduletype', XMLDB_TYPE_CHAR, '100', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+        $field = new xmldb_field('formattedgrade', XMLDB_TYPE_CHAR, '100', null, null, null, '');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+
+        // Intelliboard savepoint reached.
+        upgrade_plugin_savepoint(true, 2022103104.01, 'local', 'intelliboard');
+    }
+
     return true;
 }
