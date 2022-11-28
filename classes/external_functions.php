@@ -466,6 +466,8 @@ class local_external_functions
             'get_deleted_assigns',
             'report256',
             'get_course_quiz_questions',
+            'get_icpayment_types',
+            'get_icproduct_custom_fields',
         ];
     }
     public function get_function($params = null)
