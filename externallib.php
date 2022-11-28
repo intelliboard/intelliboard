@@ -111,7 +111,8 @@ class local_intelliboard_external extends external_api {
                             'timezone' => new external_value(PARAM_INT, 'Timezone from Intelliboard User Settings', VALUE_OPTIONAL, 24),
                             'filter_hidden_cohort' => new external_value(PARAM_INT, 'filter_hidden_cohort', VALUE_OPTIONAL, 0),
                             'intellicart_vendors' => new external_value(PARAM_TEXT, 'Intellicart vendors', VALUE_OPTIONAL, ''),
-                            'cupf_show_vendor_name' => new external_value(PARAM_TEXT, 'CUPF vendor name instead ID', VALUE_OPTIONAL, 0)
+                            'cupf_show_vendor_name' => new external_value(PARAM_TEXT, 'CUPF vendor name instead ID', VALUE_OPTIONAL, 0),
+                            'icpcf_columns' => new external_value(PARAM_SEQUENCE, 'Intellicart Product custom fields', VALUE_OPTIONAL, 0),
                         )
                     )
                 )
@@ -185,6 +186,7 @@ class local_intelliboard_external extends external_api {
         $params->filter_hidden_cohort = (isset($params->filter_hidden_cohort)) ? $params->filter_hidden_cohort : 0;
         $params->intellicart_vendors = (isset($params->intellicart_vendors)) ? $params->intellicart_vendors : '';
         $params->cupf_show_vendor_name = (isset($params->cupf_show_vendor_name)) ? $params->cupf_show_vendor_name : 0;
+        $params->icpcf_columns = (isset($params->icpcf_columns)) ? $params->icpcf_columns : '';
 
         if ($params->debug) {
             $CFG->debug = (E_ALL | E_STRICT);
@@ -513,6 +515,23 @@ class local_intelliboard_external extends external_api {
             }
         }
 
+        // Intellicart Product custom fields
+        if (!empty($params->icpcf_columns) && get_config('local_intellicart', 'enabled')) {
+            $productTableAlias = isset($fields[3]) ? $fields[3] : "lip.id";
+
+            foreach (explode(',', $params->icpcf_columns) as $icpcfcolumnid) {
+                if ($icpcfcolumnid == clean_param($icpcfcolumnid, PARAM_INT)) {
+                    $columnsql = "(
+                        SELECT CONCAT(lifv.value, '|', licf.fieldtype)
+                          FROM {local_intellicart_cust_flds} licf
+                          JOIN {local_intellicart_flds_val} lifv ON lifv.fieldid = licf.id
+                         WHERE licf.instancetype='product' AND licf.id = {$icpcfcolumnid}
+                               AND lifv.instanceid = {$productTableAlias}
+                    )";
+                    $data .= ", {$columnsql} AS icpcf_column_{$icpcfcolumnid}";
+                }
+            }
+        }
         return $data;
     }
     private function get_params_key($column, $value){
@@ -13116,10 +13135,11 @@ class local_intelliboard_external extends external_api {
         ), $this->get_filter_columns($params));
         $this->params['ltype'] = \local_intellicart\log::TYPE_PRODUCT;
 
-        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_columns = $this->get_columns($params, ["u.id", 3 => 'chp.productid']);
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filterdate_sql($params, "ch.timeupdated");
+        $sql_filter .= $this->get_filter_in_sql($params->custom, "ch.paymentid");
         $currency = \local_intellicart\payment::get_currency('code');
         $coursesnames = get_operator('GROUP_CONCAT', 'DISTINCT c.fullname', ['separator' => ', ']);
         $coursesids = get_operator('GROUP_CONCAT', 'DISTINCT c.id', ['separator' => ', ']);
@@ -13139,7 +13159,9 @@ class local_intelliboard_external extends external_api {
         }
 
         return $this->get_report_data(
-            "SELECT ch.id AS orderid,
+            "SELECT
+                    " . ($CFG->dbtype == 'pgsql' ?  "ROW_NUMBER () OVER ()" : "@rowid := @rowid + 1") . " AS rowid,
+                    ch.id AS orderid,
                     ch.item_name AS products,
                     ch.timeupdated,
                     ch.amount,
@@ -13164,7 +13186,7 @@ class local_intelliboard_external extends external_api {
                     cp.code AS couponcode,
                     '{$currency}' AS currency
                     {$sql_columns}
-               FROM {local_intellicart_checkout} ch
+               FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "{local_intellicart_checkout} ch
                JOIN {user} u ON u.id = ch.userid
                     {$coursefilter}
           LEFT JOIN (SELECT SUM(quantity) AS quantity, checkoutid
@@ -13194,6 +13216,11 @@ class local_intelliboard_external extends external_api {
                     ) cp ON cp.checkoutid = ch.id AND
                             cp.userid = ch.userid
          LEFT JOIN {local_intellicart_payments} p ON p.id = ch.paymentid
+         LEFT JOIN (SELECT l.checkoutid, l.instanceid AS productid
+                      FROM {local_intellicart_logs} l
+                     WHERE l.type = 'product'
+                  GROUP BY checkoutid, instanceid
+                   ) chp ON chp.checkoutid = ch.id
                WHERE ch.id > 0 {$sql_filter} {$sql_having} {$sql_order}",
             $params
         );
@@ -22368,6 +22395,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $sql_filter .= $this->vendor_filter('u.id', 'c.id', $params);
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $grade_single = intelliboard_grade_sql(false, $params);
         $grade_course_single = intelliboard_grade_sql(false, $params, 'g_c.', 0, 'gi_c.');
         $sql_completion_states = $this->get_completion($params, "cmc.");
@@ -22424,13 +22452,20 @@ class local_intelliboard_external extends external_api {
                     ue.timeend,
                     CASE WHEN ue.id > 0 $sql_completion_states THEN cmc.timemodified ELSE NULL END AS completed_date
                     {$sql_columns}
-               FROM {user_enrolments} ue
-               JOIN {enrol} e ON e.id = ue.enrolid
-               JOIN {course_modules} cm ON cm.course = e.courseid
+               FROM (SELECT
+                            MAX(ue.id) AS id,
+                            MIN(ue.status) AS status,
+                            MAX(ue.timeend) AS timeend,
+                            ue.userid,
+                            e.courseid
+                       FROM {user_enrolments} ue
+                       JOIN {enrol} e ON e.id = ue.enrolid
+                   GROUP BY e.courseid, ue.userid) ue
+               JOIN {course_modules} cm ON cm.course = ue.courseid
                JOIN {modules} m ON m.id = cm.module
                JOIN {user} u ON u.id = ue.userid
-               JOIN {course} c ON c.id = e.courseid
-               JOIN {grade_items} gi_c ON gi_c.itemtype = 'course' AND gi_c.courseid = e.courseid
+               JOIN {course} c ON c.id = ue.courseid
+               JOIN {grade_items} gi_c ON gi_c.itemtype = 'course' AND gi_c.courseid = ue.courseid
           LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name
           LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ue.userid
           LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = ue.userid
@@ -24842,5 +24877,35 @@ class local_intelliboard_external extends external_api {
         ";
 
         return $DB->get_records_sql($sql, $this->params);
+    }
+
+    public function get_icpayment_types()
+    {
+        global $DB;
+        $data = [];
+        if (get_config('local_intellicart', 'enabled')) {
+            $data = $DB->get_records_sql(
+                "SELECT 0 AS id, 'Invoice' AS name, '' AS type
+                 UNION
+                 SELECT id, name, type
+                   FROM {local_intellicart_payments}
+                  WHERE status = 1"
+            );
+        }
+        return $data;
+    }
+
+    public function get_icproduct_custom_fields()
+    {
+        global $DB;
+        $data = [];
+        if (get_config('local_intellicart', 'enabled')) {
+            $data = $DB->get_records_sql(
+                "SELECT id, title AS name, fieldtype AS type
+                   FROM {local_intellicart_cust_flds}
+                  WHERE instancetype = 'product' AND visibility = 1"
+            );
+        }
+        return $data;
     }
 }
