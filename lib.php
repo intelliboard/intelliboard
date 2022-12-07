@@ -304,9 +304,14 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
     global $CFG, $PAGE, $SITE, $DB, $USER;
 
     $ajax = (int) get_config('local_intelliboard', 'ajax');
-    $lastajaxtracking = get_user_preferences('last_intelliboard_ajax_tracking', 0);
+    // Validate that at least global $USER is set.
+    $nouserset = true;
+    if (!is_null($USER)) {
+        $nouserset = false;
+        $lastajaxtracking = get_user_preferences('last_intelliboard_ajax_tracking', 0);
+    }
 
-    if ($ajaxRequest && (time() - $lastajaxtracking < $ajax)) {
+    if (($ajaxRequest && (time() - $lastajaxtracking < $ajax)) || $nouserset) {
         return true;
     } else {
         set_user_preference('last_intelliboard_ajax_tracking', time());
