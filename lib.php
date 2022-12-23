@@ -306,7 +306,7 @@ function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparamete
     $ajax = (int) get_config('local_intelliboard', 'ajax');
     // Validate that at least global $USER is set.
     $nouserset = true;
-    if (!is_null($USER)) {
+    if (isloggedin()) {
         $nouserset = false;
         $lastajaxtracking = get_user_preferences('last_intelliboard_ajax_tracking', 0);
     }
