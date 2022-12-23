@@ -303,34 +303,31 @@ function local_intelliboard_get_regexes(){
 function local_intelliboard_insert_tracking($ajaxRequest = false, $trackparameters = []) {
     global $CFG, $PAGE, $SITE, $DB, $USER;
 
-    $ajax = (int) get_config('local_intelliboard', 'ajax');
-    $lastajaxtracking = get_user_preferences('last_intelliboard_ajax_tracking', 0);
-
-    if ($ajaxRequest && (time() - $lastajaxtracking < $ajax)) {
-        return true;
-    } else {
-        set_user_preference('last_intelliboard_ajax_tracking', time());
-    }
-
-    $version = get_config('local_intelliboard', 'version');
-    $enabled = get_config('local_intelliboard', 'enabled');
-    $inactivity = (int) get_config('local_intelliboard', 'inactivity');
-    $trackadmin = get_config('local_intelliboard', 'trackadmin');
-    $trackpoint = get_config('local_intelliboard', 'trackpoint');
-    $intelliboardMediaTrack = get_config('local_intelliboard', 'trackmedia');
-    $compresstrackingtype = get_config('local_intelliboard', 'compresstracking');
+		$enabled = get_config('local_intelliboard', 'enabled');
     $path = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
-    $cachetrackconfig = \cache::make('local_intelliboard', 'track_config');
-
     if (strpos($path,'cron.php') !== false) {
         return false;
     }
 
     if ($enabled and isloggedin() and !isguestuser()) {
-        if (is_siteadmin() and !$trackadmin) {
+				$version = get_config('local_intelliboard', 'version');
+		    $inactivity = (int) get_config('local_intelliboard', 'inactivity');
+		    $trackadmin = get_config('local_intelliboard', 'trackadmin');
+		    $trackpoint = get_config('local_intelliboard', 'trackpoint');
+		    $intelliboardMediaTrack = get_config('local_intelliboard', 'trackmedia');
+		    $compresstrackingtype = get_config('local_intelliboard', 'compresstracking');
+				$cachetrackconfig = \cache::make('local_intelliboard', 'track_config');
+				$ajax = (int) get_config('local_intelliboard', 'ajax');
+				$lastajaxtracking = get_user_preferences('last_intelliboard_ajax_tracking', 0);
+
+				if (is_siteadmin() and !$trackadmin) {
             return false;
         }
-
+				if ($ajaxRequest && (time() - $lastajaxtracking < $ajax)) {
+						return true;
+				} else {
+						set_user_preference('last_intelliboard_ajax_tracking', time());
+				}
         if (!empty($trackparameters['page']) && !empty($trackparameters['param']) && !empty($trackparameters['time'])) {
             $intelliboardPage = $trackparameters['page'];
             $intelliboardParam = $trackparameters['param'];
