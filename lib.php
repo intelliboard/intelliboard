@@ -31,6 +31,7 @@ function local_intelliboard_extends_navigation(global_navigation $nav)
 {
 	global $CFG, $USER;
 
+    local_intelliboard_init();
     $customMenu = new CustomMenuHelper("Intelliboard");
 	$context = context_system::instance();
 	if (isloggedin() and get_config('local_intelliboard', 't1') and has_capability('local/intelliboard:students', $context)) {
@@ -97,7 +98,8 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
 {
 	global $CFG, $DB, $USER, $PAGE;
 
-	try {
+    local_intelliboard_init();
+    try {
         $customMenu = new CustomMenuHelper("Intelliboard");
 		$mynode = $PAGE->navigation->find('myprofile', navigation_node::TYPE_ROOTNODE);
 		$mynode->collapse = true;
@@ -597,4 +599,3 @@ function local_intelliboard_init()
 		local_intelliboard_insert_tracking();
 	}
 }
-local_intelliboard_init();
