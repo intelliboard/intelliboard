@@ -111,7 +111,8 @@ class local_intelliboard_external extends external_api {
                             'timezone' => new external_value(PARAM_INT, 'Timezone from Intelliboard User Settings', VALUE_OPTIONAL, 24),
                             'filter_hidden_cohort' => new external_value(PARAM_INT, 'filter_hidden_cohort', VALUE_OPTIONAL, 0),
                             'intellicart_vendors' => new external_value(PARAM_TEXT, 'Intellicart vendors', VALUE_OPTIONAL, ''),
-                            'cupf_show_vendor_name' => new external_value(PARAM_TEXT, 'CUPF vendor name instead ID', VALUE_OPTIONAL, 0)
+                            'cupf_show_vendor_name' => new external_value(PARAM_TEXT, 'CUPF vendor name instead ID', VALUE_OPTIONAL, 0),
+                            'icpcf_columns' => new external_value(PARAM_SEQUENCE, 'Intellicart Product custom fields', VALUE_OPTIONAL, 0),
                         )
                     )
                 )
@@ -185,6 +186,7 @@ class local_intelliboard_external extends external_api {
         $params->filter_hidden_cohort = (isset($params->filter_hidden_cohort)) ? $params->filter_hidden_cohort : 0;
         $params->intellicart_vendors = (isset($params->intellicart_vendors)) ? $params->intellicart_vendors : '';
         $params->cupf_show_vendor_name = (isset($params->cupf_show_vendor_name)) ? $params->cupf_show_vendor_name : 0;
+        $params->icpcf_columns = (isset($params->icpcf_columns)) ? $params->icpcf_columns : '';
 
         if ($params->debug) {
             $CFG->debug = (E_ALL | E_STRICT);
@@ -513,6 +515,23 @@ class local_intelliboard_external extends external_api {
             }
         }
 
+        // Intellicart Product custom fields
+        if (!empty($params->icpcf_columns) && get_config('local_intellicart', 'enabled')) {
+            $productTableAlias = isset($fields[3]) ? $fields[3] : "lip.id";
+
+            foreach (explode(',', $params->icpcf_columns) as $icpcfcolumnid) {
+                if ($icpcfcolumnid == clean_param($icpcfcolumnid, PARAM_INT)) {
+                    $columnsql = "(
+                        SELECT CONCAT(lifv.value, '|', licf.fieldtype)
+                          FROM {local_intellicart_cust_flds} licf
+                          JOIN {local_intellicart_flds_val} lifv ON lifv.fieldid = licf.id
+                         WHERE licf.instancetype='product' AND licf.id = {$icpcfcolumnid}
+                               AND lifv.instanceid = {$productTableAlias}
+                    )";
+                    $data .= ", {$columnsql} AS icpcf_column_{$icpcfcolumnid}";
+                }
+            }
+        }
         return $data;
     }
     private function get_params_key($column, $value){
@@ -591,8 +610,9 @@ class local_intelliboard_external extends external_api {
                     }
                 }
             }
-
-            $filter .= ($filter ? " OR " : "") . implode(" OR ", $extracolumnsfilter);
+            if (!empty($extracolumnsfilter)) {
+                $filter .= ($filter ? " OR " : "") . implode(" OR ", $extracolumnsfilter);
+            }
         }
 
         // filter by course custom fields
@@ -3041,7 +3061,7 @@ class local_intelliboard_external extends external_api {
                     ) ue
                JOIN {user} u ON u.id = ue.userid
                JOIN {course} c ON c.id = ue.courseid
-               JOIN {course_modules} cm ON cm.course = c.id
+               JOIN {course_modules} cm ON cm.course = c.id AND cm.instance > 0
                JOIN {modules} m ON m.id = cm.module
           LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name AND gi.gradetype = 1
           LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = u.id
@@ -13116,10 +13136,11 @@ class local_intelliboard_external extends external_api {
         ), $this->get_filter_columns($params));
         $this->params['ltype'] = \local_intellicart\log::TYPE_PRODUCT;
 
-        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_columns = $this->get_columns($params, ["u.id", 3 => 'chp.productid']);
         $sql_having = $this->get_filter_sql($params, $columns, false);
         $sql_order = $this->get_order_sql($params, $columns);
         $sql_filter = $this->get_filterdate_sql($params, "ch.timeupdated");
+        $sql_filter .= $this->get_filter_in_sql($params->custom, "ch.paymentid");
         $currency = \local_intellicart\payment::get_currency('code');
         $coursesnames = get_operator('GROUP_CONCAT', 'DISTINCT c.fullname', ['separator' => ', ']);
         $coursesids = get_operator('GROUP_CONCAT', 'DISTINCT c.id', ['separator' => ', ']);
@@ -13137,9 +13158,19 @@ class local_intelliboard_external extends external_api {
                                  GROUP BY il.checkoutid
                                   ) pc1 ON pc1.checkoutid = ch.id";
         }
-
+        $icpf_sql = "";
+        if (!empty($params->icpcf_columns) && get_config('local_intellicart', 'enabled')) {
+            $icpf_sql = "
+            LEFT JOIN (SELECT l.checkoutid, l.instanceid AS productid
+                         FROM {local_intellicart_logs} l
+                        WHERE l.type = 'product'
+                     GROUP BY checkoutid, instanceid
+            ) chp ON chp.checkoutid = ch.id";
+        }
         return $this->get_report_data(
-            "SELECT ch.id AS orderid,
+            "SELECT
+                    " . ($CFG->dbtype == 'pgsql' ?  "ROW_NUMBER () OVER ()" : "@rowid := @rowid + 1") . " AS rowid,
+                    ch.id AS orderid,
                     ch.item_name AS products,
                     ch.timeupdated,
                     ch.amount,
@@ -13164,7 +13195,7 @@ class local_intelliboard_external extends external_api {
                     cp.code AS couponcode,
                     '{$currency}' AS currency
                     {$sql_columns}
-               FROM {local_intellicart_checkout} ch
+               FROM " . ($CFG->dbtype == 'pgsql' ? '' : '(SELECT @rowid := 0) as curr_row, ') . "{local_intellicart_checkout} ch
                JOIN {user} u ON u.id = ch.userid
                     {$coursefilter}
           LEFT JOIN (SELECT SUM(quantity) AS quantity, checkoutid
@@ -13194,6 +13225,7 @@ class local_intelliboard_external extends external_api {
                     ) cp ON cp.checkoutid = ch.id AND
                             cp.userid = ch.userid
          LEFT JOIN {local_intellicart_payments} p ON p.id = ch.paymentid
+         {$icpf_sql}
                WHERE ch.id > 0 {$sql_filter} {$sql_having} {$sql_order}",
             $params
         );
@@ -14374,6 +14406,10 @@ class local_intelliboard_external extends external_api {
     {
         global $CFG;
 
+        if (isset($params->courseid) && !$params->courseid) {
+            return [];
+        }
+
         require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
         $columns = array_merge([
@@ -14407,6 +14443,10 @@ class local_intelliboard_external extends external_api {
         $this->params['quizid'] = intval($params->courseid);
         $sql_join = $this->get_suspended_sql($params, 'q.course', 'u.id', false);
 
+        $courses = array_keys($this->get_quiz_courses(intval($params->courseid)));
+        $sql_course_filter1 = $this->get_filter_in_sql($courses, "e.courseid");
+        $sql_course_filter2 = $this->get_filter_in_sql($courses, "cx.instanceid");
+
         $data = $this->get_report_data(
             "SELECT CONCAT(u.id, '_', q.course, '_', CASE WHEN qa.id IS NULL THEN 0 ELSE qa.id END) AS unique_f,
                     qa.id as quiz_attempt_id,
@@ -14436,12 +14476,13 @@ class local_intelliboard_external extends external_api {
                JOIN (SELECT e.courseid, ue.userid, MIN(ue.status) AS enrol_status, MIN(ue.timeend) AS timeend
                        FROM {enrol} e
                        JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                      WHERE 1=1 $sql_course_filter1
                    GROUP BY e.courseid, ue.userid
                     ) ue ON ue.courseid = q.course
                JOIN (SELECT cx.instanceid, ra1.userid
                        FROM {context} cx
                        JOIN {role_assignments} ra1 ON ra1.contextid = cx.id
-                      WHERE cx.contextlevel = 50
+                      WHERE cx.contextlevel = 50 $sql_course_filter2
                    GROUP BY cx.instanceid, ra1.userid
                     ) ra ON ra.instanceid = ue.courseid AND ra.userid = ue.userid
                JOIN {user} u ON u.id = ue.userid
@@ -22368,6 +22409,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $sql_filter .= $this->vendor_filter('u.id', 'c.id', $params);
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $grade_single = intelliboard_grade_sql(false, $params);
         $grade_course_single = intelliboard_grade_sql(false, $params, 'g_c.', 0, 'gi_c.');
         $sql_completion_states = $this->get_completion($params, "cmc.");
@@ -22424,13 +22466,20 @@ class local_intelliboard_external extends external_api {
                     ue.timeend,
                     CASE WHEN ue.id > 0 $sql_completion_states THEN cmc.timemodified ELSE NULL END AS completed_date
                     {$sql_columns}
-               FROM {user_enrolments} ue
-               JOIN {enrol} e ON e.id = ue.enrolid
-               JOIN {course_modules} cm ON cm.course = e.courseid
+               FROM (SELECT
+                            MAX(ue.id) AS id,
+                            MIN(ue.status) AS status,
+                            MAX(ue.timeend) AS timeend,
+                            ue.userid,
+                            e.courseid
+                       FROM {user_enrolments} ue
+                       JOIN {enrol} e ON e.id = ue.enrolid
+                   GROUP BY e.courseid, ue.userid) ue
+               JOIN {course_modules} cm ON cm.course = ue.courseid
                JOIN {modules} m ON m.id = cm.module
                JOIN {user} u ON u.id = ue.userid
-               JOIN {course} c ON c.id = e.courseid
-               JOIN {grade_items} gi_c ON gi_c.itemtype = 'course' AND gi_c.courseid = e.courseid
+               JOIN {course} c ON c.id = ue.courseid
+               JOIN {grade_items} gi_c ON gi_c.itemtype = 'course' AND gi_c.courseid = ue.courseid
           LEFT JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name
           LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = ue.userid
           LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = ue.userid
@@ -22795,11 +22844,12 @@ class local_intelliboard_external extends external_api {
             $sql_columns .= ", '0' as timespend, '0' as visits";
         } else {
             $sql_lit = $this->get_filter_in_sql($params->courseid, "courseid");
+            $sql_lsl = $this->get_filter_in_sql($params->courseid, "courseid");
             $sql_columns .= ", lit.timespend AS timespend, lsl.visits AS visits,
                             lit.firstaccess AS firstaccess, lit.lastaccess AS lastaccess";
             $sql_join .= " LEFT JOIN (SELECT lsl.courseid, lsl.relateduserid, lsl.userid, COUNT(lsl.id) AS visits
                                      FROM {logstore_standard_log} lsl
-                                   WHERE target = 'course' AND action = 'viewed'
+                                   WHERE target = 'course' AND action = 'viewed' $sql_lsl
                                   GROUP BY lsl.courseid, lsl.relateduserid, lsl.userid
                                     ) lsl ON lsl.courseid = c.id AND (CASE WHEN lsl.relateduserid <> NULL THEN lsl.relateduserid
                                                                            ELSE lsl.userid
@@ -22829,6 +22879,11 @@ class local_intelliboard_external extends external_api {
         }
 
         $learner_roles = $this->get_filter_in_sql($params->learner_roles, 'ra.roleid');
+        $learner_roles .= $this->get_filter_in_sql($params->courseid, 'ctx.instanceid');
+
+        $cm_sql_filter = $this->get_filter_in_sql($params->courseid, "cm.course");
+        $cm_sql_filter2 = $this->get_filter_in_sql($params->courseid, "cm.course");
+        $gi_sql_filter = $this->get_filter_in_sql($params->courseid, 'gi.courseid');
 
         return $this->get_report_data("
             SELECT ue.id AS id,
@@ -22861,7 +22916,7 @@ class local_intelliboard_external extends external_api {
                              FROM {course_modules} cm
                              JOIN {modules} m ON m.id = cm.module
                              JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name
-                             WHERE cm.visible > 0
+                             WHERE cm.visible > 0 $cm_sql_filter
                          GROUP BY cm.course
                           ) as m ON m.course = c.id
                 LEFT JOIN (SELECT gg.userid, cm.course,
@@ -22870,7 +22925,7 @@ class local_intelliboard_external extends external_api {
                              JOIN {modules} m ON m.id = cm.module
                              JOIN {grade_items} gi ON gi.itemtype = 'mod' AND gi.iteminstance = cm.instance AND gi.itemmodule = m.name
                         LEFT JOIN {grade_grades} gg ON gg.itemid = gi.id
-                            WHERE cm.visible > 0
+                            WHERE cm.visible > 0 $cm_sql_filter2
                          GROUP BY gg.userid, cm.course
                           ) graded_activities ON graded_activities.userid = u.id AND graded_activities.course = c.id
                 LEFT JOIN (SELECT gi.courseid, g.userid, $grade_avg AS score_avg, COUNT(gi.id) AS grade_count,
@@ -22880,7 +22935,7 @@ class local_intelliboard_external extends external_api {
                                       ELSE 0
                                       END) AS grade_complited
                              FROM {grade_items} gi, {grade_grades} g
-                            WHERE gi.itemtype <> 'course' AND g.itemid = gi.id
+                            WHERE gi.itemtype <> 'course' AND g.itemid = gi.id $gi_sql_filter
                          GROUP BY gi.courseid, g.userid) AS gc ON gc.courseid = c.id AND gc.userid = u.id
                      JOIN (SELECT ra.userid, ctx.instanceid
                              FROM {context} ctx
@@ -23166,6 +23221,7 @@ class local_intelliboard_external extends external_api {
             $sqljoin .= "";
         } else {
             $sql_columns .= ", lsl.visits";
+            $sql_lsl_filter = $this->get_filter_in_sql($params->courseid, 'lsl.courseid');
             $sqljoin .= " LEFT JOIN (SELECT lsl.courseid, lsl.relateduserid, lsl.contextinstanceid, lsl.userid, COUNT(lsl.id) AS visits
                                      FROM {logstore_standard_log} lsl
                                     WHERE (lsl.action = 'viewed' AND lsl.target = 'attempt' AND lsl.component = 'mod_quiz') OR
@@ -23174,6 +23230,7 @@ class local_intelliboard_external extends external_api {
                                           (lsl.action = 'viewed' AND lsl.target = 'course_module' AND lsl.component <> 'mod_quiz'
                                                                                                   AND lsl.component <> 'mod_questionnaire'
                                                                                                   AND lsl.component <> 'mod_customquiz')
+                                                                                                  $sql_lsl_filter
                                   GROUP BY lsl.courseid, lsl.relateduserid, lsl.contextinstanceid, lsl.userid
                                     ) lsl ON lsl.courseid = c.id AND (CASE WHEN lsl.relateduserid <> NULL THEN lsl.relateduserid
                                                                            ELSE lsl.userid
@@ -24842,5 +24899,47 @@ class local_intelliboard_external extends external_api {
         ";
 
         return $DB->get_records_sql($sql, $this->params);
+    }
+
+    public function get_icpayment_types()
+    {
+        global $DB;
+        $data = [];
+        if (get_config('local_intellicart', 'enabled')) {
+            $data = $DB->get_records_sql(
+                "SELECT 0 AS id, 'Invoice' AS name, '' AS type
+                 UNION
+                 SELECT id, name, type
+                   FROM {local_intellicart_payments}
+                  WHERE status = 1"
+            );
+        }
+        return $data;
+    }
+
+    public function get_icproduct_custom_fields()
+    {
+        global $DB;
+        $data = [];
+        if (get_config('local_intellicart', 'enabled')) {
+            $data = $DB->get_records_sql(
+                "SELECT id, title AS name, fieldtype AS type
+                   FROM {local_intellicart_cust_flds}
+                  WHERE instancetype = 'product' AND visibility = 1"
+            );
+        }
+        return $data;
+    }
+
+    public function get_quiz_courses($quizid)
+    {
+        global $DB;
+
+        return $DB->get_records_sql("
+            SELECT DISTINCT q.course
+              FROM {quiz} q
+             WHERE q.id = :quizid",
+            array("quizid" => intval($quizid))
+        );
     }
 }
