@@ -7179,11 +7179,13 @@ class local_intelliboard_external extends external_api {
         }
 
         $sql_filter .= $this->get_filter_in_sql($params->custom5, 'm.id');
-
+        $sql_filter_sequence = "";
         if ($CFG->dbtype == 'pgsql') {
             $order_by = " ORDER BY array_position(string_to_array((SELECT string_agg(t.sequence, ',') FROM (SELECT sequence FROM {course_sections} WHERE course=cm.course AND sequence != '' ORDER BY section) t ), ',')::bigint[], cm.id)";
+            $sql_filter_sequence = " AND cm.id = ANY(string_to_array(cs.sequence, ',')::bigint[])";
         } else {
             $order_by = " ORDER BY FIND_IN_SET(cm.id, (SELECT GROUP_CONCAT(sequence) FROM {course_sections} WHERE course=cm.course ORDER BY section))";
+            $sql_filter_sequence = " AND FIND_IN_SET(cm.id, cs.sequence) > 0";
         }
 
         $modules = $DB->get_records_sql(
@@ -7194,7 +7196,8 @@ class local_intelliboard_external extends external_api {
                     $sql_modules
                FROM {course_modules} cm
           LEFT JOIN {modules} m ON m.id=cm.module
-              WHERE cm.course=:course $sql_filter $order_by",
+          LEFT JOIN {course_sections} cs ON cs.course = cm.course and cs.id = cm.section
+              WHERE cm.course=:course  $sql_filter_sequence $sql_filter $order_by",
             array_merge(compact('course'), $this->params)
         );
 

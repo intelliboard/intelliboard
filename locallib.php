@@ -176,6 +176,7 @@ function intelliboard($params, $function = 'sso'){
 		$params['useremail'] = $USER->email;
 		$params['url'] = $CFG->wwwroot;
 		$params['lang'] = current_language();
+		$params['userid'] = $USER->id ?? 0;
 
 		$options =[];
 		if (get_config('local_intelliboard', 'verifypeer')) {
