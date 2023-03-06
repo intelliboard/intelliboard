@@ -45,7 +45,7 @@ if ($alias and !empty($intelliboard->reports)) {
 }
 
 $report_type = isset($intelliboard->reports[$intelliboardReport]->type)?$intelliboard->reports[$intelliboardReport]->type:'';
-$params = http_build_query(['admin_userid' => $USER->id]);
+$params = '';
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/reports.php", array('id'=>$intelliboardReport)));
 $PAGE->set_pagelayout('report');
