@@ -1228,3 +1228,46 @@ function intelliboard_instructor_hide_suspended_enrollments_joinsql($courseColum
     }
     return $sql;
 }
+
+function graded_activities_overview_export($course, $format)
+{
+    global $USER, $DB, $CFG;
+
+    if($course && $format) {
+        $data = [[
+            get_string('activity', 'local_intelliboard'),
+            get_string('grade', 'local_intelliboard'),
+        ]];
+        $join_senrollments = intelliboard_instructor_hide_suspended_enrollments_joinsql('ga.courseid', 'gg.userid');
+        $activities = $DB->get_records_sql(
+            "SELECT ga.id, ga.itemname, AVG(gg.finalgrade) as grade
+                   FROM {grade_items} ga
+              LEFT JOIN {grade_grades} gg ON gg.itemid = ga.id
+                        $join_senrollments
+                  WHERE ga.courseid = :course AND ga.itemtype = 'mod'
+               GROUP BY ga.id, ga.itemname",
+            ['course' => $course]
+        );
+        foreach ($activities as $activity) {
+            $data[] = [
+                intellitext($activity->itemname),
+                round($activity->grade, 2)
+            ];
+        }
+        $header = [];
+        $head1 = new \stdClass();
+        $head1->name = get_string('activity', 'local_intelliboard');
+        $header[] = $head1;
+
+        $head2 = new \stdClass();
+        $head2->name = get_string('grade', 'local_intelliboard');
+        $header[] = $head2;
+
+        $json = new \stdClass();
+        $json->header = $header;
+        $json->body = array_slice($data, 1);
+        return intelliboard_export_report(
+            $json, get_string('grade_activities_overview', 'local_intelliboard'), $format
+        );
+    }
+}
