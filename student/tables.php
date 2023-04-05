@@ -96,7 +96,7 @@ class intelliboard_courses_grades_table extends table_sql {
                  ) m ON m.course = c.id
        LEFT JOIN (SELECT cm.course, cmc.userid, count(cmc.id) as completedmodules
                     FROM {course_modules} cm, {course_modules_completion} cmc
-                   WHERE cm.id = cmc.coursemoduleid {$completion} AND cm.visible = 1 AND cm.completion > 0
+                   WHERE cm.id = cmc.coursemoduleid {$completion} AND cm.visible = 1 AND cm.completion > 0 AND cm.instance > 0
                 GROUP BY cm.course, cmc.userid
                  ) cm ON cm.course = c.id AND cm.userid = c.userid
        LEFT JOIN {course_completion_criteria} as cri ON cri.course = c.id AND cri.criteriatype = 6
@@ -252,7 +252,7 @@ class intelliboard_activities_grades_table extends table_sql {
             LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :userid2
             LEFT JOIN {local_intelliboard_tracking} lit ON lit.userid=:userid3 AND lit.courseid=gi.courseid AND lit.page='module' AND lit.param=cm.id ";
 
-        $where = "gi.hidden <> 1 AND gi.courseid = :courseid AND gi.itemtype = 'mod' AND cm.visible = 1 AND
+        $where = "gi.hidden <> 1 AND gi.courseid = :courseid AND gi.itemtype = 'mod' AND cm.visible = 1 AND cm.instance > 0 AND
                   cm.id {$coursemodulesfilter[0]} $sql";
 
         $this->set_sql($fields, $from, $where, array_merge($params, $coursemodulesfilter[1]));

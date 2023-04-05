@@ -344,7 +344,7 @@
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 
     {{#js}}
-        require(['jquery', 'local_intelliboard/flatpickr'], function($, flatpickr) {
+        require(['jquery', 'local_intelliboard/flatpickr', 'local_intelliboard/instructor_actions'], function($, flatpickr, instructorActions) {
             let pageurl = '{{{pageurl}}}'.replaceAll('&amp;', '&');
             google.charts.load('current', {"callback": googleChartsCallback, 'name':'visualization', 'version': 1, 'packages':['corechart'], 'language': '{{currentlanguage}}'});
 
@@ -460,10 +460,7 @@
                     $('#chart7 .intelliboard-dropdown.users button').val(user);
                     $('#chart7 .intelliboard-dropdown.users ul').hide();
 
-                    $.ajax({
-                        url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_student_grade_progression&user="+user+"&course="+course,
-                        dataType: "json"
-                    }).done(function( response ) {
+                    instructorActions.execAction('get_student_grade_progression', {user: user, course: course}, function(response) {
                         if(response.length<2){
                             $('#chart7_area').html("<p class='alert alert-warning'>{{jsstrings.nodata}}</p>");
                         }else {
@@ -479,6 +476,7 @@
                         }
                     });
                 });
+
                 $('#chart3 .intelliboard-dropdown a').click(function (e) {
                     e.stopPropagation();
                     e.preventDefault();
@@ -539,10 +537,8 @@
                 {{#pluginsettings.n7}}
                     google.charts.setOnLoadCallback(LearningProgress);
                     function LearningProgress() {
-                        $.ajax({
-                            url: pageurl + '&action=modules',
-                            dataType: "json"
-                        }).done(function( response ) {
+                        var daterange = $('#general-daterange').val();
+                        instructorActions.execAction('modules', {daterange: daterange}, function(response) {
                             var data = google.visualization.arrayToDataTable(response);
                             var options = decodeJson('{{{learningprogressoptions}}}');
                             var chart = new google.visualization.PieChart(document.getElementById('chart2'));
@@ -554,11 +550,8 @@
                 {{#pluginsettings.n6}}
                     google.charts.setOnLoadCallback(Correlations);
                     function Correlations() {
-                        $.ajax({
-                            url: pageurl + '&action=correlations',
-                            dataType: "json"
-                        }).done(function( response ) {
-                            //response = JSON.parse(response)
+                        var daterange = $('#general-daterange').val();
+                        instructorActions.execAction('correlations', {daterange: daterange, page: 0, length: 100}, function(response) {
                             var data = new google.visualization.DataTable();
                             data.addColumn('number', '{{jsstrings.grade}}');
                             data.addColumn('number', '{{jsstrings.in13}}');
@@ -645,10 +638,8 @@
                         var chart = new google.visualization.ComboChart(document.getElementById('instructor-chart-{{view}}'));
                         var view = $('.intelliboard-additional-form .switcher a.active').attr('data-view');
                         var daterange = $('#general-daterange').val();
-                        $.ajax({
-                            url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_course_overview&view="+view+"&course={{course}}&daterange="+daterange,
-                            dataType: "json"
-                        }).done(function( response ) {
+
+                        instructorActions.execAction('get_course_overview', {view: view, course: course, daterange: daterange}, function(response) {
                             if(view == 'activity'){
                                 options.vAxis.title = "{{jsstrings.s25}}";
                                 options.hAxis.title = "{{jsstrings.s45}}";
@@ -679,10 +670,7 @@
                 google.charts.setOnLoadCallback(load_graded_activities_overview_chart);
                 function load_graded_activities_overview_chart() {
                     var course = $('#chart8 .intelliboard-dropdown button').val();
-                    $.ajax({
-                        url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=graded_activities_overview&course="+course,
-                        dataType: "json"
-                    }).done(function(response) {
+                    instructorActions.execAction('graded_activities_overview', {course: course}, function(response) {
                         let data = google.visualization.arrayToDataTable(response);
                         let options = decodeJson('{{{gradeactivitiesoverviewoptions}}}');
                         options.title = '{{jsstrings.gradeactivitiesoverview}}';
@@ -704,10 +692,7 @@
                 function load_engagement_chart() {
                     var daterange = $('#general-daterange').val();
                     var course = $('#chart5 .intelliboard-dropdown button').val();
-                    $.ajax({
-                        url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_learner_engagement&daterange="+daterange+"&course="+course,
-                        dataType: "json"
-                    }).done(function( response ) {
+                    instructorActions.execAction('get_learner_engagement', {course: course, daterange: daterange}, function(response) {
                         var data = google.visualization.arrayToDataTable(response);
                         var options = decodeJson('{{{correlationsoptions}}}');
                         options.vAxis = {format: '#%', title: '{{jsstrings.s46}}'};
@@ -720,10 +705,7 @@
                 function load_module_utilization_chart() {
                     var daterange = $('#general-daterange').val();
                     var course = $('#chart3 .intelliboard-dropdown button').val();
-                    $.ajax({
-                        url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_module_utilization&daterange="+daterange+"&course="+course,
-                        dataType: "json"
-                    }).done(function( response ) {
+                    instructorActions.execAction('get_module_utilization', {course: course, daterange: daterange}, function(response) {
                         if(response.length > 0) {
                             var data = google.visualization.arrayToDataTable(response);
                             var options = decodeJson('{{{learningprogressoptions}}}');
@@ -740,10 +722,7 @@
                 function load_topic_utilization_chart() {
                     var daterange = $('#general-daterange').val();
                     var course = $('#chart6 .intelliboard-dropdown button').val();
-                    $.ajax({
-                        url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_topic_utilization&daterange="+daterange+"&course="+course,
-                        dataType: "json"
-                    }).done(function( response ) {
+                    instructorActions.execAction('get_topic_utilization', {course: course, daterange: daterange}, function(response) {
                         if(response.length > 0) {
                             var data = google.visualization.arrayToDataTable(response);
                             var options = decodeJson('{{{learningprogressoptions}}}');
@@ -759,15 +738,11 @@
 
                 function summary_student_daterange_change() {
                     var daterange = $('#general-daterange').val();
-                    $.ajax({
-                        url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_total_students&daterange="+daterange,
-                        dataType: "json"
-                    }).done(function( response ) {
+                    instructorActions.execAction('get_total_students', {daterange: daterange}, function(response) {
                         $('#avg-timespent-number').html(response.avg_timespend);
                         $('#total-student-number').html(response.enrolled_users);
                         $('#summary-chart-label').html(response.active_users);
                         $('#summary-users-chart').hide();
-
 
                         if(response.total_users>0) {
                             $('#summary-users-chart').show();
@@ -809,10 +784,7 @@
                 }
 
                 function load_chart7_users_list(course) {
-                    $.ajax({
-                        url: "{{wwwroot}}/local/intelliboard/instructor/ajax.php?action=get_course_users&course="+course,
-                        dataType: "json"
-                    }).done(function( response ) {
+                    instructorActions.execAction('get_course_users', {course: course}, function(response) {
                         $('#chart7 .intelliboard-dropdown.users ul').html(response.items);
                     });
                 }
@@ -823,11 +795,13 @@
                     let format = $(this).attr('data-format');
                     let course = $('#chart8 .intelliboard-dropdown button').val();
                     let params = [
-                        'export=1', 'action=graded_activities_overview', 'course=' + course,
-                        'format=' + format
+                        'action=graded_activities_overview_export',
+                        'course=' + course,
+                        'format=' + format,
+                        'sesskey=' + M.cfg.sesskey
                     ];
                     window.location.replace(
-                        "{{wwwroot}}/local/intelliboard/instructor/ajax.php?" + params.join('&')
+                        "{{wwwroot}}/local/intelliboard/instructor/export.php?" + params.join('&')
                     );
                 });
 

@@ -474,7 +474,7 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
                                  page='module' $sql55 AND courseid = :c2
                         GROUP BY param
                          ) l ON l.param=cm.id
-                   WHERE cm.visible = 1 AND cm.course = :c3 $sql
+                   WHERE cm.instance > 0 AND cm.visible = 1 AND cm.course = :c3 $sql
                  ) t";
 
         $where = "t.id > 0";
@@ -1192,7 +1192,7 @@ class intelliboard_learner_grades_table extends local_intelliboard_intelli_table
               LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion AND cmc.userid = :u2
               LEFT JOIN {local_intelliboard_tracking} l ON l.param=cm.id AND l.page='module' AND l.courseid=:c1 AND l.userid= :u3
                         $enrolmentjoin
-                  WHERE cm.visible = 1 AND cm.course = :c2 $sql) t";
+                  WHERE cm.instance > 0 AND cm.visible = 1 AND cm.course = :c2 $sql) t";
         $where = 't.id > 0';
 
         $this->set_sql($fields, $from, $where, $params);
