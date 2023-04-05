@@ -5654,7 +5654,7 @@ class local_intelliboard_external extends external_api {
            LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype = 'course'
            LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
                 LEFT JOIN {course_completions} cc ON cc.timecompleted > 0 AND cc.course = e.courseid and cc.userid = ue.userid
-                LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) as m ON m.course = c.id
+                LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 AND instance > 0 GROUP BY course) as m ON m.course = c.id
                 LEFT JOIN (SELECT cm.course, x.userid, COUNT(DISTINCT x.id) as completed FROM {course_modules} cm, {course_modules_completion} x WHERE x.coursemoduleid = cm.id AND cm.visible = 1 $completion GROUP BY cm.course, x.userid) as cmc ON cmc.course = c.id AND cmc.userid = ue.userid
             WHERE ue.id > 0 $sql_filter
             GROUP BY u.id, c.id $sql_having $sql_order", $params);
@@ -7205,7 +7205,7 @@ class local_intelliboard_external extends external_api {
                FROM {course_modules} cm
           LEFT JOIN {modules} m ON m.id=cm.module
           LEFT JOIN {course_sections} cs ON cs.course = cm.course and cs.id = cm.section
-              WHERE cm.course=:course  $sql_filter_sequence $sql_filter $order_by",
+              WHERE cm.instance > 0 AND cm.course=:course  $sql_filter_sequence $sql_filter $order_by",
             array_merge(compact('course'), $this->params)
         );
 

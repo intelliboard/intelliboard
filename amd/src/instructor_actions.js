@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -19,12 +18,26 @@
  *
  *
  * @package    local_intelliboard
- * @copyright  2017 IntelliBoard, Inc
+ * @copyright  2019 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    https://intelliboard.net/
  */
-$plugin->version = 2023040501;
-$plugin->requires = 2011120500;
-$plugin->release = '7.0.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+
+define(['core/ajax'], function(ajax) {
+    var instructorAction = {
+        execAction: function (action, params, callback) {
+            ajax.call([{
+                methodname: 'local_intelliboard_instructor_action',
+                args: {
+                    action: action,
+                    params: params
+                }
+            }])[0].done(function (response) {
+                if (response.data) {
+                    callback(JSON.parse(response.data));
+                }
+            });
+        },
+    };
+    return instructorAction;
+});

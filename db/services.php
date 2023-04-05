@@ -287,6 +287,15 @@ $functions = array(
         'ajax' => true,
         'loginrequired' => false,
     ),
+    'local_intelliboard_instructor_action' => array(
+        'classname' => 'local_intelliboard_instructor_actions',
+        'methodname' => 'execute_action',
+        'classpath' => 'local/intelliboard/classes/instructor_actions.php',
+        'description' => 'Instructor Actions',
+        'type' => 'read',
+        'ajax' => true,
+        'loginrequired' => true,
+    ),
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
@@ -327,6 +336,7 @@ $services = array(
             'local_intelliboard_user_get_users',
             'local_intelliboard_get_users_roles',
             'local_intelliboard_get_roles_list',
+            'local_intelliboard_instructor_action',
         ),
         'restrictedusers' => 1,
         'enabled'=>1,
