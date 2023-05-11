@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    https://intelliboard.net/
  */
-$plugin->version = 2023040501;
+$plugin->version = 2023051101;
 $plugin->requires = 2011120500;
 $plugin->release = '7.0.0';
 $plugin->maturity = MATURITY_STABLE;
