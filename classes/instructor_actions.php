@@ -506,7 +506,7 @@ class local_intelliboard_instructor_actions extends external_api
         foreach($activities as $activity) {
             $data[] = [
                 intellitext($activity->itemname),
-                round($activity->grade, 2)
+                round($activity->grade ?? 0, 2)
             ];
         }
 

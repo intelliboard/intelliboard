@@ -23096,13 +23096,13 @@ class local_intelliboard_external extends external_api {
         }
         if (get_component_version('mod_customquiz')) {
             $sql_inner_filter1 = $this->get_filter_in_sql($params->courseid, 'cq.course');
-            $sql_join .= " LEFT JOIN (SELECT cqa.quiz,
+            $sql_join .= " LEFT JOIN (SELECT cqa.customquiz as quiz,
                                     cqa.userid,
                                     MIN(cqa.timefinish) AS first_completed_date,
                                     COUNT(*) AS num_of_attempts
                                FROM {customquiz_attempts} cqa
-                               JOIN {customquiz} cq ON cq.id = cqa.quiz {$sql_inner_filter1}
-                           GROUP BY cqa.quiz, cqa.userid
+                               JOIN {customquiz} cq ON cq.id = cqa.customquiz {$sql_inner_filter1}
+                           GROUP BY cqa.customquiz, cqa.userid
                             ) cqs ON cqs.userid = u.id AND m.name = 'customquiz' AND cqs.quiz = cm.instance ";
         }
         $sql_inner_filter2 = $this->get_filter_in_sql($params->courseid, 'q.course');
@@ -23218,13 +23218,13 @@ class local_intelliboard_external extends external_api {
         }
         if (get_component_version('mod_customquiz')) {
             $sql_inner_filter1 = $this->get_filter_in_sql($params->courseid, 'cq.course');
-            $sqljoin .= " LEFT JOIN (SELECT cqa.quiz,
+            $sqljoin .= " LEFT JOIN (SELECT cqa.customquiz as quiz,
                                     cqa.userid,
                                     MIN(cqa.timefinish) AS first_completed_date,
                                     COUNT(*) AS num_of_attempts
                                FROM {customquiz_attempts} cqa
-                               JOIN {customquiz} cq ON cq.id = cqa.quiz {$sql_inner_filter1}
-                           GROUP BY cqa.quiz, cqa.userid
+                               JOIN {customquiz} cq ON cq.id = cqa.customquiz {$sql_inner_filter1}
+                           GROUP BY cqa.customquiz, cqa.userid
                             ) cqs ON cqs.userid = u.id AND m.name = 'customquiz' AND cqs.quiz = cm.instance ";
         }
 
@@ -23796,13 +23796,13 @@ class local_intelliboard_external extends external_api {
           LEFT JOIN (SELECT vr.instanceid, COUNT(u.id) as activeusers
                        FROM {local_intellicart_users} vr
                        JOIN {user} u ON u.id = vr.userid
-                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 0 AND vr.type = 'vendor'
+                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 0 AND vr.type = 'vendor' AND vr.role = 'user'
                    GROUP BY vr.instanceid
                     ) ua ON ua.instanceid = v.id
           LEFT JOIN (SELECT vr.instanceid, COUNT(u.id) as inactiveusers
                        FROM {local_intellicart_users} vr
                        JOIN {user} u ON u.id = vr.userid
-                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 1 AND vr.type = 'vendor'
+                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 1 AND vr.type = 'vendor' AND vr.role = 'user'
                    GROUP BY vr.instanceid
                     ) ui ON ui.instanceid = v.id
           LEFT JOIN (SELECT vr.instanceid, $clnamesql
