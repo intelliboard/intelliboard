@@ -85,15 +85,6 @@ if (!$daterange) {
     $timefinish_date = intelli_date($timefinish);
 }
 
-
-if($action == 'modules'){
-	$data = intelliboard_instructor_modules($timestart, $timefinish);
-	die(json_encode($data));
-}elseif ($action == 'correlations') {
-    $data = intelliboard_instructor_correlations($page, $length, $timestart, $timefinish);
-	die(json_encode($data));
-}
-
 $PAGE->set_url(new moodle_url(
     "/local/intelliboard/instructor/index.php", array("type"=>$type, "search"=>$search, "daterange"=>$daterange)
 ));
@@ -102,6 +93,7 @@ $PAGE->set_pagelayout('report');
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
+
 // $PAGE->requires->jquery();
 // $PAGE->requires->jquery_plugin('/local/intelliboard/assets/js/flatpickr.min.js');
 // if(file_exists('/local/intelliboard/assets/js/flatpickr_l10n/'.current_language().'.js')) {

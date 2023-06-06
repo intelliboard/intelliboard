@@ -152,12 +152,12 @@ $json_data = array();
 if($settingUserEnrollmentsSession) {
     $stat = $plugin->get_dashboard_stats($params);
     $LineChart = $plugin->get_site_activity($params);
-    ksort($LineChart->sessions);
-    $timePoints = array_merge(
+    $timePoints = array_unique(array_merge(
         array_keys($LineChart->sessions ?? []),
-        array_keys($LineChart->enrollments ?? []),
+        array_keys($LineChart->enrolments ?? []),
         array_keys($LineChart->completions ?? [])
-    );
+    ));
+    sort($timePoints);
 
     foreach($timePoints as $timePoint) {
         $d = date("j", strtotime($timePoint));

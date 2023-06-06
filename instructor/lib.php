@@ -326,7 +326,7 @@ function intelliboard_instructor_correlations($page, $length, $timestart, $timef
         $tooltip .= "<div class=\"chart-tooltip-right\">".get_string('time_spent','local_intelliboard').": <span>". $d."</span></div>";
         $tooltip .= "</div>";
         $tooltip .= "</div>";
-        $data[] = array($l, round($item->grade, 2), $tooltip);
+        $data[] = array($l, round($item->grade ?? 0, 2), $tooltip);
     }
 
     return $data;
@@ -431,8 +431,8 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
 
             if($range[0] && $range[1]){
                 $timerange_sql .= ' AND g.timemodified BETWEEN :timestart AND :timefinish';
-                $params['timestart'] = strtotime(trim($range[0]));
-                $params['timefinish'] = strtotime(trim($range[1]));
+                $params['timestart'] = intelliboard_str_to_timestamp(trim($range[0]));
+                $params['timefinish'] = intelliboard_str_to_timestamp(trim($range[1]));
             }
         }
         $join_sql = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'c.id');
@@ -460,8 +460,8 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
 
             if($range[0] && $range[1]){
                 $completion .= ' AND cmc.timemodified BETWEEN :timestart AND :timefinish';
-                $params['timestart'] = strtotime(trim($range[0]));
-                $params['timefinish'] = strtotime(trim($range[1]));
+                $params['timestart'] = intelliboard_str_to_timestamp(trim($range[0]));
+                $params['timefinish'] = intelliboard_str_to_timestamp(trim($range[1]));
             }
         }
         $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
@@ -506,10 +506,10 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
 
             if($range[0] && $range[1]){
                 $sql2 .= ' AND (cc.timecompleted BETWEEN :timestart1 AND :timefinish1 OR ra.timemodified BETWEEN :timestart2 AND :timefinish2)';
-                $params['timestart1'] = strtotime(trim($range[0]));
-                $params['timefinish1'] = strtotime(trim($range[1]));
-                $params['timestart2'] = strtotime(trim($range[0]));
-                $params['timefinish2'] = strtotime(trim($range[1]));
+                $params['timestart1'] = intelliboard_str_to_timestamp(trim($range[0]));
+                $params['timefinish1'] = intelliboard_str_to_timestamp(trim($range[1]));
+                $params['timestart2'] = intelliboard_str_to_timestamp(trim($range[0]));
+                $params['timefinish2'] = intelliboard_str_to_timestamp(trim($range[1]));
             }
         }
         $join_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c.id');
@@ -1227,4 +1227,56 @@ function intelliboard_instructor_hide_suspended_enrollments_joinsql($courseColum
         ";
     }
     return $sql;
+}
+
+function graded_activities_overview_export($course, $format)
+{
+    global $USER, $DB, $CFG;
+
+    if($course && $format) {
+        $data = [[
+            get_string('activity', 'local_intelliboard'),
+            get_string('grade', 'local_intelliboard'),
+        ]];
+        $join_senrollments = intelliboard_instructor_hide_suspended_enrollments_joinsql('ga.courseid', 'gg.userid');
+        $activities = $DB->get_records_sql(
+            "SELECT ga.id, ga.itemname, AVG(gg.finalgrade) as grade
+                   FROM {grade_items} ga
+              LEFT JOIN {grade_grades} gg ON gg.itemid = ga.id
+                        $join_senrollments
+                  WHERE ga.courseid = :course AND ga.itemtype = 'mod'
+               GROUP BY ga.id, ga.itemname",
+            ['course' => $course]
+        );
+        foreach ($activities as $activity) {
+            $data[] = [
+                intellitext($activity->itemname),
+                round($activity->grade, 2)
+            ];
+        }
+        $header = [];
+        $head1 = new \stdClass();
+        $head1->name = get_string('activity', 'local_intelliboard');
+        $header[] = $head1;
+
+        $head2 = new \stdClass();
+        $head2->name = get_string('grade', 'local_intelliboard');
+        $header[] = $head2;
+
+        $json = new \stdClass();
+        $json->header = $header;
+        $json->body = array_slice($data, 1);
+        return intelliboard_export_report(
+            $json, get_string('grade_activities_overview', 'local_intelliboard'), $format
+        );
+    }
+}
+
+function intelliboard_str_to_timestamp($datestring)
+{
+      return date_create_from_format(
+                    intelli_date_format(),
+                    trim($datestring)
+                )
+            ->getTimestamp();
 }

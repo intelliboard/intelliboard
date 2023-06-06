@@ -172,7 +172,7 @@ echo $OUTPUT->header();
                             </div>
                             <?php if($t19): ?>
                                 <div class="grade" title="<?php echo get_string('current_grade','local_intelliboard');?>">
-                                    <div class="circle-progress"  data-percent="<?php echo ($scale_real)?$item->grade:round($item->grade, $scale_percentage_round); ?>"></div>
+                                    <div class="circle-progress"  data-percent="<?php echo ($scale_real)?$item->grade:round($item->grade ?? 0, $scale_percentage_round); ?>"></div>
                                 </div>
                             <?php endif; ?>
                         </div>

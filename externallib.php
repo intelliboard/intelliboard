@@ -1029,28 +1029,29 @@ class local_intelliboard_external extends external_api {
         ), $this->get_filter_columns($params, [null]));
         $sql_columns = $this->get_columns($params, [null]);
         $sql1 = $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
-        $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses", "ue.userid" => "users"]);
+        $sql_filter = $this->get_teacher_sql($params, ["c.id" => "courses", "uc.userid" => "users"]);
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
-        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sqluenrfilter = $this->get_filter_enrol_sql($params, "ue.");
         $sqlenrfilter = $this->get_filter_enrol_sql($params, "e.");
+        $sqlenrfilter .= $this->get_filter_user_not_current_sql($params, "ue.");
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
         $grade_avg = intelliboard_grade_sql(true, $params);
-        $sql_vendor_filter = $this->vendor_filter('ue.userid', 'c.id', $params);
+        $sql_vendor_filter = $this->vendor_filter('uc.userid', 'c.id', $params);
         $sql_vendor_filter1 = $this->vendor_filter('userid', 'courseid', $params);
         $sql_filter_tracking = '';
         $sql_compl = "";
         if ($params->custom == 1) {
             $sql_compl = $this->get_filterdate_sql($params, "cc.timecompleted");
         } elseif ($params->custom == 2) {
-            $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+            $sqlenrfilter .= $this->get_filterdate_sql($params, "ue.timecreated");
         } elseif ($params->custom == 3) {
             $sql_filter_tracking = $this->get_filterdate_sql($params, "firstaccess");
         } else {
             $sql_filter .= $this->get_filterdate_sql($params, "c.timecreated");
         }
+
         return $this->get_report_data("
             SELECT c.id,
                 c.fullname AS course,
@@ -1063,18 +1064,24 @@ class local_intelliboard_external extends external_api {
                 MAX(l.timespend) AS timespend,
                 MAX(l.visits) AS visits,
                 COUNT(DISTINCT cc.userid) AS completed,
-                COUNT(DISTINCT ue.userid) AS learners,
+                COUNT(DISTINCT uc.userid) AS learners,
                 (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND course = c.id) AS modules,
                 (SELECT name FROM {course_categories} WHERE id = c.category) AS category
                 $sql_columns
             FROM {course} c
-                LEFT JOIN {enrol} e ON e.courseid = c.id {$sqlenrfilter}
-                LEFT JOIN {context} ctx ON c.id = ctx.instanceid AND ctx.contextlevel = 50
-                LEFT JOIN {role_assignments} ra ON ra.contextid = ctx.id $sql1
-                LEFT JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ra.userid = ue.userid {$sqluenrfilter}
-                LEFT JOIN {course_completions} cc ON cc.timecompleted > 0 AND cc.course = c.id AND cc.userid = ue.userid $sql_compl
+                LEFT JOIN (
+                          SELECT e.courseid,
+                                 ue.userid
+                            FROM {enrol} e
+                            JOIN {user_enrolments} ue ON ue.enrolid=e.id {$sqluenrfilter}
+                            JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.instanceid = e.courseid
+                            JOIN {role_assignments} ra ON ra.userid = ue.userid AND ra.contextid = ctx.id {$sql1}
+                          WHERE e.courseid > 0 {$sqlenrfilter}
+                        GROUP BY e.courseid, ue.userid
+                ) uc ON uc.courseid = c.id
+                LEFT JOIN {course_completions} cc ON cc.course = c.id AND cc.userid = uc.userid AND cc.timecompleted > 0 $sql_compl
                 LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = c.id
-                LEFT JOIN {grade_grades} g ON g.userid = ue.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                LEFT JOIN {grade_grades} g ON g.userid = uc.userid AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
                 LEFT JOIN (SELECT courseid, SUM(timespend) AS timespend, SUM(visits) AS visits
                              FROM {local_intelliboard_tracking}
                             WHERE id > 0 {$sql_filter_tracking} {$sql_vendor_filter1}
@@ -1082,6 +1089,7 @@ class local_intelliboard_external extends external_api {
                           ) l ON l.courseid = c.id
             WHERE c.id > 1 $sql_filter {$sql_vendor_filter} GROUP BY c.id $sql_having $sql_order", $params);
     }
+
     public function report3($params)
     {
         global $DB;
@@ -5646,7 +5654,7 @@ class local_intelliboard_external extends external_api {
            LEFT JOIN {grade_items} gi ON gi.courseid=c.id AND gi.itemtype = 'course'
            LEFT JOIN {grade_grades} g ON gi.id=g.itemid AND g.userid=u.id
                 LEFT JOIN {course_completions} cc ON cc.timecompleted > 0 AND cc.course = e.courseid and cc.userid = ue.userid
-                LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 GROUP BY course) as m ON m.course = c.id
+                LEFT JOIN (SELECT course, count(id) as modules FROM {course_modules} WHERE visible = 1 AND completion > 0 AND instance > 0 GROUP BY course) as m ON m.course = c.id
                 LEFT JOIN (SELECT cm.course, x.userid, COUNT(DISTINCT x.id) as completed FROM {course_modules} cm, {course_modules_completion} x WHERE x.coursemoduleid = cm.id AND cm.visible = 1 $completion GROUP BY cm.course, x.userid) as cmc ON cmc.course = c.id AND cmc.userid = ue.userid
             WHERE ue.id > 0 $sql_filter
             GROUP BY u.id, c.id $sql_having $sql_order", $params);
@@ -7197,7 +7205,7 @@ class local_intelliboard_external extends external_api {
                FROM {course_modules} cm
           LEFT JOIN {modules} m ON m.id=cm.module
           LEFT JOIN {course_sections} cs ON cs.course = cm.course and cs.id = cm.section
-              WHERE cm.course=:course  $sql_filter_sequence $sql_filter $order_by",
+              WHERE cm.instance > 0 AND cm.course=:course  $sql_filter_sequence $sql_filter $order_by",
             array_merge(compact('course'), $this->params)
         );
 
@@ -13392,11 +13400,11 @@ class local_intelliboard_external extends external_api {
           WHERE e.courseid = :courseid AND e.customint1 = :cohortid AND e.enrol = 'cohort' $sql_filter $sql_filter_compl $sql_having $sql_order", $params, false);
 
         $totals = $DB->get_record_sql("
-              SELECT COUNT(DISTINCT u.id) AS learners, COUNT(DISTINCT ul.userid) AS registrants FROM {user_enrolments} ue
+              SELECT COUNT(DISTINCT u.id) AS learners
+                FROM {user_enrolments} ue
                 JOIN {enrol} e ON e.id = ue.enrolid
                 JOIN {user} u ON u.id = ue.userid
-                LEFT JOIN {user_lastaccess} ul ON ul.courseid = e.courseid AND ul.userid = u.id
-              WHERE e.courseid = :courseid AND e.customint1 = :cohortid AND e.enrol = 'cohort' $sql_filter $sql_having", $this->params);
+               WHERE e.courseid = :courseid AND e.customint1 = :cohortid AND e.enrol = 'cohort' $sql_filter $sql_having", $this->params);
 
         $completions = $DB->get_records_sql("
               SELECT cmc.coursemoduleid, COUNT(DISTINCT cmc.userid) AS users
@@ -13484,7 +13492,7 @@ class local_intelliboard_external extends external_api {
         $completions = null;
         if (!empty($data)) {
             $totals = $DB->get_record_sql("
-                SELECT COUNT(DISTINCT cm.id) AS learners, COUNT(DISTINCT CASE WHEN u.firstaccess > 0 THEN u.id ELSE null END) AS registrants
+                SELECT COUNT(DISTINCT cm.id) AS learners
                 FROM {cohort_members} cm, {user} u
                 WHERE u.id = cm.userid $sql_filter $sql_having", $this->params);
 
@@ -13663,9 +13671,7 @@ class local_intelliboard_external extends external_api {
             COUNT(DISTINCT cm.userid) AS enrolled_users,
             COUNT(DISTINCT cc.userid) AS completed_users,
             COUNT(DISTINCT cc.userid)/COUNT(DISTINCT cm.userid)*100 AS percent_completed_users,
-            AVG($value) AS avg_rating,
-            COUNT(DISTINCT ul.userid) AS registered_users,
-            COUNT(DISTINCT ul.userid)/COUNT(DISTINCT cm.userid)*100 AS percent_registered_users
+            AVG($value) AS avg_rating
         FROM {cohort} c
             JOIN {cohort_members} cm ON cm.cohortid=c.id
             JOIN {user_enrolments} ue ON ue.userid = cm.userid
@@ -13677,7 +13683,6 @@ class local_intelliboard_external extends external_api {
             LEFT JOIN {feedback_completed} fc ON fc.feedback=f.id AND fc.userid=cm.userid
             LEFT JOIN {feedback_item} fi ON fi.feedback=f.id AND fi.typ <> 'textarea'
             LEFT JOIN {feedback_value} fv ON fv.item=fi.id AND fv.completed=fc.id
-            LEFT JOIN {user_lastaccess} ul ON ul.userid=cm.userid AND ul.courseid=co.id
             LEFT JOIN {course_completions} cc ON cc.userid = u.id AND cc.course = co.id AND cc.timecompleted > 0
         WHERE c.id IN (SELECT co.id FROM {local_management_cohort} c, {cohort} co WHERE co.id = c.cohortid AND c.status = 1 AND c.hospitalid = :hospitalid $sql_hidden_cohort) $sql_filter
         GROUP BY c.id $sql_having $sql_order", $params);
@@ -13742,6 +13747,7 @@ class local_intelliboard_external extends external_api {
       $sql_course .= $this->get_filter_enrol_sql($params, "e.");
       $sql_course .= $this->get_filter_enrol_sql($params, "ue.");
       $sql_course .= $this->get_filter_in_sql($this->params['cohortid'], "cm.cohortid");
+      $sql_course .= $this->get_filter_in_sql($this->params['courseid'], "f.course");
 
       $feedback = $DB->get_record_sql("SELECT MAX(f.id) AS id
         FROM {feedback} f, {feedback_item} i, {user_enrolments} ue, {enrol} e, {course} c, {cohort_members} cm
@@ -20970,7 +20976,8 @@ class local_intelliboard_external extends external_api {
             if ($query) {
                 $sql = " AND (".implode(" AND ", $query).")";
             }
-        } elseif(isset($params->userid) && $params->userid && $columns) {
+        }
+        if(isset($params->userid) && $params->userid && $columns) {
           if(get_config('local_intelliboard', 'learning_plan_filter') && $include_learning_plan_filter==true){
               $sql .= $this->get_learning_plan_filter_sql($params, 'u.id');
           } else {
@@ -21131,8 +21138,35 @@ class local_intelliboard_external extends external_api {
                         $courses[] = $row->instanceid;
                     }
                 }
+            }
 
-                if ($courses && $courseidcolumn) {
+            //Filter courses by vendor manager
+            if ($courseidcolumn) {
+                $vendorcourses = [];
+                $vendorcoursesrows = $DB->get_records_sql(
+                    "SELECT DISTINCT ir.instanceid
+                       FROM {local_intellicart_users} iu
+                       JOIN {local_intellicart_vendors} iv ON iv.id = iu.instanceid
+                       JOIN {local_intellicart_vrelations} ivr ON ivr.vendorid = iv.id AND ivr.type='product'
+                       JOIN {local_intellicart_relations} ir ON ir.productid = ivr.instanceid AND ir.type = 'course'
+                      WHERE iu.type='vendor' AND iu.role='manager' AND iu.userid = :vendoruserid",
+                    [
+                         "vendoruserid" => $params->vendor_user_id
+                    ]
+                );
+
+                if ($vendorcoursesrows) {
+                    $vendorcourses = array_map(function ($row) {
+                        return $row->instanceid;
+                    }, $vendorcoursesrows);
+                }
+                if ($courses == null) {
+                    $courses = [];
+                }
+
+               $courses = array_unique(array_merge($courses, $vendorcourses));
+
+                if ($courses) {
                     $coursesids = implode(',', $courses);
                     $sql .= " AND {$courseidcolumn} IN ({$coursesids})";
                 }
@@ -23087,13 +23121,13 @@ class local_intelliboard_external extends external_api {
         }
         if (get_component_version('mod_customquiz')) {
             $sql_inner_filter1 = $this->get_filter_in_sql($params->courseid, 'cq.course');
-            $sql_join .= " LEFT JOIN (SELECT cqa.quiz,
+            $sql_join .= " LEFT JOIN (SELECT cqa.customquiz as quiz,
                                     cqa.userid,
                                     MIN(cqa.timefinish) AS first_completed_date,
                                     COUNT(*) AS num_of_attempts
                                FROM {customquiz_attempts} cqa
-                               JOIN {customquiz} cq ON cq.id = cqa.quiz {$sql_inner_filter1}
-                           GROUP BY cqa.quiz, cqa.userid
+                               JOIN {customquiz} cq ON cq.id = cqa.customquiz {$sql_inner_filter1}
+                           GROUP BY cqa.customquiz, cqa.userid
                             ) cqs ON cqs.userid = u.id AND m.name = 'customquiz' AND cqs.quiz = cm.instance ";
         }
         $sql_inner_filter2 = $this->get_filter_in_sql($params->courseid, 'q.course');
@@ -23209,13 +23243,13 @@ class local_intelliboard_external extends external_api {
         }
         if (get_component_version('mod_customquiz')) {
             $sql_inner_filter1 = $this->get_filter_in_sql($params->courseid, 'cq.course');
-            $sqljoin .= " LEFT JOIN (SELECT cqa.quiz,
+            $sqljoin .= " LEFT JOIN (SELECT cqa.customquiz as quiz,
                                     cqa.userid,
                                     MIN(cqa.timefinish) AS first_completed_date,
                                     COUNT(*) AS num_of_attempts
                                FROM {customquiz_attempts} cqa
-                               JOIN {customquiz} cq ON cq.id = cqa.quiz {$sql_inner_filter1}
-                           GROUP BY cqa.quiz, cqa.userid
+                               JOIN {customquiz} cq ON cq.id = cqa.customquiz {$sql_inner_filter1}
+                           GROUP BY cqa.customquiz, cqa.userid
                             ) cqs ON cqs.userid = u.id AND m.name = 'customquiz' AND cqs.quiz = cm.instance ";
         }
 
@@ -23787,13 +23821,13 @@ class local_intelliboard_external extends external_api {
           LEFT JOIN (SELECT vr.instanceid, COUNT(u.id) as activeusers
                        FROM {local_intellicart_users} vr
                        JOIN {user} u ON u.id = vr.userid
-                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 0 AND vr.type = 'vendor'
+                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 0 AND vr.type = 'vendor' AND vr.role = 'user'
                    GROUP BY vr.instanceid
                     ) ua ON ua.instanceid = v.id
           LEFT JOIN (SELECT vr.instanceid, COUNT(u.id) as inactiveusers
                        FROM {local_intellicart_users} vr
                        JOIN {user} u ON u.id = vr.userid
-                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 1 AND vr.type = 'vendor'
+                      WHERE u.id > 2 AND u.deleted = 0 AND u.suspended = 1 AND vr.type = 'vendor' AND vr.role = 'user'
                    GROUP BY vr.instanceid
                     ) ui ON ui.instanceid = v.id
           LEFT JOIN (SELECT vr.instanceid, $clnamesql
@@ -24944,5 +24978,158 @@ class local_intelliboard_external extends external_api {
              WHERE q.id = :quizid",
             array("quizid" => intval($quizid))
         );
+    }
+
+
+    public function report257($params)
+    {
+        global $CFG;
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.username",
+            "u.email",
+            "c.fullname",
+            "l.timespend",
+            "cc.timecompleted"
+        ), $this->get_filter_columns($params));
+
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_having = $this->get_filter_sql($params, $columns, false);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
+        $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
+        $sql_join_filter = ""; $sql_mode = 0;
+        $grade_single = intelliboard_grade_sql(false, $params);
+
+        $sql_join = "";
+        if (isset($params->custom) and  strrpos($params->custom, ',') !== false) {
+            $sql_filter .= $this->get_filter_in_sql($params->custom, "u.id");
+            $sql_filter_column = "ue.timecreated";
+        } elseif (isset($params->custom) and $params->custom == 3) {
+            $filter = $this->get_filterdate_sql($params, "cc.timecompleted", false);
+            $sql_filter .= " AND (cc.timecompleted IS NULL OR " . $filter . ")";
+            $sql_mode = 2;
+        } elseif (isset($params->custom) and $params->custom == 2 and !$params->sizemode) {
+            $sql_filter_column = "l.timepoint";
+            $sql_mode = 1;
+        } elseif (isset($params->custom) and $params->custom == 1) {
+            $sql_filter_column = "cc.timecompleted";
+        } else {
+            $sql_filter_column = "ue.timecreated";
+        }
+        if ($sql_mode == 2) {
+            // do nothing
+        } elseif ($sql_mode) {
+            $sql_join_filter .= $this->get_filterdate_sql($params, "$sql_filter_column");
+        } else {
+            $sql_filter .= $this->get_filterdate_sql($params, "$sql_filter_column");
+        }
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
+        $sql_filter .= $this->vendor_filter('ue.userid', 'c.id', $params);
+        $courseroles = get_operator('GROUP_CONCAT', 'DISTINCT(r.shortname)', ['separator' => ', ']);
+
+        if ($params->sizemode) {
+            $sql_columns .= ", '0' AS timespend, '0' AS visits";
+        } elseif ($sql_mode == 1) {
+            $sql_columns .= ", l.timespend, l.visits";
+
+            if ($params->custom5 == 'hourly') {
+                $sql_join .= " LEFT JOIN (SELECT MIN(t.id) AS id,
+                                                 t.courseid,
+                                                 t.userid,
+                                                 SUM(lid.timespend) AS timespend,
+                                                 SUM(lid.visits) AS visits
+                                            FROM {local_intelliboard_tracking} t
+                                            JOIN {local_intelliboard_logs} l ON l.trackid = t.id
+                                            JOIN {local_intelliboard_details} lid ON lid.logid = l.id
+                                           WHERE t.id > 0 {$sql_join_filter}
+                                        GROUP BY t.courseid, t.userid
+                                         ) l ON l.courseid = c.id AND l.userid = u.id";
+            } else {
+                $sql_join .= " LEFT JOIN (SELECT MIN(t.id) AS id, t.userid, t.courseid, SUM(l.timespend) AS timespend, SUM(l.visits) AS visits
+                                            FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
+                                           WHERE l.trackid = t.id $sql_join_filter
+                                        GROUP BY t.courseid, t.userid
+                                         ) l ON l.courseid = c.id AND l.userid = u.id";
+            }
+        } else {
+            $sql_columns .= ", l.timespend, l.visits";
+
+            if ($params->custom5 == 'hourly') {
+                $sql_join .= " LEFT JOIN (SELECT MIN(t.id) AS id,
+                                                    t.courseid,
+                                                    t.userid,
+                                                    SUM(lid.timespend) AS timespend,
+                                                    SUM(lid.visits) AS visits
+                                            FROM {local_intelliboard_tracking} t
+                                            JOIN {local_intelliboard_logs} l ON l.trackid = t.id
+                                            JOIN {local_intelliboard_details} lid ON lid.logid = l.id
+                                        GROUP BY t.courseid, t.userid
+                                            ) l ON l.courseid = c.id AND l.userid = u.id";
+            } else {
+                $sql_join .= " LEFT JOIN (SELECT t.userid,
+                                                 t.courseid,
+                                                 SUM(t.timespend) AS timespend,
+                                                 SUM(t.visits) AS visits
+                                            FROM {local_intelliboard_tracking} t
+                                        GROUP BY t.courseid, t.userid
+                                         ) l ON l.courseid = c.id AND l.userid = u.id";
+            }
+        }
+        $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+        if ($CFG->dbtype == 'pgsql') {
+            $group_concat = "string_agg( DISTINCT CONCAT(u.firstname,' ',u.lastname), ', ')";
+        } else {
+            $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u.firstname,' ',u.lastname) SEPARATOR ', ')";
+        }
+
+        if ($params->custom4 == 1) {
+            $sql_filter .= ' AND cc.timecompleted IS NOT NULL';
+        } elseif ($params->custom4 == 2) {
+            $sql_filter .= ' AND cc.timecompleted IS NULL';
+        }
+
+        if (!empty($params->custom2)) {
+            $sql_roles_filter = $this->get_filter_in_sql($params->custom2, "ra.roleid");
+            $sql_roles_filter .= $this->get_filter_in_sql($params->courseid, "ctx.instanceid");
+            $sql_join .= " JOIN (SELECT DISTINCT ra.userid, ctx.instanceid
+                                   FROM {role_assignments} AS ra
+                                   JOIN {role} r ON r.id=ra.roleid
+                                   JOIN {context} AS ctx ON ctx.id = ra.contextid
+                                  WHERE ctx.contextlevel = 50 $sql_roles_filter
+                                ) rl ON rl.userid=u.id AND rl.instanceid=c.id";
+        }
+
+        $sql_join .= $this->extra_columns_joins($params, [2 => 'ue.modifierid']);
+        $sql_join .= $this->group_aggregation('u.id', 'c.id', $params);
+
+        return $this->get_report_data("
+            SELECT ue.id,
+                ue.timecreated AS enrolled,
+                c.enablecompletion,
+                cc.timecompleted AS complete,
+                u.id AS uid,
+                u.email,
+                u.firstname,
+                u.lastname,
+                u.username,
+                c.id AS cid,
+                c.fullname AS course
+                $sql_columns
+            FROM {user_enrolments} ue
+                JOIN {enrol} e ON e.id = ue.enrolid
+                JOIN {user} u ON u.id = ue.userid
+                JOIN {course} c ON c.id = e.courseid
+                LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
+                LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid
+                LEFT JOIN {grade_items} gi ON gi.itemtype = 'course' AND gi.courseid = e.courseid
+                LEFT JOIN {grade_grades} g ON g.userid = u.id AND g.itemid = gi.id AND g.finalgrade IS NOT NULL
+                $sql_join
+            WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
 }

@@ -71,11 +71,11 @@ function intelliboard_data($type, $userid, $showing_user) {
         $query = "SELECT a.id, a.name, a.duedate, c.id AS course_id, c.fullname, $grade_single AS grade, cmc.completionstate, cm.id as cmid
                     FROM {course} c, {assign} a
                         LEFT JOIN {modules} m ON m.name = 'assign'
-                        LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = a.id
+                        LEFT JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = a.id AND cm.instance > 0
                         LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid2
                         LEFT JOIN {grade_items} gi ON gi.itemmodule = m.name AND gi.iteminstance = a.id AND gi.hidden = 0
                         LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid3
-                    WHERE c.id = a.course AND cm.visible = 1 $sql ORDER BY cm.added ASC";
+                    WHERE c.id = a.course AND cm.instance > 0 AND cm.visible = 1 $sql ORDER BY cm.added ASC";
         $params['userid2'] = $userid;
         $params['userid3'] = $userid;
 
@@ -130,7 +130,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                     LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid2
                     LEFT JOIN {grade_items} gi ON gi.itemmodule = m.name AND gi.iteminstance = a.id AND gi.hidden <> 1
                     LEFT JOIN {grade_grades} g ON g.itemid = gi.id AND g.userid = :userid3
-                  WHERE c.id = a.course AND cm.visible = 1 $sql ORDER BY cm.added ASC";
+                  WHERE c.id = a.course AND cm.instance > 0 AND cm.visible = 1 $sql ORDER BY cm.added ASC";
         $params['userid2'] = $userid;
         $params['userid3'] = $userid;
 
@@ -179,7 +179,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                          (SELECT COUNT(cmc.id)
                             FROM {course_modules} cm, {course_modules_completion} cmc
                            WHERE cm.id = cmc.coursemoduleid $completion AND
-                                 cm.visible = 1 AND cm.course = c.id AND
+                                 cm.visible = 1 AND cm.instance > 0 AND cm.course = c.id AND
                                  cmc.userid = :userid4
                          ) AS completedmodules,
                          (SELECT SUM(timespend)
@@ -188,7 +188,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                          ) AS duration,
                          (SELECT COUNT(id)
                             FROM {course_modules}
-                           WHERE visible = 1 AND completion > 0 AND course = c.id
+                           WHERE visible = 1 AND instance > 0 AND completion > 0 AND course = c.id
                          ) AS modules,
                          (SELECT timecompleted
                             FROM {course_completions}
@@ -252,7 +252,7 @@ function intelliboard_data($type, $userid, $showing_user) {
             $params['fullname'] = "%$search%";
         }
 
-        $res = $DB->get_record_sql("SELECT COUNT(cm.id) as certificates FROM {course_modules} cm, {modules} m WHERE m.name = 'certificate' AND cm.module = m.id AND cm.visible = 1");
+        $res = $DB->get_record_sql("SELECT COUNT(cm.id) as certificates FROM {course_modules} cm, {modules} m WHERE m.name = 'certificate' AND cm.module = m.id AND cm.visible = 1 AND cm.instance > 0");
         $sql_select = "";
         $sql_join = "";
         if($res->certificates){
@@ -283,8 +283,8 @@ function intelliboard_data($type, $userid, $showing_user) {
                 (SELECT $grade_avg FROM {grade_items} gi, {grade_grades} g WHERE gi.itemtype = 'course' AND g.itemid = gi.id AND g.finalgrade IS NOT NULL AND gi.courseid = c.id AND gi.hidden <> 1) AS average,
                 (SELECT SUM(timespend) FROM {local_intelliboard_tracking} WHERE userid = :userid2 AND courseid = c.id) AS duration,
                 (SELECT name FROM {course_categories} WHERE id = c.category) AS category,
-                (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
-                (SELECT COUNT(id) FROM {course_modules} WHERE visible = 1 AND completion > 0 AND course = c.id) AS modules,
+                (SELECT COUNT(cmc.id) FROM {course_modules} cm, {course_modules_completion} cmc WHERE cm.id = cmc.coursemoduleid $completion AND cm.instance > 0 AND cm.visible = 1 AND cm.course = c.id AND cmc.userid = :userid4) AS completedmodules,
+                (SELECT COUNT(id) FROM {course_modules} WHERE instance > 0 AND visible = 1 AND completion > 0 AND course = c.id) AS modules,
                 (SELECT timecompleted FROM {course_completions} WHERE course = c.id AND userid = :userid5) AS timecompleted,
                 (SELECT DISTINCT u.id
                     FROM {role_assignments} AS ra
@@ -781,7 +781,7 @@ function intelliboard_learner_modules($userid){
                                   FROM {modules} m, {course_modules} cm
                                     LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = :userid1 $completion
                                     LEFT JOIN {local_intelliboard_tracking} l ON l.page = 'module' AND l.userid = :userid2 AND l.param = cm.id
-                                  WHERE cm.visible = 1 AND cm.module = m.id and cm.course IN (
+                                  WHERE cm.instance > 0 AND cm.visible = 1 AND cm.module = m.id and cm.course IN (
                                     SELECT distinct e.courseid FROM {enrol} e, {user_enrolments} ue WHERE ue.userid = :userid3 AND e.id = ue.enrolid AND ue.status = 0) GROUP BY m.id", $params);
 }
 function intelliboard_learner_access()

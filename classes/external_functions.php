@@ -468,6 +468,7 @@ class local_external_functions
             'get_course_quiz_questions',
             'get_icpayment_types',
             'get_icproduct_custom_fields',
+            'report257',
         ];
     }
     public function get_function($params = null)
