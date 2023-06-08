@@ -935,8 +935,8 @@ $string['enroled_on'] = 'Enrollment Date';
 
 $string['dashboard_link'] = 'Click to view Analytics';
 $string['support_connect'] = 'Click the report buttons within the rectangle below. Get a glimpse into the power of IntelliBoard: 1 button access to your LMS insights. Want more? Click "Click to view Analytics". Still want more? <a href="{$a->connect_link}">“Connect & Upgrade”</a> in the top right, or anywhere you see the link.';
-$string['support_text3'] = 'Thank you for your interest in IntelliBoard!';
-$string['support_text4'] = 'IntelliBoard is your comprehensive learning analytics platform designed for learning experts by learning experts. Take control of your data, empower your organizations, and achieve your education and training goals with powerful data insights.';
+$string['support_text3'] = 'Thank you for installing IntelliBoard Lite!';
+$string['support_text4'] = 'Meet an easy-to-use reporting and visualization platform that will help you achieve your retention, engagement, and compliance goals.';
 $string['support_text6'] = 'Need more info? Click any of the blue buttons to connect with us.';
 
 $string['web_services_descr'] = 'IntelliBoard requires Web services to be enabled. Web services enables other systems (e.g., IntelliBoard) to access this LMS system and preform operations.  For security purposes, this should be disabled when not in use.   For additional review, go to Site Administration > Advanced features > Web services';
@@ -1025,5 +1025,8 @@ $string['coursecontainer_filter'] = 'Enable course container filter';
 $string['enableexportcustomfont'] = 'Fuente compatible japonesa/china';
 $string['all_selected'] = 'Todo seleccionado';
 $string['custommenuitem'] = 'Display in Custom Menu';
-$string['support_text7'] = 'If you are not yet a client, we\'d love to hear your data needs. <a href="{$a->meeting_link}">Schedule a meeting </a>with one of our eLearning Professionals or join one of our upcoming <a href="{$a->join_webinars_link}">webinars.</a>';
-$string['support_text8'] = 'If you are an existing client and see this message, the connection between Moodle and IntelliBoard needs to be re-established. Please follow the steps described <a href="{$a->connectivity_issue}">here </a>or reach out to us at <a href="mailto:{$a->email}" title="{$a->email}">{$a->email}</a>';
+$string['support_text7'] = 'To get started with <strong>IntelliBoard Lite</strong>, please <a href="{$a->meeting_link}">schedule a consultation</a> with one of our learning analytics experts.';
+$string['support_text8'] = 'If you have <strong>already purchased</strong> a license and see this screen, please contact your Account Manager for assistance.';
+$string['support_text9'] = 'Need predictive models, notifications, and intervention tracking?';
+$string['support_text10'] = 'Switch to <a href="{$a->intelliboard_pro_link}"><strong>IntelliBoard Pro</strong></a>';
+$string['support_text11'] = '<a href="{$a->intelliboard_pro_onepager}">Click here</a> to download the IntelliBoard Pro one-pager.';

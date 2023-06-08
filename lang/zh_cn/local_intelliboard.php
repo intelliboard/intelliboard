@@ -943,8 +943,8 @@ $string['enroled_on'] = '选课日期';
 
 $string['dashboard_link'] = '点击查看分析';
 $string['support_connect'] = '点击下方矩形内的报告按钮。了解 IntelliBoard 的强大功能。一键浏览您的学习平台洞察力。想要了解更多？点击 "点击查看分析"。还想了解更多？ 在右上方<a href="{$a->connect_link}">"连接和升级"</a>，或您看到链接的任何位置。';
-$string['support_text3'] = 'Thank you for your interest in IntelliBoard!';
-$string['support_text4'] = 'IntelliBoard is your comprehensive learning analytics platform designed for learning experts by learning experts. Take control of your data, empower your organizations, and achieve your education and training goals with powerful data insights.';
+$string['support_text3'] = 'Thank you for installing IntelliBoard Lite!';
+$string['support_text4'] = 'Meet an easy-to-use reporting and visualization platform that will help you achieve your retention, engagement, and compliance goals.';
 $string['support_text6'] = '需要更多信息？请点击任何蓝色按钮与我们联系。';
 
 $string['web_services_descr'] = 'IntelliBoard 需要启用网络服务。 网络服务使其他系统（如 IntelliBoard）能够访问该学习平台系统并预先执行操作。为了安全起见，在不使用时应将其禁用。有关其他审查，请转到网站管理 > 进阶功能 > 网络服务。';
@@ -1033,5 +1033,8 @@ $string['coursecontainer_filter'] = 'Enable course container filter';
 $string['enableexportcustomfont'] = '日本/中国兼容字体';
 $string['all_selected'] = '全选';
 $string['custommenuitem'] = 'Display in Custom Menu';
-$string['support_text7'] = 'If you are not yet a client, we\'d love to hear your data needs. <a href="{$a->meeting_link}">Schedule a meeting </a>with one of our eLearning Professionals or join one of our upcoming <a href="{$a->join_webinars_link}">webinars.</a>';
-$string['support_text8'] = 'If you are an existing client and see this message, the connection between Moodle and IntelliBoard needs to be re-established. Please follow the steps described <a href="{$a->connectivity_issue}">here </a>or reach out to us at <a href="mailto:{$a->email}" title="{$a->email}">{$a->email}</a>';
+$string['support_text7'] = 'To get started with <strong>IntelliBoard Lite</strong>, please <a href="{$a->meeting_link}">schedule a consultation</a> with one of our learning analytics experts.';
+$string['support_text8'] = 'If you have <strong>already purchased</strong> a license and see this screen, please contact your Account Manager for assistance.';
+$string['support_text9'] = 'Need predictive models, notifications, and intervention tracking?';
+$string['support_text10'] = 'Switch to <a href="{$a->intelliboard_pro_link}"><strong>IntelliBoard Pro</strong></a>';
+$string['support_text11'] = '<a href="{$a->intelliboard_pro_onepager}">Click here</a> to download the IntelliBoard Pro one-pager.';
