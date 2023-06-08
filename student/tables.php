@@ -147,7 +147,7 @@ class intelliboard_courses_grades_table extends table_sql {
         if(!$values->enablecompletion){
             return get_string('completion_is_not_enabled', 'local_intelliboard');
         }
-        return  ($values->timecompleted) ? get_string('completed_on', 'local_intelliboard', intelli_date($values->timemodified)) : get_string('incomplete', 'local_intelliboard');
+        return  ($values->timecompleted) ? get_string('completed_on', 'local_intelliboard', intelli_date($values->timecompleted)) : get_string('incomplete', 'local_intelliboard');
     }
     function col_grade($values) {
         if (!optional_param('download', '', PARAM_ALPHA)) {
