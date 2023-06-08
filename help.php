@@ -54,6 +54,8 @@ $intelliboard = intelliboard([
 $event = optional_param('event', '', PARAM_RAW);
 $connectlink = new \moodle_url("/local/intelliboard/setup.php");
 $meetinglink = "https://intelliboard.net/scheduledemo";
+$ibprolink = "https://intelliboard.net/scheduledemo";
+$ibproonepager = "https://intelliboard.sharepoint.com/:b:/s/IntelliBoard/EaQqjk4ZLf5Hi5vx29LeOqgB4GgnFauaU2gs_p7t5YTq2w?e=07bppU";
 $joinwebinarlink = "https://intelliboard.net/events";
 $connectivityissue = "https://support.intelliboard.net/hc/en-us/articles/360012709012-Connectivity-Issue-";
 $supportemail = "HelpDesk@IntelliBoard.net";
@@ -71,24 +73,33 @@ echo $OUTPUT->header();
 ?>
 
 <div class="intelliboard-support">
-    <div class="intelliboard-support-logo">
-        <a target="_blank" href="https://intelliboard.net/">
-            <img src="<?php echo $CFG->wwwroot ?>/local/intelliboard/assets/img/logo@3x.png">
-        </a>
+    <h4 class="intelliboard-support-title"><?php echo get_string('support_text3', 'local_intelliboard'); ?></h4>
+    <div class="intelliboard-support-block">
+        <div class="intelliboard-support-block-col1">
+            <div class="intelliboard-support-text">
+                <span><?php echo get_string('support_text4', 'local_intelliboard'); ?></span>
+            </div>
+            <div class="intelliboard-support-text-2">
+                <span><?php echo get_string('support_text7', 'local_intelliboard', ["meeting_link" => $meetinglink]); ?></span>
+            </div>
+            <div class="intelliboard-support-text">
+                <span><?php echo get_string('support_text8', 'local_intelliboard', ["connectivity_issue" => $connectivityissue, "email" => $supportemail]); ?></span>
+            </div>
+        </div>
+        <div class="intelliboard-support-block-col2">
+            <div class="intelliboard-support-text-2">
+                <span><?php echo get_string('support_text9', 'local_intelliboard'); ?></span>
+            </div>
+            <div class="intelliboard-support-text-2">
+                <span><?php echo get_string('support_text10', 'local_intelliboard', ["intelliboard_pro_link" => $ibprolink]); ?></span>
+            </div>
+            <div class="intelliboard-support-text">
+                <span><?php echo get_string('support_text11', 'local_intelliboard', ["intelliboard_pro_onepager" => $ibproonepager]); ?></span>
+            </div>
+        </div>
     </div>
 
-    <div class="clear"></div>
 
-    <div class="intelliboard-support-text">
-        <span><?php echo get_string('support_text3', 'local_intelliboard'); ?></span>
-        <span><?php echo get_string('support_text4', 'local_intelliboard'); ?></span>
-    </div>
-    <div class="intelliboard-support-text">
-        <span><?php echo get_string('support_text7', 'local_intelliboard', ["meeting_link" => $meetinglink, "join_webinars_link" => $joinwebinarlink]); ?></span>
-    </div>
-    <div class="intelliboard-support-text">
-        <span><?php echo get_string('support_text8', 'local_intelliboard', ["connectivity_issue" => $connectivityissue, "email" => $supportemail]); ?></span>
-    </div>
     <div class="intelliboard-support-play"></div>
     <div class="intelliboard-support-player">
         <div style="padding:56.25% 0 0 0;position:relative;">

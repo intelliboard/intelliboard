@@ -23,8 +23,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    https://intelliboard.net/
  */
-$plugin->version = 2023060803;
-$plugin->requires = 2011120500;
-$plugin->release = '7.0.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+
+$config = [];
+
+$config['app_url'] = 'https://app.intelliboard.net/';
+$config['app_url_api'] = 'https://api.intelliboard.net/';
+$config['app_url_us'] = 'https://us-app.intelliboard.net/';
+$config['app_url_eu'] = 'https://eu-app.intelliboard.net/';
+$config['app_url_au'] = 'https://au-app.intelliboard.net/';
+$config['app_url_ca'] = 'https://ca-app.intelliboard.net/';
+$config['app_url_cn'] = 'https://app-cn.intelliboard.net/';
