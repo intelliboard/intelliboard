@@ -432,7 +432,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
             if($range[0] && $range[1]){
                 $timerange_sql .= ' AND g.timemodified BETWEEN :timestart AND :timefinish';
                 $params['timestart'] = intelliboard_str_to_timestamp(trim($range[0]));
-                $params['timefinish'] = intelliboard_str_to_timestamp(trim($range[1]));
+                $params['timefinish'] = intelliboard_str_to_timestamp(trim($range[1]), true);
             }
         }
         $join_sql = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'c.id');
@@ -461,7 +461,7 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
             if($range[0] && $range[1]){
                 $completion .= ' AND cmc.timemodified BETWEEN :timestart AND :timefinish';
                 $params['timestart'] = intelliboard_str_to_timestamp(trim($range[0]));
-                $params['timefinish'] = intelliboard_str_to_timestamp(trim($range[1]));
+                $params['timefinish'] = intelliboard_str_to_timestamp(trim($range[1]), true);
             }
         }
         $join_sql1 = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ctx.instanceid');
@@ -507,9 +507,9 @@ function intelliboard_instructor_courses($view, $page, $length, $courseid = 0, $
             if($range[0] && $range[1]){
                 $sql2 .= ' AND (cc.timecompleted BETWEEN :timestart1 AND :timefinish1 OR ra.timemodified BETWEEN :timestart2 AND :timefinish2)';
                 $params['timestart1'] = intelliboard_str_to_timestamp(trim($range[0]));
-                $params['timefinish1'] = intelliboard_str_to_timestamp(trim($range[1]));
+                $params['timefinish1'] = intelliboard_str_to_timestamp(trim($range[1]), true);
                 $params['timestart2'] = intelliboard_str_to_timestamp(trim($range[0]));
-                $params['timefinish2'] = intelliboard_str_to_timestamp(trim($range[1]));
+                $params['timefinish2'] = intelliboard_str_to_timestamp(trim($range[1]), true);
             }
         }
         $join_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'c.id');
@@ -1272,11 +1272,15 @@ function graded_activities_overview_export($course, $format)
     }
 }
 
-function intelliboard_str_to_timestamp($datestring)
+function intelliboard_str_to_timestamp($datestring, $dayEnd = null)
 {
-      return date_create_from_format(
+        $date = date_create_from_format(
                     intelli_date_format(),
                     trim($datestring)
-                )
-            ->getTimestamp();
+                );
+
+        if ($dayEnd) {
+           return $date->setTime(23,59,59)->getTimestamp();
+        }
+        return $date->setTime(0,0,0) ->getTimestamp();
 }

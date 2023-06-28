@@ -112,6 +112,8 @@ class TablesContainer extends BaseContainer {
             74 => array("name" => "licl", "sql" => "{local_intellicart_logs}"),
             75 => array("name" => "lics", "sql" => "{local_intellicart_seats}"),
             76 => array("name" => "liu", "sql" => "{local_intellicart_users}"),
+            77 => array("name" => "licv", "sql" => "{local_intellicart_vendors}"),
+            78 => array("name" => "licvr", "sql" => "{local_intellicart_vrelations}"),
         );
 
         static::$joins = array(
