@@ -4781,9 +4781,9 @@ class local_intelliboard_external extends external_api {
             FROM {local_intelliboard_tracking} l
                 JOIN {user} u ON u.id = l.userid
                 JOIN {course} c ON c.id = l.courseid
+                JOIN {course_modules} cm ON cm.id = l.param AND cm.course = l.courseid
+                JOIN {modules} m ON m.id = cm.module
                 LEFT JOIN {course_categories} ca ON ca.id = c.category
-                LEFT JOIN {course_modules} cm ON cm.id = l.param
-                LEFT JOIN {modules} m ON m.id = cm.module
                 {$sqljoin}
             WHERE l.page = 'module' $sql_filter {$sql_vendor_filter} $sql_having $sql_order", $params);
     }
@@ -17829,7 +17829,10 @@ class local_intelliboard_external extends external_api {
         } else {
             $extra = "FORMAT(((LENGTH($sql_extra) - LENGTH(REPLACE($sql_extra, ',', '')) + 1)/2), 0)";
         }
-
+        /* TBI-4586 (shows essay questions with 0 grades)
+         * For Quiz Essay activity exclude 'needsgrading' states
+         * and remove filter by user id because grades will make by teacher user
+         */
         $this->params['filter'] = intval($params->filter);
         return $DB->get_records_sql("
              SELECT qa.id,
@@ -17861,10 +17864,7 @@ class local_intelliboard_external extends external_api {
                AND qa.questionusageid = qu.id
                AND qas.questionattemptid = qa.id
                AND que.id = qa.questionid
-               AND qas.state <> 'todo'
-               AND qas.state <> 'complete'
-               AND qas.state <> 'invalid'
-               AND qas.userid = qat.userid
+               AND qas.state NOT IN('todo','complete','invalid','needsgrading','finished','gaveup')
                AND qas_completed.questionattemptid=qas.questionattemptid
                AND (
                    qas_completed.state = 'gradedwrong'
