@@ -641,7 +641,7 @@ function intelliboard_export_pdf($json, $name, $type = 1)
     foreach ($json->body as $row) {
     	$html .= '<tr>';
         foreach($row as $col) {
-        	$value = str_replace('"', '', $col);
+        	$value = $col ? str_replace('"', '', $col) : '';
 			$value = strip_tags($value);
             $html .= '<td>'. $value.'</td>';
         }
