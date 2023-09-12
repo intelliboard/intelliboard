@@ -447,8 +447,10 @@
 
                     load_chart7_users_list(course);
                 });
+                {{#pluginsettings.n18}}
                 var course = $('#chart7 .intelliboard-dropdown.courses button').val();
                 load_chart7_users_list(course);
+                {{/pluginsettings.n18}}
 
                 $("#chart7 .intelliboard-dropdown.users").on("click", "a", function(e){
                     e.stopPropagation();
@@ -634,7 +636,7 @@
                         options.tooltip = {isHtml: true};
                         options.chartArea.width = '95%';
 
-                        //var course = $('#chart5 .intelliboard-dropdown button').val();
+                        var course = {{course}};
                         var chart = new google.visualization.ComboChart(document.getElementById('instructor-chart-{{view}}'));
                         var view = $('.intelliboard-additional-form .switcher a.active').attr('data-view');
                         var daterange = $('#general-daterange').val();
