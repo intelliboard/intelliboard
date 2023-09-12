@@ -71,6 +71,13 @@ class FiltersContainer extends BaseContainer {
                 return "IS NULL";
             },
             16 => "LIKE", //left like
+            17 => function($param) {
+                if (is_array($param)) {
+                    return "NOT IN(" . implode(',',$param) . ")";
+                }
+
+                return "NOT IN(" . $param . ")";
+            },
         );
 
 
@@ -157,6 +164,20 @@ class FiltersContainer extends BaseContainer {
                     $extractor->setArguments($id, "%$checker");
                     $placeholder = $id;
                     static::ignoreCase($prop, $placeholder, $checker, $extractor);
+                } elseif (in_array(17, $filter['operator'])) {
+
+                    $value = array();
+                    if (!is_array($checker)) {
+                        $checker = array($checker);
+                    }
+                    foreach($checker as $key => $current) {
+                        $deeper = $id . '_' . $key;
+                        $extractor->setArguments($deeper, $current);
+                        $value[] = $deeper;
+                    }
+                    $placeholder = $value;
+                    static::ignoreCase($prop, $placeholder, $checker, $extractor);
+
                 } else {
                     $placeholder = $id;
 

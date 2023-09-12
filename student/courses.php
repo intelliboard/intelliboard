@@ -33,6 +33,8 @@ $courseid = optional_param('courseid', 0, PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHANUMEXT);
 $search = optional_param('search', '', PARAM_ALPHANUMEXT);
 $other_user = optional_param('user', 0, PARAM_INT);
+$debug = get_config('local_intelliboard', 'debug');
+$debugmode = optional_param('debug', '', PARAM_RAW);
 
 require_login();
 require_capability('local/intelliboard:students', context_system::instance());
@@ -111,6 +113,13 @@ $scale_percentage_round = clean_param(get_config('local_intelliboard', 'scale_pe
 
 echo $OUTPUT->header();
 ?>
+
+<?php if ($debug and $debugmode and isset($intelliboard->debugging)): ?>
+        <pre>
+            <code><?php echo $intelliboard->debugging; ?></code>
+        </pre>
+<?php endif; ?>
+
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
     <div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>

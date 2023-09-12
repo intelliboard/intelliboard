@@ -60,6 +60,9 @@ $activity_setting = optional_param('activity_setting', 0, PARAM_INT);
 $activity_courses = optional_param('activity_courses', 0, PARAM_INT);
 $activity_time = optional_param('activity_time', 0, PARAM_INT);
 
+$debug = get_config('local_intelliboard', 'debug');
+$debugmode = optional_param('debug', '', PARAM_RAW);
+
 $showing_user = $USER;
 if(get_config('local_intelliboard', 't09')>0 && $other_user>0 && intelliboard_instructor_have_access($USER->id)){
     $showing_user = core_user::get_user($other_user, '*', MUST_EXIST);
@@ -228,6 +231,13 @@ $PAGE->requires->js_call_amd(
 
 echo $OUTPUT->header();
 ?>
+
+<?php if ($debug and $debugmode and isset($intelliboard->debugging)): ?>
+        <pre>
+            <code><?php echo $intelliboard->debugging; ?></code>
+        </pre>
+<?php endif; ?>
+
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
     <div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
 <?php else: ?>
