@@ -113,6 +113,7 @@ class local_intelliboard_external extends external_api {
                             'intellicart_vendors' => new external_value(PARAM_TEXT, 'Intellicart vendors', VALUE_OPTIONAL, ''),
                             'cupf_show_vendor_name' => new external_value(PARAM_TEXT, 'CUPF vendor name instead ID', VALUE_OPTIONAL, 0),
                             'icpcf_columns' => new external_value(PARAM_SEQUENCE, 'Intellicart Product custom fields', VALUE_OPTIONAL, 0),
+                            'exclude_categories' => new external_value(PARAM_SEQUENCE, 'Filter course categories', VALUE_OPTIONAL, 0),
                         )
                     )
                 )
@@ -187,6 +188,7 @@ class local_intelliboard_external extends external_api {
         $params->intellicart_vendors = (isset($params->intellicart_vendors)) ? $params->intellicart_vendors : '';
         $params->cupf_show_vendor_name = (isset($params->cupf_show_vendor_name)) ? $params->cupf_show_vendor_name : 0;
         $params->icpcf_columns = (isset($params->icpcf_columns)) ? $params->icpcf_columns : '';
+        $params->exclude_categories = (isset($params->exclude_categories)) ? $params->exclude_categories : '';
 
         if ($params->debug) {
             $CFG->debug = (E_ALL | E_STRICT);
@@ -1391,6 +1393,7 @@ class local_intelliboard_external extends external_api {
         $grade_avg_real = intelliboard_grade_sql(false, $params, 'g.', 0, 'gi.');
         $completion = $this->get_completion($params, "cmc.");
         $sql_teacher_roles = $this->get_filter_in_sql($params->teacher_roles, "ra.roleid");
+        $sql_learner_filter = $this->get_filter_in_sql($params->learner_roles , "ra.roleid");
         if ($CFG->dbtype == 'pgsql') {
             $group_concat = "string_agg( DISTINCT CONCAT(u.firstname,' ',u.lastname), ', ')";
         } else {
@@ -1450,6 +1453,8 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {user} u ON u.id = ue.userid
                 LEFT JOIN {enrol} e ON e.id = ue.enrolid
                 LEFT JOIN {course} c ON c.id = e.courseid
+                JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.instanceid = c.id
+                JOIN {role_assignments} ra ON ra.userid = ue.userid AND ra.contextid = ctx.id {$sql_learner_filter}
                 LEFT JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid
                 LEFT JOIN {course_completion_criteria} cri ON cri.course = e.courseid AND cri.criteriatype = 6
                 LEFT JOIN {grade_items} gi ON gi.courseid = c.id AND gi.itemtype = 'course'
@@ -3892,7 +3897,8 @@ class local_intelliboard_external extends external_api {
         $columns = array_merge(array(
             "course_name", "quiz_name",
             "u.firstname", "u.lastname", "u.email", "ue.enrol_status", "qa.attempt", "attm.first_completed_date",
-            "qa.state", "timespend", "highest_grade", "lowest_grade", "qa.state"
+            "latest_submission", "timespend", "qa.sumgrades", "gi.gradepass",
+            "highest_grade", "lowest_grade", "qa.state"
         ), $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, ["u.id"]);
@@ -3914,6 +3920,7 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data(
             "SELECT qa.id as quiz_attempt_id,
+                    q.course,
                     c.fullname AS course_name,
                     q.name AS quiz_name,
                     u.id,
@@ -13351,6 +13358,13 @@ class local_intelliboard_external extends external_api {
                 $sql_module_filter = "AND timemodified > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 10 DAY))";
             }
         }
+        elseif ($params->custom4 == 4) {
+            if ($CFG->dbtype == 'pgsql') {
+                $sql_module_filter = "AND timemodified > extract(epoch from (now() - interval '3 days'))";
+            } else {
+                $sql_module_filter = "AND timemodified > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 3 DAY))";
+            }
+        }
         foreach($modules as $module) {
             $completion = $this->get_completion($params, "");
             $sql_columns .= ", (SELECT timemodified FROM {course_modules_completion} WHERE userid = u.id $sql_module_filter AND coursemoduleid = $module->id $completion) AS completed_$module->id";
@@ -13374,6 +13388,13 @@ class local_intelliboard_external extends external_api {
               $sql_filter_compl = " AND (last_completed > extract(epoch from (now() - interval '10 days')) or last_completed IS NULL)";
           } else {
               $sql_filter_compl = " AND (last_completed > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 10 DAY)) or last_completed IS NULL)";
+          }
+      }
+      elseif ($params->custom4 == 4) {
+          if ($CFG->dbtype == 'pgsql') {
+              $sql_filter_compl = " AND (last_completed > extract(epoch from (now() - interval '3 days')) or last_completed IS NULL)";
+          } else {
+              $sql_filter_compl = " AND (last_completed > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 3 DAY)) or last_completed IS NULL)";
           }
       }
       $sql_join = "LEFT JOIN (SELECT COUNT(cm1.id) AS completed_modules, cmc1.userid, MAX(timemodified) AS last_completed
@@ -13458,6 +13479,18 @@ class local_intelliboard_external extends external_api {
                 } else {
                     $sql_filter_compl = " AND (
                         ccpl.last_completed > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 10 DAY)) OR ccpl.completed_courses < " . count($courses) . "
+                        OR ccpl.last_completed IS NULL
+                    )";
+                }
+            } elseif ($params->custom4 == 4) {
+                if ($CFG->dbtype == 'pgsql') {
+                    $sql_filter_compl = " AND (
+                        ccpl.last_completed > extract(epoch from (now() - interval '3 days')) OR ccpl.completed_courses < " . count($courses) . "
+                        OR ccpl.last_completed IS NULL
+                    )";
+                } else {
+                    $sql_filter_compl = " AND (
+                        ccpl.last_completed > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 3 DAY)) OR ccpl.completed_courses < " . count($courses) . "
                         OR ccpl.last_completed IS NULL
                     )";
                 }
@@ -18625,6 +18658,12 @@ class local_intelliboard_external extends external_api {
             $sqlfilter .= $this->get_filter_in_sql($params->custom2, 'ca.id');
         }
 
+        if ($params->exclude_categories) {
+            $exclude_categories = is_array($params->exclude_categories) ? implode(',', $params->exclude_categories) : $params->exclude_categories;
+            if (!empty($exclude_categories)) {
+                $sqlfilter .= " AND c.category NOT IN($exclude_categories)";
+            }
+        }
         return $this->get_report_data(
             "SELECT c.id,
                     c.shortname,
@@ -21143,12 +21182,20 @@ class local_intelliboard_external extends external_api {
             //Filter courses by vendor manager
             if ($courseidcolumn) {
                 $vendorcourses = [];
+                $sqlfilter = "";
+                if (!empty($params->exclude_categories)) {
+                    $exclude_categories = is_array($params->exclude_categories) ? implode(',', $params->exclude_categories) : $params->exclude_categories;
+                    if (!empty($exclude_categories)) {
+                        $sqlfilter = "JOIN {course} c ON c.id = ir.instanceid AND c.category NOT IN($exclude_categories)";
+                    }
+                }
                 $vendorcoursesrows = $DB->get_records_sql(
                     "SELECT DISTINCT ir.instanceid
                        FROM {local_intellicart_users} iu
                        JOIN {local_intellicart_vendors} iv ON iv.id = iu.instanceid
                        JOIN {local_intellicart_vrelations} ivr ON ivr.vendorid = iv.id AND ivr.type='product'
                        JOIN {local_intellicart_relations} ir ON ir.productid = ivr.instanceid AND ir.type = 'course'
+                       $sqlfilter
                       WHERE iu.type='vendor' AND iu.role='manager' AND iu.userid = :vendoruserid",
                     [
                          "vendoruserid" => $params->vendor_user_id
@@ -21160,11 +21207,13 @@ class local_intelliboard_external extends external_api {
                         return $row->instanceid;
                     }, $vendorcoursesrows);
                 }
+                if (get_config('local_intelliboard', 'enable_vendor_frontpage_course')) {
+                    $vendorcourses[] = 1;
+                }
                 if ($courses == null) {
                     $courses = [];
                 }
-
-               $courses = array_unique(array_merge($courses, $vendorcourses));
+                $courses = array_unique(array_merge($courses, $vendorcourses));
 
                 if ($courses) {
                     $coursesids = implode(',', $courses);
@@ -23863,8 +23912,8 @@ class local_intelliboard_external extends external_api {
         $quizFilterSql2 = $this->get_filter_in_sql($params->courseid, "q.course", false);
         $filterSql = $this->get_filterdate_sql($params, "qd1.submission_date");
         $filterSql .= $this->get_filterdate_sql($params, "qd2.submission_date");
-        $filterSql .= $this->get_filter_sql($params, $columns, true);
-        $filterSql .= $this->vendor_filter('u.id', 'c.id', $params);
+        $filterSql .= $this->get_filter_sql($params, $columns);
+        $vendorFilterSql = $this->vendor_filter('u.id', 'c.id', $params);
         $sqlOrder = $this->get_order_sql($params, $columns);
 
         $getQuizeSql = function ($quizid, $quizkey, $filter, $prefix="qd") {
@@ -23933,7 +23982,7 @@ class local_intelliboard_external extends external_api {
                  JOIN {course} c ON c.id = ue.courseid" .
                  $getQuizeSql($params->custom2, 1, $quizFilterSql1) .
                  $getQuizeSql($params->custom3, 2, $quizFilterSql2) . "
-                 WHERE u.id > 0 $filterSql
+                 WHERE u.id > 0 $vendorFilterSql $filterSql
                  $sqlOrder";
 
         return $this->get_report_data($sql, $params);

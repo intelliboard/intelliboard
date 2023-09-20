@@ -337,17 +337,17 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
     if ($oldversion < 2018091501) {
         $table = new xmldb_table('local_intelliboard_bbb_meet');
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('meetingname', XMLDB_TYPE_CHAR, '256', null, null, null, null);
+        $table->add_field('meetingname', XMLDB_TYPE_CHAR, '255', null, null, null, null);
         $table->add_field('meetingid', XMLDB_TYPE_TEXT, null, null, null, null, null);
         $table->add_field('internalmeetingid', XMLDB_TYPE_TEXT, null, null, null, null, null);
         $table->add_field('createtime', XMLDB_TYPE_INTEGER, '15', null, null, null, null);
-        $table->add_field('createdate', XMLDB_TYPE_CHAR, '256', null, null, null, null);
+        $table->add_field('createdate', XMLDB_TYPE_CHAR, '255', null, null, null, null);
         $table->add_field('voicebridge', XMLDB_TYPE_CHAR, '100', null, null, null, null);
-        $table->add_field('dialnumber', XMLDB_TYPE_CHAR, '256', null, null, null, null);
+        $table->add_field('dialnumber', XMLDB_TYPE_CHAR, '255', null, null, null, null);
         $table->add_field('attendeepw', XMLDB_TYPE_TEXT, null, null, null, null, null);
         $table->add_field('moderatorpw', XMLDB_TYPE_TEXT, null, null, null, null, null);
         $table->add_field('running', XMLDB_TYPE_CHAR, '25', null, null, null, null);
-        $table->add_field('duration', XMLDB_TYPE_CHAR, '256', null, null, null, null);
+        $table->add_field('duration', XMLDB_TYPE_CHAR, '255', null, null, null, null);
         $table->add_field('hasuserjoined', XMLDB_TYPE_CHAR, '25', null, null, null, null);
         $table->add_field('recording', XMLDB_TYPE_CHAR, '25', null, null, null, null);
         $table->add_field('hasbeenforciblyended', XMLDB_TYPE_CHAR, '25', null, null, null, null);

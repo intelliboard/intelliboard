@@ -247,6 +247,12 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, true, true, false);
         $settings->add($setting);
 
+        $name = 'local_intelliboard/enable_vendor_frontpage_course';
+        $title = new lang_string('enable_vendor_frontpage_course', 'local_intelliboard');
+        $description = '';
+        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
+        $settings->add($setting);
+
         $settings->add(new admin_setting_heading('local_intelliboard/filters', new lang_string('filters', 'local_intelliboard'), ''));
 
         $name = 'local_intelliboard/filter1';
