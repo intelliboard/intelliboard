@@ -113,7 +113,7 @@ class local_intelliboard_external extends external_api {
                             'intellicart_vendors' => new external_value(PARAM_TEXT, 'Intellicart vendors', VALUE_OPTIONAL, ''),
                             'cupf_show_vendor_name' => new external_value(PARAM_TEXT, 'CUPF vendor name instead ID', VALUE_OPTIONAL, 0),
                             'icpcf_columns' => new external_value(PARAM_SEQUENCE, 'Intellicart Product custom fields', VALUE_OPTIONAL, 0),
-                            'exclude_categories' => new external_value(PARAM_RAW, 'Custom var', VALUE_OPTIONAL, ''),
+                            'exclude_categories' => new external_value(PARAM_SEQUENCE, 'Filter course categories', VALUE_OPTIONAL, 0),
                         )
                     )
                 )
@@ -188,6 +188,7 @@ class local_intelliboard_external extends external_api {
         $params->intellicart_vendors = (isset($params->intellicart_vendors)) ? $params->intellicart_vendors : '';
         $params->cupf_show_vendor_name = (isset($params->cupf_show_vendor_name)) ? $params->cupf_show_vendor_name : 0;
         $params->icpcf_columns = (isset($params->icpcf_columns)) ? $params->icpcf_columns : '';
+        $params->exclude_categories = (isset($params->exclude_categories)) ? $params->exclude_categories : '';
 
         if ($params->debug) {
             $CFG->debug = (E_ALL | E_STRICT);
@@ -3919,6 +3920,7 @@ class local_intelliboard_external extends external_api {
 
         return $this->get_report_data(
             "SELECT qa.id as quiz_attempt_id,
+                    q.course,
                     c.fullname AS course_name,
                     q.name AS quiz_name,
                     u.id,
@@ -21181,7 +21183,7 @@ class local_intelliboard_external extends external_api {
             if ($courseidcolumn) {
                 $vendorcourses = [];
                 $sqlfilter = "";
-                if ($params->exclude_categories) {
+                if (!empty($params->exclude_categories)) {
                     $exclude_categories = is_array($params->exclude_categories) ? implode(',', $params->exclude_categories) : $params->exclude_categories;
                     if (!empty($exclude_categories)) {
                         $sqlfilter = "JOIN {course} c ON c.id = ir.instanceid AND c.category NOT IN($exclude_categories)";
