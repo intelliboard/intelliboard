@@ -972,7 +972,7 @@ class intelliboard_used_seats_table extends table_sql {
             'ltype' => \local_intellicart\log::TYPE_USEDSEAT,
             'seatid' => $this->seatid,
         ];
-        $userfields = get_all_user_name_fields(true, 'u');
+        $userfields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
         $searchwhere = '';
         if($this->search) {
             $searchwhere = ' AND ('.$DB->sql_like('p.name', ':search1', false, false, false);
