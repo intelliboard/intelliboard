@@ -908,5 +908,38 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2022060204, 'local', 'intelliboard');
     }
 
+    if ($oldversion < 2023092500) {
+        $table = new xmldb_table('local_intelliboard_bbb_meet');
+        $field = new xmldb_field('meetingname');
+        $field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        try {
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {
+        }
+
+        $field = new xmldb_field('createdate');
+        $field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        try {
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {
+        }
+
+        $field = new xmldb_field('dialnumber');
+        $field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        try {
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {
+        }
+
+        $field = new xmldb_field('duration');
+        $field->set_attributes(XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        try {
+            $dbman->change_field_type($table, $field);
+        } catch (moodle_exception $e) {
+        }
+
+        upgrade_plugin_savepoint(true, 2023092500, 'local', 'intelliboard');
+    }
+
     return true;
 }
