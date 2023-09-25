@@ -12825,7 +12825,7 @@ class local_intelliboard_external extends external_api {
             include_once($file);
         }
         if (!class_exists('quiz_statistics_report')) {
-            print_error('preprocesserror', 'quiz');
+            throw new \moodle_exception('preprocesserror', 'quiz');
         }
 
         if (is_array($params->custom)) {
@@ -12959,7 +12959,7 @@ class local_intelliboard_external extends external_api {
             include_once($file);
         }
         if (!class_exists('quiz_statistics_report')) {
-            print_error('preprocesserror', 'quiz');
+            throw new \moodle_exception('preprocesserror', 'quiz');
         }
         if (!empty($params->courseid)) {
             $courses = (is_array($params->courseid)) ? $params->courseid : explode(",", clean_param($params->courseid, PARAM_SEQUENCE));
