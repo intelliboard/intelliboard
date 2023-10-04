@@ -363,7 +363,7 @@ echo $OUTPUT->header();
                                                     <?php if($scale_real):?>
                                                         <?php echo $item->grade; ?>
                                                     <?php else:?>
-                                                        <div class="circle-progress d-inline-block"  data-percent="<?php echo round($item->grade, $scale_percentage_round); ?>"></div>
+                                                        <div class="circle-progress d-inline-block"  data-percent="<?php echo round($item->grade ?? 0, $scale_percentage_round); ?>"></div>
                                                     <?php endif;?>
                                                 </td>
                                             <?php endif; ?>
@@ -423,7 +423,7 @@ echo $OUTPUT->header();
                                                     <?php if($scale_real):?>
                                                         <?php echo $item->grade; ?>
                                                     <?php else:?>
-                                                        <div class="circle-progress"  data-percent="<?php echo round($item->grade, $scale_percentage_round); ?>"></div>
+                                                        <div class="circle-progress"  data-percent="<?php echo round($item->grade ?? 0, $scale_percentage_round); ?>"></div>
                                                     <?php endif;?>
                                                 </td>
                                             <?php endif; ?>
@@ -540,7 +540,7 @@ echo $OUTPUT->header();
                                                 <?php if($scale_real):?>
                                                     <?php echo $item->grade; ?>
                                                 <?php else:?>
-                                                    <div class="circle-progress d-inline-block"  data-percent="<?php echo round($item->grade,$scale_percentage_round); ?>"></div>
+                                                    <div class="circle-progress d-inline-block"  data-percent="<?php echo round($item->grade ?? 0,$scale_percentage_round); ?>"></div>
                                                 <?php endif;?>
                                             </td>
                                         <?php endif; ?>
@@ -568,7 +568,7 @@ echo $OUTPUT->header();
                                             <?php if($scale_real):?>
                                                 <?php echo $item->grade; ?>
                                             <?php else:?>
-                                                <div class="circle-progress"  data-percent="<?php echo round($item->grade,$scale_percentage_round); ?>"></div>
+                                                <div class="circle-progress"  data-percent="<?php echo round($item->grade ?? 0,$scale_percentage_round); ?>"></div>
                                             <?php endif;?>
                                         </td>
                                     <?php endif; ?>
