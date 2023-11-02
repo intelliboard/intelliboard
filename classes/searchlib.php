@@ -89,6 +89,7 @@ class local_intelliboard_search extends external_api {
                 'settings'  => new external_single_structure(array(
                     'debug'  => new external_value(PARAM_ALPHANUM, 'Debug'),
                     'pagination_numbers' => new external_value(PARAM_ALPHANUM, 'Paginatiom'),
+                    'origin_moodle_userid' => new external_value(PARAM_INT, 'Internal Moodle User ID', VALUE_OPTIONAL, 0),
                 ))
             )
         );

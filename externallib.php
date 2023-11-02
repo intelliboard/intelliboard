@@ -114,6 +114,7 @@ class local_intelliboard_external extends external_api {
                             'cupf_show_vendor_name' => new external_value(PARAM_TEXT, 'CUPF vendor name instead ID', VALUE_OPTIONAL, 0),
                             'icpcf_columns' => new external_value(PARAM_SEQUENCE, 'Intellicart Product custom fields', VALUE_OPTIONAL, 0),
                             'exclude_categories' => new external_value(PARAM_SEQUENCE, 'Filter course categories', VALUE_OPTIONAL, 0),
+                            'origin_moodle_userid' => new external_value(PARAM_INT, 'Internal Moodle User ID', VALUE_OPTIONAL, 0),
                         )
                     )
                 )
@@ -189,6 +190,7 @@ class local_intelliboard_external extends external_api {
         $params->cupf_show_vendor_name = (isset($params->cupf_show_vendor_name)) ? $params->cupf_show_vendor_name : 0;
         $params->icpcf_columns = (isset($params->icpcf_columns)) ? $params->icpcf_columns : '';
         $params->exclude_categories = (isset($params->exclude_categories)) ? $params->exclude_categories : '';
+        $params->origin_moodle_userid = (isset($params->origin_moodle_userid)) ? $params->origin_moodle_userid : 0;
 
         if ($params->debug) {
             $CFG->debug = (E_ALL | E_STRICT);
@@ -1196,7 +1198,19 @@ class local_intelliboard_external extends external_api {
         $completion = $this->get_completion($params, "");
 
         $sql_join = "";
-
+        $filterenablecompletion = "";
+        if ($params->custom3 == 1) {
+            $sql_join .= "JOIN {course} c ON c.id = ctx.instanceid AND c.enablecompletion = 1";
+            $filterenablecompletion = "
+                JOIN {course_modules} cm ON cm.id = cmc.coursemoduleid
+                JOIN {course} c ON c.id = cm.course AND c.enablecompletion = 1";
+        }
+        else if ($params->custom3 == 2) {
+            $sql_join .= "JOIN {course} c ON c.id = ctx.instanceid AND c.enablecompletion = 0";
+            $filterenablecompletion = "
+                JOIN {course_modules} cm ON cm.id = cmc.coursemoduleid
+                JOIN {course} c ON c.id = cm.course AND c.enablecompletion = 0";
+        }
 
         $sql_raw = true;
         $sql_join_filter = "";
@@ -1268,9 +1282,10 @@ class local_intelliboard_external extends external_api {
                FROM {user} u
           LEFT JOIN {role_assignments} ra ON ra.userid = u.id
           LEFT JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel=50
-          LEFT JOIN (SELECT COUNT(id) AS completed_activities, userid
-                       FROM {course_modules_completion}
-                      WHERE id > 0 $completion
+          LEFT JOIN (SELECT COUNT(cmc.id) AS completed_activities, cmc.userid
+                       FROM {course_modules_completion} cmc
+                       {$filterenablecompletion}
+                      WHERE cmc.id > 0 $completion
                    GROUP BY userid
                     ) ca ON ca.userid = u.id
           LEFT JOIN {course_completions} cc ON cc.course = ctx.instanceid AND
@@ -12825,7 +12840,7 @@ class local_intelliboard_external extends external_api {
             include_once($file);
         }
         if (!class_exists('quiz_statistics_report')) {
-            print_error('preprocesserror', 'quiz');
+            throw new \moodle_exception('preprocesserror', 'quiz');
         }
 
         if (is_array($params->custom)) {
@@ -12959,7 +12974,7 @@ class local_intelliboard_external extends external_api {
             include_once($file);
         }
         if (!class_exists('quiz_statistics_report')) {
-            print_error('preprocesserror', 'quiz');
+            throw new \moodle_exception('preprocesserror', 'quiz');
         }
         if (!empty($params->courseid)) {
             $courses = (is_array($params->courseid)) ? $params->courseid : explode(",", clean_param($params->courseid, PARAM_SEQUENCE));
@@ -15543,10 +15558,12 @@ class local_intelliboard_external extends external_api {
     public function get_quizes($params){
         global $DB;
 
+        $columns = ["q.name"];
         $sql = $this->get_teacher_sql($params, ["c.id" => "courses"]);
         $sql .= $this->get_filter_in_sql($params->courseid,'q.course');
         $sql .= $this->vendor_filter(null, 'q.course', $params);
         $sql .= $this->get_filter_course_sql($params, 'c.');
+        $sqlorder = $this->get_order_sql($params, $columns);
 
         $data = $DB->get_records_sql(
             "SELECT q.id,
@@ -15555,7 +15572,7 @@ class local_intelliboard_external extends external_api {
                     c.fullname AS coursename
                FROM {quiz} q
                JOIN {course} c ON c.id = q.course
-              WHERE c.id > 0 {$sql}",
+              WHERE c.id > 0 {$sql} {$sqlorder}",
             $this->params
         );
 
@@ -23896,6 +23913,10 @@ class local_intelliboard_external extends external_api {
     {
         global $DB, $CFG;
 
+        if (!$params->courseid || !$params->custom2 || !$params->custom3) {
+            return [];
+        }
+
         $columns = array_merge(array(
             "u.firstname",
             "u.lastname",
@@ -24828,7 +24849,9 @@ class local_intelliboard_external extends external_api {
             ),
             $this->get_filter_columns($params)
         );
-
+        if (!$params->courseid || !$params->custom2 || !$params->custom3) {
+            return [];
+        }
         $quizFilterSQL = $this->get_filter_in_sql($params->courseid, "q.course");
         $quizFilterSQL .= $this->get_filter_in_sql(array_unique([$params->custom2, $params->custom3]), "q.id");
         $quizHelper= new QuizModHelper();
