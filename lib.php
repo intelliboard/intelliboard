@@ -266,7 +266,13 @@ function local_intelliboard_user_details()
 	        $flag = isset($regex->regex_flag) ? $regex->regex_flag : '';
 	        if (preg_match('@' . $regex->regex . '@' . $flag, $agent, $matches)) {
 	            $platform = (isset($regex->os_replacement))?str_replace('$1', $matches[1], $regex->os_replacement):$matches[1];
-	            $platform .= ' '.((isset($regex->os_v1_replacement))?str_replace('$1', @$matches[2], $regex->os_v1_replacement):@$matches[2]);
+                if (isset($matches[2])) {
+                    if (isset($regex->os_v1_replacement)) {
+                        $platform .= ' ' . str_replace('$1', $matches[2], $regex->os_v1_replacement);
+                    } else {
+                        $platform .= ' ' . $matches[2];
+                    }
+                }
 	            break;
 	        }
 	    }
