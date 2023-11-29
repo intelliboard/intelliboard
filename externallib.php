@@ -1101,7 +1101,7 @@ class local_intelliboard_external extends external_api {
         $columns = array_merge(
             array(
                 "activity", "m.name", "cmc.num_compl", "l.visits", "l.timespend",
-                "grd.grade", "cm.added", "l.firstaccess", "c.fullname"
+                "grd.grade", "cm.added", "l.firstaccess", "c.fullname", "cm.visible"
             ),
             $this->get_filter_columns($params, [null])
         );
@@ -1153,7 +1153,8 @@ class local_intelliboard_external extends external_api {
                     l.visits AS visits,
                     l.firstaccess AS firstaccess,
                     cmc.num_compl AS completed,
-                    grd.grade
+                    grd.grade,
+                    cm.visible
                     {$sql_columns}
                FROM {course_modules} cm
                JOIN {modules} m ON m.id = cm.module
