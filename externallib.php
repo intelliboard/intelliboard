@@ -25205,4 +25205,422 @@ class local_intelliboard_external extends external_api {
                 $sql_join
             WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
+
+    public function get_intellicart_products($params) {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled')) {
+            $sqlfilter = "";
+            $sqlparams = [];
+            if ($params->filter) {
+                $sqlfilter .= " AND " . $DB->sql_like('p.name', ":name", false, false);
+                $sqlparams['name'] = "%$params->filter%";
+            }
+            $prodsql = "";
+            if ($params->custom) {
+                [$productinsql, $productinparams] = $DB->get_in_or_equal($params->custom, SQL_PARAMS_NAMED);
+                $prodsql = "AND p.id " . $productinsql;
+                $sqlparams = array_merge($sqlparams, $productinparams);
+            }
+            $sql = "SELECT p.id, p.name
+                       FROM {local_intellicart_products} p
+                      WHERE p.visible = 1 {$sqlfilter} {$prodsql}
+                   ORDER BY p.sortorder";
+
+            return $DB->get_records_sql($sql, $sqlparams);
+        }
+        return [];
+    }
+
+    public function get_intellicart_product_courses($params) {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled')) {
+            [$productinsql, $productinparams] = $DB->get_in_or_equal($params->custom);
+            $sqlcourses = "SELECT DISTINCT c.id, c.fullname AS name
+               FROM {local_intellicart_products} p
+               JOIN {local_intellicart_relations} r ON r.productid = p.id AND r.type = 'course'
+               JOIN {course} c ON c.id = r.instanceid
+              WHERE c.visible = 1 AND p.visible = 1 AND p.id $productinsql
+           ORDER BY r.sortorder";
+            return $DB->get_records_sql($sqlcourses, $productinparams);
+        }
+        return [];
+    }
+
+    public function report258($params)
+    {
+        global $DB;
+
+        $courses = [];
+        $data = [];
+        $columns = array_merge(array(
+            "u.firstname",
+            "u.lastname",
+            "u.email"
+        ), $this->get_filter_columns($params));
+
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_filter_in_sql($params->custom, "p.id");
+        $sql_filter .= $this->get_filter_user_sql($params, "u.");
+        $sql_filter .= $this->get_filter_course_sql($params, "c.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "ue.");
+        $sql_filter .= $this->get_filter_enrol_sql($params, "e.");
+        $sql_filter .= $this->get_filter_in_sql($params->learner_roles, "ra.roleid");
+        $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+
+        [$productinsql, $productinparams] = $DB->get_in_or_equal($params->custom);
+        $sqlcourses = "SELECT DISTINCT c.id, c.fullname AS name
+               FROM {local_intellicart_products} p
+               JOIN {local_intellicart_relations} r ON r.productid = p.id AND r.type = 'course'
+               JOIN {course} c ON c.id = r.instanceid
+              WHERE c.visible = 1 AND p.visible = 1 AND p.id $productinsql
+           ORDER BY r.sortorder";
+
+        $courses = $DB->get_records_sql($sqlcourses, $productinparams);
+        $sqljoins = "";
+        if ($courses) {
+            foreach($courses as $course) {
+                $sql_columns .= ", MAX(CASE WHEN cc.course = $course->id THEN cc.timecompleted END) AS completion_course_$course->id";
+            }
+        }
+        $sql ="SELECT cc.id, u.id AS userid,
+                    p.name AS product_name,
+                    u.email,
+                    u.firstname,
+                    u.lastname
+                    $sql_columns
+               FROM {local_intellicart_products} p
+               JOIN {local_intellicart_relations} r ON r.productid = p.id AND r.type = 'course'
+               JOIN {enrol} e ON e.courseid = r.instanceid
+               JOIN {user_enrolments} ue ON ue.enrolid = e.id
+               JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.instanceid = r.instanceid
+               JOIN {role_assignments} ra ON ra.contextid = ctx.id AND ra.userid = ue.userid
+               JOIN {course} c ON c.id = r.instanceid
+               JOIN {user} u ON u.id = ue.userid
+               JOIN {course_completions} cc ON cc.userid = ue.userid AND cc.course = r.instanceid
+              WHERE p.visible = 1 $sql_filter
+           GROUP BY p.id, u.id
+            $sql_having $sql_order";
+        return $this->get_report_data($sql, $params);
+    }
+    public function report259($params)
+    {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled')) {
+            $columns = array_merge(array(
+                "u.firstname",
+                "u.lastname",
+                "u.email",
+                "cohorts",
+                "status"
+            ), $this->get_filter_columns($params));
+
+            $sql_columns = $this->get_columns($params, ["u.id"]);
+            $sql_having = $this->get_filter_sql($params, $columns);
+            $sql_order = $this->get_order_sql($params, $columns);
+            $sql_filter = $this->get_filter_in_sql($params->custom, "ir.productid");
+            $sql_filter .= $this->get_filterdate_sql($params, "cm.timeadded");
+
+            $sql ="
+            SELECT u.id,
+                u.firstname,
+                u.lastname,
+                u.email,
+                GROUP_CONCAT(ch.name, ', ') AS cohorts,
+                (CASE WHEN u.confirmed = 0 THEN 'not confirmed'
+                        ELSE
+                            CASE WHEN u.suspended = 0 THEN 'active' ELSE 'inactive' END
+                    END) AS status
+            FROM {user} u
+            JOIN {cohort_members} cm ON cm.userid = u.id
+            JOIN {cohort} ch ON ch.id = cm.cohortid
+            JOIN {local_management_cohort} mc ON mc.cohortid = ch.id
+            JOIN {enrol} e ON e.customint1 = ch.id AND e.enrol = 'cohort'
+       LEFT JOIN {local_intellicart_relations} ir ON ir.instanceid = e.courseid AND ir.type = 'course'
+           WHERE u.id > 1 AND u.deleted = 0 AND mc.learnertypes != 'rsc' $sql_filter
+        GROUP BY u.id $sql_having $sql_order";
+            return $this->get_report_data($sql, $params);
+        }
+        return [];
+    }
+
+    public function report260($params)
+    {
+        global $DB;
+
+        $columns = array_merge(array(
+            "c.fullname",
+            "coursestatus",
+            "completedusers",
+            "totaltimespend",
+            "avgtimespent"
+        ), $this->get_filter_columns($params));
+
+        $sql_columns = $this->get_columns($params, ["u.id"]);
+        $sql_having = $this->get_filter_sql($params, $columns);
+        $sql_order = $this->get_order_sql($params, $columns);
+        $sql_filter = $this->get_filter_in_sql($params->courseid, "c.id");
+        $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+
+        $sql ="
+        SELECT
+                c.id,
+                c.fullname AS coursename,
+                CASE WHEN c.visible = 1 THEN 'active' ELSE 'inactive' END AS coursestatus,
+                COUNT(cc.userid) AS completedusers,
+                SUM(t.timespend) AS totaltimespend,
+                AVG(t.timespend) AS avgtimespent
+            FROM {course} c
+            JOIN {enrol} e ON e.courseid = c.id
+            JOIN {user_enrolments} ue ON ue.enrolid = e.id
+            JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid AND cc.timecompleted > 0
+        LEFT JOIN {local_intelliboard_tracking} t ON t.courseid = e.courseid AND t.userid = ue.userid
+            WHERE c.id > 0 $sql_filter
+        GROUP BY c.id $sql_having $sql_order";
+
+        return $this->get_report_data($sql, $params);
+    }
+
+    public function report261($params)
+    {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled')) {
+            $columns = array_merge(array(
+                "c.fullname",
+                "coursestatus",
+                "completedusers",
+                "totaltimespend"
+            ), $this->get_filter_columns($params));
+
+            $sql_columns = $this->get_columns($params, ["u.id"]);
+            $sql_having = $this->get_filter_sql($params, $columns);
+            $sql_order = $this->get_order_sql($params, $columns);
+            $sql_filter = $this->get_filter_in_sql($params->courseid, "c.id");
+            $sql_filter .= $this->get_filter_in_sql($params->custom, "p.id");
+            $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+
+            $sql ="
+            SELECT
+                   CONCAT(c.id, '_', p.id) AS id,
+                   p.name AS productname,
+                   c.fullname AS coursename,
+                   CASE WHEN c.visible = 1 THEN 'active' ELSE 'inactive' END AS coursestatus,
+                   COUNT(DISTINCT cc.userid) AS completedusers,
+                   SUM(t.timespend) AS totaltimespend
+              FROM {course} c
+              JOIN {enrol} e ON e.courseid = c.id AND e.enrol = 'intellicart'
+              JOIN {local_intellicart_products} p ON p.id = e.customint1
+              JOIN {user_enrolments} ue ON ue.enrolid = e.id
+              JOIN {course_completions} cc ON cc.course = e.courseid AND cc.userid = ue.userid AND cc.timecompleted > 0
+         LEFT JOIN {local_intelliboard_tracking} t ON t.courseid = e.courseid AND t.userid = ue.userid
+             WHERE c.id > 0 $sql_filter
+          GROUP BY c.id, p.id $sql_having $sql_order";
+
+            return $this->get_report_data($sql, $params);
+        }
+        return [];
+    }
+
+    public function report262($params)
+    {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled')) {
+            $columns = array_merge(array(
+                "ch.id",
+                "p.name",
+                "l.timecreated",
+                "p.price",
+                "l.quantity",
+                "ch.subtotal",
+                "ch.discount",
+                "ch.amount"
+            ), $this->get_filter_columns($params));
+
+            $sql_columns = $this->get_columns($params, ["u.id"]);
+            $sql_having = $this->get_filter_sql($params, $columns, false);
+            $sql_order = $this->get_order_sql($params, $columns);
+            $sql_filter = $this->get_filter_in_sql($params->custom, "p.id");
+            $sql_filter .= $this->get_filterdate_sql($params, "l.timecreated");
+
+            $sql ="
+            SELECT
+                   ch.id AS orderid,
+                   p.name,
+                   l.timecreated,
+                   p.price,
+                   l.quantity,
+                   ch.subtotal,
+                   ch.discount,
+                   ch.amount
+              FROM {local_intellicart_products} p
+              JOIN {local_intellicart_logs} l ON l.type = 'product' AND l.instanceid = p.id AND l.status = 'completed'
+              JOIN {local_intellicart_checkout} ch ON ch.id = l.checkoutid AND ch.payment_status = 'completed'
+             WHERE p.id > 0 $sql_filter
+             $sql_having $sql_order";
+
+            return $this->get_report_data($sql, $params);
+        }
+        return [];
+    }
+
+    public function report263($params)
+    {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled') && get_config('local_management', 'enabled')) {
+            $columns = [
+                "h.name",
+                "mc.name",
+                "oc.learnertypes",
+                "p.name",
+                "users"
+            ];
+
+            $sql_having = $this->get_filter_sql($params, $columns);
+            $sql_order = $this->get_order_sql($params, $columns);
+            $sql_filter = $this->get_filter_in_sql($params->custom, "h.id");
+            $sql_filter2 = $this->get_filterdate_sql($params, "cm.timeadded");
+
+            $sql ="
+            SELECT
+                   mc.id,
+                   CONCAT(h.idnumber, '-', h.name) AS hospital,
+                   mc.name AS cohort,
+                   UPPER(oc.learnertypes) AS cohorttype,
+                   p.name AS productname,
+                   COUNT(cm.userid) AS users
+              FROM {local_management_hospital} h
+              JOIN {local_management_cohort} oc ON oc.hospitalid = h.id
+              JOIN {cohort} mc ON mc.id = oc.cohortid
+              LEFT JOIN {enrol} e ON e.enrol = 'cohort' AND e.customint1 = mc.id
+              LEFT JOIN {cohort_members} cm ON cm.cohortid = mc.id $sql_filter2
+              LEFT JOIN {local_intellicart_products} p ON p.id = e.customint7
+             WHERE h.id > 0 $sql_filter
+             GROUP BY mc.id
+             $sql_having $sql_order";
+
+            return $this->get_report_data($sql, $params);
+        }
+        return [];
+    }
+
+    public function report264($params)
+    {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled') && get_config('local_management', 'enabled')) {
+            $columns = [
+                "h.name",
+                "mc.name",
+                "oc.learnertypes",
+                "p.name",
+                "users",
+                "completed",
+                "avgscore",
+            ];
+
+            $sql_having = $this->get_filter_sql($params, $columns);
+            $sql_order = $this->get_order_sql($params, $columns);
+            $sql_filter = $this->get_filter_in_sql($params->custom, "h.id");
+            $sql_filter2 = $this->get_filterdate_sql($params, "cm.timeadded");
+
+            $sql ="
+            SELECT
+                   mc.id,
+                   h.name AS hospital,
+                   mc.name AS cohort,
+                   UPPER(oc.learnertypes) AS cohorttype,
+                   p.name AS productname,
+                   COUNT(cm.userid) AS users,
+                   COUNT(il.userid) AS completed,
+                   AVG(fv.value) as avgscore
+              FROM {local_management_hospital} h
+              JOIN {local_management_cohort} oc ON oc.hospitalid = h.id
+              JOIN {cohort} mc ON mc.id = oc.cohortid
+              JOIN {enrol} e ON e.enrol = 'cohort' AND e.customint1 = mc.id
+              JOIN {local_intellicart_products} p ON p.id = e.customint7
+         LEFT JOIN {cohort_members} cm ON cm.cohortid = mc.id $sql_filter2
+         LEFT JOIN {local_intellicart_logs} il ON il.userid = cm.userid AND il.instanceid = p.id AND il.type = 'productcompleted' AND il.status='completed'
+         LEFT JOIN {feedback} f ON f.course = e.courseid
+         LEFT JOIN {feedback_completed} fc ON fc.feedback=f.id AND fc.userid=cm.userid
+         LEFT JOIN {feedback_item} fi ON fi.feedback=f.id AND fi.typ <> 'textarea'
+         LEFT JOIN {feedback_value} fv ON fv.item=fi.id AND fv.completed=fc.id
+         WHERE h.id > 0 $sql_filter
+          GROUP BY mc.id $sql_having $sql_order";
+
+            return $this->get_report_data($sql, $params);
+        }
+        return [];
+    }
+
+    public function report265($params)
+    {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled') && get_config('local_management', 'enabled')) {
+            $columns = [
+                "product",
+                "enrolled",
+                "completed",
+                "avgtimespend",
+                "avgscore",
+            ];
+
+            $sql_having = $this->get_filter_sql($params, $columns);
+            $sql_order = $this->get_order_sql($params, $columns);
+            $sql_filter = $this->get_filter_in_sql($params->custom, "p.id");
+            $sql_filter .= $this->get_filterdate_sql($params, "ue.timecreated");
+
+            $sql ="
+                 SELECT
+                        id,
+                        product,
+                        COUNT(userid) AS enrolled,
+                        SUM(completed) AS completed,
+                        AVG(timespend) AS avgtimespend,
+                        AVG(score) AS avgscore
+                   FROM (SELECT
+                                p.id,
+                                p.name AS product,
+                                ue.userid,
+                                (SELECT
+                                        SUM(timespend) AS timespend
+                                   FROM {local_intelliboard_tracking} it
+                                  WHERE it.courseid = ir.instanceid AND it.userid = ue.userid
+                                ) AS timespend,
+                                (SELECT
+                                        AVG(fv.value) AS score
+                                   FROM {feedback} f
+                              LEFT JOIN {feedback_completed} fc ON fc.feedback=f.id
+                              LEFT JOIN {feedback_item} fi ON fi.feedback=f.id AND fi.typ <> 'textarea'
+                              LEFT JOIN {feedback_value} fv ON fv.item=fi.id AND fv.completed=fc.id
+                                  WHERE f.course = ir.instanceid AND fc.userid = ue.userid
+                               GROUP BY f.course, fc.userid
+                                ) AS score,
+                                (SELECT
+                                        CASE WHEN cc.timecompleted > 0 THEN 1 ELSE 0 END AS completed
+                                   FROM {course_completions} cc
+                                  WHERE cc.userid = ue.userid AND cc.course = ir.instanceid
+                                ) AS completed
+                           FROM {local_intellicart_products} p
+                           LEFT JOIN {local_intellicart_relations} ir ON ir.type = 'course' AND ir.productid = p.id
+                           LEFT JOIN {enrol} e ON (e.enrol = 'intellicart' OR  e.enrol = 'cohort') AND
+                                             (e.customint1 = p.id OR e.customint7 = p.id) AND
+                                             e.courseid = ir.instanceid
+                           LEFT JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                          WHERE p.id > 0 $sql_filter
+                       GROUP BY p.id, ir.instanceid, ue.userid
+                        ) AS r
+               GROUP BY id $sql_having $sql_order";
+
+            return $this->get_report_data($sql, $params);
+        }
+        return [];
+    }
 }

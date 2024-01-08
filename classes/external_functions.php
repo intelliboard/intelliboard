@@ -469,6 +469,16 @@ class local_external_functions
             'get_icpayment_types',
             'get_icproduct_custom_fields',
             'report257',
+            'get_intellicart_products',
+            'get_intellicart_product_courses',
+            'report258',
+            'report259',
+            'report260',
+            'report261',
+            'report262',
+            'report263',
+            'report264',
+            'report265',
         ];
     }
     public function get_function($params = null)
