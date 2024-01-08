@@ -188,7 +188,7 @@ class local_intelliboard_instructor_actions extends external_api
         return $data;
     }
 
-    public static function get_course_users($course)
+    public static function get_course_users($course, $daterange = null)
     {
         global $USER, $DB, $CFG;
 
@@ -218,7 +218,7 @@ class local_intelliboard_instructor_actions extends external_api
         return ['items'=>$html];
 
     }
-    public static function get_student_grade_progression($user, $course)
+    public static function get_student_grade_progression($user, $course, $daterange = null)
     {
         global $USER, $DB, $CFG;
 
@@ -613,7 +613,7 @@ class local_intelliboard_instructor_actions extends external_api
 
             foreach($courses as $value){
                 $value->timespend_str = seconds_to_time($value->timespend);
-                $value->activity = addslashes($value->activity);
+                $value->activity = addslashes($value->activity ?? '');
 
                 $inner = new stdClass();
                 $inner->v = (int)$value->timespend;
