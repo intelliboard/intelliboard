@@ -704,7 +704,7 @@ class local_intelliboard_external extends external_api {
                 return " AND ({$filter})";
             }
 
-            return " HAVING {$filter}";
+            return " HAVING ({$filter})";
         }
 
         return '';
@@ -20965,7 +20965,7 @@ class local_intelliboard_external extends external_api {
                             $users_list = $list;
                         }
                     }
-                    if ($assign_courses_list) {
+                    if ($assign_courses_list && $params->function != 'report2') {
                         $result = $DB->get_records_sql("SELECT distinct ra.userid FROM {role_assignments} ra, {context} ctx WHERE ctx.id = ra.contextid AND ctx.contextlevel = 50 AND ctx.instanceid IN ($assign_courses_list)", $this->params);
                         if ($result) {
                             $list = [];
@@ -25469,6 +25469,34 @@ class local_intelliboard_external extends external_api {
         return [];
     }
 
+    private function get_sql_hospital_filter($params, $paramname = 'custom', $tablealias = 'h.', $sep = true)
+    {
+        $sqlfilter = '';
+        if (!is_array($params->{$paramname})) {
+            $params->{$paramname} = array_filter(explode(',', $params->{$paramname}));
+        }
+        $hospitalfilter = [];
+        if (in_array(-1, $params->{$paramname})) { // Onboarding hospitals.
+            $hospitalfilter[] = $tablealias . 'onboarding = 1';
+        }
+        if (in_array(-2, $params->{$paramname})) { // Not Onboarding Hospitals.
+            $hospitalfilter[] = $tablealias . 'onboarding <> 1';
+        }
+        if (in_array(-3, $params->{$paramname})) { // Upgrade Hospitals.
+            $hospitalfilter[] = $tablealias . 'hospitaltype IN (2, 3)';
+        }
+        $params->{$paramname} = array_diff($params->{$paramname}, [-1, -2, -3]);
+        $hospitalfilter[] = $this->get_filter_in_sql($params->{$paramname}, $tablealias . "id", false);
+        $hospitalfiltersql = implode(' OR ', array_filter($hospitalfilter));
+        if (!empty($hospitalfiltersql)) {
+            $sqlfilter = ' (' . $hospitalfiltersql . ') ';
+            $sqlfilter = $sep ? ' AND' . $sqlfilter : $sqlfilter;
+        } else {
+            $sqlfilter = '';
+        }
+        return $sqlfilter;
+    }
+
     public function report263($params)
     {
         global $DB;
@@ -25484,7 +25512,7 @@ class local_intelliboard_external extends external_api {
 
             $sql_having = $this->get_filter_sql($params, $columns);
             $sql_order = $this->get_order_sql($params, $columns);
-            $sql_filter = $this->get_filter_in_sql($params->custom, "h.id");
+            $sqlfilter = $this->get_sql_hospital_filter($params, 'custom', 'h.', true);
             $sql_filter2 = $this->get_filterdate_sql($params, "cm.timeadded");
 
             $sql ="
@@ -25501,7 +25529,7 @@ class local_intelliboard_external extends external_api {
               LEFT JOIN {enrol} e ON e.enrol = 'cohort' AND e.customint1 = mc.id
               LEFT JOIN {cohort_members} cm ON cm.cohortid = mc.id $sql_filter2
               LEFT JOIN {local_intellicart_products} p ON p.id = e.customint7
-             WHERE h.id > 0 $sql_filter
+             WHERE h.id > 0 $sqlfilter
              GROUP BY mc.id
              $sql_having $sql_order";
 
@@ -25527,8 +25555,8 @@ class local_intelliboard_external extends external_api {
 
             $sql_having = $this->get_filter_sql($params, $columns);
             $sql_order = $this->get_order_sql($params, $columns);
-            $sql_filter = $this->get_filter_in_sql($params->custom, "h.id");
             $sql_filter2 = $this->get_filterdate_sql($params, "cm.timeadded");
+            $sqlfilter = $this->get_sql_hospital_filter($params, 'custom', 'h.', true);
 
             $sql ="
             SELECT
@@ -25551,7 +25579,7 @@ class local_intelliboard_external extends external_api {
          LEFT JOIN {feedback_completed} fc ON fc.feedback=f.id AND fc.userid=cm.userid
          LEFT JOIN {feedback_item} fi ON fi.feedback=f.id AND fi.typ <> 'textarea'
          LEFT JOIN {feedback_value} fv ON fv.item=fi.id AND fv.completed=fc.id
-         WHERE h.id > 0 $sql_filter
+         WHERE h.id > 0 $sqlfilter
           GROUP BY mc.id $sql_having $sql_order";
 
             return $this->get_report_data($sql, $params);
@@ -25619,6 +25647,75 @@ class local_intelliboard_external extends external_api {
                         ) AS r
                GROUP BY id $sql_having $sql_order";
 
+            return $this->get_report_data($sql, $params);
+        }
+        return [];
+    }
+
+    public function report266($params)
+    {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled') && get_config('local_management', 'enabled')) {
+            $columns = [
+                "hospital",
+                "cohort",
+                "product",
+                "firstname",
+                "lastname",
+                "email",
+                "enrolled",
+                "product_courses",
+                "completed_courses",
+                "last_completion",
+                "completion_time",
+            ];
+
+            $sqlhaving = $this->get_filter_sql($params, $columns, false);
+
+            if ($params->custom4 == 1) {
+                $sqlhaving .= !empty($sqlhaving) ? ' AND ' : '';
+                $sqlhaving .= 'pc.product_courses = COUNT(cc.timecompleted)';
+            } else if ($params->custom4 == 2) {
+                $sqlhaving .= !empty($sqlhaving) ? ' AND ' : '';
+                $sqlhaving .= 'pc.product_courses > COUNT(cc.timecompleted)';
+            }
+
+            $sqlhaving = !empty($sqlhaving) ? ' HAVING ' . $sqlhaving : '';
+            $sqlorder = $this->get_order_sql($params, $columns);
+            $sqlfilter = $this->get_sql_hospital_filter($params, 'custom', 'h.', true);
+            $sqlfilter .= $this->get_filterdate_sql($params, "ue.timecreated");
+
+            $sql ="SELECT
+                          @rowid := @rowid + 1 AS id,
+                          h.name AS hospital,
+                          ch.name AS cohort,
+                          p.name AS product,
+                          u.firstname,
+                          u.lastname,
+                          u.email,
+                          pc.product_courses,
+                          COUNT(cc.timecompleted) AS completed_courses,
+                          MIN(ue.timecreated) AS enrolled_on,
+                          MAX(cc.timecompleted) AS last_completion
+                     FROM (SELECT @rowid := 0) AS rowid, {local_management_hospital} h
+                     JOIN {local_management_cohort} mch ON mch.hospitalid = h.id
+                     JOIN {cohort} ch ON ch.id = mch.cohortid
+                     JOIN {cohort_members} cm ON cm.cohortid = ch.id
+                     JOIN {enrol} e ON e.enrol = 'cohort' and e.customint1 = ch.id
+                     JOIN {user_enrolments} ue ON ue.enrolid = e.id and ue.userid = cm.userid
+                     JOIN {user} u ON u.id = cm.userid
+                     JOIN {local_intellicart_products} p ON p.id = e.customint7
+                     JOIN {local_intellicart_relations} ir ON ir.type='course' and ir.productid = p.id AND ir.instanceid = e.courseid
+                LEFT JOIN (
+                           SELECT icpr.productid, count(icpr.instanceid) AS product_courses
+                             FROM {local_intellicart_relations} AS icpr
+                            WHERE icpr.type='course'
+                         GROUP BY icpr.productid
+                ) AS pc ON pc.productid = p.id
+                LEFT JOIN {course_completions} cc ON cc.course = e.courseid and cc.userid = cm.userid
+                    WHERE h.id > 0 $sqlfilter
+                 GROUP BY h.id, ch.id, cm.userid $sqlhaving $sqlorder";
             return $this->get_report_data($sql, $params);
         }
         return [];
