@@ -23,9 +23,12 @@
  * @website    http://intelliboard.net/
  */
 
-defined('MOODLE_INTERNAL') || die();
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
+use core_external\external_value;
 
-require_once("$CFG->libdir/externallib.php");
+defined('MOODLE_INTERNAL') || die();
 
 class local_intelliboard_report extends external_api {
 

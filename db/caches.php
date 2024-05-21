@@ -39,7 +39,7 @@ $definitions = [
     'tracking' => [
         'mode' => cache_store::MODE_APPLICATION,
         'simplekeys' => true,
-        'requirelockingwrite' => true,
+        'requirelockingbeforewrite' => true,
         'overrideclass' => 'local_intelliboard\tools\cache_application',
         'overrideclassfile' => 'local/intelliboard/classes/tools/cache_application.php'
     ],

@@ -195,11 +195,11 @@ foreach($courses as $item){
     $tooltip = "<div class=\"chart-tooltip\">";
     $tooltip .= "<div class=\"chart-tooltip-header\">". addslashes(format_string($item->fullname)) ."</div>";
     $tooltip .= "<div class=\"chart-tooltip-body clearfix\">";
-    $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". ((!$scale_real)?round($item->grade ?? 0, 2):$item->grade_real)."</span></div>";
+    $tooltip .= "<div class=\"chart-tooltip-left\">".get_string('grade','local_intelliboard').": <span>". ((!$scale_real)?round((float) $item->grade, 2):$item->grade_real)."</span></div>";
     $tooltip .= "<div class=\"chart-tooltip-right\">".get_string('time_spent','local_intelliboard').": <span>". $d."</span></div>";
     $tooltip .= "</div>";
     $tooltip .= "</div>";
-    $json_data2[] = "[$l, ".round($item->grade ?? 0, 2).",'$tooltip']";
+    $json_data2[] = "[$l, ".round((float) $item->grade, 2).",'$tooltip']";
 }
 
 $menu = array();
@@ -279,10 +279,10 @@ echo $OUTPUT->header();
             <?php if($t7 or $t8): ?>
                 <div class="avg <?php echo (!$t7 or !$t8)?'full':''; ?>">
                     <?php if($t7): ?>
-                        <p class="user"><?php echo ($scale_real)?$totals->grade:round((int) $totals->grade, 2).'%'; ?> <span><?php echo get_string('my_course_average_all', 'local_intelliboard'); ?></span></p>
+                        <p class="user"><?php echo ($scale_real)?$totals->grade:round((float) $totals->grade, 2).'%'; ?> <span><?php echo get_string('my_course_average_all', 'local_intelliboard'); ?></span></p>
                     <?php endif; ?>
                     <?php if($t8): ?>
-                        <p class="site"><?php echo ($scale_real)?$totals->average:round((int) $totals->average, 2).'%'; ?> <span><?php echo get_string('overall_course_average', 'local_intelliboard'); ?></span></p>
+                        <p class="site"><?php echo ($scale_real)?$totals->average:round((float) $totals->average, 2).'%'; ?> <span><?php echo get_string('overall_course_average', 'local_intelliboard'); ?></span></p>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
@@ -363,7 +363,7 @@ echo $OUTPUT->header();
                                                     <?php if($scale_real):?>
                                                         <?php echo $item->grade; ?>
                                                     <?php else:?>
-                                                        <div class="circle-progress d-inline-block"  data-percent="<?php echo round($item->grade, $scale_percentage_round); ?>"></div>
+                                                        <div class="circle-progress d-inline-block"  data-percent="<?php echo round((float) $item->grade, $scale_percentage_round); ?>"></div>
                                                     <?php endif;?>
                                                 </td>
                                             <?php endif; ?>
@@ -423,7 +423,7 @@ echo $OUTPUT->header();
                                                     <?php if($scale_real):?>
                                                         <?php echo $item->grade; ?>
                                                     <?php else:?>
-                                                        <div class="circle-progress"  data-percent="<?php echo round($item->grade, $scale_percentage_round); ?>"></div>
+                                                        <div class="circle-progress"  data-percent="<?php echo round((float) $item->grade, $scale_percentage_round); ?>"></div>
                                                     <?php endif;?>
                                                 </td>
                                             <?php endif; ?>
@@ -540,7 +540,7 @@ echo $OUTPUT->header();
                                                 <?php if($scale_real):?>
                                                     <?php echo $item->grade; ?>
                                                 <?php else:?>
-                                                    <div class="circle-progress d-inline-block"  data-percent="<?php echo round($item->grade,$scale_percentage_round); ?>"></div>
+                                                    <div class="circle-progress d-inline-block"  data-percent="<?php echo round((float) $item->grade,$scale_percentage_round); ?>"></div>
                                                 <?php endif;?>
                                             </td>
                                         <?php endif; ?>
@@ -568,7 +568,7 @@ echo $OUTPUT->header();
                                             <?php if($scale_real):?>
                                                 <?php echo $item->grade; ?>
                                             <?php else:?>
-                                                <div class="circle-progress"  data-percent="<?php echo round($item->grade,$scale_percentage_round); ?>"></div>
+                                                <div class="circle-progress"  data-percent="<?php echo round((float) $item->grade,$scale_percentage_round); ?>"></div>
                                             <?php endif;?>
                                         </td>
                                     <?php endif; ?>

@@ -24,9 +24,13 @@
  * @website    https://intelliboard.net/
  */
 
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
+use core_external\external_value;
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once("$CFG->libdir/externallib.php");
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 require_once($CFG->dirroot .'/course/lib.php');

@@ -671,7 +671,7 @@
 
                 google.charts.setOnLoadCallback(load_graded_activities_overview_chart);
                 function load_graded_activities_overview_chart() {
-                    var course = $('#chart8 .intelliboard-dropdown button').val();
+                    var course = $('#chart8 .intelliboard-dropdown button').val() || 0;
                     instructorActions.execAction('graded_activities_overview', {course: course}, function(response) {
                         let data = google.visualization.arrayToDataTable(response);
                         let options = decodeJson('{{{gradeactivitiesoverviewoptions}}}');
@@ -693,7 +693,7 @@
 
                 function load_engagement_chart() {
                     var daterange = $('#general-daterange').val();
-                    var course = $('#chart5 .intelliboard-dropdown button').val();
+                    var course = $('#chart5 .intelliboard-dropdown button').val() || 0;
                     instructorActions.execAction('get_learner_engagement', {course: course, daterange: daterange}, function(response) {
                         var data = google.visualization.arrayToDataTable(response);
                         var options = decodeJson('{{{correlationsoptions}}}');
@@ -706,7 +706,7 @@
 
                 function load_module_utilization_chart() {
                     var daterange = $('#general-daterange').val();
-                    var course = $('#chart3 .intelliboard-dropdown button').val();
+                    var course = $('#chart3 .intelliboard-dropdown button').val() || 0;
                     instructorActions.execAction('get_module_utilization', {course: course, daterange: daterange}, function(response) {
                         if(response.length > 0) {
                             var data = google.visualization.arrayToDataTable(response);
@@ -723,7 +723,7 @@
 
                 function load_topic_utilization_chart() {
                     var daterange = $('#general-daterange').val();
-                    var course = $('#chart6 .intelliboard-dropdown button').val();
+                    var course = $('#chart6 .intelliboard-dropdown button').val() || 0;
                     instructorActions.execAction('get_topic_utilization', {course: course, daterange: daterange}, function(response) {
                         if(response.length > 0) {
                             var data = google.visualization.arrayToDataTable(response);

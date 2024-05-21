@@ -69,7 +69,7 @@
                                 </li>
                             {{/user_courses}}
                         </ul>
-                        <button>{{#str}}save, local_intelliboard{{/str}}</button>
+                        <button class="btn btn-primary">{{#str}}save, local_intelliboard{{/str}}</button>
                     </div>
                 </li>
             {{/t08}}
@@ -193,9 +193,11 @@
                     e.stopPropagation();
                     var checkedVals = $('.sum-courses-list input:checkbox:checked').map(function() {
                         return this.value;
-                    }).get();
+                    }).get().join(',');
                     M.cfg.developerdebug = false;
-                    M.util.set_user_preference('enabeled_sum_courses_<?php echo $showing_user->id;?>', checkedVals);
+                    require(['core_user/repository'], function(UserRepository) {
+                        UserRepository.setUserPreference('enabeled_sum_courses_<?php echo $showing_user->id;?>', checkedVals);
+                    });
                     setTimeout(function () {
                         window.location.reload();
                     },600);

@@ -205,7 +205,7 @@ function intelliboard($params, $function = 'sso'){
 
 			$json = $curl->post($url . 'moodleApi/' . $function, $params, $options);
 			fclose($out);
-			$output = ob_get_clean();
+			$output = ob_get_clean() . PHP_EOL . $json;
 		} else {
 			$curl = new curl;
 			if ($function == 'downloadExportFile' && isset($params['filepath'])) {
