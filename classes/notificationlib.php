@@ -28,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 require_once("$CFG->libdir/externallib.php");
 
 class local_intelliboard_notificationlib extends external_api {
-
     public static function send_notifications_parameters() {
         return new external_function_parameters(
             array(

@@ -101,8 +101,6 @@ class student_menu implements renderable, templatable {
         $sum_courses = get_user_preferences('enabeled_sum_courses_'.$showing_user->id, '');
         $sum_courses = !empty($sum_courses) ? explode(',', $sum_courses) : [];
 
-        user_preference_allow_ajax_update('enabeled_sum_courses_'.$showing_user->id, PARAM_SEQUENCE);
-
         if (!$intellicart) {
             $showseats = false;
             $showwaitlist = false;

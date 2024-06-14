@@ -63,11 +63,7 @@ class setup implements renderable, templatable {
         });
         $this->params["intelliboard"]->partners = array_values($partners);
 
-        if(get_component_version('core') < 2017051509) {
-            $loaderimgurl = $OUTPUT->pix_url('spinner', 'local_intelliboard');
-        } else {
-            $loaderimgurl = $OUTPUT->image_url('spinner', 'local_intelliboard');
-        }
+        $loaderimgurl = $OUTPUT->image_url('spinner', 'local_intelliboard');
 
         return [
             "CFG" => $CFG,

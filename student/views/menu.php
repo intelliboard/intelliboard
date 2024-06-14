@@ -61,8 +61,6 @@ $user_courses = enrol_get_users_courses($showing_user->id);
 $sum_courses = get_user_preferences('enabeled_sum_courses_'.$showing_user->id, '');
 $sum_courses = (!empty($sum_courses))?explode(',', $sum_courses):array();
 
-user_preference_allow_ajax_update('enabeled_sum_courses_'.$showing_user->id, PARAM_SEQUENCE);
-
 if (!$intellicart) {
   $intellicartenabled = false;
 } else {
@@ -139,7 +137,7 @@ $subscriptionsurl = (new moodle_url('/local/intelliboard/student/subscriptions.p
                             </li>
                         <?php endforeach;?>
                     </ul>
-                    <button><?php echo get_string('save');?></button>
+                    <button class="btn btn-primary"><?php echo get_string('save');?></button>
                 </div>
             </li>
 			<?php endif; ?>
@@ -212,7 +210,7 @@ $subscriptionsurl = (new moodle_url('/local/intelliboard/student/subscriptions.p
         <?php endif; ?>
     <?php endif; ?>
 </ul>
-<?php if($show_students && !empty($students)):?>
+<?php if($show_students && !empty($students)): ?>
     <script>
         jQuery(document).ready(function() {
             jQuery('.sheader .info .intelliboard-dropdown ul li').click(function (e) {
@@ -244,9 +242,11 @@ $subscriptionsurl = (new moodle_url('/local/intelliboard/student/subscriptions.p
                 e.stopPropagation();
                 var checkedVals = jQuery('.sum-courses-list input:checkbox:checked').map(function() {
                     return this.value;
-                }).get();
+                }).get().join(',');
                 M.cfg.developerdebug = false;
-                M.util.set_user_preference('enabeled_sum_courses_<?php echo $showing_user->id;?>', checkedVals);
+                require(['core_user/repository'], function(UserRepository) {
+                    UserRepository.setUserPreference('enabeled_sum_courses_<?php echo $showing_user->id;?>', checkedVals);
+                });
                 setTimeout(function () {
                     window.location.reload();
                 },600);

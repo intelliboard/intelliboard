@@ -44,6 +44,8 @@ $course = optional_param('course', 0, PARAM_INT);
 $length = optional_param('length', 100, PARAM_INT);
 $daterange = clean_raw(optional_param('daterange', '', PARAM_RAW));
 $filter_courses = optional_param('filter_courses', '', PARAM_ALPHANUMEXT);
+$debug = get_config('local_intelliboard', 'debug');
+$debugmode = optional_param('debug', '', PARAM_RAW);
 
 require_login();
 intelliboard_instructor_access();
@@ -164,6 +166,13 @@ echo $OUTPUT->header();
 ?>
 <?php if(!isset($intelliboard) || !$intelliboard->token): ?>
 	<div class="alert alert-error alert-block" role="alert"><?php echo get_string('intelliboardaccess', 'local_intelliboard'); ?></div>
+	<?php if ($debug and $debugmode): ?>
+        <pre>
+            <code>[reports_status]: <?php echo (get_config('local_intelliboard', 'n9')) ? 1 : 0; ?></code>
+            <code>[count_reports]: <?php echo (isset($intelliboard->reports) ? count($intelliboard->reports) : ''); ?></code>
+            <code>[debug]: <?php echo $intelliboard->debugging; ?></code>
+        </pre>
+    <?php endif; ?>
 <?php else: ?>
 <div class="intelliboard-page intelliboard-instructor">
     <div class="additional_header clearfix">
