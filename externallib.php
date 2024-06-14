@@ -2954,6 +2954,8 @@ class local_intelliboard_external extends external_api {
                   THEN (CASE WHEN qat.num_of_attempts IS NULL THEN 0 ELSE qat.num_of_attempts END)
                   WHEN m.name = 'assign'
                   THEN (CASE WHEN asbm.num_of_attempts IS NULL THEN 0 ELSE asbm.num_of_attempts END)
+                  WHEN m.name = 'scorm'
+                  THEN (CASE WHEN scrm.num_of_attempts IS NULL THEN 0 ELSE scrm.num_of_attempts END)
                   {$sql_attempts_number}
                   ELSE 0
             END",
@@ -3078,6 +3080,8 @@ class local_intelliboard_external extends external_api {
                          THEN (CASE WHEN qat.num_of_attempts IS NULL THEN 0 ELSE qat.num_of_attempts END)
                          WHEN m.name = 'assign'
                          THEN (CASE WHEN asbm.num_of_attempts IS NULL THEN 0 ELSE asbm.num_of_attempts END)
+                         WHEN m.name = 'scorm'
+                         THEN (CASE WHEN scrm.num_of_attempts IS NULL THEN 0 ELSE scrm.num_of_attempts END)
                          {$sql_attempts_number}
                          ELSE 0
                     END AS number_of_attempts,
@@ -3106,6 +3110,14 @@ class local_intelliboard_external extends external_api {
                        JOIN {assign} a ON a.id=asbm1.assignment {$sql_inner_filter3}
                    GROUP BY asbm1.assignment, asbm1.userid
                     ) asbm ON asbm.userid = u.id AND m.name = 'assign' AND asbm.assignment = cm.instance
+          LEFT JOIN (
+                    SELECT sca.scormid, MAX(sca.attempt) AS num_of_attempts,
+                           sca.userid,
+                           0 AS first_completed_date
+                      FROM {scorm_attempt} sca
+                      JOIN {scorm} sc ON sc.id = sca.scormid
+                  GROUP BY sca.scormid, sca.userid
+          ) scrm ON scrm.userid = u.id AND m.name = 'scorm' AND scrm.scormid = cm.instance
           LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
           LEFT JOIN (SELECT i.itemid, {$rawname} AS tags
                        FROM {tag_instance} i, {tag} t
