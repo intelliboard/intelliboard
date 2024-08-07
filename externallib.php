@@ -2947,6 +2947,8 @@ class local_intelliboard_external extends external_api {
                          THEN (CASE WHEN h5patt.num_of_attempts IS NULL THEN 0 ELSE h5patt.num_of_attempts END)";
         }
 
+        $scorm_attempt_table = ((float) $CFG->release ?? 0) >= 4.3 ? 'scorm_attempt' : 'scorm_scoes_track';
+
         $columns = array_merge(array(
             "c.fullname","", "m.name", "u.firstname", "u.lastname", "u.email", "ue.enrol_status", "graduated",
             "grade", "grade", "grade_course", "completionstate",
@@ -3114,7 +3116,7 @@ class local_intelliboard_external extends external_api {
                     SELECT sca.scormid, MAX(sca.attempt) AS num_of_attempts,
                            sca.userid,
                            0 AS first_completed_date
-                      FROM {scorm_attempt} sca
+                      FROM {" . $scorm_attempt_table . "} sca
                       JOIN {scorm} sc ON sc.id = sca.scormid
                   GROUP BY sca.scormid, sca.userid
           ) scrm ON scrm.userid = u.id AND m.name = 'scorm' AND scrm.scormid = cm.instance
@@ -12531,8 +12533,8 @@ class local_intelliboard_external extends external_api {
                 SELECT fd.forum,
                        fp.userid,
                        MAX(fp.modified) AS posted,
-                       NULL as grade,
-                       NULL as graded
+                       0 as grade,
+                       0 as graded
                   FROM {hsuforum_discussions} fd
                   JOIN {hsuforum} m ON m.id = fd.forum {$sql_inner_filter6}
              LEFT JOIN {hsuforum_posts} fp ON fp.discussion = fd.id
@@ -12615,8 +12617,8 @@ class local_intelliboard_external extends external_api {
           LEFT JOIN (SELECT fd.forum,
                             fp.userid,
                             MAX(fp.modified) AS posted,
-                            NULL AS grade,
-                            NULL AS graded
+                            0 AS grade,
+                            0 AS graded
                        FROM {forum_discussions} fd
                        JOIN {forum} m ON m.id = fd.forum {$sql_inner_filter2}
                   LEFT JOIN {forum_posts} fp ON fp.discussion=fd.id
@@ -12635,8 +12637,8 @@ class local_intelliboard_external extends external_api {
           LEFT JOIN (SELECT ge.glossaryid,
                             ge.userid,
                             MAX(ge.timecreated) AS submitted,
-                            NULL AS grade,
-                            NULL AS graded
+                            0 AS grade,
+                            0 AS graded
                        FROM {glossary_entries} ge
                        JOIN {glossary} m ON m.id = ge.glossaryid {$sql_inner_filter4}
                    GROUP BY ge.glossaryid, ge.userid
@@ -12644,8 +12646,8 @@ class local_intelliboard_external extends external_api {
           LEFT JOIN (SELECT ca.choiceid,
                             ca.userid,
                             MAX(ca.timemodified) AS submitted,
-                            NULL AS grade,
-                            NULL AS graded
+                            0 AS grade,
+                            0 AS graded
                        FROM {choice_answers} ca
                        JOIN {choice} m ON m.id = ca.choiceid {$sql_inner_filter5}
                    GROUP BY ca.choiceid, ca.userid
