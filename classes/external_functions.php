@@ -480,6 +480,8 @@ class local_external_functions
             'report264',
             'report265',
             'report266',
+            'report267',
+            'report268',
         ];
     }
     public function get_function($params = null)
