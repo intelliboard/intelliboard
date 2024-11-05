@@ -296,6 +296,15 @@ $functions = array(
         'ajax' => true,
         'loginrequired' => true,
     ),
+    'local_intelliboard_account_setup' => array(
+        'classname' => 'local_intelliboard_account_setup',
+        'methodname' => 'execute',
+        'classpath' => 'local/intelliboard/classes/account_setup.php',
+        'description' => 'Account Setup',
+        'type' => 'read',
+        'ajax' => true,
+        'loginrequired' => true,
+    ),
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
@@ -340,5 +349,6 @@ $services = array(
         ),
         'restrictedusers' => 1,
         'enabled'=>1,
+        'shortname' =>  'local_intelliboard',
     )
 );

@@ -5186,6 +5186,8 @@ class local_intelliboard_external extends external_api {
         $sql4 = ($params->timestart) ? $this->get_filterdate_sql($params, 'l.lastaccess') : ''; //XXX
         $sql4 .= $this->get_filter_in_sql($params->courseid, "l.courseid");
         $sql5 = $this->get_filter_in_sql($params->courseid, "a.course");
+        $sql5 .= $this->get_filter_enrol_sql($params, 'e.');
+        $sql5 .= $this->get_filter_enrol_sql($params, 'ue.');
 
         if($params->sizemode){
             $sql_columns .= ", '0' as timespend, '0' as visits";
@@ -5218,11 +5220,13 @@ class local_intelliboard_external extends external_api {
                               COUNT(distinct s.assignment) AS submissions,
                               COUNT(distinct g.assignment) AS grades
                             FROM {assign} a
+                                 JOIN {enrol} e ON e.courseid = a.course
+                                 JOIN {user_enrolments} ue ON ue.enrolid = e.id
                                  LEFT JOIN {modules} m ON m.name = 'assign'
                                  LEFT JOIN {course_modules} cm ON cm.instance = a.id AND cm.module = m.id
-                                 LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id $completion $sql1
-                                 LEFT JOIN {assign_submission} s ON s.status = 'submitted' AND s.assignment = a.id $sql2
-                                 LEFT JOIN {assign_grades} g ON g.assignment = a.id $sql3
+                                 LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = ue.userid $completion $sql1
+                                 LEFT JOIN {assign_submission} s ON s.status = 'submitted' AND s.assignment = a.id AND s.userid = ue.userid $sql2
+                                 LEFT JOIN {assign_grades} g ON g.assignment = a.id AND g.userid = ue.userid $sql3
                             WHERE a.course >0 $sql5
                             GROUP BY a.course) stat ON stat.courseid=c.id
                 $sql_join
@@ -25779,6 +25783,141 @@ class local_intelliboard_external extends external_api {
                 LEFT JOIN {course_completions} cc ON cc.course = e.courseid and cc.userid = cm.userid
                     WHERE h.status > 0 AND ch.visible = 1 $sqlfilter
                  GROUP BY h.id, ch.id, cm.userid $sqlhaving $sqlorder";
+            return $this->get_report_data($sql, $params);
+        }
+        return [];
+    }
+
+    public function report267($params)
+    {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled') && get_config('local_management', 'enabled')) {
+            $columns = [
+                "product_code",
+                "cohort",
+                "enrolled",
+                "completed",
+                "avg_timespend",
+                "value_1",
+                "value_2",
+                "value_3",
+                "value_4",
+                "value_5",
+                "avg_score",
+            ];
+
+            $sqlorder = $this->get_order_sql($params, $columns);
+            $sqlfilter = $this->get_filterdate_sql($params, "ue.timecreated");
+            $sqlfilter .= $this->get_filter_in_sql($params->custom2, "ch.id");
+            $sqlfilter .= $this->get_filter_in_sql($params->custom3, "p.id");
+            $sqlfilter .= $this->get_filter_user_sql($params, "u.");
+            $sqlfilter .= $this->get_sql_hospital_filter($params, 'custom', 'h.', true);
+            if ($params->custom4 ?? 0) {
+                if ($params->custom4 == 1) {
+                    $sqlfilter .= ' AND ch.visible = 1';
+                }
+                else if ($params->custom4 == 2) {
+                    $sqlfilter .= ' AND ch.visible = 0';
+                }
+            }
+
+            $sql ="SELECT @rowid := @rowid + 1 AS id,
+                          p.idnumber AS product_code,
+                          ch.name AS cohort,
+                          COUNT(DISTINCT cm.userid) AS enrolled,
+                          COUNT(DISTINCT cc.userid) as completed,
+                          (SELECT AVG(t.timespend) FROM {local_intelliboard_tracking} t WHERE t.userid = ue.userid AND t.courseid = e.courseid) AS avg_timespend,
+                          fi.name as feedback,
+                          SUM(CASE WHEN fv.value = '1' THEN 1 ELSE 0 END) AS value_1,
+                          SUM(CASE WHEN fv.value = '2' THEN 1 ELSE 0 END) AS value_2,
+                          SUM(CASE WHEN fv.value = '3' THEN 1 ELSE 0 END) AS value_3,
+                          SUM(CASE WHEN fv.value = '4' THEN 1 ELSE 0 END) AS value_4,
+                          SUM(CASE WHEN fv.value = '5' THEN 1 ELSE 0 END) AS value_5,
+                          SUM(fv.value) / COUNT(DISTINCT cc.userid) AS avg_score
+                     FROM (SELECT @rowid := 0) AS rowid, {local_intellicart_products} p
+                     JOIN {enrol} e ON e.enrol='cohort' AND e.customint7 = p.id
+                     JOIN {cohort} ch ON ch.id = e.customint1
+                     JOIN {local_management_cohort} mch ON mch.cohortid = ch.id
+                     JOIN {local_management_hospital} h ON h.id = mch.hospitalid
+                     JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                     JOIN {cohort_members} cm ON cm.userid = ue.userid AND cm.cohortid = ch.id
+                     JOIN {user} u ON u.id = ue.userid
+                     JOIN {feedback} f ON f.course = e.courseid
+                     JOIN {feedback_item} fi ON fi.feedback = f.id
+                LEFT JOIN {feedback_completed} fc ON fc.userid = ue.userid AND fc.feedback = f.id
+                LEFT JOIN {feedback_value} fv ON fv.completed = fc.id AND fv.item = fi.id
+                LEFT JOIN {course_completions} cc ON cc.userid = ue.userid AND cc.course = e.courseid AND cc.timecompleted > 0
+                    WHERE fi.hasvalue = 1 AND fi.typ = 'multichoice' $sqlfilter
+                 GROUP BY p.id, ch.id, fi.id
+                 $sqlorder
+                 ";
+            return $this->get_report_data($sql, $params);
+        }
+        return [];
+    }
+
+    public function report268($params)
+    {
+        global $DB;
+
+        if (get_config('local_intellicart', 'enabled') && get_config('local_management', 'enabled')) {
+            $columns = [
+                "product_code",
+                "cohort",
+                "coursename",
+                "enrolled",
+                "completed",
+                "avg_timespend",
+                "avg_score",
+                "comments"
+            ];
+
+            $sqlorder = $this->get_order_sql($params, $columns);
+            $sqlfilter = $this->get_filterdate_sql($params, "ue.timecreated");
+            $sqlfilter .= $this->get_filter_in_sql($params->custom3, "p.id");
+            $sqlfilter .= $this->get_filter_in_sql($params->courseid, "c.id");
+            $sqlfilter .= $this->get_filter_in_sql($params->custom2, "ch.id");
+            $sqlfilter .= $this->get_filter_user_sql($params, "u.");
+            $sqlfilter .= $this->get_sql_hospital_filter($params, 'custom', 'h.', true);
+            if ($params->custom4 ?? 0) {
+                if ($params->custom4 == 1) {
+                    $sqlfilter .= ' AND ch.visible = 1';
+                }
+                else if ($params->custom4 == 2) {
+                    $sqlfilter .= ' AND ch.visible = 0';
+                }
+            }
+
+            $sql ="SELECT
+                           @rowid := @rowid + 1 AS id,
+                           p.idnumber AS product_code,
+                           ch.name AS cohort,
+                           c.shortname AS coursename,
+                           COUNT(DISTINCT cm.userid) AS enrolled,
+                           COUNT(DISTINCT cc.userid) as completed,
+                           AVG(t.timespend) AS avg_timespend,
+                           SUM(CASE WHEN fi.typ = 'multichoice' THEN fv.value ELSE 0 END) / COUNT(DISTINCT cc.userid) / COUNT(DISTINCT(CASE WHEN fi.typ = 'multichoice' THEN fi.id ELSE null END)) AS avg_score,
+                           GROUP_CONCAT(CASE WHEN fi.typ = 'textarea' AND fv.value != '' THEN fv.value ELSE NULL END SEPARATOR ' || ')  AS comments
+                      FROM (SELECT @rowid := 0) AS rowid, {local_intellicart_products} p
+                      JOIN {enrol} e ON e.enrol='cohort' AND e.customint7 = p.id
+                      JOIN {cohort} ch ON ch.id = e.customint1
+                      JOIN {local_management_cohort} mch ON mch.cohortid = ch.id
+                      JOIN {local_management_hospital} h ON h.id = mch.hospitalid
+                      JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                      JOIN {cohort_members} cm ON cm.userid = ue.userid AND cm.cohortid = ch.id
+                      JOIN {user} u ON u.id = ue.userid
+                      JOIN {course_modules} mc ON mc.course = e.courseid AND mc.module = 10 AND mc.visible = 1
+                      JOIN {feedback} f ON f.course = e.courseid and f.id = mc.instance
+                      JOIN {course} c ON c.id = e.courseid
+                 LEFT JOIN {feedback_item} fi ON fi.feedback = f.id AND fi.hasvalue = 1 AND (fi.typ = 'multichoice' OR fi.typ = 'textarea')
+                 LEFT JOIN {feedback_completed} fc ON fc.userid = ue.userid AND fc.feedback = f.id
+                 LEFT JOIN {feedback_value} fv ON fv.completed = fc.id AND fv.item = fi.id
+                 LEFT JOIN {local_intelliboard_tracking} t ON t.userid = ue.userid AND t.page = 'module' AND t.param = mc.id AND t.courseid = e.courseid
+                 LEFT JOIN {course_completions} cc ON cc.userid = ue.userid AND cc.course = e.courseid AND cc.timecompleted > 0
+                     WHERE p.id > 0 $sqlfilter
+                  GROUP BY p.id, ch.id
+                 $sqlorder";
             return $this->get_report_data($sql, $params);
         }
         return [];
