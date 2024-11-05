@@ -195,12 +195,12 @@ echo $OUTPUT->header();
                 <label for="region">Region</label>
                 <select required class="form-control"  id="region" name="region">
                     <option disabled selected value> -- Select Your Region -- </option>
-                    <option value="usa">USA</option>
-                    <option value="europe">Europe</option>
-                    <option value="asia">Asia</option>
-                    <option value="africa">Africa</option>
-                    <option value="samerica">South America</option>
-                    <option value="oceania">Oceania</option>
+                    <option value="us">North America</option>
+                    <option value="eu">Europe</option>
+                    <option value="au">Asia</option>
+                    <option value="us">Africa</option>
+                    <option value="us">South America</option>
+                    <option value="au">Oceania</option>
                 </select>
             </div>
         </div>
@@ -386,26 +386,28 @@ echo $OUTPUT->header();
             <p>
                 Once again, thank you for your interest in IntelliBoard. We look forward to helping you achieve your goals!
             </p>
-            <a target="_blank" class="btn btn-primary btn-block" href="https://intelliboard.net/events/">Meet us at one of our events</a>
+            <a target="_blank" class="btn btn-primary btn-block text-center" href="https://intelliboard.net/events/">Meet us at one of our events</a>
         </div>
     </div>
 </div>
-</div>
+<div class="intelliboard-support-terms">
+    <div class="intelliboard-support-terms-footer">
 
-
-    <div class="intelliboard-support-terms">
-        <div class="intelliboard-support-terms-footer">
-
-        </div>
-        <div class="intelliboard-support-terms-footer-content">
-            <span>For Additional information, visit our website <a target="_blank" href="https://www.intelliboard.net/">www.intelliboard.net <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
-  <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
-  <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
-</svg></a></span><br>
-            © 2015 - <?php echo date("Y") ?> IntelliBoard, Inc.
-            <?php echo get_string('support_terms', 'local_intelliboard'); ?>
-        </div>
     </div>
+    <div class="intelliboard-support-terms-footer-content">
+        <span>For Additional information, visit our website
+            <a target="_blank" href="https://www.intelliboard.net/">www.intelliboard.net
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
+                    <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
+                </svg>
+            </a>
+        </span>
+        <br>
+        © 2015 - <?php echo date("Y") ?> IntelliBoard, Inc.
+        <?php echo get_string('support_terms', 'local_intelliboard'); ?>
+    </div>
+</div>
 
 
 <script>
@@ -644,6 +646,22 @@ echo $OUTPUT->header();
     justify-content: center;
     font-weight: 800;
 }
+button.active, button.active h5, button.active span {
+    font-weight: bold;
+}
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
+.col {
+    flex-basis: 0%;
+    flex-grow: 1;
+    max-width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+}
 
     @media screen and (max-width: 900px) {
         body .intelliboard-support-terms{
@@ -658,5 +676,5 @@ echo $OUTPUT->header();
 
 <?php
 $setup = get_config("local_intelliboard", "account_setup");
-$PAGE->requires->js_call_amd('local_intelliboard/account_setup', 'init', ['setup' => $setup]);
+$PAGE->requires->js_call_amd('local_intelliboard/account_setup', 'init', [$setup]);
 echo $OUTPUT->footer();

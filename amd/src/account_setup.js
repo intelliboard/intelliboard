@@ -27,35 +27,35 @@
 define(['jquery', 'core/ajax', 'core/log'], function($, ajax, log) {
 
     const ASValidator = {
-        required: (input) => {
+        required: function(input) {
             return input.value.length > 0;
         },
-        email: (input) => {
-            let pattern = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+        email: function(input) {
+            var pattern = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
             return pattern.test(input.value);
         },
-        tel: (input) => {
-            let pattern = /^[+]*[(]{0,1}[0-9]{1,3}[)]{0,1}[-\s\./0-9]*$/;
+        tel: function(input) {
+            var pattern = /^[+]*[(]{0,1}[0-9]{1,3}[)]{0,1}[-\s\./0-9]*$/;
             return pattern.test(input.value);
         },
-        validate: (input) => {
+        validate: function(input) {
             if (input.required) {
                 if (typeof ASValidator[input.type] === "function") {
-                    return ASValidator[input.type](input)
+                    return ASValidator[input.type](input);
                 } else {
                     return ASValidator.required(input);
                 }
             }
         }
-    }
+    };
 
-    const AccountSetup = {
+    var AccountSetup = {
         forms: ["getstartedform", "accountform", "accounttypeform", "usertypeform"],
 
         validator: ASValidator,
         usertype: [],
 
-        init: (setup) => {
+        init: function(setup) {
             if (setup == true) {
                 AccountSetup.forms = ["getstartedform", "thanksform"];
             } else {
@@ -68,26 +68,26 @@ define(['jquery', 'core/ajax', 'core/log'], function($, ajax, log) {
             AccountSetup.initNextAction();
             AccountSetup.initPrevAction();
         },
-        getPrevForm: (currentForm) => {
-            let pos = AccountSetup.forms.indexOf(currentForm);
-            let prevForm = AccountSetup.forms[pos - 1];
+        getPrevForm: function(currentForm) {
+            var pos = AccountSetup.forms.indexOf(currentForm);
+            var prevForm = AccountSetup.forms[pos - 1];
             return prevForm.length ? prevForm : false;
         },
-        getNextForm: (currentForm) => {
-            let pos = AccountSetup.forms.indexOf(currentForm);
-            let nextForm = AccountSetup.forms[pos + 1];
+        getNextForm: function(currentForm) {
+            var pos = AccountSetup.forms.indexOf(currentForm);
+            var nextForm = AccountSetup.forms[pos + 1];
             return nextForm.length ? nextForm : false;
 
         },
-        toggleForms: (showForm, hideForm) => {
+        toggleForms: function(showForm, hideForm) {
             document.getElementById(hideForm).classList.add("intelliboard-hide");
             document.getElementById(showForm).classList.remove("intelliboard-hide");
         },
-        getFormInputs: (formId) => {
-            let form = document.getElementById(formId);
+        getFormInputs: function(formId) {
+            var form = document.getElementById(formId);
             return form.querySelectorAll('input, select');
         },
-        setValidationState: (input, valid) => {
+        setValidationState: function(input, valid) {
             if (valid) {
                 input.classList.remove('is-invalid');
                 input.classList.add('is-valid');
@@ -96,21 +96,21 @@ define(['jquery', 'core/ajax', 'core/log'], function($, ajax, log) {
                 input.classList.add('is-invalid');
             }
         },
-        initValidationAction: (inputs) => {
-            inputs.forEach((input) => {
+        initValidationAction: function(inputs) {
+            inputs.forEach(function(input) {
                 if (input.required) {
-                    let event = 'input';
+                    var event = 'input';
                     if (input.type === 'select') {
                         event = 'change';
                     }
-                    input.addEventListener(event, function () {
+                    input.addEventListener(event, function() {
                             AccountSetup.setValidationState(input, AccountSetup.validator.validate(input));
                     });
                 }
             });
         },
-        setHelpTextState: (formId, visible) => {
-            let helptext = document.getElementById(formId).getElementsByClassName('form-help-text')[0];
+        setHelpTextState: function(formId, visible) {
+            var helptext = document.getElementById(formId).getElementsByClassName('form-help-text')[0];
             if (helptext) {
                 if (visible) {
                     helptext.classList.replace('invisible', 'visible');
@@ -119,72 +119,73 @@ define(['jquery', 'core/ajax', 'core/log'], function($, ajax, log) {
                 }
             }
         },
-        setNextButtonState: (formId, disabled) => {
-            let nextbutton = document.getElementById(formId).getElementsByClassName('next-btn')[0];
+        setNextButtonState: function(formId, disabled) {
+            var nextbutton = document.getElementById(formId).getElementsByClassName('next-btn')[0];
             if (nextbutton) {
                 nextbutton.disabled = disabled;
                 AccountSetup.setHelpTextState(formId, disabled);
             }
         },
 
-        isFormValid: (formId) => {
-            let formInputs = AccountSetup.getFormInputs(formId);
-            for (let i = 0; i < formInputs.length; i++)  {
+        isFormValid: function(formId) {
+            var formInputs = AccountSetup.getFormInputs(formId);
+            for (var i = 0; i < formInputs.length; i++) {
                 if (formInputs[i].required && !AccountSetup.validator.validate(formInputs[i])) {
                     return false;
                 }
             }
             return true;
         },
-        initFormValidation: (formId) => {
-            let formInputs = AccountSetup.getFormInputs(formId);
+        initFormValidation: function(formId) {
+            var formInputs = AccountSetup.getFormInputs(formId);
             AccountSetup.initValidationAction(formInputs);
-            for (let i = 0; i < formInputs.length; i++)  {
-                let event = 'input';
+            for (var i = 0; i < formInputs.length; i++)  {
+                var event = 'input';
                 if (formInputs[i].type === 'select') {
                     event = 'change';
                 }
-                formInputs[i].addEventListener(event, function () {
+                formInputs[i].addEventListener(event, function(e) {
                     AccountSetup.setNextButtonState(formId, !AccountSetup.isFormValid(formId));
                 });
             }
         },
-        initNextAction: () => {
-             document.getElementsByClassName("next-btn").forEach((button) => {
-                button.addEventListener('click', function () {
-                    let currentform = this.getAttribute('data-form');
-                    let nextform = AccountSetup.getNextForm(currentform);
-                    AccountSetup.toggleForms(nextform, currentform);
-                    let inputs = AccountSetup.getFormInputs(nextform);
-                    if (inputs[0]) {
-                        inputs[0].dispatchEvent(new Event("input"));
-                    }
-                    return false;
-                }, false);
+        initNextAction: function() {
+            Array.from(document.getElementsByClassName("next-btn")).forEach(function(button) {
+                    button.addEventListener('click', function(e) {
+                        var currentform =  e.currentTarget.getAttribute('data-form');
+                        var nextform = AccountSetup.getNextForm(currentform);
+                        AccountSetup.toggleForms(nextform, currentform);
+                        var inputs = AccountSetup.getFormInputs(nextform);
+                        if (inputs[0]) {
+                            inputs[0].dispatchEvent(new Event("input"));
+                        }
+                        return false;
+                    }, false);
             });
+
         },
-        initPrevAction: () => {
-            document.getElementsByClassName("prev-btn").forEach((button) => {
-                button.addEventListener('click', function() {
-                    let currentform = this.getAttribute('data-form');
-                    let prevform = AccountSetup.getPrevForm(currentform);
+        initPrevAction: function() {
+            Array.from(document.getElementsByClassName("prev-btn")).forEach(function(button) {
+                button.addEventListener('click', function(e) {
+                    var currentform = e.currentTarget.getAttribute('data-form');
+                    var prevform = AccountSetup.getPrevForm(currentform);
                     AccountSetup.toggleForms(prevform, currentform);
                     return false;
                 }, false);
             });
         },
-        initAccountTypeSelection: () => {
-            let accounttypes = document.getElementsByClassName("accounttype");
+        initAccountTypeSelection: function() {
+            var accounttypes = document.getElementsByClassName("accounttype");
             for (var i = 0; i < accounttypes.length; i++) {
-                accounttypes[i].addEventListener('click', function() {
-                    accounttypes.forEach((element) => {
+                accounttypes[i].addEventListener('click', function(e) {
+                    Array.from(accounttypes).forEach(function(element) {
                         element.classList.remove('active');
                         element.setAttribute('aria-pressed', 'false');
                     });
-                    this.classList.add('active');
-                    this.setAttribute('aria-pressed', 'true');
-                    let accounttype = this.getAttribute('data-accounttype');
-                    let input = document.getElementById('accounttype');
+                    e.currentTarget.classList.add('active');
+                    e.currentTarget.setAttribute('aria-pressed', 'true');
+                    var accounttype = e.currentTarget.getAttribute('data-accounttype');
+                    var input = document.getElementById('accounttype');
                     if (input.value != accounttype) {
                         AccountSetup.setupUserTypeForm(accounttype);
                     }
@@ -194,14 +195,14 @@ define(['jquery', 'core/ajax', 'core/log'], function($, ajax, log) {
                 }, false);
             }
         },
-        setupUserTypeForm: (accounttype) => {
+        setupUserTypeForm: function(accounttype) {
                 AccountSetup.usertype = [];
-                document.getElementsByClassName("usertype").forEach((ut) => {
+                Array.from(document.getElementsByClassName("usertype")).forEach(function(ut) {
                     ut.classList.remove('active');
                     ut.setAttribute('aria-pressed', 'false');
                 });
                 document.getElementById('submitdata').disabled = true;
-                document.getElementsByClassName('intelliboard-user-types').forEach((form) => {
+                Array.from(document.getElementsByClassName('intelliboard-user-types')).forEach(function(form) {
                     if (form.id === accounttype) {
                         form.classList.remove("intelliboard-hide");
                     } else {
@@ -209,35 +210,36 @@ define(['jquery', 'core/ajax', 'core/log'], function($, ajax, log) {
                     }
                 });
         },
-        initUserTypeSelection: () => {
-            let usertypes = document.getElementsByClassName("usertype");
+        initUserTypeSelection: function() {
+            var usertypes = document.getElementsByClassName("usertype");
             for (var i = 0; i < usertypes.length; i++) {
-                usertypes[i].addEventListener('click', function() {
-                    let val = this.getAttribute('data-usertype');
+                usertypes[i].addEventListener('click', function(e) {
+                    var el = e.currentTarget;
+                    var val = el.getAttribute('data-usertype');
                     if (AccountSetup.usertype.indexOf(val) >= 0) {
                         AccountSetup.usertype.splice(AccountSetup.usertype.indexOf(val), 1);
-                        this.classList.remove('active');
-                        this.setAttribute('aria-pressed', 'false');
+                        el.classList.remove('active');
+                        el.setAttribute('aria-pressed', 'false');
                     } else {
                         AccountSetup.usertype.push(val);
-                        this.classList.add('active');
-                        this.setAttribute('aria-pressed', 'true');
+                        el.classList.add('active');
+                        el.setAttribute('aria-pressed', 'true');
                     }
-                    let isFormValid = AccountSetup.usertype.length > 0;
+                    var isFormValid = AccountSetup.usertype.length > 0;
                     document.getElementById('submitdata').disabled = !isFormValid;
                     AccountSetup.setHelpTextState('usertypeform', !isFormValid);
                     return false;
                 }, false);
             }
         },
-        setupSubmitAction: () => {
-            let submit = document.getElementById('submitdata');
-            submit.addEventListener("click", (event) => {
-                let forms = document.getElementsByClassName('intelliboard-splash-page');
-                let data = {};
+        setupSubmitAction: function() {
+            var submit = document.getElementById('submitdata');
+            submit.addEventListener("click", function(e) {
+                var forms = document.getElementsByClassName('intelliboard-splash-page');
+                var data = {};
                 data.usertype = AccountSetup.usertype.toString();
-                forms.forEach( (form) => {
-                    form.querySelectorAll('input, select').forEach( (input) => {
+                Array.from(forms).forEach(function(form) {
+                    form.querySelectorAll('input, select').forEach(function(input) {
                         data[input.name] = input.value;
                     });
                     if (form.id === 'thanksform') {
@@ -249,7 +251,7 @@ define(['jquery', 'core/ajax', 'core/log'], function($, ajax, log) {
                 AccountSetup.sendData(data);
             }, false);
         },
-        sendData: (data) => {
+        sendData: function(data) {
             ajax.call([{
                 methodname: 'local_intelliboard_account_setup',
                 args: {
@@ -257,7 +259,7 @@ define(['jquery', 'core/ajax', 'core/log'], function($, ajax, log) {
                 }
             }]);
         }
-    }
+    };
 
     return AccountSetup;
 

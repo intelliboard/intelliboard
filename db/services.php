@@ -298,6 +298,7 @@ $functions = array(
     ),
     'local_intelliboard_account_setup' => array(
         'classname' => 'local_intelliboard_account_setup',
+        'methodname' => 'execute',
         'classpath' => 'local/intelliboard/classes/account_setup.php',
         'description' => 'Account Setup',
         'type' => 'read',
