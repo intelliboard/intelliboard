@@ -919,7 +919,7 @@ class local_intelliboard_external extends external_api {
                                         GROUP BY t.courseid, t.userid
                                          ) l ON l.courseid = c.id AND l.userid = u.id";
             } else {
-                $sql_join .= " LEFT JOIN (SELECT MIN(t.id) AS id, t.userid, t.courseid, SUM(l.timespend) AS timespend, SUM(l.visits) AS visits
+                $sql_join .= " LEFT JOIN (SELECT MIN(t.id) AS id, t.userid, t.courseid, SUM(DISTINCT t.timespend) AS timespend, SUM(DISTINCT t.visits) AS visits
                                             FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
                                            WHERE l.trackid = t.id $sql_join_filter
                                         GROUP BY t.courseid, t.userid
@@ -22565,6 +22565,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $sql_filter .= $this->vendor_filter('u.id', 'c.id', $params);
         $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
+        $sql_learner_filter = $this->get_filter_in_sql($params->learner_roles, 'ra.roleid');
         $grade_single = intelliboard_grade_sql(false, $params);
         $grade_course_single = intelliboard_grade_sql(false, $params, 'g_c.', 0, 'gi_c.');
         $sql_completion_states = $this->get_completion($params, "cmc.");
@@ -22598,9 +22599,8 @@ class local_intelliboard_external extends external_api {
 
         $sql_join .= $this->get_suspended_sql($params);
         $uniqueid = $CFG->dbtype == 'pgsql' ? 'FLOOR(RANDOM() * 10000)::TEXT' : 'FLOOR(RAND() * 10000)';
-
-        return $this->get_report_data(
-            "SELECT CONCAT(ue.id, '_', cm.id, '_', {$uniqueid}) AS id,
+        $this->params['coursecontextlevel'] = CONTEXT_COURSE;
+        $sql ="SELECT CONCAT(ue.id, '_', cm.id, '_', {$uniqueid}) AS id,
                     ue.userid,
                     u.email,
                     u.firstname,
@@ -22616,7 +22616,30 @@ class local_intelliboard_external extends external_api {
                     cm.completion,
                     cmc.completionstate,
                     m.name AS module_name,
-                    gi.itemname,
+                    CASE
+                        WHEN m.name='assign' THEN (SELECT name FROM {assign} WHERE id = cm.instance)
+                        WHEN m.name='book' THEN (SELECT name FROM {book} WHERE id = cm.instance)
+                        WHEN m.name='chat' THEN (SELECT name FROM {chat} WHERE id = cm.instance)
+                        WHEN m.name='choice' THEN (SELECT name FROM {choice} WHERE id = cm.instance)
+                        WHEN m.name='data' THEN (SELECT name FROM {data} WHERE id = cm.instance)
+                        WHEN m.name='feedback' THEN (SELECT name FROM {feedback} WHERE id = cm.instance)
+                        WHEN m.name='folder' THEN (SELECT name FROM {folder} WHERE id = cm.instance)
+                        WHEN m.name='forum' THEN (SELECT name FROM {forum} WHERE id = cm.instance)
+                        WHEN m.name='glossary' THEN (SELECT name FROM {glossary} WHERE id = cm.instance)
+                        WHEN m.name='imscp' THEN (SELECT name FROM {imscp} WHERE id = cm.instance)
+                        WHEN m.name='label' THEN (SELECT name FROM {label} WHERE id = cm.instance)
+                        WHEN m.name='lesson' THEN (SELECT name FROM {lesson} WHERE id = cm.instance)
+                        WHEN m.name='lti' THEN (SELECT name FROM {lti} WHERE id = cm.instance)
+                        WHEN m.name='page' THEN (SELECT name FROM {page} WHERE id = cm.instance)
+                        WHEN m.name='quiz' THEN (SELECT name FROM {quiz} WHERE id = cm.instance)
+                        WHEN m.name='resource' THEN (SELECT name FROM {resource} WHERE id = cm.instance)
+                        WHEN m.name='scorm' THEN (SELECT name FROM {scorm} WHERE id = cm.instance)
+                        WHEN m.name='survey' THEN (SELECT name FROM {survey} WHERE id = cm.instance)
+                        WHEN m.name='url' THEN (SELECT name FROM {url} WHERE id = cm.instance)
+                        WHEN m.name='wiki' THEN (SELECT name FROM {wiki} WHERE id = cm.instance)
+                        WHEN m.name='workshop' THEN (SELECT name FROM {workshop} WHERE id = cm.instance)
+                        ELSE 'NONE'
+                    END AS itemname,
                     ue.status AS enrol_status,
                     ue.timeend,
                     CASE WHEN ue.id > 0 $sql_completion_states THEN cmc.timemodified ELSE NULL END AS completed_date
@@ -22629,6 +22652,9 @@ class local_intelliboard_external extends external_api {
                             e.courseid
                        FROM {user_enrolments} ue
                        JOIN {enrol} e ON e.id = ue.enrolid
+                       JOIN {context} ctx ON ctx.contextlevel = :coursecontextlevel AND ctx.instanceid = e.courseid
+                       JOIN {role_assignments} ra ON ra.contextid = ctx.id AND ra.userid = ue.userid
+                      WHERE e.courseid > 0 {$sql_learner_filter}
                    GROUP BY e.courseid, ue.userid) ue
                JOIN {course_modules} cm ON cm.course = ue.courseid
                JOIN {modules} m ON m.id = cm.module
@@ -22642,9 +22668,8 @@ class local_intelliboard_external extends external_api {
                     {$sql_join}
               WHERE ue.id > 0 {$sql_filter}
                     {$sql_having}
-                    {$sql_order}",
-            $params
-        );
+                    {$sql_order}";
+        return $this->get_report_data($sql, $params);
     }
 
     public function get_feedback_items($params)
