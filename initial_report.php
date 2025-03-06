@@ -24,6 +24,8 @@
  * @website    https://intelliboard.net/
  */
 
+use local_intelliboard\helpers\theming;
+
 require('../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 
@@ -50,7 +52,7 @@ $PAGE->set_context(context_system::instance());
 $PAGE->set_url("/local/intelliboard/initial_report.php", ["id" => $reportid, "q" => $search]);
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');
 $PAGE->set_pagetype("initial-report");
-$PAGE->set_pagelayout("report");
+$PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title($title);
 $PAGE->set_heading($title);

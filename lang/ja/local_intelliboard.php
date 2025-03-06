@@ -1021,3 +1021,4 @@ $string['support_text9'] = 'Need predictive models, notifications, and intervent
 $string['support_text10'] = 'Switch to <a href="{$a->intelliboard_pro_link}"><strong>IntelliBoard Pro</strong></a>';
 $string['support_text11'] = '<a href="{$a->intelliboard_pro_onepager}">Click here</a> to download the IntelliBoard Pro one-pager.';
 $string['enable_vendor_frontpage_course'] = 'Enable the frontpage course in the reports for vendors';
+$string['pagelayout'] = 'Theme page layout';

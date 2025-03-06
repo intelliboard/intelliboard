@@ -15026,6 +15026,9 @@ class local_intelliboard_external extends external_api {
         }
         $sql_filter = $this->get_filter_user_sql($params, "u.");
         $sql_filter .= $this->get_filter_in_sql($params->cohortid, "cm.cohortid");
+        if ($params->courseid) {
+            $sql_filter .= $this->get_filter_in_sql($params->courseid, "e.courseid");
+        }
 
         $sql_course = $this->get_filter_course_sql($params, "c.");
         $sql_course .= $this->get_filter_enrol_sql($params, "e.");
@@ -25946,5 +25949,55 @@ class local_intelliboard_external extends external_api {
             return $this->get_report_data($sql, $params);
         }
         return [];
+    }
+
+    public function report269($params)
+    {
+        global $DB;
+
+        $columns = [
+            "username",
+            "auth",
+            "suspended",
+            "firstname",
+            "lastname",
+            "email",
+            "timecreated"
+        ];
+
+        $sqlorder = $this->get_order_sql($params, $columns);
+        $sqlfilter = $this->get_filterdate_sql($params, "u.timecreated");
+        $sqlfilter .= $this->get_filter_sql($params, $columns, false);
+        if ($params->custom3) {
+            $sqlfilter .= " AND u.auth IN ('" . implode("','", explode(',', $params->custom3)) . "')";
+        }
+        if ($params->custom4 == 1) {
+            $sqlfilter .= " AND u.suspended = 0";
+        }
+        else if ($params->custom4 == 2 ) {
+            $sqlfilter .= " AND u.suspended = 1";
+        }
+        $sql = "SELECT u.id, u.username, u.auth, u.suspended, u.firstname, u.lastname, u.email, u.timecreated
+                  FROM {user} u
+                 WHERE u.id > 1 $sqlfilter $sqlorder";
+        return $this->get_report_data($sql, $params);
+    }
+
+    public function get_auth_methods($params)
+    {
+        global $DB, $CFG;
+
+        $authsavailable = core_component::get_plugin_list('auth');
+        if (empty($CFG->auth)) {
+            $authsenabled = array();
+        } else {
+            $authsenabled = explode(',', $CFG->auth);
+        }
+        $methods = [];
+        foreach ($authsavailable as $id => $auth) {
+            $authplugin = get_auth_plugin($id);
+            $methods[] = ["id" => $id, "name" => $authplugin->get_title(), "enabled" => (int) in_array($id, $authsenabled)];
+        }
+        return $methods;
     }
 }

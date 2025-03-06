@@ -26,6 +26,8 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+use local_intelliboard\helpers\theming;
+
 $settings = new admin_settingpage('local_intelliboard', new lang_string('pluginname', 'local_intelliboard'));
 
 $ADMIN->add('root', new admin_category('intelliboardroot', new lang_string('intelliboardroot', 'local_intelliboard')));
@@ -221,6 +223,12 @@ if($ADMIN->fulltree){
         $name = 'local_intelliboard/custommenuitem';
         $title = new lang_string('custommenuitem', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/' . theming::CONFIG_NAME;
+        $title = get_string(theming::CONFIG_NAME, 'local_intelliboard');
+        $setting = new admin_setting_configselect(
+            $name, $title, '', theming::DEFAULT_LAYOUT, theming::get_theme_page_layouts());
         $settings->add($setting);
 
         $settings->add(new admin_setting_heading(

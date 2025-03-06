@@ -24,6 +24,8 @@
  * @website    https://intelliboard.net/
  */
 
+use local_intelliboard\helpers\theming;
+
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
@@ -55,7 +57,7 @@ $scale_real = get_config('local_intelliboard', 'scale_real');
 $PAGE->set_url(new moodle_url("/local/intelliboard/instructor/sessions.php",
 			array("search"=>$search, "action"=>$action, "id"=>$sessionid, "courseid"=>$courseid, "userid"=>$userid, "cmid"=>$cmid, "mod"=>$mod, "sesskey"=> sesskey())));
 $PAGE->set_pagetype('sessions');
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));

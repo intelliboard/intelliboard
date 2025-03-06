@@ -24,6 +24,8 @@
  * @website    https://intelliboard.net/
  */
 
+use local_intelliboard\helpers\theming;
+
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/competencies/lib.php');
@@ -70,7 +72,7 @@ if (!$action || in_array($action, ['proficient', 'learners', 'competencies'])) {
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/competencies/courses.php",$params));
 $PAGE->set_pagetype('competencies');
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));

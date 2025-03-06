@@ -24,6 +24,8 @@
  * @website    https://intelliboard.net/
  */
 
+use local_intelliboard\helpers\theming;
+
 require('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot .'/local/intelliboard/externallib.php');
@@ -193,7 +195,7 @@ if ($settingUserMap) {
 $PAGE->requires->jquery();
 $PAGE->set_url(new moodle_url("/local/intelliboard/index.php", array()));
 $PAGE->set_pagetype('home');
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));

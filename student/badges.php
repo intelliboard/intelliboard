@@ -26,6 +26,7 @@
 
 use local_intelliboard\output\student_menu;
 use local_intelliboard\output\tables\student_badges;
+use local_intelliboard\helpers\theming;
 
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
@@ -51,7 +52,7 @@ $PAGE->set_url(new moodle_url(
     ["sesskey"=> sesskey()]
 ));
 $PAGE->set_pagetype('badges');
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));

@@ -24,6 +24,8 @@
  * @website    https://intelliboard.net/
  */
 
+use local_intelliboard\helpers\theming;
+
 require('../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
@@ -33,7 +35,7 @@ require_login();
 require_capability('local/intelliboard:view', context_system::instance());
 
 $PAGE->set_pagetype('help');
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url(new moodle_url("/local/intelliboard/help.php"));
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));

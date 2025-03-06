@@ -24,6 +24,8 @@
  * @website    http://intelliboard.net/
  */
 
+use local_intelliboard\helpers\theming;
+
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
 require_once($CFG->dirroot .'/local/intelliboard/student/lib.php');
@@ -48,7 +50,7 @@ $totals = intelliboard_learner_totals($showing_user->id);
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/student/reports.php"));
 $PAGE->set_pagetype('reports');
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
