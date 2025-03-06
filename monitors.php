@@ -23,6 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    https://intelliboard.net/
  */
+use local_intelliboard\helpers\theming;
 
 require('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
@@ -36,7 +37,7 @@ $set = optional_param('id', '', PARAM_RAW);
 $intelliboard = intelliboard(['task'=>'monitors']);
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/monitors.php", array('id'=>$set)));
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_pagetype('monitors');
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));

@@ -23,6 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @website    http://intelliboard.net/
  */
+use local_intelliboard\helpers\theming;
 
 require('../../../config.php');
 require_once($CFG->dirroot .'/local/intelliboard/locallib.php');
@@ -61,7 +62,7 @@ $factorInfo = chart_options();
 
 $PAGE->set_url(new moodle_url("/local/intelliboard/student/grades.php", array("search"=>s($search), "id"=>$id, "mod"=>$mod, "sesskey"=> sesskey(), "user"=>$other_user)));
 $PAGE->set_pagetype('grades');
-$PAGE->set_pagelayout('report');
+$PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));

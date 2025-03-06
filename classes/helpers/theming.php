@@ -17,15 +17,40 @@
 /**
  * This plugin provides access to Moodle data in form of analytics and reports in real time.
  *
- *
  * @package    local_intelliboard
  * @copyright  2017 IntelliBoard, Inc
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @website    https://intelliboard.net/
+ * @website    http://intelliboard.net/
  */
 
-$plugin->version = 2025030604;
-$plugin->requires = 2011120500;
-$plugin->release = '7.0.0';
-$plugin->maturity = MATURITY_STABLE;
-$plugin->component = 'local_intelliboard';
+namespace local_intelliboard\helpers;
+
+defined('MOODLE_INTERNAL') || die();
+
+class theming
+{
+    const DEFAULT_LAYOUT = "report";
+    const CONFIG_NAME = "pagelayout";
+    public static function get_theme_page_layouts()
+    {
+        global $PAGE;
+
+        $layouts = [self::DEFAULT_LAYOUT => self::DEFAULT_LAYOUT];
+        if (!empty($PAGE->theme->layouts)) {
+            foreach (array_keys($PAGE->theme->layouts) as $layout) {
+                $layouts[$layout] = $layout;
+            }
+        }
+        return $layouts;
+    }
+
+    public static function get_page_layout()
+    {
+        $layout = get_config('local_intelliboard', self::CONFIG_NAME);
+        $layouts = self::get_theme_page_layouts();
+        if ($layout && isset($layouts[$layout])) {
+            return $layout;
+        }
+        return self::DEFAULT_LAYOUT;
+    }
+}

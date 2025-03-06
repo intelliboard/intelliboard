@@ -482,6 +482,8 @@ class local_external_functions
             'report266',
             'report267',
             'report268',
+            'report269',
+            'get_auth_methods',
         ];
     }
     public function get_function($params = null)
