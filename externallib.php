@@ -919,9 +919,13 @@ class local_intelliboard_external extends external_api {
                                         GROUP BY t.courseid, t.userid
                                          ) l ON l.courseid = c.id AND l.userid = u.id";
             } else {
-                $sql_join .= " LEFT JOIN (SELECT MIN(t.id) AS id, t.userid, t.courseid, SUM(DISTINCT t.timespend) AS timespend, SUM(DISTINCT t.visits) AS visits
-                                            FROM {local_intelliboard_tracking} t, {local_intelliboard_logs} l
-                                           WHERE l.trackid = t.id $sql_join_filter
+                $sql_join .= " LEFT JOIN (SELECT t.userid,
+                                                 t.courseid,
+                                                 SUM(l.timespend) AS timespend,
+                                                 SUM(l.visits) AS visits
+                                            FROM {local_intelliboard_tracking} t
+                                            JOIN {local_intelliboard_logs} l ON l.trackid = t.id
+                                           WHERE t.courseid > 0 $sql_join_filter
                                         GROUP BY t.courseid, t.userid
                                          ) l ON l.courseid = c.id AND l.userid = u.id";
             }
