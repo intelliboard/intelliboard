@@ -25379,7 +25379,8 @@ class local_intelliboard_external extends external_api {
                     $sql_columns
                FROM {local_intellicart_products} p
                JOIN {local_intellicart_relations} r ON r.productid = p.id AND r.type = 'course'
-               JOIN {enrol} e ON e.courseid = r.instanceid
+               JOIN {enrol} e ON e.courseid = r.instanceid AND (
+                    (e.enrol = 'cohort' AND e.customint7 = p.id) OR (e.enrol = 'intellicart' AND e.customint1 = p.id))
                JOIN {user_enrolments} ue ON ue.enrolid = e.id
                JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.instanceid = r.instanceid
                JOIN {role_assignments} ra ON ra.contextid = ctx.id AND ra.userid = ue.userid
@@ -25591,11 +25592,11 @@ class local_intelliboard_external extends external_api {
 
         if (get_config('local_intellicart', 'enabled') && get_config('local_management', 'enabled')) {
             $columns = [
-                "h.name",
-                "mc.name",
-                "mc.visible",
-                "oc.learnertypes",
-                "p.name",
+                "hospital",
+                "cohort",
+                "cohort_visible",
+                "cohorttype",
+                "productname",
                 "users"
             ];
 

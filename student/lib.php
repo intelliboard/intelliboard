@@ -224,7 +224,7 @@ function intelliboard_data($type, $userid, $showing_user) {
                   WHERE gi.courseid NOT IN (SELECT DISTINCT courseid
                                               FROM {grade_items}
                                              WHERE hidden = 1) $inner_sql
-               GROUP BY c.category"
+               GROUP BY c.category, cc.name"
             );
 
             $i=0;
