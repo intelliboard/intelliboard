@@ -77,7 +77,7 @@ class intelliboard_courses_grades_table extends local_intelliboard_intelli_table
         $columns = array();
         $params = array();
 
-        $grade_avg = intelliboard_grade_sql(true);
+        $grade_avg = intelliboard_grade_sql(true, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $join_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ra.courseid');
         $join_sql .= intelliboard_instructor_hide_suspended_enrollments_joinsql('ra.courseid', 'ra.userid');
         $sql1 = intelliboard_instructor_getcourses('c.id', false, '', false, false);
@@ -424,7 +424,7 @@ class intelliboard_activities_grades_table extends local_intelliboard_intelli_ta
         }
 
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
-        $grade_avg = intelliboard_grade_sql(true);
+        $grade_avg = intelliboard_grade_sql(true, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $completion = intelliboard_compl_sql("cm.", false);
         $join_group_sql = intelliboard_group_aggregation_sql('g.userid', $USER->id, 'gi.courseid');
         $join_group_sql .= intelliboard_instructor_hide_suspended_enrollments_joinsql('', 'g.userid');
@@ -647,7 +647,7 @@ class intelliboard_activity_grades_table extends local_intelliboard_intelli_tabl
         }
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
-        $grade_single = intelliboard_grade_sql();
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'e.instanceid');
         $join_group_sql .= intelliboard_instructor_hide_suspended_enrollments_joinsql(' c.id', 'u.id');
 
@@ -833,7 +833,7 @@ class intelliboard_learners_grades_table extends local_intelliboard_intelli_tabl
             'r'
         );
         $params = array_merge($params,$sql_params);
-        $grade_single = intelliboard_grade_sql();
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $completion = intelliboard_compl_sql("cmc.");
         $join_group_sql = intelliboard_group_aggregation_sql('ra.userid', $USER->id, 'ra.courseid');
         $join_group_sql .= intelliboard_instructor_hide_suspended_enrollments_joinsql('c.id', 'u.id', 'e.courseid = :c5');
@@ -1173,7 +1173,7 @@ class intelliboard_learner_grades_table extends local_intelliboard_intelli_table
         }
 
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
-        $grade_single = intelliboard_grade_sql();
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $completion = intelliboard_compl_sql("cmc.");
 
         $fields = 't.*';
@@ -1295,7 +1295,7 @@ class intelliboard_sessions_grades_table extends local_intelliboard_intelli_tabl
         $params = array_merge($params,$sql_params);
         list($sql5, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
-        $grade_avg = intelliboard_grade_sql(true);
+        $grade_avg = intelliboard_grade_sql(true, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
 
         $usersin = "SELECT ei.userid
                       FROM {local_intellicart_logs} il
@@ -1452,7 +1452,7 @@ class intelliboard_sessions_activities_grades_table extends local_intelliboard_i
             $sql_columns .= " WHEN m.name='{$module->name}' THEN (SELECT name FROM {".$module->name."} WHERE id = cm.instance)";
         }
         $sql_columns =  ($sql_columns) ? ", CASE $sql_columns ELSE 'none' END AS activity" : "'' AS activity";
-        $grade_avg = intelliboard_grade_sql(true);
+        $grade_avg = intelliboard_grade_sql(true, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $completion = intelliboard_compl_sql("", false);
 
 
@@ -1577,7 +1577,7 @@ class intelliboard_sessions_learners_grades_table extends local_intelliboard_int
         }
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
-        $grade_single = intelliboard_grade_sql();
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
         $completion = intelliboard_compl_sql("cmc.");
 
         $fields = "ra.id, ra.userid, c.id as courseid,
@@ -1689,7 +1689,7 @@ class intelliboard_sessions_activity_grades_table extends local_intelliboard_int
         }
         list($sql_roles, $sql_params) = $DB->get_in_or_equal(explode(',', get_config('local_intelliboard', 'filter11')), SQL_PARAMS_NAMED, 'r');
         $params = array_merge($params,$sql_params);
-        $grade_single = intelliboard_grade_sql();
+        $grade_single = intelliboard_grade_sql(false, null, 'g.', clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT));
 
         $fields = "ra.id, ra.userid, c.id AS courseid,
             $grade_single AS grade,
