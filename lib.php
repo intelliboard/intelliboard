@@ -223,6 +223,7 @@ function local_intelliboard_extend_navigation(global_navigation $nav)
         $customMenu->setupMenu();
 	} catch (Exception $e) {}
 }
+
 function local_intelliboard_extend_settings_navigation(settings_navigation $settingsnav, context $context)
 {
     global $CFG;
@@ -244,9 +245,9 @@ function local_intelliboard_extend_settings_navigation(settings_navigation $sett
             }
         }
 
-        $cat = $coursenode->add(get_string('intelliboard_reports', 'local_intelliboard'), null, navigation_node::TYPE_CONTAINER, null, 'intelliboard');
-
-        if (is_array($reports)) {
+        // Only add container if there are reports
+        if (is_array($reports) && !empty($reports)) {
+            $cat = $coursenode->add(get_string('intelliboard_reports', 'local_intelliboard'), null, navigation_node::TYPE_CONTAINER, null, 'intelliboard');
             foreach ($reports as $key=>$report) {
                 $cat->add(format_string($report->name), new moodle_url('/local/intelliboard/instructor/reports.php',array('id'=>format_string($key))), navigation_node::TYPE_CUSTOM);
             }
