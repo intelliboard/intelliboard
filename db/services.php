@@ -160,45 +160,6 @@ $functions = array(
             'type'        => 'write',
             'ajax'        => true
         ),
-    'local_intelliboard_setup_base_settings' => array(
-        'classname'   => 'local_intelliboard_setuplib',
-        'methodname'  => 'save_base_settings',
-        'classpath'   => 'local/intelliboard/classes/setuplib.php',
-        'description' => 'Save settings',
-        'type'        => 'write',
-        'ajax'        => true
-    ),
-    'local_intelliboard_setup_login' => array(
-        'classname'   => 'local_intelliboard_setuplib',
-        'methodname'  => 'login',
-        'classpath'   => 'local/intelliboard/classes/setuplib.php',
-        'description' => 'Intelliboard login',
-        'type'        => 'write',
-        'ajax'        => true
-    ),
-    'local_intelliboard_setup_register' => array(
-        'classname'   => 'local_intelliboard_setuplib',
-        'methodname'  => 'register',
-        'classpath'   => 'local/intelliboard/classes/setuplib.php',
-        'description' => 'Intelliboard register',
-        'type'        => 'write',
-        'ajax'        => true
-    ),
-    'local_intelliboard_setup_check_email' => array(
-        'classname'   => 'local_intelliboard_setuplib',
-        'methodname'  => 'check_email',
-        'classpath'   => 'local/intelliboard/classes/setuplib.php',
-        'description' => 'Check email',
-        'type'        => 'read',
-        'ajax'        => true
-    ),
-    'local_intelliboard_setup_apikey' => array(
-        'classname'   => 'local_intelliboard_apikeylib',
-        'methodname'  => 'save_apikey',
-        'classpath'   => 'local/intelliboard/classes/apikeylib.php',
-        'description' => 'Save API key',
-        'type'        => 'write'
-    ),
     'local_intelliboard_course_get_categories' => array(
         'classname' => 'core_course_external',
         'methodname' => 'get_categories',
@@ -296,14 +257,12 @@ $functions = array(
         'ajax' => true,
         'loginrequired' => true,
     ),
-    'local_intelliboard_account_setup' => array(
-        'classname' => 'local_intelliboard_account_setup',
-        'methodname' => 'execute',
-        'classpath' => 'local/intelliboard/classes/account_setup.php',
-        'description' => 'Account Setup',
-        'type' => 'read',
-        'ajax' => true,
-        'loginrequired' => true,
+    'local_intelliboard_setup_apikey' => array(
+        'classname'   => 'local_intelliboard_apikeylib',
+        'methodname'  => 'save_apikey',
+        'classpath'   => 'local/intelliboard/classes/apikeylib.php',
+        'description' => 'Save API key',
+        'type'        => 'write'
     ),
 );
 
@@ -330,11 +289,6 @@ $services = array(
             'local_intelliboard_clear_notifications',
             'local_intelliboard_attendance_api',
             'local_intelliboard_save_instructor_courses',
-            'local_intelliboard_setup_base_settings',
-            'local_intelliboard_setup_login',
-            'local_intelliboard_setup_register',
-            'local_intelliboard_setup_check_email',
-            'local_intelliboard_setup_apikey',
             'local_intelliboard_course_get_categories',
             'local_intelliboard_course_get_courses',
             'local_intelliboard_course_get_courses_by_field',
@@ -346,6 +300,7 @@ $services = array(
             'local_intelliboard_get_users_roles',
             'local_intelliboard_get_roles_list',
             'local_intelliboard_instructor_action',
+            'local_intelliboard_setup_apikey',
         ),
         'restrictedusers' => 1,
         'enabled'=>1,

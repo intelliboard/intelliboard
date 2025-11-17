@@ -47,11 +47,10 @@ if ($alias and !empty($intelliboard->reports)) {
 
 $report_type = isset($intelliboard->reports[$intelliboardReport]->type)?$intelliboard->reports[$intelliboardReport]->type:'';
 $params = '';
-
+$PAGE->set_context(context_system::instance());
 $PAGE->set_url(new moodle_url("/local/intelliboard/reports.php", array('id'=>$intelliboardReport)));
 $PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_pagetype('reports');
-$PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');

@@ -89,10 +89,10 @@
     </li>
     <?php endif; ?>
 
-    <li><a target="_blank" href="https://intelliboard.atlassian.net/servicedesk/customer/portal/6" <?php echo ($PAGE->pagetype == 'help')?'class="active"':''; ?>><?php echo get_string('help', 'local_intelliboard');?></a></li>
+    <li><a href="help.php" <?php echo ($PAGE->pagetype == 'help')?'class="active"':''; ?>><?php echo get_string('help', 'local_intelliboard');?></a></li>
     <?php if($intelliboard->token and get_config('local_intelliboard', 'sso')): ?>
         <li class="sso" >
-            <a target="_blank" href="<?php echo intelliboard_url(); ?>auth/sso/<?php echo format_string($intelliboard->db); ?>/<?php echo format_string($intelliboard->token); ?>" class="ion-log-in"> <?php echo get_string('intelliboardnet', 'local_intelliboard');?></a>
+            <a target="_blank" href="<?php echo new moodle_url($CFG->wwwroot.'/local/intelliboard/index.php?action=sso'); ?>" class="ion-log-in"> <?php echo get_string('intelliboardnet', 'local_intelliboard');?></a>
         </li>
     <?php endif; ?>
 </ul>

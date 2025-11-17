@@ -927,7 +927,7 @@ $string['last_name'] = 'Nom de famille';
 $string['num_attempts'] = 'Nombre de tentatives';
 $string['highest_grade'] = 'Note la plus élevée';
 $string['lowest_grade'] = 'Note la plus basse';
-$string['initial_reports_warning'] = 'Pour envoyer par e-mail, programmer et personnaliser davantage ces rapports, cliquez sur "<a href="{$a}">Connect & Upgrade</a>".';
+$string['initial_reports_warning'] = 'Pour envoyer par e-mail, programmer et personnaliser davantage ces rapports, cliquez sur "<a href="{$a}">Contact Us</a>".';
 $string['last_access'] = 'Dernier accès';
 $string['enrolment_expiration'] = 'Expiration de l\'inscription';
 $string['id_number'] = 'Numéro d\'identification';
@@ -940,7 +940,7 @@ $string['city'] = 'Ville';
 $string['enroled_on'] = 'Date de l\'inscription';
 
 $string['dashboard_link'] = 'Cliquez pour afficher l\'Analytique IB';
-$string['support_connect'] = 'Cliquez sur les boutons de rapport dans le rectangle ci-dessous. Découvrez la puissance d\'IntelliBoard : Un seul clic pour accéder à vos informations LMS. Cliquez sur "Cliquez pour afficher l\'Analytique IB". Souhaitez-vous en voir plus ? <a href="{$a->connect_link}">"Connect & Upgrade"</a> en haut à droite, ou partout où vous voyez le lien.';
+$string['support_connect'] = 'Cliquez sur les boutons de rapport dans le rectangle ci-dessous. Découvrez la puissance d\'IntelliBoard : Un seul clic pour accéder à vos informations LMS. Cliquez sur "Cliquez pour afficher l\'Analytique IB". Souhaitez-vous en voir plus ? <a href="{$a->connect_link}">Contact Us</a> en haut à droite, ou partout où vous voyez le lien.';
 $string['support_text3'] = 'Thank you for installing IntelliBoard Lite!';
 $string['support_text4'] = 'Meet an easy-to-use reporting and visualization platform that will help you achieve your retention, engagement, and compliance goals.';
 $string['support_text6'] = 'Besoin de plus d\'informations ? Cliquez sur l\'un des boutons bleus pour nous contacter.';

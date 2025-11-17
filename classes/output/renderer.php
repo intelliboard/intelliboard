@@ -56,21 +56,6 @@ class renderer extends plugin_renderer_base {
     }
 
     /**
-     * Return content of "Setup" page
-     *
-     * @param setup $setup
-     * @return string HTML string
-     * @throws \coding_exception
-     * @throws \dml_exception
-     * @throws \moodle_exception
-     */
-    public function render_setup(setup $setup) {
-        return $this->render_from_template(
-            'local_intelliboard/setup', $setup->export_for_template($this)
-        );
-    }
-
-    /**
      * Return content of "Initial Report" page
      *
      * @param initial_report $report

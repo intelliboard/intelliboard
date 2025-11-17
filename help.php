@@ -33,10 +33,9 @@ require_once($CFG->dirroot .'/local/intelliboard/instructor/lib.php');
 require_login();
 
 require_capability('local/intelliboard:view', context_system::instance());
-
+$PAGE->set_context(context_system::instance());
 $PAGE->set_pagetype('help');
 $PAGE->set_pagelayout(theming::get_page_layout());
-$PAGE->set_context(context_system::instance());
 $PAGE->set_url(new moodle_url("/local/intelliboard/help.php"));
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
@@ -50,7 +49,8 @@ echo $OUTPUT->header();
         <div class="left">
             <h1>A Powerful<br> Learning Analytics Platform<br>For <strong>Your Moodle</strong></h1>
             <p>IntelliBoard works with your existing learner<br> data to give you <strong>deep understanding and reveal<br> critical insights.</strong></p>
-            <button class="btn btn-primary next-btn" data-form="getstartedform">Get Started</button>
+            <a href="index.php" class="btn btn-primary next-btn" data-form="getstartedform">Get Started</a>
+            <a href="mailto:support@intelliboard.net" class="btn btn-secondary next-btn" data-form="getstartedform">Contact Us</a>
         </div>
         <div class="right">
             <img src="assets/img/splash1.jpg" class="splash1" alt="IntelliBoard" />
@@ -158,243 +158,12 @@ echo $OUTPUT->header();
 </div>
 
 
-
-<div class="intelliboard-splash-page intelliboard-hide" id="accountform">
-    <div class="intelliboard-form-grid bg-light">
-        <div class="intelliboard-proggress-bar">
-            <ul>
-                <li class="bg-primary"></li>
-                <li class="bg-secondary"></li>
-                <li class="bg-secondary"></li>
-            </ul>
-        </div>
-        <div>
-            <h5><span class="text-primary font-weight-bold"><img src="assets/img/ib-icon.png" class="intelliboard-ibicon"  />Request an</span> IntelliBoard account</h5>
-        </div>
-        <div class="align-middle">
-            <img src="assets/img/check-green.png" class="intelliboard-icon" alt="IntelliBoard Check" >
-            <span class="text-muted small">No credit card required</span>
-        </div>
-        <div class="intelliboard-form-block mb-4">
-            <div class="form-help-text alert alert-warning small visible" role="alert">Please, fill out the details below.</div>
-            <div class="form-group">
-                <label for="email">Business Email</label>
-                <input required type="email"  autocomplete="email" class="form-control" id="email" name="email" aria-describedby="emailHelp"  autofocus>
-            </div>
-            <div class="form-group">
-                <label for="fullname">Full Name</label>
-                <input required type="text" autocomplete="name" class="form-control" id="fullname" name="fullname" aria-describedby="fullnameHelp" >
-            </div>
-            <div class="form-group">
-                <label for="oragnization">Organization</label>
-                <input required type="text" autocomplete="organization" class="form-control"  name="oragnization" id="oragnization"  />
-            </div>
-            <div class="form-group">
-                <label for="phone">Phone Number</label>
-                <input required class="form-control" autocomplete="tel" type="tel" name="phone" id="phone"  />
-            </div>
-            <div class="form-group">
-                <label for="region">Region</label>
-                <select required class="form-control"  id="region" name="region">
-                    <option disabled selected value> -- Select Your Region -- </option>
-                    <option value="us">North America</option>
-                    <option value="eu">Europe</option>
-                    <option value="au">Asia</option>
-                    <option value="us">Africa</option>
-                    <option value="us">South America</option>
-                    <option value="au">Oceania</option>
-                </select>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col"><button class="btn btn-secondary btn-block prev-btn" data-form="accountform">&larr; 	Previous</button></div>
-            <div class="col"><button disabled class="btn btn-primary btn-block next-btn" data-form="accountform">Next 	&rarr;</button></div>
-        </div>
-        <div class="mt-5 mb-5 text-center text-muted small">
-                By signing up for IntelliBoard, you agree to our <a href="https://intelliboard.net/legal/terms/">Terms of Use</a>
-                and <a href="https://intelliboard.net/legal/privacy-policy/">Privacy Policy</a>.
-        </div>
-    </div>
-</div>
-
-<div class="intelliboard-splash-page intelliboard-hide" id="accounttypeform">
-    <div class="intelliboard-form-grid bg-light">
-        <div class="intelliboard-proggress-bar">
-            <ul>
-                <li class="bg-primary"></li>
-                <li class="bg-primary"></li>
-                <li class="bg-secondary"></li>
-            </ul>
-        </div>
-        <div class="align-center">
-            <h5>Which account type is best for you?</h5>
-        </div>
-        <div>
-            <span class="text-muted small align-center">
-                Whether you're tracking performance for you school, college, or organization, choose the account type fits best for you.
-            </span>
-            <div>
-                <div class="form-help-text alert alert-warning small visible" role="alert">Please, select an account type.</div>
-                <input required type="hidden" id="accounttype" name="accounttype" value="" />
-                <button class="btn btn-outline-secondary  pl-5 pt-2 pb-2 mt-3 text-left accounttype"  data-accounttype="corporate" href="#" role="button" aria-pressed="false">
-                    <h5>Corporate</h5>
-                    <span>
-                    I would like to utilize IntelliBoard to monitor and ensure the compilance of learner within my organization.
-                </span>
-                </button>
-                <button class="btn btn-outline-secondary pl-5 pt-2 pb-2 mt-3 text-left accounttype" data-accounttype="highereducation" href="#" role="button" aria-pressed="false">
-                    <h5>Higher Ed</h5>
-                    <span>
-                    I would like to use IntelliBoard to monitor and evaluate the success of students at my university or college.
-                </span>
-                </button>
-                <button class="btn btn-outline-secondary pl-5 pt-2 pb-2 mt-3 text-left accounttype" data-accounttype="k12" href="#" role="button" aria-pressed="false">
-                    <h5>K-12</h5>
-                    <span>
-                    I would like to use IntelliBoard to track progress of students in my school or district.
-                </span>
-                </button>
-                <button class="btn btn-outline-secondary pl-5 pt-2 pb-2 mt-3 text-left accounttype" href="#" data-accounttype="goverment" role="button" aria-pressed="false">
-                    <h5>Goverment</h5>
-                    <span>
-                    I would like to use IntelliBoard to track compliance, progress, and success of learners.
-                </span>
-                </button>
-
-            </div>
-
-        </div>
-        <div class="row mt-4">
-            <div class="col"><button class="btn btn-secondary btn-block prev-btn" data-form="accounttypeform">&larr; 	Previous</button></div>
-            <div class="col"><button class="btn btn-primary btn-block next-btn" disabled="disabled" data-form="accounttypeform">Next 	&rarr;</button></div>
-        </div>
-        <br>
-    </div>
-</div>
-
-<div class="intelliboard-splash-page intelliboard-hide" id="usertypeform">
-    <div class="intelliboard-form-grid bg-light">
-        <div class="intelliboard-proggress-bar">
-            <ul>
-                <li class="bg-primary"></li>
-                <li class="bg-primary"></li>
-                <li class="bg-primary"></li>
-            </ul>
-        </div>
-        <div><h5 class="align-center">Who will be using IntelliBoard?</h5></div>
-        <div>
-            <div class="text-muted small align-center">
-                Help us personalize your experience with IntelliBoard.
-            </div>
-            <br>
-            <div class="form-help-text alert alert-warning small visible" role="alert">Please, select at least 1 role.</div>
-            <div class="intelliboard-user-types intelliboard-hide" id="corporate">
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn-block btn btn-outline-secondary usertype" data-usertype="manager" aria-pressed="false">Manager</button></div>
-                    <div class="col"><button class="user-type btn-block btn btn-outline-secondary usertype" data-usertype="instructional" href="#" role="button" aria-pressed="false">Instructional Desinger</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="executive" aria-pressed="false">Executive</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="hr" role="button" aria-pressed="false">HR</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="partners" role="button" aria-pressed="false">Partners</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="lmsadmin" role="button" aria-pressed="false">LMS Admin</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="clients" role="button" aria-pressed="false">Clients</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="programmanagers" role="button" aria-pressed="false">Program Managers</button></div>
-                </div>
-            </div>
-            <div class="intelliboard-user-types intelliboard-hide" id="highereducation">
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="academicadvisor" role="button" aria-pressed="false">Academic Advisor</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="dean" role="button" aria-pressed="false">Dean</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="athlethiccoach" role="button" aria-pressed="false">Athlethic Coach</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="registrar" role="button" aria-pressed="false">Registrar</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="financialaid" role="button" aria-pressed="false">Financial Aid</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="lmsadmin" role="button" aria-pressed="false">LMS Admin</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="instructor" role="button" aria-pressed="false">Instructor</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="academicaffairs" role="button" aria-pressed="false">Academic Affairs</button></div>
-                </div>
-            </div>
-            <div class="intelliboard-user-types intelliboard-hide" id="k12">
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="schoolcounselor" role="button" aria-pressed="false">School Counselor</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="principal" role="button" aria-pressed="false">Principal</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="athlethiccoach" role="button" aria-pressed="false">Athlethic Coach</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="registrar" role="button" aria-pressed="false">Registrar</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="teacher" role="button" aria-pressed="false">Teacher</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="lmsadmin" role="button" aria-pressed="false">LMS Admin</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="itadmin" role="button" aria-pressed="false">IT Admin</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="academicaffairs" role="button" aria-pressed="false">Academic Affairs</button></div>
-                </div>
-            </div>
-            <div class="intelliboard-user-types intelliboard-hide" id="goverment">
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="programmanager" role="button" aria-pressed="false">Program Manager</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="director" role="button" aria-pressed="false">Director</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="instructionaldesigner" role="button" aria-pressed="false">Instructional Designer</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="personnelleader" role="button" aria-pressed="false">HR&sol;Personnel Leader</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="itadmin" role="button" aria-pressed="false">IT Admin</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="lmsadmin" role="button" aria-pressed="false">LMS Admin</button></div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="instructor" role="button" aria-pressed="false">Instructor</button></div>
-                    <div class="col"><button class="user-type btn btn-block btn-outline-secondary usertype" data-usertype="trainingmanager" role="button" aria-pressed="false">Training Manager</button></div>
-                </div>
-            </div>
-            <div class="row mb-2 mt-4">
-                <div class="col"><button class="btn btn-secondary btn-block prev-btn" data-form="usertypeform">&larr; 	Previous</button></div>
-                <div class="col"><button class="btn btn-primary btn-block" disabled="disabled" data-form="submitdata" id="submitdata">Submit</button></div>
-            </div>
-            <br>
-        </div>
-    </div>
-</div>
-
-<div class="intelliboard-splash-page intelliboard-hide" id="thanksform">
-    <div class="intelliboard-form-grid bg-light">
-        <h4 class="text-center text-primary">Thank you! We have received your IntelliBoard account request.</h4>
-        <h6 class="text-center">Here is what happens next:</h6>
-        <div>
-            <p>
-                A member of our team will reach out to you shortly to discuss your needs and guide you through the next steps in the process.
-                Here what you can expect:
-            </p>
-            <ol type="1">
-                <li>Personalized follow-up: One of our team members will contact you via email or phone within the next 1-2 business days.
-                    They will provide you with all the information need and answer any questions you might have.</li>
-                <li>Tailored support: During the follow-up, we’ll assess your specific requirements and help you get started with IntelliBoard.
-                    We will ensure you have everything to maximize the benefits of our platform.​</li>
-                <li>Onboarding process: After our initial conversation, we will outline a clear onboarding processes to ensure a smooth and efficient setup.</li>
-            </ol>
-            <p>
-                Once again, thank you for your interest in IntelliBoard. We look forward to helping you achieve your goals!
-            </p>
-            <a target="_blank" class="btn btn-primary btn-block text-center" href="https://intelliboard.net/events/">Meet us at one of our events</a>
-        </div>
-    </div>
-</div>
 <div class="intelliboard-support-terms">
     <div class="intelliboard-support-terms-footer">
-
+        <div class="mt-5 mb-5 text-center text-muted small">
+            <a href="https://intelliboard.net/legal/terms/">Terms of Use</a>
+            and <a href="https://intelliboard.net/legal/privacy-policy/">Privacy Policy</a>.
+        </div>
     </div>
     <div class="intelliboard-support-terms-footer-content">
         <span>For Additional information, visit our website
@@ -408,6 +177,8 @@ echo $OUTPUT->header();
         <br>
         © 2015 - <?php echo date("Y") ?> IntelliBoard, Inc.
         <?php echo get_string('support_terms', 'local_intelliboard'); ?>
+
+
     </div>
 </div>
 
@@ -677,6 +448,4 @@ button.active, button.active h5, button.active span {
 </style>
 
 <?php
-$setup = get_config("local_intelliboard", "account_setup");
-$PAGE->requires->js_call_amd('local_intelliboard/account_setup', 'init', [$setup]);
 echo $OUTPUT->footer();

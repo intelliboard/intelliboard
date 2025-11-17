@@ -65,11 +65,20 @@ echo $OUTPUT->header();
 				<div class="alert alert-block alert-<?php echo format_string($alert); ?>" role="alert"><?php echo format_text($text); ?></div>
 			<?php endforeach; ?>
 		<?php endif; ?>
-
+		<?php if ($report): ?>
 		<div id="iframe">
 			<iframe id="iframe" src="<?php echo intelliboard_url().$report_type; ?>/share/<?php echo $intelliboard->db . '/' . $report; ?>/<?php echo format_string($intelliboard->token); ?>?header=0&frame=1&<?php echo $params; ?>" width="100%" height="800" frameborder="0"></iframe>
 			<span id="iframe-loading"><?php echo get_string('loading2', 'local_intelliboard'); ?></span>
 		</div>
+		<?php elseif(isset($intelliboard->reports) and !empty($intelliboard->reports)): ?>
+			<div id="adminsettings">
+				<?php foreach($intelliboard->reports as $key=>$val): ?>
+					<div><h3><a href="reports.php?id=<?php echo format_string($key); ?>" <?php echo ($id == $key)?'class="active"':''; ?>><?php echo format_string($val->name); ?></a></h3></div>
+				<?php endforeach; ?>
+			</div>
+		<?php else: ?>
+			<div class="alert alert-block alert-info" role="alert"><?php echo get_string('reportselect', 'local_intelliboard'); ?></div>
+		<?php endif; ?>
 	</div>
 	<?php include("../views/footer.php"); ?>
 </div>

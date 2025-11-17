@@ -70,7 +70,7 @@ class initial_report implements renderable, templatable {
             "search_val" => $this->params["search"],
             "dashboard_url" => new \moodle_url("/local/intelliboard"),
             "initial_reports" => intelli_initial_reports(),
-            "connect_url" => new \moodle_url("/local/intelliboard/setup.php")
+            "connect_url" => new \moodle_url("/local/intelliboard/help.php")
         ];
     }
 }

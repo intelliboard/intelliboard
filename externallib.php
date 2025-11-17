@@ -11439,7 +11439,7 @@ class local_intelliboard_external extends external_api {
                                                            (lit.param=cm.id AND lit.page='module' AND gi.itemtype = 'mod')
                                                           )
            LEFT JOIN {user_lastaccess} ul ON ul.courseid = c.id AND ul.userid = u.id
-               WHERE c.id>0 {$sql_filter}
+               WHERE c.id>0 AND m.visible = 1 {$sql_filter}
                      {$sql_having}
                      {$sql_order}",
             $params

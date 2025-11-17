@@ -36,10 +36,10 @@ require_capability('local/intelliboard:view', context_system::instance());
 $set = optional_param('id', '', PARAM_RAW);
 $intelliboard = intelliboard(['task'=>'monitors']);
 
+$PAGE->set_context(context_system::instance());
 $PAGE->set_url(new moodle_url("/local/intelliboard/monitors.php", array('id'=>$set)));
 $PAGE->set_pagelayout(theming::get_page_layout());
 $PAGE->set_pagetype('monitors');
-$PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->requires->css('/local/intelliboard/assets/css/style.css');

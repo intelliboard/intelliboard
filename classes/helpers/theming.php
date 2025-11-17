@@ -35,6 +35,7 @@ class theming
     {
         global $PAGE;
 
+        $PAGE->set_context(\context_system::instance());
         $layouts = [self::DEFAULT_LAYOUT => self::DEFAULT_LAYOUT];
         if (!empty($PAGE->theme->layouts)) {
             foreach (array_keys($PAGE->theme->layouts) as $layout) {

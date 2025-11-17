@@ -73,7 +73,16 @@ abstract class intelliboard_table extends \table_sql {
 
         $delimeter = ':';
 
-        return sprintf("%02d%s%02d%s%02d", floor($row->$columnname/3600), $delimeter, ($row->$columnname/60)%60, $delimeter, $row->$columnname%60);
+        $seconds = (int) round($row->$columnname ?? 0);
+
+        return sprintf(
+            "%02d%s%02d%s%02d",
+            intdiv($seconds, 3600),
+            $delimeter,
+            intdiv($seconds % 3600, 60),
+            $delimeter,
+            $seconds % 60
+        );
     }
 
     public function icol_int($row, $columnname) {

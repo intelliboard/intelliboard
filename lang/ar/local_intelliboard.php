@@ -781,7 +781,7 @@ $string['success_message'] = 'تم حفظ تقرير SQL';
 $string['successfull_connected'] = 'تم الاتصال بنجاح';
 $string['support'] = 'دعم';
 $string['support_close'] = 'إغلاق';
-$string['support_connect'] = 'انقر فوق أزرار التقرير داخل المستطيل أدناه. احصل على لمحة عن قوة IntelliBoard: زر واحد للوصول إلى رؤى نظام إدارة التعلم الخاصة بك. هل تريد المزيد؟ انقر فوق "انقر لعرض التحليلات". هل مازلت تريد المزيد؟ <a href="{$a->connect_link} ">" Connect & Upgrade "</a> أعلى اليسار ، أو في أي مكان ترى فيه الرابط.';
+$string['support_connect'] = 'انقر فوق أزرار التقرير داخل المستطيل أدناه. احصل على لمحة عن قوة IntelliBoard: زر واحد للوصول إلى رؤى نظام إدارة التعلم الخاصة بك. هل تريد المزيد؟ انقر فوق "انقر لعرض التحليلات". هل مازلت تريد المزيد؟ <a href="{$a->connect_link} ">Contact Us</a> أعلى اليسار ، أو في أي مكان ترى فيه الرابط.';
 $string['support_demo'] = 'جدولة عرض تجريبي';
 $string['support_info1'] = 'يمكنك الانضمام إلى <a target=\'_blank\' href=\'https://intelliboard.net/events\'> الندوات عبر الإنترنت </a> بينما نأخذك في جولة عبر تقارير وتحليلات IntelliBoard 5.0!';
 $string['support_info2'] = 'انضم إلى <a target=\'_blank\' href=\'https://intelliboard.net/events\'> البرامج التعليمية على الويب </a> ، أو حدد موعدًا لجولة شخصية لبياناتك الخاصة. من خلال الدعم والخدمة على مستوى عالمي ، سترى نظام إدارة التعلم الخاص بك في ضوء جديد تمامًا.';

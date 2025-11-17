@@ -136,48 +136,30 @@ function intelliboard_filter_in_sql($sequence, $column, $params = array(), $prfx
 	return array($sql, $params);
 }
 
-function intelliboard_url($api = false)
+function intelliboard_url()
 {
-		global $CFG;
+    $server = get_config('local_intelliboard', 'server');
 
-		require($CFG->dirroot .'/local/intelliboard/config.php');
-
-
-		$server = get_config('local_intelliboard', 'server');
-
-		if ($api) {
-			return $config['app_url_api'];
-		} elseif ($server == 1) {
-			return $config['app_url_au'];
-		} elseif ($server == 2) {
-			return $config['app_url_ca'];
-		} elseif ($server == 5) {
-			return $config['app_url_cn'];
-		} elseif ($server == 3) {
-			return $config['app_url_eu'];
-		} elseif ($server == 4) {
-			return $config['app_url_us'];
-		} else {
-			return $config['app_url'];
-		}
+    if (!in_array($server, ['us', 'ca', 'eu', 'au'])) {
+        $server = 'us'; //Default value
+    }
+    return 'https://'.$server.'-app.intelliboard.net/';
 }
 function intelliboard($params, $function = 'sso'){
 	global $CFG, $USER;
 
 		require_once($CFG->libdir . '/filelib.php');
 
-		$api = get_config('local_intelliboard', 'api');
 		$debug = get_config('local_intelliboard', 'debug');
 		$debugmode = optional_param('debug', '', PARAM_RAW);
-		$url = intelliboard_url($api);
+		$url = intelliboard_url();
 
 		$params['email'] = get_config('local_intelliboard', 'te1');
 		$params['apikey'] = get_config('local_intelliboard', 'apikey');
 		$params['useremail'] = $USER->email;
-		$params['url'] = $CFG->wwwroot;
+        $params['url'] = $CFG->wwwroot;
 		$params['lang'] = current_language();
 		$params['userid'] = $USER->id ?? 0;
-
 		$options =[];
 		if (get_config('local_intelliboard', 'verifypeer')) {
 			$options['CURLOPT_SSL_VERIFYPEER'] = false;
@@ -225,9 +207,8 @@ function intelliboard($params, $function = 'sso'){
             }
 			$output = $json;
 		}
-
 		$data = (object)json_decode($json);
-		$data->status = (isset($data->status))?$data->status:'';
+        $data->status = (isset($data->status))?$data->status:'';
         $data->token = (isset($data->token))?$data->token:'';
 		$data->reports = (isset($data->reports))?(array)$data->reports:null;
 		$data->intellicart_reports = isset($data->intellicart_reports) ? (array) $data->intellicart_reports : null;
@@ -247,8 +228,7 @@ function intelliboard_auth($params, $function) {
 
     require_once($CFG->libdir . '/filelib.php');
 
-    $api = get_config('local_intelliboard', 'api');
-    $url = intelliboard_url($api);
+    $url = intelliboard_url();
     $options =[];
 
     if (get_config('local_intelliboard', 'verifypeer')) {

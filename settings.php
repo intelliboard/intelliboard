@@ -131,12 +131,6 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
         $settings->add($setting);
 
-        $name = 'local_intelliboard/api';
-        $title = new lang_string('api', 'local_intelliboard');
-        $description = new lang_string('api_desc', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-        $settings->add($setting);
-
         $name = 'local_intelliboard/debug';
         $title = new lang_string('debug', 'local_intelliboard');
         $description = new lang_string('debug_desc', 'local_intelliboard');
@@ -167,10 +161,14 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configtext($name, $title, $description, '');
         $settings->add($setting);
 
-        $options = array("AUTO","AU","CA","EU","US","CN");
         $name = 'local_intelliboard/server';
         $title = new lang_string('server', 'local_intelliboard');
-        $setting = new admin_setting_configselect($name, $title,'',0,$options);
+        $setting = new admin_setting_configselect($name, $title,'',0, [
+            'us' => "US",
+            'ca' => "CA",
+            'eu' => "EU",
+            'au' => "AU"
+        ]);
         $settings->add($setting);
 
         $options = array("Y-m-d" => "Y-m-d", "d/m/Y" => "d/m/Y", "m/d/Y" => "m/d/Y");
@@ -1067,13 +1065,6 @@ if($ADMIN->fulltree){
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
         $settings->add($setting);
 
-    // Option course chart - commented out.
-    /*
-     *$name = 'local_intelliboard/course_chart';
-     *$title = new lang_string('course_chart', 'local_intelliboard');
-     *$setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-     *$settings->add($setting);
-     */
 
     $name = 'local_intelliboard/course_activities';
     $title = new lang_string('course_activities', 'local_intelliboard');
@@ -1175,297 +1166,91 @@ if($ADMIN->fulltree){
 
     $settings->add(new admin_setting_heading('local_intelliboard/ts5', new lang_string('ts5', 'local_intelliboard'), ''));
 
-    // Option analytics page - commented out.
-    /*
-     *$name = 'local_intelliboard/t48';
-     *$title = new lang_string('t48', 'local_intelliboard');
-     *$setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-     *$settings->add($setting);
-     */
 
-        $settings->add(new admin_setting_heading('local_intelliboard/competency', new lang_string('a0', 'local_intelliboard'), ''));
+    $settings->add(new admin_setting_heading('local_intelliboard/competency', new lang_string('a0', 'local_intelliboard'), ''));
 
-        $name = 'local_intelliboard/a11';
-        $title = new lang_string('n11', 'local_intelliboard');
-        $default = new lang_string('a0', 'local_intelliboard');
-        $setting = new admin_setting_configtext($name, $title, '', $default);
-        $settings->add($setting);
+    $name = 'local_intelliboard/a11';
+    $title = new lang_string('n11', 'local_intelliboard');
+    $default = new lang_string('a0', 'local_intelliboard');
+    $setting = new admin_setting_configtext($name, $title, '', $default);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/competency_dashboard';
-        $title = new lang_string('a29', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/competency_dashboard';
+    $title = new lang_string('a29', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+    $settings->add($setting);
 
 
-        $name = 'local_intelliboard/competency_reports';
-        $title = new lang_string('a30', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/competency_reports';
+    $title = new lang_string('a30', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/a36';
-        $title = new lang_string('a36', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/a36';
+    $title = new lang_string('a36', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/a39';
-        $title = new lang_string('a39', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/a39';
+    $title = new lang_string('a39', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/a4';
-        $title = new lang_string('a4', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/a4';
+    $title = new lang_string('a4', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/a38';
-        $title = new lang_string('a38', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/a38';
+    $title = new lang_string('a38', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/a31';
-        $title = new lang_string('a31', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/a31';
+    $title = new lang_string('a31', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+    $settings->add($setting);
 
-        $name = 'local_intelliboard/learning_plan_filter';
-        $title = new lang_string('learning_plan_filter', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
-        $settings->add($setting);
+    $name = 'local_intelliboard/learning_plan_filter';
+    $title = new lang_string('learning_plan_filter', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+    $settings->add($setting);
 
-        $roles = role_fix_names(
-            get_all_roles(context_system::instance()), context_system::instance(), ROLENAME_ORIGINALANDSHORT
-        );
-        $options = array();
-        $default = null;
+    $roles = role_fix_names(
+        get_all_roles(context_system::instance()), context_system::instance(), ROLENAME_ORIGINALANDSHORT
+    );
+    $options = array();
+    $default = null;
 
-        foreach ($roles as $role) {
-            if ($default === null) {
-                $default = $role->id;
-            }
-            $options[$role->id] = $role->localname;
+    foreach ($roles as $role) {
+        if ($default === null) {
+            $default = $role->id;
         }
-
-        $name = 'local_intelliboard/learning_plan_viewer_role';
-        $title = new lang_string('learning_plan_viewer_role', 'local_intelliboard');
-        $setting = new admin_setting_configselect($name, $title, '', $default, $options);
-        $settings->add($setting);
-
-
-        $settings->add(new admin_setting_heading('local_intelliboard/scalesettings', new lang_string('scalesettings', 'local_intelliboard'), ''));
-
-        $name = 'local_intelliboard/scale_raw';
-        $title = new lang_string('scale_raw', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/scale_real';
-        $title = new lang_string('scale_real', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/scales';
-        $title = new lang_string('scales', 'local_intelliboard');
-        $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/scale_total';
-        $title = new lang_string('scale_total', 'local_intelliboard');
-        $default = 0;
-        $setting = new admin_setting_configtext($name, $title, '', $default);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/scale_value';
-        $title = new lang_string('scale_value', 'local_intelliboard');
-        $default = 0;
-        $setting = new admin_setting_configtext($name, $title, '', $default);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/scale_percentage';
-        $title = new lang_string('scale_percentage', 'local_intelliboard');
-        $default = 0;
-        $setting = new admin_setting_configtext($name, $title, '', $default);
-        $settings->add($setting);
-
-        $name = 'local_intelliboard/scale_percentage_round';
-        $title = new lang_string('scale_percentage_round', 'local_intelliboard');
-        $default = 0;
-        $setting = new admin_setting_configtext($name, $title, '', $default);
-        $settings->add($setting);
-
-        // BBB meetings
-        $settings->add(new admin_setting_heading('local_intelliboard/bbbmeetings', get_string('bbbmeetings', 'local_intelliboard'), ''));
-
-        $name = 'local_intelliboard/enablebbbmeetings';
-        $title = get_string('enablebbbmeetings', 'local_intelliboard');
-        $description = '';
-        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-        $settings->add($setting);
-
-        // BBB debug
-        $name = 'local_intelliboard/bbb_debug';
-        $title = get_string('enablebbbdebug', 'local_intelliboard');
-        $description = '';
-        $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-        $settings->add($setting);
-
-        // BBB API endpoint
-        $name = 'local_intelliboard/bbbapiendpoint';
-        $title = get_string('bbbapiendpoint', 'local_intelliboard');
-        $description = '';
-        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
-        $settings->add($setting);
-
-        // BBB server secret
-        $name = 'local_intelliboard/bbbserversecret';
-        $title = get_string('bbbserversecret', 'local_intelliboard');
-        $description = '';
-        if (!CLI_SCRIPT && $PAGE->url->get_param('section') == 'local_intelliboard' &&
-            strpos($PAGE->url->get_path(), '/admin/settings.php') !== false &&
-            get_config('local_intelliboard', 'bbbapiendpoint') &&
-            get_config('local_intelliboard', 'bbbserversecret')) {
-            $bbb = new \local_intelliboard\bbb_client();
-
-            if ($bbb->checkConnection()) {
-                $conn_description = new lang_string('successfull_connected', 'local_intelliboard');
-                $icon = $OUTPUT->pix_icon('i/valid', $conn_description->out());
-                $description = $icon.$conn_description->out();
-            } else {
-                $conn_description = new lang_string('not_connected', 'local_intelliboard');
-                $icon = $OUTPUT->pix_icon('i/invalid', $conn_description->out());
-                $description = $icon.$conn_description->out();
-            }
-        }
-        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
-        $settings->add($setting);
-
-    // Attendance LTI
-    $settings->add(
-        new admin_setting_heading('local_intelliboard/attendancelti',
-        get_string('attendance', 'local_intelliboard'), '')
-    );
-
-    $name = 'local_intelliboard/enableattendance';
-    $title = get_string('enableattendance', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-    $settings->add($setting);
-
-    $name = 'local_intelliboard/enablesyncattendance';
-    $title = get_string('enablesyncattendance', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configcheckbox($name, $title, $description, false, true, false);
-    $settings->add($setting);
-
-    // Attendance API base path
-    $name = 'local_intelliboard/attendanceapibase';
-    $title = get_string('attendanceapibase', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
-    $settings->add($setting);
-
-    // Attendance API key
-    $name = 'local_intelliboard/attendanceapikey';
-    $title = get_string('attendanceapikey', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
-    $settings->add($setting);
-
-    // Attendance API secret
-    $name = 'local_intelliboard/attendanceapisecret';
-    $title = get_string('attendanceapisecret', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configpasswordunmask($name, $title, $description, '', PARAM_TEXT);
-    $settings->add($setting);
-
-    // Attendance Tool URL
-    $name = 'local_intelliboard/attendancetoolurl';
-    $title = get_string('attendancetoolurl', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
-    $settings->add($setting);
-
-    // Attendance Consumer key
-    $name = 'local_intelliboard/attendanceconsumerkey';
-    $title = get_string('attendanceconsumerkey', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
-    $settings->add($setting);
-
-    // Attendance Shared secret
-    $name = 'local_intelliboard/attendancesharedsecret';
-    $title = get_string('attendancesharedsecret', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configpasswordunmask($name, $title, $description, '');
-    $settings->add($setting);
-
-    // BB collaborate meetings
-    $settings->add(new admin_setting_heading(
-        'local_intelliboard/bb_col_meetings',
-        get_string('bb_col_meetings', 'local_intelliboard'),
-        ''
-    ));
-
-    $name = 'local_intelliboard/enable_bb_col_meetings';
-    $title = get_string('enable_bb_col_meetings', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configcheckbox(
-        $name, $title, $description, false, true, false
-    );
-    $settings->add($setting);
-
-    // BB collaborate debug
-    $name = 'local_intelliboard/bb_col_debug';
-    $title = get_string('enable_bb_col_debug', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configcheckbox(
-        $name, $title, $description, false, true, false
-    );
-    $settings->add($setting);
-
-    // BB collaborate API endpoint
-    $name = 'local_intelliboard/bb_col_api_endpoint';
-    $title = get_string('bb_col_api_endpoint', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configtext(
-        $name, $title, $description, '', PARAM_TEXT
-    );
-    $settings->add($setting);
-
-    // BB collaborate consumer key
-    $name = 'local_intelliboard/bb_col_consumer_key';
-    $title = get_string('bb_col_consumer_key', 'local_intelliboard');
-    $description = '';
-    $setting = new admin_setting_configtext(
-        $name, $title, $description, '', PARAM_TEXT
-    );
-    $settings->add($setting);
-
-    // BB collaborate secret
-    $name = 'local_intelliboard/bb_col_secret';
-    $title = get_string('bb_col_secret', 'local_intelliboard');
-    $description = '';
-
-    if (!CLI_SCRIPT && $PAGE->url->get_param('section') == 'local_intelliboard' &&
-        strpos($PAGE->url->get_path(), '/admin/settings.php') !== false &&
-        get_config('local_intelliboard', 'bb_col_api_endpoint') &&
-        get_config('local_intelliboard', 'bb_col_consumer_key') &&
-        get_config('local_intelliboard', 'bb_col_secret')) {
-
-        $adapter = \local_intelliboard\tools\bb_collaborate_tool::adapter();
-        if ($adapter->checkConnection()) {
-            $conn_description = new lang_string('successfull_connected', 'local_intelliboard');
-            $icon = $OUTPUT->pix_icon('i/valid', $conn_description->out());
-            $description = $icon.$conn_description->out();
-        } else {
-            $conn_description = new lang_string('not_connected', 'local_intelliboard');
-            $icon = $OUTPUT->pix_icon('i/invalid', $conn_description->out());
-            $description = $icon.$conn_description->out();
-        }
+        $options[$role->id] = $role->localname;
     }
 
-    $setting = new admin_setting_configpasswordunmask(
-        $name, $title, $description, ''
-    );
+    $name = 'local_intelliboard/learning_plan_viewer_role';
+    $title = new lang_string('learning_plan_viewer_role', 'local_intelliboard');
+    $setting = new admin_setting_configselect($name, $title, '', $default, $options);
+    $settings->add($setting);
+
+
+    $settings->add(new admin_setting_heading('local_intelliboard/scalesettings', new lang_string('scalesettings', 'local_intelliboard'), ''));
+
+    $name = 'local_intelliboard/scale_raw';
+    $title = new lang_string('scale_raw', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/scale_real';
+    $title = new lang_string('scale_real', 'local_intelliboard');
+    $setting = new admin_setting_configcheckbox($name, $title, '', false, true, false);
+    $settings->add($setting);
+
+    $name = 'local_intelliboard/scale_percentage_round';
+    $title = new lang_string('scale_percentage_round', 'local_intelliboard');
+    $default = 0;
+    $setting = new admin_setting_configtext($name, $title, '', $default);
     $settings->add($setting);
 
     // Transcripts section.

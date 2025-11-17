@@ -244,7 +244,7 @@ function local_intelliboard_extend_settings_navigation(settings_navigation $sett
             }
         }
 
-        $cat = $coursenode->add(get_string('intelliboard_reports', 'local_intelliboard'), null, navigation_node::TYPE_CONTAINER, null, 'intelliboard');
+        $cat = $coursenode->add(get_string('intelliboard_reports', 'local_intelliboard'), new moodle_url('/local/intelliboard/instructor/reports.php'), navigation_node::TYPE_CONTAINER, null, 'intelliboard');
 
         if (is_array($reports)) {
             foreach ($reports as $key=>$report) {

@@ -712,7 +712,7 @@
  $string['support_terms'] = "All Rights Reserved.";
  $string['support_page'] = "Review Documentation";
  $string['support_demo'] = "Schedule a Demo";
- $string['support_trial'] = "Connect & Upgrade";
+ $string['support_trial'] = "Contact Us";
  $string['support_close'] = "Close";
  $string['instructor_custom_groups'] = "Instructor custom groups";
  // settings of tables
@@ -930,7 +930,7 @@ $string['last_name'] = 'Last Name';
 $string['num_attempts'] = '# of Attempts';
 $string['highest_grade'] = 'Highest Grade';
 $string['lowest_grade'] = 'Lowest Grade';
-$string['initial_reports_warning'] = 'To email, schedule, and further personalize these reports, click “<a href="{$a}">Connect & Upgrade</a>”.';
+$string['initial_reports_warning'] = 'To email, schedule, and further personalize these reports, click <a href="{$a}">Contact Us</a>.';
 $string['last_access'] = 'Last Access';
 $string['enrolment_expiration'] = 'Enrolment Expiration';
 $string['id_number'] = 'ID Number';
@@ -943,7 +943,7 @@ $string['city'] = 'City/Town';
 $string['enroled_on'] = 'Enrollment Date';
 
 $string['dashboard_link'] = 'Click to view Analytics';
-$string['support_connect'] = 'Click the report buttons within the rectangle below. Get a glimpse into the power of IntelliBoard: 1 button access to your LMS insights. Want more? Click "Click to view Analytics". Still want more? <a href="{$a->connect_link}">“Connect & Upgrade”</a> in the top right, or anywhere you see the link.';
+$string['support_connect'] = 'Click the report buttons within the rectangle below. Get a glimpse into the power of IntelliBoard: 1 button access to your LMS insights. Want more? Click "Click to view Analytics". Still want more? <a href="{$a->connect_link}">Contact Us</a> in the top right, or anywhere you see the link.';
 $string['support_text3'] = 'Thank you for installing IntelliBoard Lite!';
 $string['support_text4'] = 'Meet an easy-to-use reporting and visualization platform that will help you achieve your retention, engagement, and compliance goals.';
 $string['support_text6'] = 'Need more info? Click any of the blue buttons to connect with us.';

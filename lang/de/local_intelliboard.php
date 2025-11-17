@@ -929,7 +929,7 @@ $string['last_name'] = 'Nachname';
 $string['num_attempts'] = 'Anzahl der Versuche';
 $string['highest_grade'] = 'Highest Grade';
 $string['lowest_grade'] = 'niedrigste Note';
-$string['initial_reports_warning'] = 'Um diese Berichte per E-Mail zu versenden, zu planen und weiter zu personalisieren, klicken Sie auf "<a href="{$a}"> Connect & Upgrade </a>';
+$string['initial_reports_warning'] = 'Um diese Berichte per E-Mail zu versenden, zu planen und weiter zu personalisieren, klicken Sie auf "<a href="{$a}"> Contact Us </a>';
 $string['last_access'] = 'Letzter Zugriff';
 $string['enrolment_expiration'] = 'Ablauf der Registrierung';
 $string['id_number'] = 'ID Number';
@@ -942,7 +942,7 @@ $string['city'] = 'Stadt';
 $string['enroled_on'] = 'Registrierungsdatum';
 
 $string['dashboard_link'] = 'Klicken, um Analytics anzuzeigen';
-$string['support_connect'] = 'Klicken Sie auf die Berichtsschaltflächen im Rechteck unten. Erhalten Sie einen Einblick in die Leistungsfähigkeit von IntelliBoard: 1-Tasten-Zugriff auf Ihre LMS-Einblicke. Mehr wollen? Klicken Sie auf "Klicken, um Analytics anzuzeigen". Willst du noch mehr? <a href="{$a->connect_link} ">" Connect & Upgrade "</a> oben rechts oder an einer beliebigen Stelle, an der Sie den Link sehen';
+$string['support_connect'] = 'Klicken Sie auf die Berichtsschaltflächen im Rechteck unten. Erhalten Sie einen Einblick in die Leistungsfähigkeit von IntelliBoard: 1-Tasten-Zugriff auf Ihre LMS-Einblicke. Mehr wollen? Klicken Sie auf "Klicken, um Analytics anzuzeigen". Willst du noch mehr? <a href="{$a->connect_link} ">Contact Us</a> oben rechts oder an einer beliebigen Stelle, an der Sie den Link sehen';
 $string['support_text3'] = 'Thank you for installing IntelliBoard Lite!';
 $string['support_text4'] = 'Meet an easy-to-use reporting and visualization platform that will help you achieve your retention, engagement, and compliance goals.';
 $string['support_text6'] = 'Benötigen Sie weitere Informationen? Klicken Sie auf eine der blauen Schaltflächen, um eine Verbindung mit uns herzustellen';
