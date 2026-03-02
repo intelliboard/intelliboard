@@ -28,43 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 
 $tasks = [
     [
-        'classname' => 'local_intelliboard\task\check_active_bbb_meetings',
-        'blocking' => 0,
-        'minute' => '*',
-        'hour' => '*',
-        'day' => '*',
-        'month' => '*',
-        'dayofweek' => '*'
-    ],
-    [
-        'classname' => 'local_intelliboard\task\check_active_bb_collaborate_meetings',
-        'blocking' => 0,
-        'minute' => '*',
-        'hour' => '*',
-        'day' => '*',
-        'month' => '*',
-        'dayofweek' => '*'
-    ],
-    [
-        'classname' => 'local_intelliboard\task\attendance_sync',
-        'blocking' => 0,
-        'minute' => '*',
-        'hour' => '*',
-        'day' => '*',
-        'month' => '*',
-        'dayofweek' => '*'
-    ],
-    [
-        'classname' => 'local_intelliboard\task\transcripts_process',
-        'blocking' => 0,
-        'minute' => '15',
-        'hour' => '*',
-        'day' => '*',
-        'month' => '*',
-        'dayofweek' => '*',
-        'disabled' => 1
-    ],
-    [
         'classname' => 'local_intelliboard\task\import_tracking_process',
         'blocking' => 0,
         'minute' => '*/15',

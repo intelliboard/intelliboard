@@ -6984,6 +6984,28 @@ class local_intelliboard_external extends external_api {
                        $sql_filter3)";
         }
 
+        if (get_config('local_intelliboard', 'group_aggregation')) {
+            if ($CFG->dbtype == 'pgsql') {
+                $group_teacher_column = " ,g.id AS groupid, string_agg(DISTINCT teachers.teacher_name, ', ') AS teacher";
+            } else {
+                $group_teacher_column = " ,g.id AS groupid, GROUP_CONCAT(DISTINCT teachers.teacher_name SEPARATOR ', ') AS teacher";
+            }
+            $groups_teacher_sql = "
+                       LEFT JOIN (SELECT ctx.instanceid, CONCAT(u.firstname,' ',u.lastname) AS teacher_name, g.id as gid
+                                    FROM mdl_role_assignments AS ra
+                                    JOIN mdl_user u ON ra.userid = u.id
+                                    JOIN mdl_context AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+                                    JOIN mdl_groups g ON g.courseid = ctx.instanceid
+                                    JOIN mdl_groups_members m ON m.groupid = g.id AND m.userid = u.id
+                                   WHERE ra.roleid > 0 " .
+                                         $this->get_filter_in_sql($params->teacher_roles, "ra.roleid") . " " .
+                                         $this->get_filter_in_sql($params->courseid, 'ctx.instanceid') . "
+                       ) AS teachers ON teachers.instanceid = g.courseid AND teachers.gid = g.id";
+        } else {
+            $group_teacher_column = " ,NULL AS groupid, NULL AS teacher";
+            $groups_teacher_sql = "";
+        }
+
         return $this->get_report_data(
             "SELECT t.*
                FROM (
@@ -7002,7 +7024,7 @@ class local_intelliboard_external extends external_api {
                        a.duedate AS due_date,
                        s.timemodified AS time_on,
                        'assignment' AS activity,
-                       teachers.t_names AS teacher,
+                       CASE WHEN grps.groupid IS NULL THEN teachers.t_names ELSE grps.teacher END AS teacher,
                        0 AS slot,
                        0 AS attempt
                        $sql_columns1
@@ -7018,12 +7040,13 @@ class local_intelliboard_external extends external_api {
                   JOIN {course_modules} cm ON cm.course=c.id AND cm.module=m.id AND cm.instance=a.id AND cm.visible=1
                   JOIN {enrol} e ON e.courseid=c.id
                   JOIN {user_enrolments} ue ON ue.enrolid=e.id AND ue.userid=u.id
-             LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS user_groups
+             LEFT JOIN (SELECT m.userid, g.courseid, {$groups} AS user_groups $group_teacher_column
                             FROM {groups} g
                             JOIN {groups_members} m ON m.groupid = g.id
+                                 $groups_teacher_sql
                            WHERE g.id > 0 " . $this->get_filter_in_sql($params->courseid, 'g.courseid') . "
-                                GROUP BY m.userid, g.courseid
-                            ) grps ON grps.userid = u.id AND grps.courseid = c.id
+                        GROUP BY m.userid, g.courseid
+             ) grps ON grps.userid = u.id AND grps.courseid = c.id
              LEFT JOIN (SELECT ctx.instanceid, {$group_concat} AS t_names
                             FROM {role_assignments} AS ra
                             JOIN {user} u ON ra.userid = u.id
