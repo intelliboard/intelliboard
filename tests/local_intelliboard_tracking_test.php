@@ -30,7 +30,7 @@ defined('MOODLE_INTERNAL') || die();
  * Class within phpunit tests
  * @group local_intelliboard
  */
-class local_intelliboard_tracking_testcase extends advanced_testcase
+class local_intelliboard_tracking_test extends advanced_testcase
 {
 
     public function test_tracking()
