@@ -2446,13 +2446,17 @@ class local_intelliboard_external extends external_api {
             WHERE c.category > 0 $sql_filter
             GROUP BY c.id $sql_having $sql_order", $params);
     }
+
     public function report20($params)
     {
-        global $CFG;
+        global $CFG, $DB;
 
         if (empty($params->courseid)) {
             return ["data" => []];
         }
+
+        $dbman = $DB->get_manager();
+        $use_scorm_scoes_track = $dbman->table_exists('scorm_scoes_track');
 
         $columns = array_merge(array(
             "s.name", "c.fullname", "attempts", "visits", "duration", "s.timemodified"
@@ -2465,25 +2469,36 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_in_sql($params->courseid, "c.id");
         $sql_filter .= $this->get_filterdate_sql($params, "s.timemodified");
         $sql_filter .= $this->get_filter_course_sql($params, "c.");
-        $sql_filter .= $this->vendor_filter('sst.userid', 'c.id', $params);
+        $sql_filter .= $this->vendor_filter($use_scorm_scoes_track ? 'sst.userid' : 'sa.userid', 'c.id', $params);
         $sql_vendor_filter1 = $this->vendor_filter('lit.userid', 'lit.courseid', $params);
-        $sql_vendor_filter2 = $this->vendor_filter('userid', null, $params);
         $lit_course_filter = $this->get_filter_in_sql($params->courseid, "lit.courseid");
 
-        $time_func = ($CFG->dbtype == 'pgsql') ? "value::interval" : "TIME_TO_SEC(value)";
+        if ($use_scorm_scoes_track) {
+            $time_func = ($CFG->dbtype == 'pgsql') ? "value::interval" : "TIME_TO_SEC(value)";
+            $track_join = "LEFT JOIN {scorm_scoes_track} sst ON sst.scormid = s.id AND (element = 'cmi.core.total_time' OR element = 'x.start.time')";
+            $attempts_expr = "SUM(CASE WHEN element = 'x.start.time' THEN 1 ELSE 0 END) AS attempts";
+            $duration_expr = "SUM(CASE WHEN element = 'cmi.core.total_time' THEN {$time_func} ELSE 0 END) AS duration";
+        } else {
+            $time_func = ($CFG->dbtype == 'pgsql') ? "sv.value::interval" : "TIME_TO_SEC(sv.value)";
+            $track_join = "LEFT JOIN {scorm_attempt} sa ON sa.scormid = s.id
+                LEFT JOIN {scorm_scoes_value} sv ON sv.attemptid = sa.id
+                LEFT JOIN {scorm_element} e ON e.id = sv.elementid AND (e.element = 'cmi.core.total_time' OR e.element = 'x.start.time')";
+            $attempts_expr = "SUM(CASE WHEN e.element = 'x.start.time' THEN 1 ELSE 0 END) AS attempts";
+            $duration_expr = "SUM(CASE WHEN e.element = 'cmi.core.total_time' THEN {$time_func} ELSE 0 END) AS duration";
+        }
 
         return $this->get_report_data("
             SELECT s.id,
                     c.fullname,
                     s.name,
                     s.timemodified,
-                    SUM(CASE WHEN element = 'x.start.time' THEN 1 ELSE 0 END) AS attempts,
+                    {$attempts_expr},
                     MAX(sl.visits) AS visits,
-                    SUM(CASE WHEN element = 'cmi.core.total_time' THEN {$time_func} ELSE 0 END) AS duration
+                    {$duration_expr}
                     {$sql_columns}
             FROM {scorm} s
                 JOIN {course} c ON c.id = s.course
-                LEFT JOIN {scorm_scoes_track} sst ON sst.scormid = s.id AND (element = 'cmi.core.total_time' OR element = 'x.start.time')
+                {$track_join}
                 LEFT JOIN (SELECT cm.instance, SUM(lit.visits) as visits
                              FROM {local_intelliboard_tracking} lit
                              JOIN {course_modules} cm ON cm.id = lit.param
