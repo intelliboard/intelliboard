@@ -39,7 +39,7 @@ $debug = get_config('local_intelliboard', 'debug');
 $debugmode = optional_param('debug', '', PARAM_RAW);
 
 require_login();
-require_capability('local/intelliboard:students', context_system::instance());
+intelliboard_learner_access();
 
 if ($search) {
     require_sesskey();
