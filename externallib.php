@@ -2496,11 +2496,14 @@ class local_intelliboard_external extends external_api {
 
     public function report21($params)
     {
-        global $CFG;
+        global $CFG, $DB;
 
         if (empty($params->courseid)) {
             return ["data" => []];
         }
+
+        $dbman = $DB->get_manager();
+        $use_scorm_scoes_track = $dbman->table_exists('scorm_scoes_track');
 
         $columns = array_merge(array(
             "u.firstname", "u.lastname", "u.email", "ue.status", "u.idnumber", "s.name", "c.fullname", "attempts",
@@ -2520,7 +2523,7 @@ class local_intelliboard_external extends external_api {
         $sql_filter .= $this->get_filter_module_sql($params, "cm.");
         $sql_filter .= $this->vendor_filter('ue.userid', 'c.id', $params);
         $sql_filter .= $this->get_filter_user_not_current_sql($params, "ue.");
-        $sqltimefilter = $this->get_filterdate_sql($params, "sst.timemodified");
+        $sqltimefilter = $this->get_filterdate_sql($params, $use_scorm_scoes_track ? "sst.timemodified" : "sv.timemodified");
         $grade_single = intelliboard_grade_sql(false, $params);
 
         $enrol_sql_filter = $this->get_filter_in_sql($params->courseid, "e.courseid");
@@ -2576,6 +2579,76 @@ class local_intelliboard_external extends external_api {
             ['separator' => '']
         );
 
+        if ($use_scorm_scoes_track) {
+            $t_subquery = "SELECT MIN(sst.id) AS id,
+                           sst.userid,
+                           sst.scormid,
+                           MAX(sst.timemodified) AS timemodified,
+                           MIN(CASE WHEN sst.element = 'x.start.time' THEN sst.value ELSE null END) AS starttime,
+                           {$time_func} AS duration,
+                           {$firstcompletionstatus} AS first_completion_status,
+                           {$currentcompletionstatus} AS current_completion_status,
+                           COUNT(DISTINCT(sst.attempt)) as attempts
+                      FROM {scorm_scoes_track} sst
+                      JOIN {scorm} s1 ON s1.id = sst.scormid
+                      JOIN (SELECT userid, scormid, MAX(attempt) AS last_attempt_number
+                              FROM {scorm_scoes_track}
+                          GROUP BY userid, scormid
+                           ) la ON la.userid = sst.userid AND la.scormid = sst.scormid
+                     WHERE sst.id > 0 {$cdata_sql_filter} {$sqltimefilter}
+                  GROUP BY sst.userid, sst.scormid";
+        } else {
+            $time_func_new = ($CFG->dbtype == 'pgsql')
+                ? "SUM(CASE WHEN e.element = 'cmi.core.total_time' OR e.element = 'cmi.total_time' THEN sv.value::interval ELSE null END)"
+                : "SUM( TIME_TO_SEC(CASE WHEN e.element = 'cmi.core.total_time'
+                                     THEN sv.value
+                                     WHEN e.element = 'cmi.total_time'
+                                     THEN (CASE
+                                                WHEN sv.value LIKE 'PT%H%M%.%S' THEN STR_TO_DATE(sv.value, 'PT%HH%iM%s.%fS')
+                                                WHEN sv.value LIKE 'PT%H%M%S' THEN STR_TO_DATE(sv.value, 'PT%HH%iM%sS')
+                                                WHEN sv.value LIKE 'PT%M%.%S' THEN STR_TO_DATE(sv.value, 'PT%iM%s.%fS')
+                                                WHEN sv.value LIKE 'PT%M%S' THEN STR_TO_DATE(sv.value, 'PT%iM%sS')
+                                                WHEN sv.value LIKE 'PT%.%S' THEN STR_TO_DATE(sv.value, 'PT%s.%fS')
+                                                WHEN sv.value LIKE 'PT%S' THEN STR_TO_DATE(sv.value, 'PT%sS')
+                                           END)
+                                     ELSE NULL
+                                END))";
+            $firstcompletionstatus_new = get_operator(
+                'GROUP_CONCAT',
+                "CASE WHEN sa.attempt = 1 AND e.element IN ('cmi.completion_status', 'cmi.core.lesson_status') AND sv.value IN ('completed', 'passed') THEN 'completed' ELSE '' END",
+                ['separator' => '']
+            );
+            $currentcompletionstatus_new = get_operator(
+                'GROUP_CONCAT',
+                "CASE WHEN sa.attempt = la.last_attempt_number AND
+                           e.element IN ('cmi.completion_status', 'cmi.core.lesson_status') AND
+                           sv.value IN ('completed', 'passed')
+                      THEN 'completed'
+                      ELSE ''
+                END",
+                ['separator' => '']
+            );
+            $t_subquery = "SELECT MIN(sa.id) AS id,
+                           sa.userid,
+                           sa.scormid,
+                           MAX(sv.timemodified) AS timemodified,
+                           MIN(CASE WHEN e.element = 'x.start.time' THEN sv.value ELSE null END) AS starttime,
+                           {$time_func_new} AS duration,
+                           {$firstcompletionstatus_new} AS first_completion_status,
+                           {$currentcompletionstatus_new} AS current_completion_status,
+                           COUNT(DISTINCT sa.attempt) AS attempts
+                      FROM {scorm_attempt} sa
+                      JOIN {scorm} s1 ON s1.id = sa.scormid
+                      JOIN (SELECT userid, scormid, MAX(attempt) AS last_attempt_number
+                              FROM {scorm_attempt}
+                          GROUP BY userid, scormid
+                           ) la ON la.userid = sa.userid AND la.scormid = sa.scormid
+                      LEFT JOIN {scorm_scoes_value} sv ON sv.attemptid = sa.id
+                      LEFT JOIN {scorm_element} e ON e.id = sv.elementid
+                     WHERE sa.id > 0 {$cdata_sql_filter} {$sqltimefilter}
+                  GROUP BY sa.userid, sa.scormid";
+        }
+
         $data = $this->get_report_data("
             SELECT CONCAT(s.id, '_', u.id, '_', c.id) AS uniquecol,
                    t.*,
@@ -2617,24 +2690,7 @@ class local_intelliboard_external extends external_api {
                   GROUP BY e.courseid, ue1.userid
                    ) ue ON ue.courseid = c.id
               JOIN {user} u ON u.id = ue.userid
-         LEFT JOIN (SELECT MIN(sst.id) AS id,
-                           sst.userid,
-                           sst.scormid,
-                           MAX(sst.timemodified) AS timemodified,
-                           MIN(CASE WHEN sst.element = 'x.start.time' THEN sst.value ELSE null END) AS starttime,
-                           {$time_func} AS duration,
-                           {$firstcompletionstatus} AS first_completion_status,
-                           {$currentcompletionstatus} AS current_completion_status,
-                           COUNT(DISTINCT(sst.attempt)) as attempts
-                      FROM {scorm_scoes_track} sst
-                      JOIN {scorm} s1 ON s1.id = sst.scormid
-                      JOIN (SELECT userid, scormid, MAX(attempt) AS last_attempt_number
-                              FROM {scorm_scoes_track}
-                          GROUP BY userid, scormid
-                           ) la ON la.userid = sst.userid AND la.scormid = sst.scormid
-                     WHERE sst.id > 0 {$cdata_sql_filter} {$sqltimefilter}
-                  GROUP BY sst.userid, sst.scormid
-                   ) t ON t.scormid = s.id AND t.userid = u.id
+         LEFT JOIN ({$t_subquery}) t ON t.scormid = s.id AND t.userid = u.id
          LEFT JOIN {course_modules_completion} cmc ON cmc.coursemoduleid = cm.id AND cmc.userid = u.id
          LEFT JOIN (SELECT gi.iteminstance,
                            {$grade_single} AS score,
@@ -2663,7 +2719,6 @@ class local_intelliboard_external extends external_api {
         $data = $this->prepare_extra_columns($params, $data);
 
         return ['data' => $data];
-
     }
 
     public function report22($params)

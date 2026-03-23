@@ -38,7 +38,7 @@ $other_user = optional_param('user', 0, PARAM_INT);
 $download = optional_param('download', '', PARAM_ALPHA);
 
 require_login();
-require_capability('local/intelliboard:students', context_system::instance());
+intelliboard_learner_access();
 
 if ($search) {
 	require_sesskey();
