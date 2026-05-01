@@ -26,6 +26,8 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+require_once($CFG->dirroot . '/local/intelliboard/locallib.php');
+
 use local_intelliboard\helpers\theming;
 
 $settings = new admin_settingpage('local_intelliboard', new lang_string('pluginname', 'local_intelliboard'));
@@ -841,6 +843,19 @@ if($ADMIN->fulltree){
         $name = 'local_intelliboard/all_time';
         $title = new lang_string('filter_all_time', 'local_intelliboard');
         $setting = new admin_setting_configcheckbox($name, $title, '', true, true, false);
+        $settings->add($setting);
+
+        $name = 'local_intelliboard/learner_default_time_filter';
+        $title = new lang_string('learner_default_time_filter', 'local_intelliboard');
+        $desc = new lang_string('learner_default_time_filter_desc', 'local_intelliboard');
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $desc,
+            '0',
+            local_intelliboard_learner_time_filter_choice_labels()
+        );
+        $setting->set_validate_function('local_intelliboard_validate_learner_default_time_filter_setting');
         $settings->add($setting);
 
         $name = 'local_intelliboard/t04';

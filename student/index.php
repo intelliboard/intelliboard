@@ -55,7 +55,6 @@ $factorInfo = chart_options();
 $action = optional_param('action', '', PARAM_ALPHANUMEXT);
 $search = clean_raw(optional_param('search', '', PARAM_RAW));
 $type = optional_param('type', '', PARAM_ALPHANUMEXT);
-$time = optional_param('time', 0, PARAM_INT);
 $other_user = optional_param('user', 0, PARAM_INT);
 
 $activity_setting = optional_param('activity_setting', 0, PARAM_INT);
@@ -114,6 +113,15 @@ $t38 = get_config('local_intelliboard', 't38');
 $t53 = get_config('local_intelliboard', 't53');
 $scale_real = get_config('local_intelliboard', 'scale_real');
 $scale_percentage_round = clean_param(get_config('local_intelliboard', 'scale_percentage_round'), PARAM_INT);
+
+$menu = local_intelliboard_learner_time_filter_menu();
+$time = optional_param('time', null, PARAM_INT);
+if ($time === null) {
+    $time = local_intelliboard_learner_default_time_filter_resolved($menu);
+}
+if (!array_key_exists($time, $menu)) {
+    $time = $menu !== [] ? (int) min(array_keys($menu)) : 0;
+}
 
 $courses = intelliboard_learner_courses($showing_user->id, null);
 $coursesprogress = intelliboard_learner_courses($showing_user->id, $time);
@@ -188,6 +196,30 @@ if($t5){
     $timestart_m = date('m', $mintimepoint)-1;
     $timestart_d = date('d', $mintimepoint);
     $hAxis_min = "new Date($timestart_y, $timestart_m, $timestart_d)";
+
+    // One tick per calendar day on hAxis — stops Google Charts from sub-dividing a day (hourly) and repeating the same label.
+    $tickfrom = mktime(0, 0, 0, (int) date('n', $mintimepoint), (int) date('j', $mintimepoint), (int) date('Y', $mintimepoint));
+    $tickto = mktime(0, 0, 0, (int) date('n', $timefinish), (int) date('j', $timefinish), (int) date('Y', $timefinish));
+    if ($tickfrom > $tickto) {
+        $swap = $tickfrom;
+        $tickfrom = $tickto;
+        $tickto = $swap;
+    }
+    $hAxis_ticks_js = '';
+    $maxdailyticks = 400;
+    $numdays = (int) floor(($tickto - $tickfrom) / 86400) + 1;
+    if ($numdays <= $maxdailyticks) {
+        $haxistickparts = [];
+        for ($ts = $tickfrom; $ts <= $tickto; $ts = strtotime('+1 day', $ts)) {
+            $haxistickparts[] = sprintf(
+                'new Date(%d, %d, %d)',
+                (int) date('Y', $ts),
+                (int) date('n', $ts) - 1,
+                (int) date('j', $ts)
+            );
+        }
+        $hAxis_ticks_js = '[' . implode(',', $haxistickparts) . ']';
+    }
 }
 $json_data2 = array();
 foreach($courses as $item){
@@ -202,29 +234,6 @@ foreach($courses as $item){
     $tooltip .= "</div>";
     $tooltip .= "</div>";
     $json_data2[] = "[$l, ".round((float) $item->grade, 2).",'$tooltip']";
-}
-
-$menu = array();
-if(get_config('local_intelliboard', 'all_time')){
-    $menu[0] = get_string('all_time','local_intelliboard');
-}
-if(get_config('local_intelliboard', 'learner_tf_last_week')){
-    $menu[1] = get_string('last_week','local_intelliboard');
-}
-if(get_config('local_intelliboard', 't01')){
-    $menu[2] = get_string('last_month','local_intelliboard');
-}
-if(get_config('local_intelliboard', 't02')){
-    $menu[3] = get_string('last_quarter','local_intelliboard');
-}
-if(get_config('local_intelliboard', 't03')){
-    $menu[4] =  get_string('last_semester','local_intelliboard');
-}
-if(get_config('local_intelliboard', 'this_year')){
-    $menu[5] = get_string('this_year','local_intelliboard');
-}
-if(get_config('local_intelliboard', 'last_year')){
-    $menu[6] = get_string('last_year','local_intelliboard');
 }
 
 $PAGE->requires->js_call_amd(
@@ -269,8 +278,17 @@ echo $OUTPUT->header();
                         </ul>
                     </div>
                 </div>
-                <?php if($t5): ?>
-                    <div id="intelliboard-chart" class="intelliboard-chart-dash"></div>
+                <?php if ($t5): ?>
+                    <?php if (!empty($json_data)): ?>
+                        <div id="intelliboard-chart" class="intelliboard-chart-dash"></div>
+                    <?php else: ?>
+                        <?php // Same .intelliboard-chart-dash as line chart so tab switching (.eq(index)) stays aligned with Activity | Course. ?>
+                        <div class="intelliboard-chart-dash intelliboard-activity-panel text-center">
+                            <div class="alert alert-info intelliboard-activity-nodata mb-0 text-center" role="status">
+                                <?php echo get_string('activity_progress_no_data_period', 'local_intelliboard'); ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <?php if($t6): ?>
@@ -824,7 +842,7 @@ echo $OUTPUT->header();
                 drawCourseProgress();
             <?php endif; ?>
 
-            <?php if($t5): ?>
+            <?php if ($t5 && !empty($json_data)): ?>
                 function drawActivityProgress() {
                     var data = new google.visualization.DataTable();
                     data.addColumn('date', '<?php echo intellitext(get_string('time', 'local_intelliboard')); ?>');
@@ -838,6 +856,13 @@ echo $OUTPUT->header();
                     var options = decodeJson('<?php echo format_string($factorInfo->ActivityProgressCalculation); ?>');
                     options.hAxis.minValue = <?php echo $hAxis_min; ?>;
                     options.hAxis.maxValue = <?php echo $hAxis_max; ?>;
+                    if (!options.hAxis.minorGridlines) {
+                        options.hAxis.minorGridlines = {};
+                    }
+                    options.hAxis.minorGridlines.count = 0;
+                    <?php if (!empty($hAxis_ticks_js)): ?>
+                    options.hAxis.ticks = <?php echo $hAxis_ticks_js; ?>;
+                    <?php endif; ?>
                     var chart = new google.visualization.LineChart(document.getElementById('intelliboard-chart'));
                     chart.draw(data, options);
                     setTimeout(function () {

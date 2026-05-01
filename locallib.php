@@ -281,8 +281,14 @@ function chart_options()
         "chartArea" => [ "width" => '95%', "height" => '76%', "right" => 10, "top" => 10],
         "height" => 250,
         "hAxis" => [
-            "format" => 'dd MMM',
-            "gridlines" => new \stdClass(),
+            // Avoid many auto ticks in the same calendar day all showing identical "dd MMM" labels.
+            "format" => 'd MMM yyyy',
+            "gridlines" => [
+                "count" => 8,
+            ],
+            "minorGridlines" => [
+                "count" => 0,
+            ],
             "baselineColor" => '#ccc',
             "gridlineColor" => '#ccc',
         ],
@@ -950,4 +956,103 @@ function intelli_initial_reports() {
 
 function intelli_additional_query_params() {
     return ['lang' => current_language()];
+}
+
+/**
+ * Learner dashboard time filter index => config_plugins name.
+ *
+ * @return array<int,string>
+ */
+function local_intelliboard_learner_time_filter_map(): array {
+    return [
+        0 => 'all_time',
+        1 => 'learner_tf_last_week',
+        2 => 't01',
+        3 => 't02',
+        4 => 't03',
+        5 => 'this_year',
+        6 => 'last_year',
+    ];
+}
+
+/**
+ * Labels for the learner time filter (same as the dashboard menu).
+ *
+ * @return array<string,string> string keys for admin_setting_configselect
+ */
+function local_intelliboard_learner_time_filter_choice_labels(): array {
+    return [
+        '0' => get_string('all_time', 'local_intelliboard'),
+        '1' => get_string('last_week', 'local_intelliboard'),
+        '2' => get_string('last_month', 'local_intelliboard'),
+        '3' => get_string('last_quarter', 'local_intelliboard'),
+        '4' => get_string('last_semester', 'local_intelliboard'),
+        '5' => get_string('this_year', 'local_intelliboard'),
+        '6' => get_string('last_year', 'local_intelliboard'),
+    ];
+}
+
+/**
+ * Build enabled learner time filter options for the dashboard.
+ *
+ * @return array<int,string>
+ */
+function local_intelliboard_learner_time_filter_menu(): array {
+    $menu = [];
+    if (get_config('local_intelliboard', 'all_time')) {
+        $menu[0] = get_string('all_time', 'local_intelliboard');
+    }
+    if (get_config('local_intelliboard', 'learner_tf_last_week')) {
+        $menu[1] = get_string('last_week', 'local_intelliboard');
+    }
+    if (get_config('local_intelliboard', 't01')) {
+        $menu[2] = get_string('last_month', 'local_intelliboard');
+    }
+    if (get_config('local_intelliboard', 't02')) {
+        $menu[3] = get_string('last_quarter', 'local_intelliboard');
+    }
+    if (get_config('local_intelliboard', 't03')) {
+        $menu[4] = get_string('last_semester', 'local_intelliboard');
+    }
+    if (get_config('local_intelliboard', 'this_year')) {
+        $menu[5] = get_string('this_year', 'local_intelliboard');
+    }
+    if (get_config('local_intelliboard', 'last_year')) {
+        $menu[6] = get_string('last_year', 'local_intelliboard');
+    }
+    return $menu;
+}
+
+/**
+ * Default time filter index from plugin config, or first enabled option.
+ *
+ * @param array<int,string> $menu from {@see local_intelliboard_learner_time_filter_menu()}
+ */
+function local_intelliboard_learner_default_time_filter_resolved(array $menu): int {
+    if ($menu === []) {
+        return 0;
+    }
+    $saved = get_config('local_intelliboard', 'learner_default_time_filter');
+    if ($saved !== false && $saved !== '' && array_key_exists((int) $saved, $menu)) {
+        return (int) $saved;
+    }
+    return (int) min(array_keys($menu));
+}
+
+/**
+ * Admin save validation: default time filter must match an enabled checkbox.
+ *
+ * @param string $data select value
+ * @return string empty if ok, else error message
+ */
+function local_intelliboard_validate_learner_default_time_filter_setting(string $data): string {
+    $key = (int) $data;
+    $map = local_intelliboard_learner_time_filter_map();
+    if (!array_key_exists($key, $map)) {
+        return get_string('learner_default_time_filter_invalid', 'local_intelliboard');
+    }
+    if (!get_config('local_intelliboard', $map[$key])) {
+        return get_string('learner_default_time_filter_invalid', 'local_intelliboard');
+    }
+    return '';
 }
