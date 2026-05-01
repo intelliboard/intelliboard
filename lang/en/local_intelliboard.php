@@ -204,6 +204,7 @@
  $string['last_semester'] = 'Last 6 Months';
  $string['all_time'] = 'All time';
  $string['activity_progress'] = 'Activity progress';
+ $string['activity_progress_no_data_period'] = 'No data for the selected time period.';
  $string['course_progress'] = 'Course progress';
  $string['my_course_average_all'] = 'my course average (all courses)';
  $string['overall_course_average'] = 'overall course average (all learners; all courses)';
@@ -480,7 +481,9 @@
  $string['filter_this_year'] = 'Time filter: This Year';
  $string['filter_last_year'] = 'Time filter: Last Year';
  $string['filter_all_time'] = 'Time filter: All Time';
- $string['this_year'] = 'This Year';
+ $string['learner_default_time_filter'] = 'Default time filter';
+ $string['learner_default_time_filter_desc'] = 'Initial date range when the learner opens the dashboard without a time parameter in the URL. The chosen option must be one of the time filters enabled above.';
+ $string['learner_default_time_filter_invalid'] = 'The default time filter must be one of the enabled time filter options above.';
  $string['last_year'] = 'Last Year';
  $string['reportselect'] = 'Please select at least one report from App.IntelliBoard.net.  Click on a Report, then Report Settings, and select it in "Visible in Moodle".';
  $string['monitorselect'] = 'Please select at least one monitor from App.IntelliBoard.net.  Click on a Monitors, then Monitors Settings, and select it in "Visible in Moodle".';
