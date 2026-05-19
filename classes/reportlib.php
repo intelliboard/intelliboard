@@ -89,15 +89,18 @@ class local_intelliboard_report extends external_api {
 
                 $filters = [];
                 if (strrpos($query, ':sorting') !== false) {
-                    $params->sortdir = isset($params->sortdir)? $params->sortdir : false;
-                    $params->sortcol = isset($params->sortcol)? $params->sortcol : 0;
+                    $sortdir = self::sanitize_report_sort_direction(
+                        isset($params->sortdir) ? $params->sortdir : false
+                    );
+                    $sortcol = self::sanitize_report_sort_column(
+                        isset($params->sortcol) ? $params->sortcol : 0
+                    ) + 1;
 
-                    $params->sortcol = $params->sortcol + 1;
-                    if ($params->sortdir and $params->sortcol) {
-                        $sorting = " ORDER BY {$params->sortcol} {$params->sortdir}";
-                        $query = str_replace(":sorting", $sorting, $query);
+                    if ($sortdir && $sortcol > 0) {
+                        $sorting = ' ORDER BY ' . $sortcol . ' ' . $sortdir;
+                        $query = str_replace(':sorting', $sorting, $query);
                     } else {
-                        $query = str_replace(":sorting", "", $query);
+                        $query = str_replace(':sorting', '', $query);
                     }
                 }
 
@@ -110,10 +113,10 @@ class local_intelliboard_report extends external_api {
                     $params->timestart = isset($params->timestart)? $params->timestart : false;
                     $params->timefinish = isset($params->timefinish)? $params->timefinish : false;
 
-                    if ($params->timestart and $params->timefinish and $col) {
+                    if ($params->timestart && $params->timefinish and self::sanitize_sql_identifier($col)) {
                         $filters['timestart'] = $params->timestart;
                         $filters['timefinish'] = $params->timefinish;
-                        $like = " AND $col BETWEEN :timestart AND :timefinish ";
+                        $like = ' AND ' . $col . ' BETWEEN :timestart AND :timefinish ';
                         $query = str_replace($val, $like, $query);
                     } else {
                         $query = str_replace($val, "", $query);
@@ -127,10 +130,10 @@ class local_intelliboard_report extends external_api {
 
                     $params->courses = isset($params->courses)? $params->courses : false;
 
-                    if ($params->courses and $col) {
+                    if ($params->courses && self::sanitize_sql_identifier($col)) {
                         list($sql, $coursefilter) = $DB->get_in_or_equal(explode(",", $params->courses), SQL_PARAMS_NAMED, 'courses', true);
                         $filters = array_merge($filters, $coursefilter);
-                        $like = " AND $col $sql ";
+                        $like = ' AND ' . $col . ' ' . $sql . ' ';
                         $query = str_replace($val, $like, $query);
                     } else {
                         $query = str_replace($val, "", $query);
@@ -142,7 +145,7 @@ class local_intelliboard_report extends external_api {
                     $col = substr($query, $start, $end);
                     $val = ":intellicartvendorfilter[$col]";
 
-                    if ($params->vendors and $col) {
+                    if ($params->vendors && self::sanitize_sql_identifier($col)) {
                         list($innersql, $intellicartvendorfilter) = $DB->get_in_or_equal(explode(",", $params->vendors), SQL_PARAMS_NAMED, 'vndid', true);
 
                         $sql = "SELECT liu.userid
@@ -152,7 +155,7 @@ class local_intelliboard_report extends external_api {
                                GROUP BY liu.userid";
 
                         $filters = array_merge($filters, $intellicartvendorfilter);
-                        $like = " AND $col IN($sql) ";
+                        $like = ' AND ' . $col . ' IN(' . $sql . ') ';
                         $query = str_replace($val, $like, $query);
                     } else {
                         $query = str_replace($val, "", $query);
@@ -165,12 +168,15 @@ class local_intelliboard_report extends external_api {
                     $params->filterval = isset($params->filterval) ? str_replace("&apos;", '_', $params->filterval) : false;
                     $params->filtercol = isset($params->filtercol) ? $params->filtercol : false;
 
-                    if ($params->filterval and $params->filtercol) {
+                    $filtercol = self::sanitize_sql_identifier(
+                        isset($params->filtercol) ? $params->filtercol : false
+                    );
+                    if ($params->filterval && $filtercol !== false) {
                         $key = 'build_by_sql_search';
                         $query = "SELECT t.*
                                     FROM ({$query}) t
-                                   WHERE t." . $DB->sql_like('`'.$params->filtercol.'`', ":" . $key, false, false);
-                        $filters[$key] = "%".$params->filterval."%";
+                                   WHERE " . $DB->sql_like('t.' . $filtercol, ':' . $key, false, false);
+                        $filters[$key] = '%' . $params->filterval . '%';
                     }
                 }
 
@@ -337,5 +343,57 @@ class local_intelliboard_report extends external_api {
 
     public static function delete_report_returns() {
         return null;
+    }
+
+    /**
+     * Validate a SQL column identifier (letters, digits, underscore).
+     *
+     * @param mixed $identifier
+     * @return string|false Safe identifier or false.
+     */
+    private static function sanitize_sql_identifier($identifier) {
+        if ($identifier === null || $identifier === false || $identifier === '') {
+            return false;
+        }
+
+        $identifier = (string) $identifier;
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $identifier)) {
+            return false;
+        }
+
+        return $identifier;
+    }
+
+    /**
+     * ORDER BY direction for custom SQL reports.
+     *
+     * @param mixed $sortdir
+     * @return string|false ASC, DESC, or false.
+     */
+    private static function sanitize_report_sort_direction($sortdir) {
+        if ($sortdir === null || $sortdir === false || $sortdir === '') {
+            return false;
+        }
+
+        return (strtoupper((string) $sortdir) === 'DESC') ? 'DESC' : 'ASC';
+    }
+
+    /**
+     * SELECT list position used in ORDER BY (app sends zero-based index).
+     *
+     * @param mixed $sortcol
+     * @return int
+     */
+    private static function sanitize_report_sort_column($sortcol) {
+        $sortcol = (int) $sortcol;
+        if ($sortcol < 0) {
+            return 0;
+        }
+
+        if ($sortcol > 256) {
+            return 256;
+        }
+
+        return $sortcol;
     }
 }

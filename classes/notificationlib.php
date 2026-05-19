@@ -263,17 +263,14 @@ class local_intelliboard_notificationlib extends external_api {
             $params['name'] = '%' . $search . '%';
         }
 
-        if ($order) {
-            $direction = $order['direction'] === 'desc'? 'DESC' : 'ASC';
-            $sql .= ' ORDER BY ' . $order['key'] . ' ' . $direction;
-        }
+        $sql .= self::get_history_order_sql($order);
 
         if ($limit) {
-            $sql .= ' LIMIT ' . $limit;
+            $sql .= ' LIMIT ' . (int) $limit;
         }
 
         if ($offset) {
-            $sql .= ' OFFSET ' . $offset;
+            $sql .= ' OFFSET ' . (int) $offset;
         }
 
         $data = $DB->get_records_sql($sql, $params);
@@ -329,6 +326,35 @@ class local_intelliboard_notificationlib extends external_api {
 
     public static function clear_notifications_returns() {
         return null;
+    }
+
+    /**
+     * Build a safe ORDER BY clause for notification history.
+     * Column names cannot be bound as query parameters and must be allow-listed.
+     *
+     * @param array|null $order Sort key and direction from the web service caller.
+     * @return string SQL fragment (empty string or " ORDER BY ...").
+     */
+    private static function get_history_order_sql($order) {
+        if (empty($order) || !is_array($order)) {
+            return '';
+        }
+
+        $columnmap = [
+            'id' => 'id',
+            'notificationid' => 'notificationid',
+            'email' => 'email',
+            'timesent' => 'timesent',
+            'notificationname' => 'notificationname',
+            'name' => 'notificationname',
+        ];
+
+        $key = isset($order['key']) ? (string) $order['key'] : '';
+        $column = isset($columnmap[$key]) ? $columnmap[$key] : 'timesent';
+        $direction = (isset($order['direction']) && strtolower((string) $order['direction']) === 'desc')
+            ? 'DESC' : 'ASC';
+
+        return ' ORDER BY ' . $column . ' ' . $direction;
     }
 
 }
