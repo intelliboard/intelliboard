@@ -165,7 +165,7 @@ if($ADMIN->fulltree){
 
         $name = 'local_intelliboard/server';
         $title = new lang_string('server', 'local_intelliboard');
-        $setting = new admin_setting_configselect($name, $title,'',0, [
+        $setting = new admin_setting_configselect($name, $title, '', 'us', [
             'us' => "US",
             'ca' => "CA",
             'eu' => "EU",

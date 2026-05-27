@@ -941,5 +941,25 @@ function xmldb_local_intelliboard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2023092702, 'local', 'intelliboard');
     }
 
+    if ($oldversion < 2026052600) {
+        // Migrate legacy numeric IntelliBoard server IDs to region codes (us, ca, eu, au).
+        $server = get_config('local_intelliboard', 'server');
+        $validservers = ['us', 'ca', 'eu', 'au'];
+        if ($server !== false && !in_array($server, $validservers, true)) {
+            $legacyservers = [
+                '0' => 'us', // AUTO.
+                '1' => 'au',
+                '2' => 'ca',
+                '3' => 'eu',
+                '4' => 'us',
+                '5' => 'us', // CN (removed from UI).
+            ];
+            $newserver = $legacyservers[(string) $server] ?? 'us';
+            set_config('server', $newserver, 'local_intelliboard');
+        }
+
+        upgrade_plugin_savepoint(true, 2026052600, 'local', 'intelliboard');
+    }
+
     return true;
 }
