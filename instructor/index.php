@@ -94,6 +94,7 @@ $PAGE->set_url(new moodle_url(
 ));
 $PAGE->set_pagetype('home');
 $PAGE->set_pagelayout(theming::get_page_layout());
+$PAGE->set_secondary_navigation(false); // IBL-24: hide Site Administration panel on the Instructor dashboard
 $PAGE->set_context(context_system::instance());
 $PAGE->set_title(get_string('intelliboardroot', 'local_intelliboard'));
 $PAGE->set_heading(get_string('intelliboardroot', 'local_intelliboard'));

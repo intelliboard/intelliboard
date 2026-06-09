@@ -1377,10 +1377,28 @@ class local_intelliboard_external extends external_api {
             $params
         );
     }
+    /**
+     * Report 6 — "Courses overview by enrolled users".
+     *
+     * Builds a per-enrolment dataset combining course completion, grades
+     * (average and real), activity completion counts, time spent and visits,
+     * the assigned teacher(s) and the cohort name(s) for each enrolled user.
+     *
+     * Cohort names are always joined (via a LEFT JOIN) so that the cohortname
+     * column is populated regardless of whether the cohort filter is applied;
+     * when $params->cohortid is set the join is additionally restricted to the
+     * selected cohort(s).
+     *
+     * @param stdClass $params Report parameters (filters, paging, ordering, etc.):
+     *                         courseid, cohortid, teacher_roles, learner_roles,
+     *                         sizemode and the standard date/user/course filters.
+     * @return array Report rows together with the total record count, as
+     *               produced by {@see get_report_data()}.
+     */
     public function report6($params)
     {
         global $CFG;
-        $columns = array_merge(array(
+        $columns = array_merge([
             "u.firstname",
             "u.lastname",
             "email",
@@ -1396,7 +1414,7 @@ class local_intelliboard_external extends external_api {
             "teacher",
             "cohortname",
             "e.enrol"
-        ), $this->get_filter_columns($params));
+        ], $this->get_filter_columns($params));
 
         $sql_columns = $this->get_columns($params, ["u.id"]);
         $sql_filter = $this->get_teacher_sql($params, ["u.id" => "users", "c.id" => "courses"]);
@@ -1420,23 +1438,21 @@ class local_intelliboard_external extends external_api {
             $group_concat = "GROUP_CONCAT(DISTINCT CONCAT(u.firstname,' ',u.lastname) SEPARATOR ', ')";
         }
 
-        $sql_join = "";
-        if($params->cohortid) {
-            if ($CFG->dbtype == 'pgsql') {
-                $cohorts = "string_agg( DISTINCT coh.name, ', ')";
-            } else {
-                $cohorts = "GROUP_CONCAT( DISTINCT coh.name)";
-            }
-            $sql_columns .= ", coo.cohortname AS cohortname";
-            $sql_cohort = $this->get_filter_in_sql($params->cohortid, "ch.cohortid");
-            $sql_join = " JOIN (SELECT ch.userid, $cohorts as cohortname FROM {cohort} coh, {cohort_members} ch WHERE coh.id = ch.cohortid $sql_cohort GROUP BY ch.userid) coo ON coo.userid = u.id";
+        if ($CFG->dbtype == 'pgsql') {
+            $cohorts = "string_agg( DISTINCT coh.name, ', ')";
         } else {
-          $sql_columns .= ", '' as cohortname";
+            $cohorts = "GROUP_CONCAT( DISTINCT coh.name)";
         }
+        $sql_columns .= ", coo.cohortname AS cohortname";
+        $sql_cohort = $params->cohortid ? $this->get_filter_in_sql($params->cohortid, "ch.cohortid") : '';
+        $sql_join = " JOIN (SELECT ch.userid, {$cohorts} AS cohortname
+                        FROM {cohort} coh, {cohort_members} ch
+                        WHERE coh.id = ch.cohortid {$sql_cohort}
+                    GROUP BY ch.userid) coo ON coo.userid = u.id";
 
-        if($params->sizemode){
+        if ($params->sizemode) {
             $sql_columns .= ", '0' as timespend, '0' as visits";
-        }else{
+        } else {
             $sql_lit = $this->get_filter_in_sql($params->courseid, "courseid");
             $sql_columns .= ", lit.timespend AS timespend, lit.visits AS visits";
             $sql_join .= " LEFT JOIN (SELECT userid, courseid, SUM(timespend) as timespend, SUM(visits) as visits
@@ -1482,6 +1498,7 @@ class local_intelliboard_external extends external_api {
                 $sql_join
             WHERE ue.id > 0 $sql_filter $sql_having $sql_order", $params);
     }
+
     public function report7($params)
     {
         $columns = array_merge(array("u.firstname","u.lastname","email", "course", "visits", "participations", "assignments", "grade"), $this->get_filter_columns($params));
