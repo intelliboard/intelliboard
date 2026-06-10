@@ -20689,7 +20689,9 @@ class local_intelliboard_external extends external_api {
             $joinsql .= "LEFT JOIN {user} u ON u.id{$type} = lia.instance" ;
             $wheresql .= " AND u.id IS NULL";
         } elseif ($this->params['typename'] == 'categories') {
-            $joinsql .= "LEFT JOIN {course_categories} c ON c.id{$type} = lia.instance" ;
+            // Treat hidden categories (visible = 0) as deleted too: if the user can no
+            // longer see/assign them in the UI, the stale assign should be cleaned up.
+            $joinsql .= "LEFT JOIN {course_categories} c ON c.id{$type} = lia.instance AND c.visible > 0" ;
             $wheresql .= " AND c.id IS NULL";
         } elseif ($this->params['typename'] == 'cohorts') {
             $joinsql .= "LEFT JOIN {cohort} c ON c.id{$type} = lia.instance" ;
@@ -20754,7 +20756,11 @@ class local_intelliboard_external extends external_api {
                     $this->params['path' . $record->id] = "$record->path%";
                 }
             }
-            $sql_filter .= " AND (".implode(" OR ", $sql_arr) .")";
+            // Guard against empty $sql_arr (no visible assigned categories) which would
+            // otherwise produce invalid SQL "AND ()" and throw dml_read_exception.
+            if (!empty($sql_arr)) {
+                $sql_filter .= " AND (".implode(" OR ", $sql_arr) .")";
+            }
 
             $records_new = $DB->get_records_sql("SELECT id, name, idnumber FROM {course_categories} WHERE visible > 0 $sql_filter", $this->params);
             foreach($records_new as &$record){
