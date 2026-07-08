@@ -7073,17 +7073,17 @@ class local_intelliboard_external extends external_api {
 
         if (get_config('local_intelliboard', 'group_aggregation')) {
             if ($CFG->dbtype == 'pgsql') {
-                $group_teacher_column = " ,g.id AS groupid, string_agg(DISTINCT teachers.teacher_name, ', ') AS teacher";
+                $group_teacher_column = " ,MIN(g.id) AS groupid, string_agg(DISTINCT teachers.teacher_name, ', ') AS teacher";
             } else {
-                $group_teacher_column = " ,g.id AS groupid, GROUP_CONCAT(DISTINCT teachers.teacher_name SEPARATOR ', ') AS teacher";
+                $group_teacher_column = " ,MIN(g.id) AS groupid, GROUP_CONCAT(DISTINCT teachers.teacher_name SEPARATOR ', ') AS teacher";
             }
             $groups_teacher_sql = "
                        LEFT JOIN (SELECT ctx.instanceid, CONCAT(u.firstname,' ',u.lastname) AS teacher_name, g.id as gid
-                                    FROM mdl_role_assignments AS ra
-                                    JOIN mdl_user u ON ra.userid = u.id
-                                    JOIN mdl_context AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
-                                    JOIN mdl_groups g ON g.courseid = ctx.instanceid
-                                    JOIN mdl_groups_members m ON m.groupid = g.id AND m.userid = u.id
+                                    FROM {role_assignments} AS ra
+                                    JOIN {user} u ON ra.userid = u.id
+                                    JOIN {context} AS ctx ON ctx.id = ra.contextid AND ctx.contextlevel = 50
+                                    JOIN {groups} g ON g.courseid = ctx.instanceid
+                                    JOIN {groups_members} m ON m.groupid = g.id AND m.userid = u.id
                                    WHERE ra.roleid > 0 " .
                                          $this->get_filter_in_sql($params->teacher_roles, "ra.roleid") . " " .
                                          $this->get_filter_in_sql($params->courseid, 'ctx.instanceid') . "
