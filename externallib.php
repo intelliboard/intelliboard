@@ -9986,6 +9986,10 @@ class local_intelliboard_external extends external_api {
         $sql_filter = $this->get_filter_in_sql($params->custom,'f.id');
         $sql_having = $this->get_filter_sql($params, $columns);
         $sql_order = $this->get_order_sql($params, $columns);
+        if (empty($sql_order)) {
+            // Default order: questions as they appear in the feedback activity.
+            $sql_order = " ORDER BY fi.feedback, fi.position";
+        }
         $sql_filter .= $this->get_filterdate_sql($params, "fc.timemodified");
 
         if ($CFG->dbtype == 'pgsql') {
